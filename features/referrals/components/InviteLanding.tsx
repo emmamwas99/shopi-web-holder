@@ -43,7 +43,7 @@ export function InviteLanding({ lang, invite }: { lang: string; invite: Invite |
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-20 top-64 h-56 w-56 rounded-full bg-[rgb(var(--brand-secondary)/0.1)] blur-3xl"
+        className="pointer-events-none absolute -left-20 top-64 h-56 w-56 rounded-full bg-[rgb(var(--brand-highlight)/0.1)] blur-3xl"
       />
 
       <Link href={`/${lang}`} aria-label="Shopi home" className="relative self-start">
@@ -130,7 +130,7 @@ function InviterAvatar({ invite }: { invite: Invite }) {
 
   return (
     <div className="relative h-22 w-22">
-      <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] p-0.75">
+      <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] p-0.75">
         <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-app">
           {inviter.avatar ? (
             <Image src={inviter.avatar} alt="" fill sizes="88px" className="object-cover" />

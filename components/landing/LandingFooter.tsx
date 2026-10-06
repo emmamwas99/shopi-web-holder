@@ -73,7 +73,7 @@ export function LandingFooter({
       },
     ];
     return (
-      <footer className="bg-[#112126] text-white">
+      <footer className="bg-secondary text-white">
         <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-18">
           <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-white/20 pb-12 sm:grid-cols-3 lg:grid-cols-[1.6fr_repeat(5,minmax(0,1fr))] lg:gap-7">
             <div className="col-span-2 sm:col-span-3 lg:col-span-1">

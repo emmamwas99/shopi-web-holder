@@ -10,6 +10,7 @@ import {
 } from "@/lib/articles";
 import { locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
+import { isTranslatedPath, localeAlternates } from "@/lib/metadata";
 import { COUNTIES } from "@/lib/counties";
 import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
 import {
@@ -23,9 +24,10 @@ import {
 } from "@/lib/seo/sell-car-locations";
 
 /**
- * The app is served under /[lang]. Every public page exists per-locale, so each
- * sitemap entry lists its locale alternates (hreflang) to avoid duplicate-content
- * issues and help engines serve the right language.
+ * The app is served under /[lang], but only some pages are translated (see
+ * TRANSLATED_PATHS in lib/metadata.ts). Translated pages are listed in every
+ * locale with hreflang alternates; English-only pages are listed at /en alone,
+ * matching their canonical.
  *
  * Listing pages (/content/[id]) are the highest-value SEO surface of the
  * marketplace, so the newest listings are pulled from the API at generation
@@ -253,15 +255,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { url } = siteConfig;
 
   const langs = (l: string, path: string) => `${url}/${l}${path}`;
-  // Mirrors localeAlternates() in lib/metadata.ts, x-default included: the
-  // sitemap's hreflang set and the page's own <link rel="alternate"> set have
-  // to agree, or the annotations are treated as unconfirmed and dropped.
-  const alternates = (path: string) => ({
-    languages: {
-      ...Object.fromEntries(locales.map((l) => [l, langs(l, path)])),
-      "x-default": langs("en", path),
-    },
-  });
+  // The same localeAlternates() each page emits as <link rel="alternate">: the
+  // sitemap's hreflang set and the page's own have to agree, or the
+  // annotations are treated as unconfirmed and dropped. Only translated pages
+  // carry a Kiswahili alternate; English-only pages list /en alone.
+  const alternates = localeAlternates;
 
   // path -> [changeFrequency, priority, lastModified?]
   const staticPages: {
@@ -319,13 +317,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/safety-centre", changeFrequency: "yearly", priority: 0.4 },
   ];
 
-  const staticEntries: MetadataRoute.Sitemap = staticPages.map((p) => ({
-    url: langs("en", p.path),
-    lastModified: now,
-    changeFrequency: p.changeFrequency,
-    priority: p.priority,
-    alternates: alternates(p.path),
-  }));
+  // Each language version of a translated page is its own <url>, so the /sw
+  // copies are submitted for crawling rather than only hinted at.
+  const staticEntries: MetadataRoute.Sitemap = staticPages.flatMap((p) =>
+    (isTranslatedPath(p.path) ? locales : ["en"]).map((l) => ({
+      url: langs(l, p.path),
+      lastModified: now,
+      changeFrequency: p.changeFrequency,
+      priority: p.priority,
+      alternates: alternates(p.path),
+    })),
+  );
 
   const countyEntries: MetadataRoute.Sitemap = COUNTIES.map((county) => ({
     url: langs("en", `/marketplace/${county.slug}`),
@@ -377,13 +379,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   );
 
-  // The blog is English-only, so its pages canonicalise to /en and carry no
-  // Kiswahili alternate (see features/blog/metadata.ts) — the sitemap has to
-  // say the same. Articles that set their own canonicalUrl live elsewhere
-  // and are left out.
-  const englishOnly = (path: string) => ({
-    languages: { en: langs("en", path), "x-default": langs("en", path) },
-  });
+  // The blog is English-only (see features/blog/metadata.ts), which
+  // alternates() already reflects. Articles that set their own canonicalUrl
+  // live elsewhere and are left out.
   const articles = getArticles().filter((article) => !article.canonicalUrl);
   const newest = (dates: string[]) =>
     new Date(dates.reduce((a, b) => (a > b ? a : b), "1970-01-01"));
@@ -394,14 +392,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: newest(articles.map(lastModified)),
       changeFrequency: "weekly",
       priority: 0.85,
-      alternates: englishOnly("/blog"),
+      alternates: alternates("/blog"),
     },
     ...getActiveCategories().map((category) => ({
       url: langs("en", categoryPath(category.slug)),
       lastModified: newest(getArticlesInCategory(category.slug).map(lastModified)),
       changeFrequency: "weekly" as const,
       priority: 0.8,
-      alternates: englishOnly(categoryPath(category.slug)),
+      alternates: alternates(categoryPath(category.slug)),
     })),
     ...articles.map((article) => ({
       url: langs("en", articlePath(article.slug)),
@@ -409,7 +407,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Articles with live listings change as inventory does.
       changeFrequency: article.listings ? ("daily" as const) : ("monthly" as const),
       priority: article.listings ? 0.8 : 0.75,
-      alternates: englishOnly(articlePath(article.slug)),
+      alternates: alternates(articlePath(article.slug)),
     })),
   ];
 

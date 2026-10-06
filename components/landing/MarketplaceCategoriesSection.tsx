@@ -41,7 +41,7 @@ const categories: {
 
 const TINTS: Record<string, string> = {
   primary: "bg-[rgb(var(--brand-primary)/0.12)] text-primary",
-  secondary: "bg-[rgb(var(--brand-secondary)/0.16)] text-secondary-strong",
+  secondary: "bg-highlight-soft text-highlight-strong",
   accent: "bg-[rgb(var(--brand-accent)/0.12)] text-accent",
 };
 

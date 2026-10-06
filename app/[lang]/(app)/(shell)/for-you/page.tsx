@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { siteConfig } from "@/config/site";
-import { locales, isValidLocale } from "@/i18n/config";
+import { canonicalUrl, localeAlternates } from "@/lib/metadata";
 import { PreloadQuery, query } from "@/lib/apollo/ApolloClient";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { ForYouFeedDocument } from "@/types/__generated__/graphql";
@@ -17,39 +17,30 @@ import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 const FEED_CACHE = { fetchOptions: { next: { revalidate: 30 } } };
 
 // The app serves every page under /[lang]; a canonical without the locale
-// would point at a redirect. Self-referencing canonical + hreflang alternates
-// keep engines from treating /en/for-you and /sw/for-you as duplicates.
+// would point at a redirect. The feed isn't translated, so /sw/for-you
+// canonicalises to /en/for-you (see canonicalUrl).
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const safeLang = isValidLocale(lang) ? lang : "en";
   const path = siteConfig.routes.feed.path;
-  const canonical = `${siteConfig.url}/${safeLang}${path}`;
+  const canonical = canonicalUrl(lang, path);
   const title = `${siteConfig.routes.feed.title} | ${siteConfig.name}`;
   const description = siteConfig.routes.feed.description;
 
   return {
     title: siteConfig.routes.feed.title,
     description,
-    alternates: {
-      canonical,
-      languages: {
-        ...Object.fromEntries(
-          locales.map((l) => [l, `${siteConfig.url}/${l}${path}`]),
-        ),
-        "x-default": `${siteConfig.url}/en${path}`,
-      },
-    },
+    alternates: { canonical, ...localeAlternates(path) },
     openGraph: {
       type: "website",
       url: canonical,
       siteName: siteConfig.name,
       title,
       description,
-      locale: safeLang === "sw" ? "sw_KE" : "en_KE",
+      locale: "en_KE",
       images: [
         {
           url: siteConfig.ogImage,

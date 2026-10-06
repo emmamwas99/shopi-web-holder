@@ -87,12 +87,12 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
       badge: null,
       icon: (
         <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: "rgb(var(--brand-secondary) / 0.12)" }}>
+          style={{ background: "rgb(var(--brand-highlight) / 0.12)" }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <rect x="2" y="2" width="20" height="20" rx="4"
-              stroke="rgb(var(--brand-secondary))" strokeWidth="1.8" fill="none" />
+              stroke="rgb(var(--brand-highlight))" strokeWidth="1.8" fill="none" />
             <path d="M7 8h10M7 12h10M7 16h6"
-              stroke="rgb(var(--brand-secondary))" strokeWidth="1.8" strokeLinecap="round" />
+              stroke="rgb(var(--brand-highlight))" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </div>
       ),

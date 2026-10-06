@@ -56,7 +56,7 @@ export function ExploreDialog({ onClose }: { onClose: () => void }) {
         className="animate-in fade-in slide-in-from-bottom-6 max-h-[90vh] w-full max-w-120 overflow-hidden rounded-lg border border-border bg-elevated shadow-[0_32px_80px_rgba(0,0,0,0.35)] duration-220"
       >
         {/* Top gradient bar */}
-        <div className="h-1 bg-[linear-gradient(90deg,rgb(var(--brand-primary)),rgb(var(--brand-accent)),rgb(var(--brand-secondary)))]" />
+        <div className="h-1 bg-[linear-gradient(90deg,rgb(var(--brand-primary)),rgb(var(--brand-accent)),rgb(var(--brand-highlight)))]" />
 
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-0">

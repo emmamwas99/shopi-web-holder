@@ -822,3 +822,22 @@ export function getSearchIntentPage(slug: string) {
 export function searchIntentPath(slug: string) {
   return `/for-sale/${slug}` as const;
 }
+
+// Longest query first, so "Toyota Premio" wins over the generic "car".
+const byQuerySpecificity = [...searchIntentPages].sort(
+  (a, b) => b.query.length - a.query.length,
+);
+
+/**
+ * The /for-sale page a listing belongs under, matched on its title — e.g.
+ * "2014 Toyota Premio, clean" → /for-sale/toyota-premio. Listing pages link
+ * to it so the hub pages collect authority from the inventory they describe.
+ */
+export function searchIntentPageForTitle(title: string) {
+  return (
+    byQuerySpecificity.find((page) => {
+      const query = page.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`\\b${query}s?\\b`, "i").test(title);
+    }) ?? null
+  );
+}

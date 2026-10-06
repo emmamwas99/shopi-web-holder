@@ -22,7 +22,7 @@ export {
  *
  * Navigations across the app pass `scroll: false` and leave the position to
  * this component. It is mounted once for every route (RouteProviders), not
- * just the (main) group, so pages outside it still start at the top.
+ * just the app shell group, so pages outside it still start at the top.
  */
 export function RouteScrollRestoration() {
   const pathname = usePathname();

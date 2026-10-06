@@ -52,7 +52,9 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  alternates: { canonical: siteConfig.url },
+  // No site-wide canonical: every page inherits this, so a default here would
+  // declare any page that forgets its own canonical a duplicate of the
+  // homepage. Public pages set their own.
 };
 
 export const viewport: Viewport = {

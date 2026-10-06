@@ -22,8 +22,8 @@ const DISALLOWED = [
   "/*/notifications",
   "/*/upload",
   "/*/auth/",
-  "/careers",
-  "/*/careers",
+  // /careers is not listed: it 308s to /online-selling-jobs-kenya, and a
+  // blocked URL's redirect is never seen, so its links would not consolidate.
   // Public seller pages (/{lang}/profile/{username}) stay crawlable — only the
   // viewer's own profile and its management screens are private.
   "/*/profile/edit",

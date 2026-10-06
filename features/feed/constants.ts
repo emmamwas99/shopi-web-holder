@@ -11,7 +11,7 @@
  * first paint small; `FEED_LOAD_MORE_SIZE` refills ahead of the scroll so the
  * feed still feels endless.
  *
- * NOTE: the server preload in app/[lang]/(main)/for-you/page.tsx must request this
+ * NOTE: the server preload in app/[lang]/(app)/(shell)/for-you/page.tsx must request this
  * exact same limit, or the client's query misses the SSR cache and refetches
  * page 1 on hydration.
  */

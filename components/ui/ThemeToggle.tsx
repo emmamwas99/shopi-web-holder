@@ -30,7 +30,7 @@ export function ThemeToggle() {
       <Sun
         size={14}
         strokeWidth={2.1}
-        className={isDark ? "text-placeholder" : "text-secondary"}
+        className={isDark ? "text-placeholder" : "text-highlight"}
         aria-hidden
       />
       <Switch

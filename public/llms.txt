@@ -6,7 +6,7 @@
 ## Primary pages
 
 - [Home](https://www.shopi.co.ke/en): What Shopi is, how it works, and answers to common questions.
-- [Marketplace feed](https://www.shopi.co.ke/en/feed): Current product and classified listings.
+- [Marketplace feed](https://www.shopi.co.ke/en/for-you): Current product and classified listings.
 - [Explore](https://www.shopi.co.ke/en/explore): Browse listings by category and discovery filters.
 - [Search](https://www.shopi.co.ke/en/search): Search cars, phones, fashion, furniture, farm produce, livestock, and other local listings.
 - [FAQ](https://www.shopi.co.ke/en/faq): Fees, Shopi Agent, messaging, safety and coverage — the canonical answers.

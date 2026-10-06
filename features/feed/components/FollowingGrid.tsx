@@ -52,7 +52,7 @@ function LoginWall({ lang }: { lang: string }) {
         href={`/${lang}/auth/login?returnTo=${returnTo}`}
         className="px-7 py-3 rounded-full text-sm font-semibold text-white active:opacity-80 transition-opacity"
         style={{
-          background: `linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))`,
+          background: `linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))`,
           boxShadow: "0 4px 16px rgb(var(--brand-primary) / 0.35)",
         }}
       >

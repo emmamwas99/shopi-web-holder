@@ -25,7 +25,7 @@ export function DeepDivesSection({
       id: "creators",
       copy: t.sell,
       mockup: <SellMockup />,
-      tint: "bg-[rgb(var(--brand-secondary)/0.10)]",
+      tint: "bg-[rgb(var(--brand-highlight)/0.10)]",
       cta: { label: t.sell.cta, href: `/${lang}/upload` },
     },
     {

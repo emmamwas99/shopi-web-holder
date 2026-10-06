@@ -150,7 +150,7 @@ function catalogItem(item: ApiListing): MarketplaceCatalogItem | null {
             name: sellerName || username || "Shopi seller",
             username,
             profileUrl: username
-              ? `${siteConfig.url}/en/profile/${encodeURIComponent(username)}`
+              ? `${siteConfig.url}/en/@${encodeURIComponent(username)}`
               : null,
             verified: item.creator?.isVerified === true,
           }

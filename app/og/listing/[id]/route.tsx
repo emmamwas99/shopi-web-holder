@@ -12,8 +12,7 @@ import {
 // Node runtime so we can reuse the Apollo `query` helper to fetch the listing.
 export const runtime = "nodejs";
 export const revalidate = 3600;
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/jpeg";
+const size = { width: 1200, height: 630 };
 
 type Post = ContentCardFieldsFragment;
 
@@ -69,31 +68,16 @@ function locationName(post: Post): string | null {
   return [loc?.placeName, loc?.county].filter(Boolean).join(", ").trim() || null;
 }
 
-type ImageParams = {
-  // Next 16 hands metadata image routes an async params object. Reading it
-  // synchronously yielded `undefined`, which silently rendered the empty
-  // fallback card (no photo, no title, no price) on every shared listing.
-  params: Promise<{ lang: string; id: string }>;
-};
-
 /**
- * Gives the card a per-listing `og:image:alt` — the listing's own title, price
- * and location — instead of one generic "Shopi listing" string on every share.
- * The listing fetch is deduped with the one below inside a single render.
+ * Stable fallback URL used after the listing's original media URL in OG and
+ * Twitter metadata. It first normalises the real photo to a small, widely
+ * supported JPEG; only when no source image can be fetched does it render the
+ * branded Next ImageResponse card below.
  */
-export async function generateImageMetadata({ params }: ImageParams) {
-  const { id } = await params;
-  const post = await fetchPost(id);
-  const alt = post
-    ? [post.title, priceLabel(post), locationName(post)]
-        .filter(Boolean)
-        .join(" · ")
-    : `${siteConfig.name} listing`;
-
-  return [{ id: "card", size, contentType, alt }];
-}
-
-export default async function ContentOgImage({ params }: ImageParams) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const post = await fetchPost(id);
 

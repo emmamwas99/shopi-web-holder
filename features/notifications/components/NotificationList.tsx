@@ -161,7 +161,7 @@ export function NotificationList({
                       <TeamAvatar size={40} />
                     ) : notification.type === "REFERRAL" && !actor ? (
                       // Rewards have no person behind them — the gift is the news.
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] text-white">
                         <Gift size={18} strokeWidth={2} />
                       </div>
                     ) : actor?.avatar ? (

@@ -75,7 +75,7 @@ function VisitorRow({
           style={{
             background: avatar
               ? "rgb(var(--color-bg-subtle))"
-              : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
+              : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)) 62%, rgb(var(--brand-accent)))",
             borderColor: "rgb(var(--color-bg-elevated))",
           }}
         >

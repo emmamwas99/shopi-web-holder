@@ -212,7 +212,7 @@ export function initialsForUser(user?: UserLite | null): string {
 
 export function avatarGradient(id: string) {
   const palette = [
-    "from-primary to-secondary",
+    "from-primary to-highlight",
     "from-violet-500 to-fuchsia-500",
     "from-sky-500 to-blue-600",
     "from-emerald-500 to-teal-500",

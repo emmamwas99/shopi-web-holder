@@ -109,186 +109,207 @@ export default async function OgImage({
   ]);
 
   const rendered = new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          padding: "36px 40px 30px",
-          background: "#ffffff",
-          color: INK,
-          fontFamily: "Poppins",
-        }}
-      >
-        {/* Seller | Shopi | Buyer */}
-        <div style={{ display: "flex", position: "relative", gap: 24 }}>
-          {/* Seller */}
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              ...PHOTO,
-              borderRadius: 28,
-              overflow: "hidden",
-            }}
-          >
-            <img src={seller} alt="" {...PHOTO} />
-            <div style={{ display: "flex", position: "absolute", top: 22, left: 22 }}>
-              <Chip label={t.sell} />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                position: "absolute",
-                left: 22,
-                bottom: 22,
-                background: "#ffffff",
-                borderRadius: 18,
-                padding: "12px 18px 14px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.28)",
-              }}
-            >
-              <div style={{ display: "flex", fontSize: 20, fontWeight: 500, color: MUTED }}>
-                {t.item}
-              </div>
-              <div style={{ display: "flex", fontSize: 30, fontWeight: 700, lineHeight: 1.15 }}>
-                KES 12,500
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginTop: 2,
-                  fontSize: 17,
-                  fontWeight: 500,
-                  color: MUTED,
-                }}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={MUTED}
-                  strokeWidth="2.4"
-                >
-                  <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {t.place}
-              </div>
-            </div>
-          </div>
-
-          {/* Buyer */}
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              ...PHOTO,
-              borderRadius: 28,
-              overflow: "hidden",
-            }}
-          >
-            <img src={buyer} alt="" {...PHOTO} />
-            <div style={{ display: "flex", position: "absolute", top: 22, right: 22 }}>
-              <Chip label={t.buy} />
-            </div>
-            {/* The buyer's question, top-left over the blurred background,
-                clear of her face, her phone and the Shopi mark. */}
-            <div
-              style={{
-                display: "flex",
-                position: "absolute",
-                top: 22,
-                left: 22,
-                background: "#ffffff",
-                color: INK,
-                fontSize: 21,
-                fontWeight: 600,
-                lineHeight: 1.3,
-                padding: "12px 18px",
-                borderRadius: "20px 20px 20px 6px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
-              }}
-            >
-              {t.message}
-            </div>
-          </div>
-
-          {/* Shopi, on the seam between the two */}
-          <div
-            style={{
-              display: "flex",
-              position: "absolute",
-              left: PHOTO.width + 12 - 70,
-              top: PHOTO.height / 2 - 70,
-              width: 140,
-              height: 140,
-              borderRadius: 999,
-              background: "#ffffff",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-            }}
-          >
-            {/* The logo PNG has opaque white corners; at 96px they stay
-                inside the 140px circle, where white on white is invisible. */}
-            <img src={logo} alt="" width={96} height={96} />
-          </div>
-        </div>
-
-        {/* Headline */}
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        padding: "36px 40px 30px",
+        background: "#ffffff",
+        color: INK,
+        fontFamily: "Poppins",
+      }}
+    >
+      {/* Seller | Shopi | Buyer */}
+      <div style={{ display: "flex", position: "relative", gap: 24 }}>
+        {/* Seller */}
         <div
           style={{
             display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            marginTop: "auto",
+            position: "relative",
+            ...PHOTO,
+            borderRadius: 28,
+            overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <img src={seller} alt="" {...PHOTO} />
+          <div
+            style={{ display: "flex", position: "absolute", top: 22, left: 22 }}
+          >
+            <Chip label={t.sell} />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              position: "absolute",
+              left: 22,
+              bottom: 22,
+              background: "#ffffff",
+              borderRadius: 18,
+              padding: "12px 18px 14px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.28)",
+            }}
+          >
             <div
               style={{
                 display: "flex",
-                fontSize: 50,
-                fontWeight: 700,
-                letterSpacing: -1,
-                lineHeight: 1.1,
-              }}
-            >
-              {t.headline}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                marginTop: 8,
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: 500,
                 color: MUTED,
               }}
             >
-              {t.sub}
+              {t.item}
             </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 30,
+                fontWeight: 700,
+                lineHeight: 1.15,
+              }}
+            >
+              KES 12,500
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginTop: 2,
+                fontSize: 17,
+                fontWeight: 500,
+                color: MUTED,
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={MUTED}
+                strokeWidth="2.4"
+              >
+                <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              {t.place}
+            </div>
+          </div>
+        </div>
+
+        {/* Buyer */}
+        <div
+          style={{
+            display: "flex",
+            position: "relative",
+            ...PHOTO,
+            borderRadius: 28,
+            overflow: "hidden",
+          }}
+        >
+          <img src={buyer} alt="" {...PHOTO} />
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              top: 22,
+              right: 22,
+            }}
+          >
+            <Chip label={t.buy} />
+          </div>
+          {/* The buyer's question, top-left over the blurred background,
+                clear of her face, her phone and the Shopi mark. */}
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              top: 22,
+              left: 22,
+              background: "#ffffff",
+              color: INK,
+              fontSize: 21,
+              fontWeight: 600,
+              lineHeight: 1.3,
+              padding: "12px 18px",
+              borderRadius: "20px 20px 20px 6px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+            }}
+          >
+            {t.message}
+          </div>
+        </div>
+
+        {/* Shopi, on the seam between the two */}
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            left: PHOTO.width + 12 - 70,
+            top: PHOTO.height / 2 - 70,
+            width: 140,
+            height: 140,
+            borderRadius: 999,
+            background: "#ffffff",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          }}
+        >
+          {/* The logo PNG has opaque white corners; at 96px they stay
+                inside the 140px circle, where white on white is invisible. */}
+          <img src={logo} alt="" width={96} height={96} />
+        </div>
+      </div>
+
+      {/* Headline */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          marginTop: "auto",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 50,
+              fontWeight: 700,
+              letterSpacing: -1,
+              lineHeight: 1.1,
+            }}
+          >
+            {t.headline}
           </div>
           <div
             style={{
               display: "flex",
-              fontSize: 28,
-              fontWeight: 600,
-              color: PINK,
-              paddingBottom: 4,
+              marginTop: 8,
+              fontSize: 24,
+              fontWeight: 500,
+              color: MUTED,
             }}
           >
-            shopi.co.ke
+            {t.sub}
           </div>
         </div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 28,
+            fontWeight: 600,
+            color: PINK,
+            paddingBottom: 4,
+          }}
+        >
+          shopi.co.ke
+        </div>
       </div>
-    ),
+    </div>,
     {
       ...size,
       fonts: [

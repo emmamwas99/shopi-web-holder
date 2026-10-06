@@ -5,7 +5,7 @@ import { create } from "zustand";
  * (components/layout/SideNav.tsx) and DiscoverPage, which renders /explore and
  * /search.
  *
- * Those two live in different trees — the nav is mounted by the (main) layout,
+ * Those two live in different trees — the nav is mounted by the app shell layout,
  * DiscoverPage by the route — so there is no common ancestor to hold the term.
  * The obvious alternative, letting both read and write `?q=`, means two
  * debounced writers racing on one URL param: DiscoverPage already mirrors its

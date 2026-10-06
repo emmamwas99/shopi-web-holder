@@ -1,4 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Shopi is a social-commerce marketplace built with Next.js.
+
+## Project structure
+
+Locale routes are split by responsibility with [route groups](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups), so the code is easy to navigate without adding folders to public URLs:
+
+```text
+app/[lang]/
+├── (marketing)/       # Homepage, campaigns, referrals, blog, SEO and legal pages
+├── (app)/
+│   ├── (shell)/       # The signed-in marketplace experience and shared app chrome
+│   └── auth/          # Sign-in, registration and account recovery
+└── layout.tsx         # Shared locale document, analytics and metadata
+```
+
+Reusable UI lives in `components/`, domain-specific product code lives in `features/`, and shared framework or data helpers live in `lib/`.
+
+## Brand palette
+
+The homepage is the source of truth for Shopi's three core brand colors. They are defined in `app/globals.css` and exposed through matching Tailwind utilities:
+
+- Primary `#d81470` (`primary`) for calls to action and active states.
+- Secondary `#112126` (`secondary`) for strong dark brand surfaces.
+- Tertiary `#e7f4ed` (`tertiary`) for soft highlighted surfaces.
+
+Orange (`highlight`) and purple (`accent`) are supporting illustration and data-visualization colors. Semantic success, warning, and error colors remain separate because they communicate product state.
 
 ## Getting Started
 

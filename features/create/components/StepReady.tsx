@@ -220,7 +220,7 @@ export function StepReady({ lang }: StepReadyProps) {
     return (
       <div className="flex flex-col h-full items-center justify-center gap-5 px-6 pb-16">
         <div
-          className="flex h-20 w-20 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] shadow-[0_8px_32px_rgb(var(--brand-primary)/0.4)]"
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] shadow-[0_8px_32px_rgb(var(--brand-primary)/0.4)]"
         >
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
             <path
@@ -504,7 +504,7 @@ export function StepReady({ lang }: StepReadyProps) {
               className={`flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl border-none text-base font-semibold text-white ${
                 publishing
                   ? "cursor-default bg-white/20 opacity-70"
-                  : "cursor-pointer bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] shadow-[0_4px_20px_rgb(var(--brand-primary)/0.5)]"
+                  : "cursor-pointer bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] shadow-[0_4px_20px_rgb(var(--brand-primary)/0.5)]"
               }`}
             >
               {publishing ? (
@@ -696,7 +696,7 @@ export function StepReady({ lang }: StepReadyProps) {
               className={`flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl text-base font-semibold text-white transition-transform active:scale-[0.98] ${
                 publishing
                   ? "bg-border"
-                  : "bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] shadow-[0_6px_20px_rgb(var(--brand-primary)/0.4)]"
+                  : "bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] shadow-[0_6px_20px_rgb(var(--brand-primary)/0.4)]"
               }`}
             >
               {publishing ? (

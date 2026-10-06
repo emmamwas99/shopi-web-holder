@@ -168,8 +168,9 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths including root "/", skip Next.js internals and static files
+    // Match all paths including root "/", skip Next.js internals and static files.
+    // /og/* are locale-free share-image routes; prefixing them with /en 404s.
     "/",
-    "/((?!_next|api|favicon.ico|manifest.json|og-default.png|robots.txt|sitemap.xml|.*\\..*).*)",
+    "/((?!_next|api|og/|favicon.ico|manifest.json|og-default.png|robots.txt|sitemap.xml|.*\\..*).*)",
   ],
 };
