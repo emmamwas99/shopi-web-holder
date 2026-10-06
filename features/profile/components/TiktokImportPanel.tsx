@@ -104,7 +104,7 @@ function ConnectGate({ lang }: { lang: string }) {
           className="mt-5 gap-2 px-6 font-semibold text-white"
           style={{
             background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
             boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
             fontSize: "var(--text-sm)",
             height: 40,

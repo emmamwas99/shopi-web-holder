@@ -8,10 +8,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Brand — space-separated channels so `rgb(var(--x) / alpha)` works */
-  /* #d81470 — darkened from #ea1979 to clear WCAG AA (white-on-primary 4.94:1). */
+  /* Brand — the homepage is the source of truth. Space-separated channels
+     keep alpha modifiers available through `rgb(var(--x) / alpha)`. */
   --brand-primary: 216 20 112;
-  --brand-secondary: 255 159 64;
+  --brand-secondary: 17 33 38;
+  --brand-tertiary: 231 244 237;
+
+  /* Supporting illustration/data colours. These are not part of the core
+     three-colour brand hierarchy. */
+  --brand-highlight: 255 159 64;
   --brand-accent: 99 91 255;
 
   /* Surfaces */
@@ -97,14 +102,15 @@
   /* Expose brand as Tailwind colors */
   --color-primary: rgb(var(--brand-primary));
   --color-primary-soft: rgb(var(--brand-primary) / 0.12);
-  /* AA-safe deep variants for small text on white / soft-tinted backgrounds,
-     where the base brand colors fall just short of 4.5:1.
-     primary-strong #be0f60 → 5.05:1 on primary-soft; secondary-strong #b45f0a
-     → 4.58:1 on white. Use these for text, not fills. */
+  /* AA-safe variants for small text on pale backgrounds. */
   --color-primary-strong: #be0f60;
   --color-secondary: rgb(var(--brand-secondary));
   --color-secondary-soft: rgb(var(--brand-secondary) / 0.12);
-  --color-secondary-strong: #b45f0a;
+  --color-secondary-strong: rgb(var(--brand-secondary));
+  --color-tertiary: rgb(var(--brand-tertiary));
+  --color-highlight: rgb(var(--brand-highlight));
+  --color-highlight-soft: rgb(var(--brand-highlight) / 0.12);
+  --color-highlight-strong: #9a4e04;
   --color-accent: rgb(var(--brand-accent));
   --color-accent-soft: rgb(var(--brand-accent) / 0.12);
 

@@ -256,7 +256,7 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
             </linearGradient>
             <linearGradient id="profile-views-line" x1="0" x2="1" y1="0" y2="0">
               <stop offset="0%" stopColor="rgb(var(--brand-primary))" />
-              <stop offset="55%" stopColor="rgb(var(--brand-secondary))" />
+              <stop offset="55%" stopColor="rgb(var(--brand-highlight))" />
               <stop offset="100%" stopColor="rgb(var(--brand-accent))" />
             </linearGradient>
           </defs>
@@ -376,7 +376,7 @@ function LastSevenBars({ data }: { data: ViewPoint[] }) {
                 minHeight: 6,
                 height: `${Math.max(8, (point.views / maxViews) * 124)}px`,
                 background:
-                  "linear-gradient(to top, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                  "linear-gradient(to top, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
               }}
               title={`${formatCompact(point.views)} views`}
             />
@@ -506,8 +506,8 @@ export function AnalyticsPanel({ data, lang }: Props) {
                     <div
                       className="flex h-10 w-10 items-center justify-center rounded-lg"
                       style={{
-                        backgroundColor: "rgb(var(--brand-secondary) / 0.14)",
-                        color: "rgb(var(--brand-secondary))",
+                        backgroundColor: "rgb(var(--brand-highlight) / 0.14)",
+                        color: "rgb(var(--brand-highlight))",
                       }}
                     >
                       <Trophy size={18} strokeWidth={2.2} />

@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import {
   BadgeCheck,
   Download,
@@ -474,6 +474,12 @@ interface Props {
    * client round trip from LCP.
    */
   initialPost?: DetailPost | null;
+  /**
+   * Server-rendered related listings (ListingRelated), from the listing route
+   * only. Placed inside whichever layout is showing — the mobile layout is a
+   * fixed overlay, so content appended after this component would be hidden.
+   */
+  related?: ReactNode;
 }
 
 export function ContentDetail({
@@ -483,6 +489,7 @@ export function ContentDetail({
   onRequestClose,
   onChatOpenChange,
   initialPost,
+  related,
 }: Props) {
   const router = useRouter();
   // A listing link shared into WhatsApp opens with no app history behind it,
@@ -1397,7 +1404,10 @@ export function ContentDetail({
           would otherwise flash this summary for a frame before the viewport
           resolves. */}
       {isDesktop === null && initialPost && (
-        <ListingSeoSummary post={post} lang={lang} />
+        <>
+          <ListingSeoSummary post={post} lang={lang} />
+          {related}
+        </>
       )}
 
       {/* ════════════════════════════════════════════════════════
@@ -1602,6 +1612,10 @@ export function ContentDetail({
             />
           )}
         </div>
+      )}
+      {/* Below the full-height listing, reached by scrolling the page. */}
+      {isDesktop === true && !isSheet && related && (
+        <div className="border-t border-default">{related}</div>
       )}
 
       {/* ════════════════════════════════════════════════════════
@@ -1908,6 +1922,7 @@ export function ContentDetail({
                 className=""
               />
             </div>
+            {related && <div className="border-t border-default">{related}</div>}
           </main>
 
           <div
@@ -2000,7 +2015,7 @@ export function ContentDetail({
                   className="flex h-9 w-9 lg:w-11 lg:h-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
                   style={{
                     background:
-                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
+                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight, var(--brand-primary))))",
                   }}
                 >
                   <Send className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.2} />

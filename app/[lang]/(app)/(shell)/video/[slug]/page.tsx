@@ -7,8 +7,8 @@ import {
   type ContentCardFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { isPlayableVideo, posterOf } from "@/features/feed/lib/videoSource";
-import { contentPath, videoPath } from "@/lib/content-url";
-import { localeAlternates } from "@/lib/metadata";
+import { contentPath, contentSlugSegment, videoPath } from "@/lib/content-url";
+import { canonicalUrl } from "@/lib/metadata";
 import { siteConfig } from "@/config/site";
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
@@ -57,14 +57,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  // Always the slug form, whichever form was requested, so an id link that
-  // gets shared never competes with the canonical URL in the index.
-  const canonicalPath = videoPath(lang, post);
-  const canonical = `${siteConfig.url}${canonicalPath}`;
+  // The content PDP is the single indexable authority for every listing,
+  // including videos. The immersive URL remains shareable and interactive,
+  // but its canonical consolidates product, image and video signals on the
+  // server-rendered PDP that is also submitted in the sitemap.
+  const canonical = canonicalUrl(lang, `/content/${contentSlugSegment(post)}`);
   const title = post.title || "Video";
   const description =
     post.caption?.trim() || `Watch ${title} on ${siteConfig.name}.`;
   const poster = posterOf(post);
+  const fallbackImage = `${siteConfig.url}/og/listing/${encodeURIComponent(post.id)}`;
+  const shareImages = [poster, fallbackImage].filter(
+    (image): image is string => Boolean(image),
+  );
 
   return {
     title,
@@ -72,27 +77,36 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     keywords: [post.title, ...(post.hashtags ?? [])].filter(
       Boolean,
     ) as string[],
-    alternates: {
-      canonical,
-      // localeAlternates is locale-agnostic, so strip the /{lang} prefix back
-      // off and let it declare the segment under every locale.
-      ...localeAlternates(canonicalPath.replace(`/${lang}`, "")),
-    },
+    // No hreflang: this URL canonicalises to the PDP, and engines ignore
+    // hreflang on a non-canonical page. The PDP carries the alternates.
+    alternates: { canonical },
     // Unlisted or still-processing videos stay out of the index.
-    robots: post.isLive === false ? { index: false, follow: true } : undefined,
+    robots: {
+      index: post.isLive !== false,
+      follow: true,
+      googleBot: {
+        index: post.isLive !== false,
+        follow: true,
+        "max-snippet": -1,
+        "max-image-preview": "large",
+        "max-video-preview": -1,
+      },
+    },
     openGraph: {
       type: "video.other",
       title,
       description,
       url: canonical,
-      images: poster ? [poster] : [siteConfig.ogImage],
+      siteName: siteConfig.name,
+      locale: "en_KE",
+      images: shareImages,
     },
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
       title,
       description,
-      images: poster ? [poster] : [siteConfig.ogImage],
+      images: shareImages,
     },
   };
 }

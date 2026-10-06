@@ -69,7 +69,7 @@
   background: linear-gradient(
     135deg,
     rgb(var(--brand-primary)),
-    rgb(var(--brand-secondary))
+    rgb(var(--brand-highlight))
   );
   box-shadow: 0 10px 36px rgb(var(--brand-primary) / 0.45);
   transform: scale(0);

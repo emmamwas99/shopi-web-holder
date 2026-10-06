@@ -39,7 +39,7 @@ export function CardStack() {
       </div>
 
       {/* Front center — secondary */}
-      <div className="absolute left-14 top-6 w-44 h-48 rounded-3xl shadow-2xl overflow-hidden bg-linear-145 from-secondary to-secondary/65">
+      <div className="absolute left-14 top-6 w-44 h-48 rounded-3xl shadow-2xl overflow-hidden bg-linear-145 from-highlight to-highlight/65">
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
         <div className="absolute top-4 left-4 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-0.5">
           <span className="text-white text-xs font-bold">🔥 Trending</span>
@@ -85,10 +85,10 @@ export function AuthDesktopShell({
       {/* ── Desktop split ── */}
       <div className="hidden min-h-svh lg:flex">
         {/* Left panel — branded.
-            Gradient + glows use Tailwind theme utilities (from-primary / to-secondary
+            Gradient + glows use Tailwind theme utilities (from-primary / to-highlight
             map to the @theme color tokens). Inline-style gradients are NOT used here —
             they don't reach the DOM in this build, leaving the panel transparent. */}
-        <div className="relative flex w-[52%] flex-col overflow-hidden bg-linear-150 from-primary from-10% via-primary via-45% to-secondary px-12 py-10 text-white xl:w-[55%]">
+        <div className="relative flex w-[52%] flex-col overflow-hidden bg-linear-150 from-primary from-10% via-primary via-45% to-highlight px-12 py-10 text-white xl:w-[55%]">
           {/* Logo — top */}
           <div className="relative z-10 flex justify-center">
             <Link href={`/${lang}`} className="inline-block">

@@ -314,8 +314,6 @@ export function productSchema(input: {
   locationName?: string | null;
   category?: string | null;
   specs?: { key?: string | null; value?: string | null }[];
-  createdAt?: string | null;
-  updatedAt?: string | null;
 }) {
   // A free item is still an offer — the previous `> 0` test dropped the Offer
   // entirely for them, leaving a Product with no price signal at all.
@@ -352,22 +350,14 @@ export function productSchema(input: {
             : undefined
     : undefined;
 
-  // Google warns on offers with no priceValidUntil. Listings have no natural
-  // expiry, so declare the revalidation horizon we actually honour: a year.
-  const priceValidUntil = new Date(Date.now() + 365 * 24 * 3600 * 1000)
-    .toISOString()
-    .slice(0, 10);
-
   const offer: Record<string, unknown> | null = hasPrice
     ? {
         "@type": "Offer",
         url: input.url,
         priceCurrency: input.currency || "KES",
-        price: String(input.price),
+        price: input.price,
         availability: "https://schema.org/InStock",
         ...(condition ? { itemCondition: condition } : {}),
-        priceValidUntil,
-        ...(input.createdAt ? { validFrom: input.createdAt } : {}),
         ...(input.sellerName
           ? {
               seller: {
@@ -401,7 +391,7 @@ export function productSchema(input: {
           ? {
               priceSpecification: {
                 "@type": "UnitPriceSpecification",
-                price: String(input.price),
+                price: input.price,
                 priceCurrency: input.currency || "KES",
                 description:
                   "Seller states that the asking price is negotiable.",
@@ -417,6 +407,7 @@ export function productSchema(input: {
     "@id": `${input.url}#product`,
     name: input.title,
     sku: input.id,
+    url: input.url,
     mainEntityOfPage: input.url,
     ...(input.description ? { description: input.description } : {}),
     ...(input.images.length ? { image: input.images } : {}),
@@ -481,6 +472,74 @@ export function productWebPageSchema(input: {
     publisher: { "@id": `${url}/#organization` },
     ...(input.createdAt ? { datePublished: input.createdAt } : {}),
     ...(input.updatedAt ? { dateModified: input.updatedAt } : {}),
+  };
+}
+
+function isoDuration(seconds?: number | null): string | undefined {
+  if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) {
+    return undefined;
+  }
+
+  const whole = Math.round(seconds);
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const remaining = whole % 60;
+  return `PT${hours ? `${hours}H` : ""}${minutes ? `${minutes}M` : ""}${remaining || (!hours && !minutes) ? `${remaining}S` : ""}`;
+}
+
+/**
+ * Video markup for a video listing's canonical product page. Required fields
+ * follow Google's VideoObject eligibility rules; optional values are emitted
+ * only when the API supplies real data.
+ */
+export function videoObjectSchema(input: {
+  url: string;
+  name: string;
+  description: string;
+  thumbnailUrl: string;
+  uploadDate: string;
+  durationSeconds?: number | null;
+  creatorName?: string | null;
+  creatorUrl?: string | null;
+  viewCount?: number | null;
+}) {
+  const duration = isoDuration(input.durationSeconds);
+  const hasViews =
+    typeof input.viewCount === "number" &&
+    Number.isFinite(input.viewCount) &&
+    input.viewCount >= 0;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "@id": `${input.url}#video`,
+    name: input.name,
+    description: input.description,
+    thumbnailUrl: [input.thumbnailUrl],
+    uploadDate: input.uploadDate,
+    embedUrl: input.url,
+    mainEntityOfPage: { "@id": `${input.url}#webpage` },
+    about: { "@id": `${input.url}#product` },
+    publisher: { "@id": `${url}/#organization` },
+    ...(duration ? { duration } : {}),
+    ...(input.creatorName
+      ? {
+          creator: {
+            "@type": "Person",
+            name: input.creatorName,
+            ...(input.creatorUrl ? { url: input.creatorUrl } : {}),
+          },
+        }
+      : {}),
+    ...(hasViews
+      ? {
+          interactionStatistic: {
+            "@type": "InteractionCounter",
+            interactionType: { "@type": "WatchAction" },
+            userInteractionCount: input.viewCount,
+          },
+        }
+      : {}),
   };
 }
 

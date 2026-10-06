@@ -37,7 +37,7 @@ import {
   listingItemListSchema,
   profilePageSchema,
 } from "@/lib/structured-data";
-import { localeAlternates } from "@/lib/metadata";
+import { canonicalUrl, localeAlternates } from "@/lib/metadata";
 import {
   cleanPublicText,
   META_DESCRIPTION_MAX,
@@ -59,17 +59,25 @@ export const revalidate = 3600;
 type Profile = ProfileUserFieldsFragment;
 
 // cache(): generateMetadata and the page both need these, once per request.
-const getProfile = cache(async (username: string): Promise<Profile | null> => {
-  try {
-    const { data } = await query({
-      query: GetUserProfileDocument,
-      variables: { username },
-    });
-    return (data?.userProfile as Profile | undefined) ?? null;
-  } catch {
-    return null;
-  }
-});
+//
+// `gone` is true only when the API answered cleanly with no such user; the
+// page turns that into a real 404 rather than a noindexed 200 (a soft 404).
+// On an error (API down) it stays false so an outage can't deindex sellers.
+const getProfile = cache(
+  async (username: string): Promise<{ profile: Profile | null; gone: boolean }> => {
+    let result;
+    try {
+      result = await query({
+        query: GetUserProfileDocument,
+        variables: { username },
+      });
+    } catch {
+      return { profile: null, gone: false };
+    }
+    const profile = (result.data?.userProfile as Profile | undefined) ?? null;
+    return { profile, gone: !profile && !result.error };
+  },
+);
 
 /**
  * The storefront's first page, fetched on the server. Without it the grid only
@@ -135,8 +143,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const username = usernameFromHandle(handle);
   if (!username) return { title: siteConfig.name, robots: { index: false, follow: false } };
 
-  const profile = await getProfile(username);
-  const canonical = `${siteConfig.url}/${lang}/@${username}`;
+  const { profile } = await getProfile(username);
+  const canonical = canonicalUrl(lang, `/@${username}`);
 
   if (!profile) {
     return {
@@ -199,9 +207,10 @@ export default async function Page({ params }: Props) {
   const username = usernameFromHandle(handle);
   if (!username) notFound();
 
-  const profile = await getProfile(username);
+  const { profile, gone } = await getProfile(username);
+  if (gone) notFound();
   const posts = profile ? await getInitialPosts(profile.id) : [];
-  const canonical = `${siteConfig.url}/${lang}/@${username}`;
+  const canonical = canonicalUrl(lang, `/@${username}`);
 
   return (
     <>

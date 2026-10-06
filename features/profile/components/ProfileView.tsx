@@ -172,7 +172,7 @@ function ProfileUnavailable({
           style={{
             fontSize: "var(--text-sm)",
             background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
             boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
           }}
         >
@@ -474,7 +474,7 @@ export function ProfileView({ lang }: Props) {
                       style={{
                         fontSize: "var(--text-sm)",
                         background:
-                          "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                          "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
                         boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
                       }}
                     >

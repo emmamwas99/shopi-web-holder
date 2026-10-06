@@ -1,24 +1,32 @@
 import type { Metadata } from "next";
 import { ContentDetail } from "@/features/feed/components/ContentDetail";
+import { ListingRelated } from "@/features/feed/components/ListingRelated";
 import { query } from "@/lib/apollo/ApolloClient";
 import { ContentDetailDocument } from "@/features/feed/queries/contentDetail";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
-import { permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import {
   productSchema,
   productWebPageSchema,
+  videoObjectSchema,
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
-import { contentPath } from "@/lib/content-url";
-import { localeAlternates } from "@/lib/metadata";
+import { contentPath, contentSlugSegment } from "@/lib/content-url";
+import { canonicalUrl, localeAlternates } from "@/lib/metadata";
 import { profileHref } from "@/lib/profile-url";
 import {
   cleanPublicText,
   META_DESCRIPTION_MAX,
   truncateAtWord,
 } from "@/lib/seo/public-text";
+import {
+  durationOf,
+  isPlayableVideo,
+  posterOf,
+} from "@/features/feed/lib/videoSource";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -48,19 +56,30 @@ type Post = ContentCardFieldsFragment & {
 // the page itself (passed down as `initialPost`). Fetching the narrower
 // GetContent document here would leave the rendered listing waiting on a
 // client round trip, which is what kept listings out of non-JS crawlers.
-async function getPost(id: string): Promise<Post | null> {
+//
+// `gone` is true only when the API says the listing doesn't exist (deleted, or
+// a bad link). The page answers that with a real 404 — a noindexed 200 is a
+// soft 404 that engines keep recrawling. Any other failure (API down) leaves
+// `gone` false and falls through to the client render, so an outage can't
+// deindex listings.
+async function getPost(id: string): Promise<{ post: Post | null; gone: boolean }> {
+  let result;
   try {
-    const { data } = await query({
+    result = await query({
       query: ContentDetailDocument,
       variables: { id },
     });
-    return (
-      ((data as { content?: Post | null } | undefined)?.content as
-        Post | undefined) ?? null
-    );
   } catch {
-    return null;
+    return { post: null, gone: false };
   }
+  const post =
+    ((result.data as { content?: Post | null } | undefined)?.content as
+      Post | undefined) ?? null;
+  const gone =
+    !post &&
+    CombinedGraphQLErrors.is(result.error) &&
+    result.error.errors.some((e) => e.extensions?.code === "NOT_FOUND");
+  return { post, gone };
 }
 
 function sellerName(post: Post): string | null {
@@ -140,10 +159,10 @@ function buildDescription(post: Post): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, id } = await params;
-  const post = await getPost(id);
-  const canonical = post
-    ? `${siteConfig.url}${contentPath(lang, post)}`
-    : `${siteConfig.url}/${lang}/content/${id}`;
+  const { post } = await getPost(id);
+  const path = `/content/${post ? contentSlugSegment(post) : id}`;
+  // Listings are seller-written and never translated, so /sw canonicalises to /en.
+  const canonical = canonicalUrl(lang, path);
 
   if (!post) {
     return {
@@ -162,6 +181,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(post);
   const category = categoryLabel(post);
+  const images = listingImages(post);
+  const shareAlt = [post.title, price, loc].filter(Boolean).join(" · ");
+  const fallbackImage = `${siteConfig.url}/og/listing/${encodeURIComponent(post.id)}`;
+  // The original listing media is deliberately first. The local image route
+  // is a resilient second choice: it converts that photo to a social-safe JPEG
+  // and renders a branded ImageResponse only when the source cannot be used.
+  const shareImages = [
+    ...images.slice(0, 3).map((url) => ({ url, alt: shareAlt })),
+    {
+      url: fallbackImage,
+      width: 1200,
+      height: 630,
+      alt: shareAlt,
+      type: "image/jpeg",
+    },
+  ];
 
   return {
     title,
@@ -182,12 +217,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "Kenya marketplace",
       "local seller",
     ].filter(Boolean) as string[],
-    // contentPath() is locale-prefixed; strip it back to the bare path so the
-    // same listing is declared under both /en and /sw.
-    alternates: {
-      canonical,
-      ...localeAlternates(contentPath(lang, post).replace(`/${lang}`, "")),
-    },
+    authors: sellerName(post) ? [{ name: sellerName(post)! }] : undefined,
+    creator: sellerName(post) ?? siteConfig.name,
+    publisher: siteConfig.name,
+    category: category ?? undefined,
+    alternates: { canonical, ...localeAlternates(path) },
     robots: {
       index: isIndexable,
       follow: true,
@@ -206,16 +240,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: shareTitle,
       description,
       locale: "en_KE",
-      // og:image is intentionally omitted: the sibling opengraph-image route
-      // supplies it. Next fingerprints image routes under dynamic segments
-      // (/…/opengraph-image-<hash>), so a hand-built "/opengraph-image" URL
-      // 404s — and an explicit `images` here would override the real one.
+      images: shareImages,
     },
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
       title: shareTitle,
       description,
+      images: shareImages,
     },
   };
 }
@@ -224,10 +256,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ContentDetailPage({ params }: Props) {
   const { lang, id } = await params;
-  const post = await getPost(id);
-  const canonical = post
-    ? `${siteConfig.url}${contentPath(lang, post)}`
-    : `${siteConfig.url}/${lang}/content/${id}`;
+  const { post, gone } = await getPost(id);
+  if (gone) notFound();
+  const canonical = canonicalUrl(
+    lang,
+    `/content/${post ? contentSlugSegment(post) : id}`,
+  );
   const canonicalPath = post ? contentPath(lang, post) : null;
 
   if (canonicalPath && canonicalPath !== `/${lang}/content/${id}`) {
@@ -245,7 +279,7 @@ export default async function ContentDetailPage({ params }: Props) {
                 id,
                 url: canonical,
                 title: post.title,
-                description: post.caption,
+                description: buildDescription(post),
                 images: listingImages(post),
                 price: post.price?.amount,
                 currency: post.price?.currency,
@@ -259,12 +293,6 @@ export default async function ContentDetailPage({ params }: Props) {
                 locationName: locationName(post),
                 category: categoryLabel(post),
                 specs: post.specs,
-                createdAt: post.createdAt
-                  ? new Date(post.createdAt as string).toISOString()
-                  : null,
-                updatedAt: post.updatedAt
-                  ? new Date(post.updatedAt as string).toISOString()
-                  : null,
               }),
               productWebPageSchema({
                 url: canonical,
@@ -277,6 +305,25 @@ export default async function ContentDetailPage({ params }: Props) {
                   ? new Date(post.updatedAt as string).toISOString()
                   : null,
               }),
+              ...(isPlayableVideo(post) && posterOf(post) && post.createdAt
+                ? [
+                    videoObjectSchema({
+                      url: canonical,
+                      name: post.title,
+                      description: buildDescription(post),
+                      thumbnailUrl: posterOf(post)!,
+                      uploadDate: new Date(
+                        post.createdAt as string,
+                      ).toISOString(),
+                      durationSeconds: durationOf(post),
+                      creatorName: sellerName(post),
+                      creatorUrl: post.creator?.username
+                        ? `${siteConfig.url}${profileHref(lang, post.creator)}`
+                        : null,
+                      viewCount: post.stats?.views,
+                    }),
+                  ]
+                : []),
               // Home › Seller › Listing: the seller is the listing's real
               // parent, and the crumb shows in results as a second link to
               // their storefront. Falls back to Explore without a handle.
@@ -299,6 +346,7 @@ export default async function ContentDetailPage({ params }: Props) {
         lang={lang}
         desktopMode="page"
         initialPost={post}
+        related={post ? <ListingRelated lang={lang} post={post} /> : undefined}
       />
     </>
   );

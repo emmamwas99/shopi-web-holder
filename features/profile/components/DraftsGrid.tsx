@@ -151,7 +151,7 @@ export function DraftsGrid({ lang }: Props) {
             style={{
               fontSize: "var(--text-sm)",
               background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
             }}
           >
             <Plus size={16} strokeWidth={2.4} /> New post

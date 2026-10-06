@@ -5,7 +5,7 @@
  */
 
 const AVATAR_GRADIENTS = [
-  "from-primary to-secondary",
+  "from-primary to-highlight",
   "from-violet-500 to-purple-600",
   "from-emerald-400 to-teal-500",
   "from-orange-400 to-rose-500",

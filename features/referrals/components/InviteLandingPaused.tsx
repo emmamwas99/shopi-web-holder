@@ -44,7 +44,7 @@ export function InviteLandingPaused({ lang, invite }: { lang: string; invite: In
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-20 top-64 h-56 w-56 rounded-full bg-[rgb(var(--brand-secondary)/0.1)] blur-3xl"
+        className="pointer-events-none absolute -left-20 top-64 h-56 w-56 rounded-full bg-[rgb(var(--brand-highlight)/0.1)] blur-3xl"
       />
 
       <Link href={`/${lang}`} aria-label="Shopi home" className="relative self-start">

@@ -157,7 +157,7 @@ export default async function WelcomePage({
             </div>
             {/* Center card — largest, on top */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 top-2 h-40 w-44 rounded-2xl shadow-xl overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-secondary)),rgb(var(--brand-secondary)/0.65))]"
+              className="absolute left-1/2 -translate-x-1/2 top-2 h-40 w-44 rounded-2xl shadow-xl overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-highlight)),rgb(var(--brand-highlight)/0.65))]"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">

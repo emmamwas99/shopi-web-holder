@@ -25,7 +25,9 @@ export const siteConfig = {
   // serves pages — pointing it at the apex makes every canonical a redirect.
   url: process.env.NEXT_PUBLIC_APP_URL || "https://www.shopi.co.ke",
 
-  // The site-wide OG card is rendered by app/[lang]/opengraph-image.tsx.
+  // The site-wide OG card is rendered by app/[lang]/opengraph-image.tsx. Keep
+  // that file out of route groups: Next adds a hash suffix to image routes
+  // under a (group), and this hand-built URL then 404s on every share.
   ogImage: "/en/opengraph-image",
 
   // The single monitored inbox. Everything — support, business, legal, privacy,

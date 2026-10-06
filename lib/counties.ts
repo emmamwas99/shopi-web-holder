@@ -107,3 +107,9 @@ export const COUNTIES: County[] = [
 export function getCounty(slug: string): County | undefined {
   return COUNTIES.find((c) => c.slug === slug);
 }
+
+/** The landing page for a listing's county, if it has one. */
+export function getCountyByName(name: string): County | undefined {
+  const wanted = name.trim().toLowerCase();
+  return COUNTIES.find((c) => c.name.toLowerCase() === wanted);
+}

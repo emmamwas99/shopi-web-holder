@@ -11,7 +11,7 @@ import styles from "./Celebration.module.css";
 
 const CONFETTI_COLORS = [
   "rgb(var(--brand-primary))",
-  "rgb(var(--brand-secondary))",
+  "rgb(var(--brand-highlight))",
   "rgb(var(--brand-accent))",
   "rgb(var(--color-success))",
   "rgb(var(--color-warning))",

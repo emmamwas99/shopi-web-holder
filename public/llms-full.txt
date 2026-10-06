@@ -87,7 +87,7 @@ The tool does not: download private or deleted videos, extract audio or MP3, dow
 - Home: https://www.shopi.co.ke/en
 - Explore listings: https://www.shopi.co.ke/en/explore
 - Search marketplace listings: https://www.shopi.co.ke/en/search
-- Feed: https://www.shopi.co.ke/en/feed
+- Feed: https://www.shopi.co.ke/en/for-you
 - Buy and sell in Kenya: https://www.shopi.co.ke/en/buy-and-sell-in-kenya
 - Sell online in Kenya: https://www.shopi.co.ke/en/sell-in-kenya
 - Shopi Agent: https://www.shopi.co.ke/en/shopi-agent

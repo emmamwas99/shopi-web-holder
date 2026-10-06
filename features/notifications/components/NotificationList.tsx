@@ -153,7 +153,7 @@ export function NotificationList({
                   className={`flex w-full items-start gap-3 border-b border-border/70 px-4 py-3.5 text-left transition-colors md:px-0 md:py-4 ${
                     notification.isRead
                       ? "hover:bg-surface/60"
-                      : "bg-[#e7f4ed] hover:bg-[#e7f4ed]"
+                      : "bg-primary/5 hover:bg-primary/10"
                   }`}
                 >
                   <div className="relative h-10 w-10 shrink-0">
@@ -161,7 +161,7 @@ export function NotificationList({
                       <TeamAvatar size={40} />
                     ) : notification.type === "REFERRAL" && !actor ? (
                       // Rewards have no person behind them — the gift is the news.
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] text-white">
                         <Gift size={18} strokeWidth={2} />
                       </div>
                     ) : actor?.avatar ? (

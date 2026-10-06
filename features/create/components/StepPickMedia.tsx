@@ -121,7 +121,7 @@ export function StepPickMedia() {
           style={{
             height: 160,
             background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
             boxShadow: "0 8px 24px rgb(var(--brand-primary) / 0.35)",
             opacity: creating ? 0.6 : 1,
           }}

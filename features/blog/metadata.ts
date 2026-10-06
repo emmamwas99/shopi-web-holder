@@ -9,9 +9,11 @@ import { siteConfig } from "@/config/site";
  * there is a Kiswahili version when there isn't one, so both locales
  * canonicalise to /en and the only hreflang is English (plus x-default).
  *
- * Images are left out on purpose: an article's own opengraph-image route (or
- * the site-wide card) supplies og:image, and listing one here would override
- * it with a hand-built URL that misses Next's fingerprint.
+ * Articles leave images out on purpose: their own opengraph-image route
+ * supplies og:image, and listing one here would override it with a hand-built
+ * URL that misses Next's fingerprint. The index and category pages have no
+ * such route, and setting `openGraph` replaces the inherited one wholesale, so
+ * they name the site-wide card explicitly.
  */
 export function blogCanonical(path: string, canonicalUrl?: string) {
   return canonicalUrl ?? `${siteConfig.url}/en${path}`;
@@ -54,13 +56,18 @@ export function blogPageMetadata(input: {
       locale: "en_KE",
       title: input.title,
       description: input.description,
-      ...(input.article ?? {}),
+      ...(input.article ?? {
+        images: [
+          { url: siteConfig.ogImage, width: 1200, height: 630, alt: input.title },
+        ],
+      }),
     },
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
       title: input.title,
       description: input.description,
+      ...(input.article ? {} : { images: [siteConfig.ogImage] }),
     },
   };
 }

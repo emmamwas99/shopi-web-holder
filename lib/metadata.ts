@@ -1,20 +1,50 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
-import { isValidLocale, locales } from "@/i18n/config";
+import { isValidLocale, locales, type Locale } from "@/i18n/config";
+
+/**
+ * Locale-agnostic paths ("" is the homepage) whose /sw copy is actually
+ * written in Kiswahili. Add a path here only once its page is translated.
+ *
+ * Every other page renders the same English text under /sw. Declaring that
+ * copy a Kiswahili alternate tells engines a translation exists when it
+ * doesn't, and leaves two indexable copies of every listing, profile and
+ * landing page competing as duplicates.
+ */
+const TRANSLATED_PATHS: ReadonlySet<string> = new Set(["", "/faq"]);
+
+export function isTranslatedPath(path: string): boolean {
+  return TRANSLATED_PATHS.has(path);
+}
+
+function pathLocales(path: string): readonly Locale[] {
+  return isTranslatedPath(path) ? locales : ["en"];
+}
+
+/**
+ * The canonical URL of a locale-agnostic path viewed under `lang`. A
+ * translated page is its own canonical in each locale; an English-only page
+ * canonicalises to /en from /sw too (the same rule the blog follows).
+ */
+export function canonicalUrl(lang: string, path: string): string {
+  const locale =
+    isValidLocale(lang) && pathLocales(path).includes(lang) ? lang : "en";
+  return `${siteConfig.url}/${locale}${path}`;
+}
 
 /**
  * hreflang alternates for a locale-agnostic path (e.g. "/about", "/blog/x").
  *
- * Every public page exists at both /en and /sw. Without these the two copies
- * compete as near-duplicates and engines pick the language themselves, which
- * for a Kenyan marketplace means Kiswahili speakers routinely getting the
- * English page. x-default points at /en as the fallback for unmatched locales.
+ * Translated pages list both locales so Kiswahili speakers get the Kiswahili
+ * page; English-only pages list just /en. x-default points at /en as the
+ * fallback for unmatched locales. app/sitemap.ts emits the same set — the two
+ * have to agree or engines drop the annotations as unconfirmed.
  */
 export function localeAlternates(path: string) {
   return {
     languages: {
       ...Object.fromEntries(
-        locales.map((l) => [l, `${siteConfig.url}/${l}${path}`]),
+        pathLocales(path).map((l) => [l, `${siteConfig.url}/${l}${path}`]),
       ),
       "x-default": `${siteConfig.url}/en${path}`,
     },
@@ -46,8 +76,7 @@ export function publicPageMetadata(input: {
   description: string;
   ownImage?: boolean;
 }): Metadata {
-  const lang = isValidLocale(input.lang) ? input.lang : "en";
-  const canonical = `${siteConfig.url}/${lang}${input.path}`;
+  const canonical = canonicalUrl(input.lang, input.path);
   const shareTitle = `${input.title} | ${siteConfig.name}`;
 
   return {
@@ -58,7 +87,8 @@ export function publicPageMetadata(input: {
       type: "website",
       url: canonical,
       siteName: siteConfig.name,
-      locale: lang === "sw" ? "sw_KE" : "en_KE",
+      locale:
+        input.lang === "sw" && isTranslatedPath(input.path) ? "sw_KE" : "en_KE",
       title: shareTitle,
       description: input.description,
       ...(input.ownImage

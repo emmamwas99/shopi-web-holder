@@ -211,12 +211,12 @@ function PasswordStrength({ password }: { password: string }) {
   ].filter(Boolean).length;
 
   const labels = ["", "Weak", "Fair", "Good", "Strong"];
-  const colors = ["", "bg-error", "bg-warning", "bg-secondary", "bg-success"];
+  const colors = ["", "bg-error", "bg-warning", "bg-highlight", "bg-success"];
   const textColors = [
     "",
     "text-error",
     "text-warning",
-    "text-secondary",
+    "text-highlight-strong",
     "text-success",
   ];
 

@@ -15,6 +15,16 @@ app/[lang]/
 
 Reusable UI lives in `components/`, domain-specific product code lives in `features/`, and shared framework or data helpers live in `lib/`.
 
+## Brand palette
+
+The homepage is the source of truth for Shopi's three core brand colors. They are defined in `app/globals.css` and exposed through matching Tailwind utilities:
+
+- Primary `#d81470` (`primary`) for calls to action and active states.
+- Secondary `#112126` (`secondary`) for strong dark brand surfaces.
+- Tertiary `#e7f4ed` (`tertiary`) for soft highlighted surfaces.
+
+Orange (`highlight`) and purple (`accent`) are supporting illustration and data-visualization colors. Semantic success, warning, and error colors remain separate because they communicate product state.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
-import { locales, isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
 import { StoresPage } from "@/features/stores/components/StoresPage";
 import type { StoreSort } from "@/features/stores/queries/stores";
@@ -24,27 +23,12 @@ const PAGE_SIZE = 24;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
-  const safeLang = isValidLocale(lang) ? lang : "en";
-  const path = siteConfig.routes.stores.path;
-  const base = publicPageMetadata({
-    lang: safeLang,
-    path,
+  return publicPageMetadata({
+    lang,
+    path: siteConfig.routes.stores.path,
     title: siteConfig.routes.stores.title,
     description: siteConfig.routes.stores.description,
   });
-
-  return {
-    ...base,
-    alternates: {
-      canonical: `${siteConfig.url}/${safeLang}${path}`,
-      languages: {
-        ...Object.fromEntries(
-          locales.map((l) => [l, `${siteConfig.url}/${l}${path}`]),
-        ),
-        "x-default": `${siteConfig.url}/en${path}`,
-      },
-    },
-  };
 }
 
 /**
