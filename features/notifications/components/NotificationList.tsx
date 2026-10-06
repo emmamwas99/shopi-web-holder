@@ -153,7 +153,7 @@ export function NotificationList({
                   className={`flex w-full items-start gap-3 border-b border-border/70 px-4 py-3.5 text-left transition-colors md:px-0 md:py-4 ${
                     notification.isRead
                       ? "hover:bg-surface/60"
-                      : "bg-primary/5 hover:bg-primary/10"
+                      : "bg-[#e7f4ed] hover:bg-[#e7f4ed]"
                   }`}
                 >
                   <div className="relative h-10 w-10 shrink-0">

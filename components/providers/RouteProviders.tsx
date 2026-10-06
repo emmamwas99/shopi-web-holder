@@ -51,7 +51,7 @@ export function RouteProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       {/* Scroll restoration belongs to every route, not just the ones in the
-          (main) group.
+          app shell route group.
           It used to live in MainShell, so anything outside that group — a
           seller profile at /{lang}/@handle, the blog, the marketplace and sell
           landing pages — had nothing resetting the scroll. Since navigations

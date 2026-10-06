@@ -1,4 +1,19 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Shopi is a social-commerce marketplace built with Next.js.
+
+## Project structure
+
+Locale routes are split by responsibility with [route groups](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups), so the code is easy to navigate without adding folders to public URLs:
+
+```text
+app/[lang]/
+├── (marketing)/       # Homepage, campaigns, referrals, blog, SEO and legal pages
+├── (app)/
+│   ├── (shell)/       # The signed-in marketplace experience and shared app chrome
+│   └── auth/          # Sign-in, registration and account recovery
+└── layout.tsx         # Shared locale document, analytics and metadata
+```
+
+Reusable UI lives in `components/`, domain-specific product code lives in `features/`, and shared framework or data helpers live in `lib/`.
 
 ## Getting Started
 
