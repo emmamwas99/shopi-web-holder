@@ -35,7 +35,13 @@ export function hlsUrlOf(post: ContentCardFieldsFragment): string | null {
  */
 export function posterOf(post: ContentCardFieldsFragment): string | null {
   const media = playableMedia(post) ?? post.media?.[0];
-  if (media?.thumbnailUrl) return media.thumbnailUrl;
+  const contentPoster =
+    post.tiktokEmbed?.coverImageUrl ??
+    media?.thumbnailUrl ??
+    media?.muxMeta?.thumbnailUrl ??
+    media?.imageUrl;
+  if (contentPoster) return contentPoster;
+
   const playbackId = media?.muxMeta?.playbackId;
   if (!playbackId) return null;
   return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`;
