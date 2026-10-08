@@ -95,6 +95,38 @@ export function ImmersiveSlide({
   const [actualMuted, setActualMuted] = useState(muted);
   const [ended, setEnded] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
+  const [pageFocused, setPageFocused] = useState(() =>
+    typeof document === "undefined" ||
+    (document.visibilityState === "visible" && document.hasFocus()),
+  );
+
+  useEffect(() => {
+    let windowFocused = document.hasFocus();
+    const syncFocus = () => {
+      setPageFocused(
+        windowFocused && document.visibilityState === "visible",
+      );
+    };
+    const handleBlur = () => {
+      windowFocused = false;
+      syncFocus();
+    };
+    const handleFocus = () => {
+      windowFocused = true;
+      syncFocus();
+    };
+
+    document.addEventListener("visibilitychange", syncFocus);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+    syncFocus();
+
+    return () => {
+      document.removeEventListener("visibilitychange", syncFocus);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   const onMutedChange = useCallback(
     (forced: boolean) => setActualMuted(forced),
@@ -107,7 +139,7 @@ export function ImmersiveSlide({
     // A prefetched slide is attached but not active, so it lands here as
     // paused: the player loads the manifest and fills its buffer, and never
     // calls play(). Becoming active flips only this flag.
-    ended || userPaused || !active,
+    ended || userPaused || !active || !pageFocused,
     onMutedChange,
   );
 
