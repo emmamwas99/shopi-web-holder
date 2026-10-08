@@ -1,6 +1,13 @@
 "use client";
 
-import { Bookmark, Heart, MessageCircle, Share2 } from "lucide-react";
+import {
+  Bookmark,
+  Heart,
+  MessageCircle,
+  Share2,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { fmtCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +20,8 @@ interface Props {
   commentCount: number;
   onComment: () => void;
   onShare: () => void;
+  muted?: boolean;
+  onToggleMuted?: () => void;
   /** Vertical column over the video (mobile) or a horizontal row (desktop). */
   orientation: "column" | "row";
   /**
@@ -39,6 +48,8 @@ export function ImmersiveActions({
   commentCount,
   onComment,
   onShare,
+  muted,
+  onToggleMuted,
   orientation,
   tone,
 }: Props) {
@@ -93,6 +104,17 @@ export function ImmersiveActions({
       <ActionButton label="Share" onClick={onShare} column={column} tone={tone}>
         <Share2 className={icon} />
       </ActionButton>
+
+      {onToggleMuted && (
+        <ActionButton
+          label={muted ? "Unmute video" : "Mute video"}
+          onClick={onToggleMuted}
+          column={column}
+          tone={tone}
+        >
+          {muted ? <VolumeX className={icon} /> : <Volume2 className={icon} />}
+        </ActionButton>
+      )}
     </div>
   );
 }

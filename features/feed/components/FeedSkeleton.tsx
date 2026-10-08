@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
+import { WatchGridSkeleton } from "./WatchGridSkeleton";
+import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
 /**
  * Skeletons must occupy EXACTLY the space of the content that replaces them —
@@ -94,49 +98,77 @@ function StoriesTraySkeleton() {
 }
 
 export function FeedSkeleton() {
+  const [activeTab, setActiveTab] = useState<"for-you" | "watch" | "ask-shopi">("for-you");
+
+  useEffect(() => {
+    // The server snapshot defaults to For You; sync a direct Watch URL after
+    // hydration so the matching placeholder appears without changing SSR HTML.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    setActiveTab(
+      tab === "watch" || (SHOW_ASK_SHOPI && tab === "ask-shopi")
+        ? tab
+        : "for-you",
+    );
+  }, []);
+
   return (
     <div>
-      {/* ── Mobile skeleton — stories tray on top + full-width cards ── */}
+      {/* The real tab links stay visible while the content below loads. */}
       <div className="md:hidden">
-        <StoriesTraySkeleton />
-        <FeedCardsSkeleton />
+        <LoadingFeedTabs activeTab={activeTab} />
+        {activeTab === "watch" ? (
+          <WatchGridSkeleton />
+        ) : activeTab === "ask-shopi" ? (
+          <AskShopiSkeleton />
+        ) : (
+          <>
+            <StoriesTraySkeleton />
+            <FeedCardsSkeleton />
+          </>
+        )}
       </div>
 
       {/* ── Desktop skeleton — mirrors DesktopFeed's frame exactly (same
           container, grid and column widths) so nothing jumps when the real
           feed mounts: tabs + stories + card column, sellers in the RIGHT rail
           on xl. */}
-      <div className="hidden min-h-svh bg-app md:block" aria-hidden>
+      <div className="hidden min-h-svh bg-app md:block">
         <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 md:px-6 md:pt-6 xl:px-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
             <div className="mx-auto w-full min-w-0 max-w-[780px] pb-4 md:pb-6 xl:mx-0 xl:max-w-none">
-              {/* Tab bar placeholder — same height as the sticky tab row */}
-              <div className="mb-4 flex items-center gap-8 px-1 pb-2 pt-2">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-4 w-16 rounded-full" />
-                ))}
-              </div>
+              <LoadingFeedTabs
+                activeTab={activeTab === "ask-shopi" ? "for-you" : activeTab}
+                showAskShopi={false}
+                className="mb-4"
+              />
 
-              {/* Stories card — StoriesBar's desktop variant */}
-              <div className="mb-4 flex gap-2.5 overflow-hidden rounded-xl border border-border bg-elevated p-4">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="flex w-18 shrink-0 flex-col items-center gap-1.5">
-                    <Skeleton className="size-16.5 rounded-full" />
-                    <Skeleton className="h-3 w-12 rounded-full" />
+              {activeTab === "watch" ? (
+                <WatchGridSkeleton />
+              ) : (
+                <>
+                  {/* Stories belong to For You, not Watch. */}
+                  <div className="mb-4 flex gap-2.5 overflow-hidden rounded-xl border border-border bg-elevated p-4">
+                    {[...Array(8)].map((_, i) => (
+                      <div key={i} className="flex w-18 shrink-0 flex-col items-center gap-1.5">
+                        <Skeleton className="size-16.5 rounded-full" />
+                        <Skeleton className="h-3 w-12 rounded-full" />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              <div className="flex flex-col gap-4">
-                {[...Array(2)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="overflow-hidden rounded-2xl border border-default bg-elevated"
-                  >
-                    <PostCardSkeleton />
+                  <div className="flex flex-col gap-4">
+                    {[...Array(2)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="overflow-hidden rounded-2xl border border-default bg-elevated"
+                      >
+                        <PostCardSkeleton />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
 
             {/* Right rail — sellers to follow, then trending; xl and up only.
@@ -174,6 +206,58 @@ export function FeedSkeleton() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoadingFeedTabs({
+  activeTab,
+  showAskShopi = SHOW_ASK_SHOPI,
+  className = "",
+}: {
+  activeTab: "for-you" | "watch" | "ask-shopi";
+  showAskShopi?: boolean;
+  className?: string;
+}) {
+  const tabs = [
+    { id: "for-you" as const, label: "For You" },
+    { id: "watch" as const, label: "Watch" },
+    ...(showAskShopi ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }] : []),
+  ];
+  const tabClass = (tab: "for-you" | "watch" | "ask-shopi") =>
+    `-mb-px border-b-2 px-3 pb-2.5 pt-1 text-sm font-bold ${
+      activeTab === tab
+        ? "border-primary text-primary"
+        : "border-transparent text-muted hover:text-main"
+    }`;
+
+  return (
+    <nav
+      aria-label="Home feed"
+      className={`sticky top-0 z-30 grid ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"} border-b border-border bg-app/95 px-2 py-3 backdrop-blur md:top-(--desktop-top-nav-height,68px) ${className}`}
+    >
+      {tabs.map((tab) => (
+        <Link
+          key={tab.id}
+          href={tab.id === "for-you" ? "?tab=for-you" : `?tab=${tab.id}`}
+          scroll={false}
+          className={tabClass(tab.id)}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export function AskShopiSkeleton() {
+  return (
+    <div className="flex min-h-[50svh] flex-col justify-between bg-surface p-4">
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-4/5 rounded-2xl" />
+        <Skeleton className="ml-auto h-12 w-3/5 rounded-2xl" />
+      </div>
+      <Skeleton className="h-12 w-full rounded-full" />
     </div>
   );
 }

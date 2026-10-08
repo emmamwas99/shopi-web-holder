@@ -15,7 +15,22 @@ export const categoryPages = [
   {
     path: "/phones-electronics-kenya",
     title: "Phones and electronics",
-    body: "Samsung, iPhone, used phones, smart TVs, laptops and speakers from sellers across Kenya.",
+    body: "New, used and refurbished phones, including Samsung, Tecno, Infinix and Oppo, plus laptops, phone accessories and electronics from sellers across Kenya.",
+  },
+  {
+    path: "/for-sale/home-appliances",
+    title: "Home appliances",
+    body: "New and second hand fridges, microwaves, electric kettles and cooking gas equipment from local sellers.",
+  },
+  {
+    path: "/for-sale/car-parts",
+    title: "Car parts and spare parts",
+    body: "Search car parts and spare parts for Toyota, Nissan and other vehicles, and confirm fit and condition with sellers.",
+  },
+  {
+    path: "/for-sale/home-services",
+    title: "Home and local services",
+    body: "Find plumbers, electricians, water suppliers, car washes and other local providers across Kenya.",
   },
   {
     path: "/property-for-sale-kenya",

@@ -272,6 +272,26 @@ function ExpandableCaption({
     <div>
       <p
         ref={ref}
+        role={overlay && expanded ? "button" : undefined}
+        tabIndex={overlay && expanded ? 0 : undefined}
+        aria-label={overlay && expanded ? "Collapse description" : undefined}
+        onClick={(event) => {
+          if (!overlay || !expanded) return;
+          event.stopPropagation();
+          setExpanded(false);
+        }}
+        onKeyDown={(event) => {
+          if (
+            !overlay ||
+            !expanded ||
+            (event.key !== "Enter" && event.key !== " ")
+          ) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          setExpanded(false);
+        }}
         className={cn(
           "leading-snug whitespace-pre-line",
           overlay ? "text-[0.8rem]" : "text-sm",
@@ -280,6 +300,7 @@ function ExpandableCaption({
           // scroll instead of pushing the action row off a phone screen.
           expanded &&
             "pointer-events-auto max-h-32 overflow-y-auto no-scroll-indicator",
+          overlay && expanded && "cursor-pointer",
           overlay ? "text-white/90" : "text-default",
         )}
       >

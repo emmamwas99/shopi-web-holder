@@ -8,11 +8,17 @@ import {
   useSyncExternalStore,
 } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import { GoogleOneTap } from "@/features/auth/components/GoogleOneTap";
 import FeedGrid from "./FeedGrid";
-import { FeedCardsSkeleton, FeedSkeleton } from "./FeedSkeleton";
+import { AskShopiSkeleton, FeedSkeleton } from "./FeedSkeleton";
+import { WatchGridSkeleton } from "./WatchGridSkeleton";
+import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
+import {
+  hasPendingWatchScrollPosition,
+  restoreWatchScrollPosition,
+} from "@/features/feed/lib/watchScrollPosition";
 import {
   captureScrollPosition,
   restoreScrollPosition,
@@ -26,14 +32,16 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 // suspended up to the route's boundary and swapped the WHOLE feed for its
 // skeleton while the chunk downloaded — the header vanished and the window
 // scroll clamped to the skeleton's height.
-const FollowingGrid = dynamic(
-  () => import("./FollowingGrid").then((mod) => mod.FollowingGrid),
-  { loading: () => <FeedCardsSkeleton /> },
+const WatchGrid = dynamic(
+  () => import("./WatchGrid").then((mod) => mod.WatchGrid),
+  { loading: () => <WatchGridSkeleton /> },
 );
-const NearbyGrid = dynamic(
-  () => import("./NearbyGrid").then((mod) => mod.NearbyGrid),
-  { loading: () => <FeedCardsSkeleton /> },
-);
+const AskShopiGrid = SHOW_ASK_SHOPI
+  ? dynamic(
+      () => import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
+      { loading: () => <AskShopiSkeleton /> },
+    )
+  : null;
 const DesktopFeed = dynamic(() => import("./DesktopFeed"), {
   // Show the desktop-shaped skeleton while the chunk downloads, so the
   // dashboard frame (tabs, column, right rail) is stable from the first paint.
@@ -48,12 +56,10 @@ interface Props {
   initialItems?: ContentCardFieldsFragment[];
 }
 
-type Tab = "for-you" | "following" | "nearby";
+type Tab = "for-you" | "watch" | "ask-shopi";
 
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" ||
-  v === "following" ||
-  v === "nearby";
+  v === "for-you" || v === "watch" || (SHOW_ASK_SHOPI && v === "ask-shopi");
 
 const DESKTOP_QUERY = "(min-width: 768px)";
 
@@ -78,7 +84,7 @@ const serverIsDesktop = () => false;
 const subTabPositions: Partial<Record<Tab, ScrollPosition>> = {};
 
 /**
- * Mirror the sub-tab into the address bar, as DesktopFeed does, so the For You
+ * Mirror the sub-tab into the address bar, as DesktopFeed does, so the Home
  * nav tab (lib/navTabMemory) can bring the user back to it. A bare
  * replaceState on purpose: it is not a navigation, and Next must not re-render
  * the route for it.
@@ -96,6 +102,7 @@ function mirrorTabToUrl(tab: Tab) {
 }
 
 export function FeedPage({ lang, visible = true, initialItems }: Props) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
   // components still execute, query, observe layout, and download all of their
@@ -118,10 +125,8 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   const initialParam = searchParams.get("tab");
   const initialTab: Tab = isTab(initialParam) ? initialParam : "for-you";
   const [tab, setTab] = useState<Tab>(initialTab);
-  // Track which tabs have ever been opened. Nearby mounts lazily (it requests
-  // geolocation on mount, which we must not do until the user opens it); once
-  // opened it stays mounted so switching away/back never refetches or loses
-  // scroll. Only the initial tab mounts eagerly; the others load on first use.
+  // Mount each secondary tab only when opened, then keep it mounted so tab
+  // switches preserve its state and loaded content.
   const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
     () => new Set([initialTab]),
   );
@@ -144,7 +149,33 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
     }
   }, [tab]);
 
-  // If the user returns from auth with ?tab=following, honour it. The feed
+  // The video viewer is an intercepted route, but the feed may be remounted
+  // when returning from it. Keep Watch's own anchored position and restore it
+  // as soon as Home is back, whether the feed stayed mounted or not.
+  useLayoutEffect(() => {
+    if (desktop || !/\/(?:for-you|feed)\/?$/.test(pathname)) return;
+    if (!hasPendingWatchScrollPosition()) return;
+
+    // Chat can remount the feed without the in-memory tab state. The pending
+    // Watch return is authoritative even if the restored URL has no tab query.
+    if (tab !== "watch") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTab("watch");
+      setOpenedTabs((prev) =>
+        prev.has("watch") ? prev : new Set(prev).add("watch"),
+      );
+      mirrorTabToUrl("watch");
+      return;
+    }
+
+    // RouteScrollRestoration also runs on this navigation. Restore Watch on
+    // the next frame so its route-level position decision cannot replace
+    // this tab's saved anchor with the page's older position.
+    const frame = requestAnimationFrame(restoreWatchScrollPosition);
+    return () => cancelAnimationFrame(frame);
+  }, [desktop, pathname, tab]);
+
+  // If the user returns from another route with ?tab=watch, honour it. The feed
   // stays mounted while OTHER routes are shown (MainShell), and those routes
   // use ?tab= for their own sub-tabs (e.g. /notifications?tab=notifications) —
   // so only sync when the feed route is actually visible, and only for values
@@ -214,26 +245,16 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
               />
             </div>
 
-            {/* Following mounts lazily too, to avoid firing its feed query on
-              page load when the user may never leave For-You. */}
-            {openedTabs.has("following") ? (
-              <div className={tab === "following" ? undefined : "hidden"}>
-                <FollowingGrid
-                  lang={lang}
-                  active={visible && tab === "following"}
-                />
+            {openedTabs.has("watch") ? (
+              <div className={tab === "watch" ? undefined : "hidden"}>
+                <WatchGrid lang={lang} active={visible && tab === "watch"} />
               </div>
             ) : null}
-
-            {/* Nearby mounts only after first open (it requests geolocation on
-              mount), then stays mounted like the others. */}
-            {openedTabs.has("nearby") ? (
-              <div className={tab === "nearby" ? undefined : "hidden"}>
-                <NearbyGrid lang={lang} active={visible && tab === "nearby"} />
+            {SHOW_ASK_SHOPI && AskShopiGrid && openedTabs.has("ask-shopi") ? (
+              <div className={tab === "ask-shopi" ? undefined : "hidden"}>
+                <AskShopiGrid lang={lang} active={visible && tab === "ask-shopi"} />
               </div>
             ) : null}
-
-            {/* Ask Shopi — conversational buyer search. Mounts on first open. */}
           </div>
         </div>
       ) : null}

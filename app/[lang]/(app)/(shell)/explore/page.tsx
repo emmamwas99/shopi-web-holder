@@ -58,13 +58,20 @@ function ExploreSkeleton() {
             <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
               <Skeleton className="h-10 min-w-0 flex-1 rounded-full" />
               <Skeleton className="h-10 w-10 shrink-0 rounded-full lg:hidden" />
-              <Skeleton className="h-10 w-10 shrink-0 rounded-full lg:hidden" />
             </div>
-            <div className="scrollbar-none flex items-center gap-6 overflow-x-auto px-4 pb-3 lg:hidden">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton key={index} className="h-6 w-16 shrink-0 rounded-md" />
-              ))}
-            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-4 pb-3 pt-4 lg:hidden">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="flex flex-col items-center gap-2">
+                <Skeleton className="aspect-square w-full rounded-3xl" />
+                <Skeleton className="h-4 w-4/5 rounded-md" />
+              </div>
+            ))}
+          </div>
+          <div className="mb-2 flex justify-center gap-1.5 lg:hidden" aria-hidden>
+            <Skeleton className="h-1.5 w-4 rounded-full" />
+            <Skeleton className="h-1.5 w-1.5 rounded-full" />
           </div>
 
           <div className="px-4 pb-6 pt-3 lg:px-0">

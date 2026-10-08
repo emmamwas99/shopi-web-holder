@@ -10,18 +10,17 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
+import { motion } from "framer-motion";
 import {
   ArrowUpDown,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Check,
+  Plus,
   Search,
-  SlidersHorizontal,
-  Sparkles,
   X,
 } from "lucide-react";
 import {
@@ -42,13 +41,12 @@ import {
   type DiscoverContentType,
 } from "@/stores/discoverFilters";
 import { useSearchStore } from "@/stores/search";
-import { useUiStore } from "@/stores/ui";
-import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import type {
   ContentCardFieldsFragment,
   ContentType,
 } from "@/types/__generated__/graphql";
 import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
+import { ExploreCategoryGrid } from "./ExploreCategoryGrid";
 import {
   ContentTypeSegments,
   DistanceFilter,
@@ -58,20 +56,12 @@ import {
 } from "./DiscoverFilterControls";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
-import { DISCOVERY_CATEGORIES, type CategoryFacet } from "../categories";
-
-/**
- * Ask Shopi, the buyer agent: describe what you want (or send a photo) and it
- * finds listings. Loaded only when opened, and only in public development
- * builds — the flag is a build-time constant, so production bundles leave it
- * out entirely.
- */
-const AskShopiGrid = SHOW_ASK_SHOPI
-  ? dynamic(
-      () => import("@/features/feed/components/AskShopiGrid").then((mod) => mod.AskShopiGrid),
-      { ssr: false },
-    )
-  : null;
+import {
+  DISCOVERY_CATEGORIES,
+  type CategoryFacet,
+  type DiscoveryCategoryFacetsVars,
+} from "../categories";
+import { slugifyContentTitle } from "@/lib/content-url";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -94,7 +84,9 @@ type SpecFacet = {
 type FilterPicker =
   | { kind: "category" }
   | { kind: "subcategory" }
+  | { kind: "sort" }
   | { kind: "posted" }
+  | { kind: "price" }
   | { kind: "spec"; key: string };
 
 type LocationFacet = {
@@ -387,6 +379,7 @@ const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
     $minPrice: Float
     $maxPrice: Float
     $negotiableOnly: Boolean
+    $specs: [DiscoverySpecFilterInput!]
     $latitude: Float
     $longitude: Float
     $radiusKm: Float
@@ -402,6 +395,7 @@ const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
       minPrice: $minPrice
       maxPrice: $maxPrice
       negotiableOnly: $negotiableOnly
+      specs: $specs
       latitude: $latitude
       longitude: $longitude
       radiusKm: $radiusKm
@@ -609,6 +603,7 @@ function LocationOption({
   onSelect,
   onDrillIn,
   indicator = "check",
+  listStyle = false,
 }: {
   item: LocationFacet;
   active: boolean;
@@ -623,9 +618,83 @@ function LocationOption({
    */
   onDrillIn?: () => void;
   indicator?: "check" | "chevron";
+  listStyle?: boolean;
 }) {
   const disabled = item.count === 0;
   const countLabel = `${item.count} ${item.count === 1 ? "item" : "items"}`;
+
+  if (listStyle && onDrillIn) {
+    return (
+      <button
+        type="button"
+        onClick={onDrillIn}
+        disabled={disabled}
+        aria-label={`View places inside ${item.name}`}
+        className={cn(
+          "flex min-h-16 w-full items-center justify-between border-b border-default px-4 text-left disabled:cursor-not-allowed",
+          disabled && "opacity-50",
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span
+            className={cn(
+              "truncate text-[14px] font-medium",
+              active ? "text-primary" : "text-default",
+            )}
+          >
+            {item.name}
+          </span>
+          <span className="shrink-0 text-[12px] text-muted-foreground">
+            · {item.count.toLocaleString()} {item.count === 1 ? "ad" : "ads"}
+          </span>
+        </span>
+        <ChevronRight size={19} className="ml-3 shrink-0 text-muted-foreground" />
+      </button>
+    );
+  }
+
+  if (listStyle) {
+    return (
+      <div
+        className={cn(
+          "flex min-h-16 items-center border-b border-default",
+          disabled && "opacity-50",
+        )}
+      >
+        <button
+          type="button"
+          onClick={onSelect}
+          disabled={disabled}
+          className="flex min-h-16 min-w-0 flex-1 items-center gap-1.5 px-4 text-left disabled:cursor-not-allowed"
+        >
+          <span
+            className={cn(
+              "truncate text-[14px] font-medium",
+              active ? "text-primary" : "text-default",
+            )}
+          >
+            {item.name}
+          </span>
+          <span className="shrink-0 text-[12px] text-muted-foreground">
+            · {item.count.toLocaleString()} {item.count === 1 ? "ad" : "ads"}
+          </span>
+        </button>
+        {onDrillIn ? (
+          <button
+            type="button"
+            onClick={onDrillIn}
+            disabled={disabled}
+            aria-label={`View places inside ${item.name}`}
+            className="grid h-12 w-11 shrink-0 place-items-center text-muted-foreground disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={19} />
+          </button>
+        ) : active ? (
+          <Check size={17} className="mr-4 shrink-0 text-primary" />
+        ) : null}
+      </div>
+    );
+  }
 
   if (indicator === "chevron" && onDrillIn) {
     return (
@@ -694,6 +763,53 @@ function LocationOption({
       </div>
       {active ? <Check size={18} className="text-primary" /> : null}
     </button>
+  );
+}
+
+function MobileLocationSearchHeader({
+  title,
+  value,
+  onChange,
+  placeholder,
+  onBack,
+}: {
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="shrink-0 bg-app px-3 py-2.5">
+      <DrawerTitle className="sr-only">{title}</DrawerTitle>
+      <div className="flex h-11 items-center gap-2 rounded-xl border border-default bg-surface px-2.5">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-primary active:bg-primary/10"
+        >
+          <ChevronLeft size={21} strokeWidth={2.2} />
+        </button>
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-default outline-none placeholder:text-muted-foreground"
+        />
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            aria-label="Clear search"
+            className="grid h-8 w-8 shrink-0 place-items-center text-muted-foreground"
+          >
+            <X size={16} />
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -913,12 +1029,65 @@ function FilterFieldRow({
   value,
   active,
   onClick,
+  onClear,
+  marketplaceStyle = false,
 }: {
   label: string;
   value: string;
   active?: boolean;
   onClick: () => void;
+  onClear?: () => void;
+  marketplaceStyle?: boolean;
 }) {
+  if (marketplaceStyle) {
+    return (
+      <div className="flex min-h-[62px] items-center border-b border-border px-4">
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex min-w-0 flex-1 items-center justify-between gap-3 py-2.5 text-left active:opacity-60"
+        >
+          <span className="min-w-0">
+            <span className="block text-[13px] font-medium text-default">{label}</span>
+            {value ? (
+              <span
+                className={cn(
+                  "mt-0.5 block truncate text-[13px]",
+                  active
+                    ? "font-medium text-primary"
+                    : marketplaceStyle
+                      ? "text-primary"
+                      : "text-muted-foreground",
+                )}
+              >
+                {value}
+              </span>
+            ) : null}
+          </span>
+        </button>
+        {active && onClear ? (
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label={`Clear ${label} filter`}
+            className="ml-2 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary active:bg-primary/15"
+          >
+            <X size={19} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClick}
+            aria-label={`Open ${label} filter`}
+            className="ml-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+          >
+            <Plus size={20} strokeWidth={1.7} />
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -947,31 +1116,53 @@ function FilterFieldList({
   categoryLabel,
   subcategoryLabel,
   regionLabel,
+  sortLabel,
+  sortActive,
+  minPrice,
+  maxPrice,
   postedLabel,
   specFacets,
   specFacetsLoading,
   specs,
+  marketplaceStyle,
   negotiableOnly,
   onNegotiableOnly,
   onOpenPicker,
   onOpenRegion,
+  onOpenSort,
+  onClearLocation,
+  onClearSort,
+  onClearPrice,
+  onClearPosted,
+  onClearSpec,
   onClose,
   onClear,
   canClear,
   resultLabel,
 }: {
-  categoryLabel: string;
+  categoryLabel: string | null;
   /** Null hides the row (no category, or a category without subcategories). */
   subcategoryLabel: string | null;
   regionLabel: string;
+  sortLabel: string;
+  sortActive: boolean;
+  minPrice: string;
+  maxPrice: string;
   postedLabel: string;
   specFacets: SpecFacet[];
   specFacetsLoading: boolean;
   specs: SpecFilter[];
+  marketplaceStyle: boolean;
   negotiableOnly: boolean;
   onNegotiableOnly: (value: boolean) => void;
   onOpenPicker: (picker: FilterPicker) => void;
   onOpenRegion: () => void;
+  onOpenSort: () => void;
+  onClearLocation: () => void;
+  onClearSort: () => void;
+  onClearPrice: () => void;
+  onClearPosted: () => void;
+  onClearSpec: (key: string) => void;
   onClose: () => void;
   onClear: () => void;
   canClear: boolean;
@@ -981,15 +1172,38 @@ function FilterFieldList({
 
   return (
     <>
-      <FilterDrawerHeader title="Filter results" onClose={onClose} />
+      {marketplaceStyle ? (
+        <div className="flex shrink-0 items-center gap-2 border-b border-border bg-app px-4 py-2 text-default">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close filters"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+          >
+            <X size={21} />
+          </button>
+          <DrawerTitle className="text-[16px] font-semibold text-default">
+            Filter results
+          </DrawerTitle>
+        </div>
+      ) : (
+        <FilterDrawerHeader title="Filter results" onClose={onClose} />
+      )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4">
-        <FilterFieldRow
-          label="Category"
-          value={categoryLabel}
-          active={categoryLabel !== "All categories"}
-          onClick={() => onOpenPicker({ kind: "category" })}
-        />
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+          marketplaceStyle ? "px-0" : "px-4",
+        )}
+      >
+        {categoryLabel ? (
+          <FilterFieldRow
+            label="Category"
+            value={categoryLabel}
+            active={categoryLabel !== "All categories"}
+            onClick={() => onOpenPicker({ kind: "category" })}
+          />
+        ) : null}
         {subcategoryLabel ? (
           <FilterFieldRow
             label="Subcategory"
@@ -1003,21 +1217,80 @@ function FilterFieldList({
           value={regionLabel}
           active={regionLabel !== "All Kenya"}
           onClick={onOpenRegion}
+          onClear={marketplaceStyle ? onClearLocation : undefined}
+          marketplaceStyle={marketplaceStyle}
         />
 
-        <div className="border-b border-border py-3.5">
-          <span className="mb-2 block text-xs text-muted">Distance</span>
-          <DistanceFilter />
-        </div>
+        {marketplaceStyle ? (
+          <FilterFieldRow
+            label="Sort by"
+            value={sortLabel}
+            active={sortActive}
+            onClick={onOpenSort}
+            onClear={sortActive ? onClearSort : undefined}
+            marketplaceStyle
+          />
+        ) : null}
 
-        <div className="border-b border-border py-3.5">
-          <span className="mb-2 block text-xs text-muted">Price, KSh</span>
-          <PriceRangeFields />
-        </div>
+        <FilterFieldRow
+          label={marketplaceStyle ? "Period" : "Posted"}
+          value={postedLabel}
+          active={postedLabel !== "Any time"}
+          onClick={() => onOpenPicker({ kind: "posted" })}
+          onClear={marketplaceStyle ? onClearPosted : undefined}
+          marketplaceStyle={marketplaceStyle}
+        />
+
+        {marketplaceStyle ? (
+          <div className="border-b border-border px-4 py-3">
+            <span className="mb-1.5 block text-[13px] font-medium text-default">
+              Distance
+            </span>
+            <DistanceFilter compact />
+          </div>
+        ) : null}
+
+        {!marketplaceStyle ? (
+          <div className="border-b border-border py-3.5">
+            <span className="mb-2 block text-xs text-muted">Distance</span>
+            <DistanceFilter />
+          </div>
+        ) : null}
+
+        {marketplaceStyle ? <div className="h-2 bg-elevated" aria-hidden /> : null}
+
+        {marketplaceStyle ? (
+          <FilterFieldRow
+            label="Price, KSh"
+            value={
+              minPrice.trim() || maxPrice.trim()
+                ? `${minPrice.trim() || "Any"} – ${maxPrice.trim() || "Any"}`
+                : "Any price"
+            }
+            active={Boolean(minPrice.trim() || maxPrice.trim())}
+            onClick={() => onOpenPicker({ kind: "price" })}
+            onClear={onClearPrice}
+            marketplaceStyle
+          />
+        ) : (
+          <div className="border-b border-border py-3.5">
+            <span className="mb-2 block text-xs text-muted">Price, KSh</span>
+            <PriceRangeFields />
+          </div>
+        )}
+
+        {marketplaceStyle && (specFacets.length > 0 || specFacetsLoading) ? (
+          <>
+            <div className="h-2 bg-elevated" aria-hidden />
+            <div className="px-4 pb-1 pt-3 text-[12px] font-semibold text-muted-foreground">
+              Popular filters
+            </div>
+          </>
+        ) : null}
 
         {specFacetsLoading
           ? Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="border-b border-border py-3.5" aria-hidden>
+              <div key={index} className="border-b border-border px-4 py-3.5" aria-hidden>
                 <Skeleton className="h-3 w-16" />
                 <Skeleton className="mt-2 h-4 w-28" />
               </div>
@@ -1028,29 +1301,43 @@ function FilterFieldList({
                 <FilterFieldRow
                   key={facet.key}
                   label={facet.label}
-                  value={value ?? "Any"}
+                  value={value ?? (marketplaceStyle ? "" : "Any")}
                   active={Boolean(value)}
                   onClick={() => onOpenPicker({ kind: "spec", key: facet.key })}
+                  onClear={marketplaceStyle ? () => onClearSpec(facet.key) : undefined}
+                  marketplaceStyle={marketplaceStyle}
                 />
               );
             })}
 
-        <div className="border-b border-border py-3.5">
+        <div
+          className={cn(
+            "border-b border-border py-3.5",
+            marketplaceStyle && "px-4",
+          )}
+        >
           <span className="mb-2 block text-xs text-muted">Content type</span>
           <ContentTypeSegments />
         </div>
 
-        <FilterFieldRow
-          label="Posted"
-          value={postedLabel}
-          active={postedLabel !== "Any time"}
-          onClick={() => onOpenPicker({ kind: "posted" })}
-        />
+        {!marketplaceStyle ? (
+          <FilterFieldRow
+            label="Posted"
+            value={postedLabel}
+            active={postedLabel !== "Any time"}
+            onClick={() => onOpenPicker({ kind: "posted" })}
+          />
+        ) : null}
 
-        <div className="flex items-center justify-between gap-4 border-b border-border py-3.5">
+        <div
+          className={cn(
+            "flex items-center justify-between gap-4 border-b border-border py-3.5",
+            marketplaceStyle && "px-4",
+          )}
+        >
           <div className="min-w-0">
-            <span className="block text-[15px] text-main">Negotiable only</span>
-            <span className="mt-0.5 block text-xs text-muted">
+            <span className="block text-[13px] text-main">Negotiable only</span>
+            <span className="mt-0.5 block text-[11px] text-muted">
               Sellers open to discussing the price
             </span>
           </div>
@@ -1068,19 +1355,24 @@ function FilterFieldList({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 gap-2.5 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2.5">
+      <div className="flex shrink-0 gap-2 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2">
         <button
           type="button"
           onClick={onClear}
           disabled={!canClear}
-          className="h-10 shrink-0 rounded-lg border border-border px-5 text-[13px] font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-40"
+          className={cn(
+            "h-9 shrink-0 rounded-lg border px-4 text-[12px] font-semibold transition-opacity active:opacity-70 disabled:opacity-40",
+            marketplaceStyle
+              ? "border-transparent text-primary"
+              : "border-border text-main",
+          )}
         >
-          Clear
+          {marketplaceStyle ? "Reset" : "Clear"}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="h-10 flex-1 rounded-lg bg-primary text-[13px] font-semibold text-white transition-opacity active:opacity-80"
+          className="h-9 flex-1 rounded-lg bg-primary text-[12px] font-semibold text-white transition-opacity active:opacity-80"
         >
           {resultLabel}
         </button>
@@ -1101,12 +1393,14 @@ function FilterPickerView({
   selectedSubcategory,
   specFacets,
   specs,
+  sort,
   postedWithinDays,
   onBack,
   onPickCategory,
   onPickSubcategory,
   onPickPosted,
   onPickSpec,
+  onPickSort,
 }: {
   picker: FilterPicker;
   categories: CategoryFacet[];
@@ -1115,14 +1409,27 @@ function FilterPickerView({
   selectedSubcategory: string | null;
   specFacets: SpecFacet[];
   specs: SpecFilter[];
+  sort: DiscoverySort;
   postedWithinDays: number | null;
   onBack: () => void;
   onPickPosted: (days: number | null) => void;
   onPickCategory: (category: CategoryFacet | null) => void;
   onPickSubcategory: (name: string | null) => void;
   onPickSpec: (key: string, value: string | null) => void;
+  onPickSort: (sort: DiscoverySort) => void;
 }) {
   const [search, setSearch] = useState("");
+
+  if (picker.kind === "price") {
+    return (
+      <>
+        <FilterDrawerHeader title="Price, KSh" onBack={onBack} />
+        <div className="px-4 py-5">
+          <PriceRangeFields />
+        </div>
+      </>
+    );
+  }
 
   let title: string;
   let anyLabel: string;
@@ -1165,6 +1472,19 @@ function FilterPickerView({
       active: postedWithinDays === option.value,
       pick: () => onPickPosted(option.value),
     }));
+  } else if (picker.kind === "sort") {
+    title = "Sort by";
+    anyLabel = "Recommended";
+    anyActive = sort === "RELEVANCE";
+    pickAny = () => onPickSort("RELEVANCE");
+    options = SORT_OPTIONS.filter((option) => option.value !== "RELEVANCE").map(
+      (option) => ({
+        id: option.value,
+        label: option.label,
+        active: sort === option.value,
+        pick: () => onPickSort(option.value),
+      }),
+    );
   } else {
     const facet = specFacets.find((item) => item.key === picker.key);
     const current = specs.find((spec) => spec.key === picker.key)?.value;
@@ -1265,7 +1585,18 @@ function locationSheetDepth(step: LocationSheetStep | null) {
   }
 }
 
-export function DiscoverPage({ lang }: { lang: string }) {
+export function DiscoverPage({
+  lang,
+  initialCategorySlug,
+  initialSubcategorySlug,
+}: {
+  lang: string;
+  initialCategorySlug?: string;
+  initialSubcategorySlug?: string;
+}) {
+  const isSubcategoryRoute = Boolean(
+    initialCategorySlug && initialSubcategorySlug,
+  );
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1351,16 +1682,20 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const [locationSearch, setLocationSearch] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [subcategoryHeaderMode, setSubcategoryHeaderMode] = useState<
+    "expanded" | "chips" | "search"
+  >("expanded");
+  const subcategoryChipsRef = useRef<HTMLDivElement>(null);
+  const [subcategoryDrawerOpen, setSubcategoryDrawerOpen] = useState(false);
+  const [drawerCategory, setDrawerCategory] = useState<CategoryFacet | null>(null);
   // An option list open inside the mobile filter drawer (Category, Make…).
   const [picker, setPicker] = useState<FilterPicker | null>(null);
-  // Ask Shopi, opened full screen over Browse from the search bar.
-  const [askOpen, setAskOpen] = useState(false);
-  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   // Spec filters (Make: Toyota…), distance and recency live in the shared
   // store so the desktop sidebar edits the same state as the mobile drawer.
   const specs = useDiscoverFiltersStore((s) => s.specs);
   const setSpec = useDiscoverFiltersStore((s) => s.setSpec);
   const setSpecs = useDiscoverFiltersStore((s) => s.setSpecs);
+  const clearNarrowingFilters = useDiscoverFiltersStore((s) => s.clearFilters);
   const setStoreSpecFacets = useDiscoverFiltersStore((s) => s.setSpecFacets);
   const nearby = useDiscoverFiltersStore((s) => s.nearby);
   const radiusKm = useDiscoverFiltersStore((s) => s.radiusKm);
@@ -1398,7 +1733,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
     // still be applied — invisibly, now that category lives in the filters.
     // (A ?category= deep link is applied below once categories have loaded.)
     // Category first: setting it clears the spec filters, which come next.
-    if (!searchParams.get("category")) setSelectedCategory(null);
+    if (!searchParams.get("category") && !initialCategorySlug) {
+      setSelectedCategory(null);
+    }
     if (
       !searchParams.get("countyId") &&
       !searchParams.get("subCountyId") &&
@@ -1422,13 +1759,78 @@ export function DiscoverPage({ lang }: { lang: string }) {
       // Search spans every category, so drop any category constraint when one
       // starts — otherwise results would be silently scoped to a category whose
       // bar is now hidden.
-      if (next) {
+      if (next && !isSubcategoryRoute) {
         setSelectedCategory(null);
         setSelectedSubcategory(null);
       }
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
-  }, [searchDraft]);
+  }, [isSubcategoryRoute, searchDraft]);
+
+  useEffect(() => {
+    if (!isSubcategoryRoute) {
+      setSubcategoryHeaderMode("expanded");
+      return;
+    }
+
+    let previousY = window.scrollY;
+    let mode: "expanded" | "chips" | "search" = "expanded";
+    let direction = 0;
+    let directionTravel = 0;
+    const topThreshold = 72;
+    const scrollDistanceToSearch = 36;
+    const scrollDistanceToChips = 20;
+
+    const handleScroll = () => {
+      if (window.innerWidth >= 1024) return;
+      const currentY = Math.max(0, window.scrollY);
+      const delta = currentY - previousY;
+
+      if (currentY <= topThreshold) {
+        mode = "expanded";
+        direction = 0;
+        directionTravel = 0;
+      } else if (Math.abs(delta) > 0.5) {
+        const nextDirection = delta > 0 ? 1 : -1;
+        if (nextDirection !== direction) {
+          direction = nextDirection;
+          directionTravel = 0;
+        }
+        directionTravel += Math.abs(delta);
+
+        if (direction > 0 && mode === "expanded") {
+          mode = "chips";
+          directionTravel = 0;
+        } else if (
+          direction > 0 &&
+          mode === "chips" &&
+          directionTravel >= scrollDistanceToSearch
+        ) {
+          mode = "search";
+          directionTravel = 0;
+        } else if (
+          direction < 0 &&
+          mode === "search" &&
+          directionTravel >= scrollDistanceToChips
+        ) {
+          mode = "chips";
+          directionTravel = 0;
+        }
+      }
+
+      setSubcategoryHeaderMode((current) => (current === mode ? current : mode));
+      previousY = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isSubcategoryRoute]);
+
+  useEffect(() => {
+    if (isSubcategoryRoute && subcategoryChipsRef.current) {
+      subcategoryChipsRef.current.scrollLeft = 0;
+    }
+  }, [isSubcategoryRoute]);
 
   // Subcategory tiles follow every filter EXCEPT the subcategory itself, so
   // picking a tile narrows the grid below without the row reshuffling under the
@@ -1437,7 +1839,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const subcategoryFacetVariables = useMemo(
     () => ({
       query: query || undefined,
-      categoryId: selectedCategory?.id,
+      categoryId: (subcategoryDrawerOpen ? drawerCategory : selectedCategory)?.id,
       type: selectedType ?? undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
@@ -1445,6 +1847,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
       minPrice: parsedMinPrice,
       maxPrice: parsedMaxPrice,
       negotiableOnly: negotiableOnly || undefined,
+      specs: specs.length > 0 ? specs : undefined,
       latitude: nearby?.latitude,
       longitude: nearby?.longitude,
       radiusKm: nearby ? radiusKm : undefined,
@@ -1452,6 +1855,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
     }),
     [
       query,
+      drawerCategory?.id,
+      subcategoryDrawerOpen,
       selectedCategory?.id,
       selectedType,
       selectedCounty?.id,
@@ -1460,23 +1865,31 @@ export function DiscoverPage({ lang }: { lang: string }) {
       parsedMinPrice,
       parsedMaxPrice,
       negotiableOnly,
+      specs,
       nearby,
       radiusKm,
       postedWithinDays,
     ],
   );
 
-  const { data: subcategoryFacetsData } = useQuery(
+  const {
+    data: subcategoryFacetsData,
+    loading: subcategoriesLoading,
+  } = useQuery(
     DISCOVERY_SUBCATEGORY_FACETS,
     {
       variables: subcategoryFacetVariables,
+      skip: !selectedCategory && !(subcategoryDrawerOpen && drawerCategory),
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
   );
 
   const subcategories = useMemo(
-    () => subcategoryFacetsData?.discoveryFacets.subcategories ?? [],
+    () =>
+      (subcategoryFacetsData?.discoveryFacets.subcategories ?? []).filter(
+        (subcategory) => subcategory.count > 0,
+      ),
     [subcategoryFacetsData?.discoveryFacets.subcategories],
   );
 
@@ -1496,7 +1909,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
    */
   const subcategory =
     selectedSubcategory &&
-    (!subcategoryFacetsData ||
+    (isSubcategoryRoute ||
+      !subcategoryFacetsData ||
       subcategories.some((item) => item.name === selectedSubcategory))
       ? selectedSubcategory
       : null;
@@ -1590,12 +2004,42 @@ export function DiscoverPage({ lang }: { lang: string }) {
     },
   );
 
-  // Category list loads once on mount and never refetches — it is independent
-  // of the active query/category/location so the category bar stays stable.
-  const { data: categoriesData } = useQuery(
+  // Category counts follow active narrowing filters so categories with no
+  // matching listings aren't offered in the mobile category grid.
+  const categoryFacetVariables = useMemo<DiscoveryCategoryFacetsVars>(
+    () => ({
+      type: selectedType ?? undefined,
+      countyId: selectedCounty?.id,
+      subCountyId: selectedSubCounty?.id,
+      wardId: selectedWard?.id,
+      minPrice: parsedMinPrice,
+      maxPrice: parsedMaxPrice,
+      negotiableOnly: negotiableOnly || undefined,
+      specs: specs.length > 0 ? specs : undefined,
+      latitude: nearby?.latitude,
+      longitude: nearby?.longitude,
+      radiusKm: nearby ? radiusKm : undefined,
+      postedWithinDays: postedWithinDays ?? undefined,
+    }),
+    [
+      selectedType,
+      selectedCounty?.id,
+      selectedSubCounty?.id,
+      selectedWard?.id,
+      parsedMinPrice,
+      parsedMaxPrice,
+      negotiableOnly,
+      specs,
+      nearby,
+      radiusKm,
+      postedWithinDays,
+    ],
+  );
+  const { data: categoriesData, loading: categoriesLoading } = useQuery(
     DISCOVERY_CATEGORIES,
     {
-      fetchPolicy: "cache-first",
+      variables: categoryFacetVariables,
+      fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
   );
@@ -1618,6 +2062,25 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setSelectedSubcategory(null);
   }, []);
 
+  const openCategorySubcategories = useCallback(
+    (category: CategoryFacet) => {
+      setDrawerCategory(category);
+      setSubcategoryDrawerOpen(true);
+    },
+    [],
+  );
+
+  const selectSubcategoryAndNavigate = useCallback(
+    (name: string) => {
+      if (!drawerCategory) return;
+      setSubcategoryDrawerOpen(false);
+      router.push(
+        `/${lang}/explore/${drawerCategory.slug}/${slugifyContentTitle(name)}`,
+      );
+    },
+    [drawerCategory, lang, router],
+  );
+
   const { data: resultCountData, loading: resultCountLoading } = useQuery(
     DISCOVERY_RESULT_COUNT,
     {
@@ -1628,13 +2091,15 @@ export function DiscoverPage({ lang }: { lang: string }) {
     },
   );
 
-  // Spec fields only exist inside a category. The desktop sidebar lists them
-  // all the time; on a phone they're only needed while the drawer is open.
+  // Spec fields only exist inside a category. The subcategory page keeps them
+  // loaded for its quick filter chips; other mobile pages load them on demand.
   const { data: specFacetsData, loading: specFacetsLoading } = useQuery(
     DISCOVERY_SPEC_FACETS,
     {
       variables: facetVariables,
-      skip: (!selectedCategory && !subcategory) || (!isDesktop && !filterOpen),
+      skip:
+        (!selectedCategory && !subcategory) ||
+        (!isDesktop && !filterOpen && !isSubcategoryRoute),
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
@@ -1694,10 +2159,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
     "All Kenya";
   const locationDepth = locationSheetDepth(locationStep);
   const overlayDepth =
+    (subcategoryDrawerOpen ? 1 : 0) +
     (sortOpen ? 1 : 0) +
     (filterOpen ? 1 : 0) +
     (picker ? 1 : 0) +
-    (askOpen ? 1 : 0) +
     locationDepth;
   // Count only what lives inside the filter sheet (location + price + negotiable);
   // category and sort have their own controls outside the sheet.
@@ -1716,7 +2181,15 @@ export function DiscoverPage({ lang }: { lang: string }) {
     (nearby ? 1 : 0) +
     (postedWithinDays ? 1 : 0) +
     specs.length;
+  const subcategoryNarrowingFilterCount = Math.max(
+    0,
+    activeFilterCount - Number(Boolean(selectedCategory)) - Number(Boolean(subcategory)),
+  );
   const matchingResultCount = resultCountData?.discoveryResultCount;
+  const activeSortLabel =
+    sort === "RELEVANCE"
+      ? "Recommended"
+      : SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "Recommended";
   const resultButtonLabel =
     resultCountLoading && matchingResultCount == null
       ? "Show … results"
@@ -1749,8 +2222,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // sidebar's Clear, so both surfaces agree.
   const clearAllFilters = useDiscoverFiltersStore((s) => s.clearAll);
   const clearFilters = useCallback(() => {
+    if (isSubcategoryRoute) {
+      clearNarrowingFilters();
+      setSort("RELEVANCE");
+      return;
+    }
     clearAllFilters();
-  }, [clearAllFilters]);
+  }, [clearAllFilters, clearNarrowingFilters, isSubcategoryRoute, setSort]);
 
   const clearSearch = useCallback(() => {
     setSearchDraft("");
@@ -1758,8 +2236,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
   }, [setSearchDraft]);
 
   const closeTopOverlayState = useCallback(() => {
-    if (askOpen) {
-      setAskOpen(false);
+    if (subcategoryDrawerOpen) {
+      setSubcategoryDrawerOpen(false);
       return;
     }
     if (locationStep === "ward") {
@@ -1783,7 +2261,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
       return;
     }
     if (sortOpen) setSortOpen(false);
-  }, [askOpen, filterOpen, locationStep, picker, sortOpen]);
+  }, [filterOpen, locationStep, picker, sortOpen, subcategoryDrawerOpen]);
 
   const closeTopOverlayStateRef = useRef(closeTopOverlayState);
 
@@ -1834,10 +2312,11 @@ export function DiscoverPage({ lang }: { lang: string }) {
     window.history.back();
   }, []);
 
-  const openFilterSheet = useCallback(() => {
-    setSortOpen(false);
-    setFilterOpen(true);
-  }, []);
+  const closeCategoryDrawer = useCallback(() => {
+    if (!subcategoryDrawerOpen) return;
+    setSubcategoryDrawerOpen(false);
+    requestHistoryClose();
+  }, [requestHistoryClose, subcategoryDrawerOpen]);
 
   /**
    * Close the whole filter drawer, whatever view it is on — the drawer, an
@@ -1855,36 +2334,18 @@ export function DiscoverPage({ lang }: { lang: string }) {
     requestHistoryClose(depth);
   }, [filterOpen, locationStep, picker, requestHistoryClose]);
 
-  const openAsk = useCallback(() => {
+  const openFilterSheet = useCallback(() => {
     setSortOpen(false);
-    setAskOpen(true);
+    setFilterOpen(true);
   }, []);
 
-  const closeAsk = useCallback(() => {
-    if (!askOpen) return;
-    setAskOpen(false);
-    requestHistoryClose();
-  }, [askOpen, requestHistoryClose]);
-
-  // The chat's message box owns the bottom of the screen while it's open.
-  useEffect(() => {
-    if (!askOpen) return;
-    setBottomNavHidden(true);
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      // Esc belongs to whatever sits on top: with the chat's history panel
-      // open, it closes the panel, not the whole chat.
-      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
-      closeAsk();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      setBottomNavHidden(false);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [askOpen, closeAsk, setBottomNavHidden]);
-
   const openPicker = useCallback((next: FilterPicker) => {
+    setPicker(next);
+  }, []);
+
+  const openQuickFilterPicker = useCallback((next: FilterPicker) => {
+    setSortOpen(false);
+    setFilterOpen(false);
     setPicker(next);
   }, []);
 
@@ -1998,7 +2459,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // Deep-link support: /explore?category=<slug> (e.g. from the SideNav Browse
   // list) preselects that category. Applied once per param value — the ref
   // stops it re-asserting after the user clears or switches categories in-page.
-  const categoryParam = searchParams.get("category");
+  const categoryParam = searchParams.get("category") ?? initialCategorySlug ?? null;
   const appliedCategoryParam = useRef<string | null>(null);
   useEffect(() => {
     if (!categoryParam) {
@@ -2015,11 +2476,47 @@ export function DiscoverPage({ lang }: { lang: string }) {
     appliedCategoryParam.current = categoryParam;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedCategory(match);
+    if (isSubcategoryRoute) {
+      // Category changes clear specs in the shared store; restore URL filters
+      // when opening a shareable subcategory results route.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSpecs(parseSpecParams(searchParams.getAll("spec")));
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedSubcategory(searchParams.get("subcategory")?.trim() || null);
     // A deep link means "show me this category" — a leftover search query
     // would hide the category bar and scope results, so clear it.
     setSearchDraft("");
     setQuery("");
-  }, [categoryParam, categories, setSearchDraft, setSelectedCategory]);
+  }, [
+    categoryParam,
+    categories,
+    searchParams,
+    isSubcategoryRoute,
+    setSearchDraft,
+    setSelectedCategory,
+    setSelectedSubcategory,
+    setSpecs,
+  ]);
+
+  const appliedSubcategoryRoute = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialSubcategorySlug || !selectedCategory || subcategoriesLoading) return;
+    if (appliedSubcategoryRoute.current === initialSubcategorySlug) return;
+    const match = subcategories.find(
+      (item) => slugifyContentTitle(item.name) === initialSubcategorySlug,
+    );
+    if (!match) return;
+    appliedSubcategoryRoute.current = initialSubcategorySlug;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedSubcategory(match.name);
+  }, [
+    initialSubcategorySlug,
+    selectedCategory,
+    setSelectedSubcategory,
+    subcategories,
+    subcategoriesLoading,
+  ]);
 
   const counties = useMemo(
     () => locationFacets?.counties ?? [],
@@ -2114,9 +2611,15 @@ export function DiscoverPage({ lang }: { lang: string }) {
     };
 
     setOrDelete("q", query || null);
-    setOrDelete("category", live.selectedCategory?.slug ?? null);
+    setOrDelete(
+      "category",
+      isSubcategoryRoute ? null : live.selectedCategory?.slug ?? null,
+    );
     setOrDelete("type", live.selectedType ?? null);
-    setOrDelete("subcategory", live.selectedSubcategory || null);
+    setOrDelete(
+      "subcategory",
+      isSubcategoryRoute ? null : live.selectedSubcategory || null,
+    );
     setOrDelete("sort", live.sort === "RELEVANCE" ? null : live.sort);
     setOrDelete("countyId", live.selectedCounty?.id ?? null);
     setOrDelete("subCountyId", live.selectedSubCounty?.id ?? null);
@@ -2141,6 +2644,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     }
   }, [
     categoryParam,
+    isSubcategoryRoute,
     locationParamsApplied,
     maxPrice,
     minPrice,
@@ -2160,89 +2664,208 @@ export function DiscoverPage({ lang }: { lang: string }) {
     urlSyncTick,
   ]);
 
+  const showSubcategorySearch =
+    !isSubcategoryRoute || subcategoryHeaderMode !== "chips";
+  const showSubcategoryChips = subcategoryHeaderMode !== "search";
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
-          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:hidden">
-            <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
-              <div className="flex border border-gray-300 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
-                <Search
-                  size={16}
-                  className="shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
-                <input
-                  value={searchDraft}
-                  onChange={(event) => setSearchDraft(event.target.value)}
-                  placeholder="Search cars, dresses, fresh produce..."
-                  className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none  placeholder:text-muted-foreground"
-                />
-                {searchDraft ? (
+          <div
+            className="sticky top-0 z-30 grid border-b border-default bg-white [overflow-anchor:none] lg:hidden"
+            style={{
+              gridTemplateRows:
+                isSubcategoryRoute && subcategoryHeaderMode === "expanded"
+                  ? "68px auto"
+                  : "68px",
+            }}
+          >
+            <motion.div
+              initial={false}
+              animate={showSubcategorySearch ? "visible" : "hidden"}
+              variants={{
+                visible: { opacity: 1, y: 0 },
+                hidden: { opacity: 0, y: -8 },
+              }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              aria-hidden={!showSubcategorySearch}
+              style={{ gridArea: "1 / 1" }}
+              className={cn(
+                "flex items-center overflow-hidden py-3",
+                !showSubcategorySearch && "pointer-events-none",
+              )}
+            >
+              <div className="flex w-full min-w-0 items-center gap-1.5 px-4 lg:px-0">
+                {isSubcategoryRoute ? (
                   <button
                     type="button"
-                    onClick={clearSearch}
-                    className="shrink-0 text-muted-foreground"
-                    aria-label="Clear search"
+                    onClick={() => router.back()}
+                    className="grid h-9 w-7 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+                    aria-label="Back to categories"
                   >
-                    <X size={16} />
+                    <ChevronLeft size={20} strokeWidth={2.25} />
                   </button>
-                ) : SHOW_ASK_SHOPI ? (
-                  // Ask Shopi is another way to search — describe it or send a
-                  // photo — so it lives in the search field, not the filters.
+                ) : null}
+                <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-default bg-surface px-3 transition-colors focus-within:border-primary">
+                  <Search
+                    size={17}
+                    className="shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
+                  <input
+                    value={searchDraft}
+                    onChange={(event) => setSearchDraft(event.target.value)}
+                    placeholder={
+                      isSubcategoryRoute && subcategory
+                        ? `Search ${subcategory}`
+                        : "Search cars, dresses, fresh produce..."
+                    }
+                    className="h-full min-w-0 flex-1 bg-transparent text-[14px] leading-5 text-default outline-none placeholder:!text-[12px] placeholder:text-muted-foreground"
+                  />
+                  {searchDraft ? (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="shrink-0 text-muted-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X size={16} />
+                    </button>
+                  ) : null}
+                </div>
+
+                {!isSubcategoryRoute ? (
                   <button
                     type="button"
-                    onClick={openAsk}
-                    className="-my-1 -mr-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary active:bg-primary/10"
-                    aria-label="Ask Shopi — describe what you want"
+                    onClick={openSortSheet}
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors lg:hidden",
+                      sort !== "RELEVANCE"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-surface text-default",
+                    )}
+                    aria-label="Sort"
                   >
-                    <Sparkles size={17} />
+                    <ArrowUpDown size={18} />
                   </button>
                 ) : null}
               </div>
+            </motion.div>
 
-              {/* Sort + Filter icon buttons — opposite the search bar */}
-              <button
-                type="button"
-                onClick={openSortSheet}
+            {isSubcategoryRoute ? (
+              <div
+                aria-hidden={!showSubcategoryChips}
+                style={{
+                  gridArea:
+                    subcategoryHeaderMode === "expanded" ? "2 / 1" : "1 / 1",
+                }}
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors lg:hidden",
-                  sort !== "RELEVANCE"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-surface text-default",
+                  "flex min-w-0 overflow-hidden",
+                  subcategoryHeaderMode === "expanded"
+                    ? "items-start pt-2 pb-2.5"
+                    : "h-full items-center",
+                  !showSubcategoryChips && "pointer-events-none",
                 )}
-                aria-label="Sort"
               >
-                <ArrowUpDown size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={openFilterSheet}
-                className={cn(
-                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors lg:hidden",
-                  activeFilterCount > 0
-                    ? "bg-primary/10 text-primary"
-                    : "bg-surface text-default",
-                )}
-                aria-label="Filters"
-              >
-                <SlidersHorizontal size={18} />
-                {activeFilterCount > 0 ? (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
-                    {activeFilterCount}
-                  </span>
-                ) : null}
-              </button>
-            </div>
+                <div
+                  ref={subcategoryChipsRef}
+                  className="no-scroll-indicator min-w-0 flex-1 overflow-x-auto pl-4 pr-0"
+                >
+                  <motion.div
+                    initial={false}
+                    animate={showSubcategoryChips ? "visible" : "hidden"}
+                    variants={{
+                      visible: { opacity: 1, y: 0 },
+                      hidden: { opacity: 0, y: -8 },
+                    }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex w-max gap-1.5"
+                  >
+                    <button
+                      type="button"
+                      onClick={openFilterSheet}
+                      className={cn(
+                        "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
+                        subcategoryNarrowingFilterCount > 0
+                          ? "border-primary/20 bg-primary/10 text-primary"
+                          : "border-default bg-surface text-default",
+                      )}
+                    >
+                      All filters
+                      {subcategoryNarrowingFilterCount > 0
+                        ? ` (${subcategoryNarrowingFilterCount})`
+                        : ""}
+                      <ChevronDown size={15} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openCountySheet}
+                      className={cn(
+                        "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
+                        hasLocation
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-default bg-surface text-default",
+                      )}
+                    >
+                      {hasLocation ? locationLabel : "Region"}
+                      <ChevronDown size={15} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openQuickFilterPicker({ kind: "price" })}
+                      className={cn(
+                        "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
+                        minPrice.trim() || maxPrice.trim()
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-default bg-surface text-default",
+                      )}
+                    >
+                      Price, KSh
+                      <ChevronDown size={15} aria-hidden />
+                    </button>
+                    {specFacets.map((facet) => {
+                      const selectedValue = specs.find(
+                        (spec) => spec.key === facet.key,
+                      )?.value;
+                      return (
+                        <button
+                          key={facet.key}
+                          type="button"
+                          onClick={() =>
+                            openQuickFilterPicker({ kind: "spec", key: facet.key })
+                          }
+                          className={cn(
+                            "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
+                            selectedValue
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-default bg-surface text-default",
+                          )}
+                        >
+                          {selectedValue
+                            ? `${facet.label}: ${selectedValue}`
+                            : facet.label}
+                          <ChevronDown size={15} aria-hidden />
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </div>
+              </div>
+            ) : null}
 
           </div>
 
           <div className="min-w-0">
-            {/* No category tabs or subcategory tiles here: Category and
-              Subcategory are fields in the filters (the drawer on a phone,
-              the sidebar on desktop), which keeps the top of the page to the
-              search bar and the results. */}
+            {!selectedCategory && !categoryParam && !query ? (
+              <ExploreCategoryGrid
+                categories={categories}
+                loading={categoriesLoading}
+                onSelect={openCategorySubcategories}
+              />
+            ) : null}
+
+            {/* Category shortcuts are shown on the unfiltered view. */}
 
             {error && items.length === 0 ? (
               <div className="px-4 py-12 lg:px-0">
@@ -2272,7 +2895,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             {!loading && items.length === 0 && !error ? (
               <EmptyState
                 title="No posts match this search"
-                body="Try a broader keyword, another category, or a wider location around you."
+                body="Try a broader keyword or clear the search to see more posts."
               />
             ) : null}
 
@@ -2286,6 +2909,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 {query ? (
                   <p className="mb-3 text-sm font-semibold text-default">
                     Results for “{query}”
+                  </p>
+                ) : isSubcategoryRoute && subcategory ? (
+                  <p className="mb-3 text-sm font-semibold text-default">
+                    {subcategory}
                   </p>
                 ) : (
                   // `border-border`, not `border-default`: the latter is a
@@ -2332,16 +2959,29 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
         const countySearchEmpty =
           locationSearchTerm.length > 0 && filteredCounties.length === 0;
+        const popularCounties = filteredCounties
+          .filter((item) => item.count > 0)
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+        const otherCounties = filteredCounties
+          .filter((item) => item.count === 0)
+          .sort((a, b) => a.name.localeCompare(b.name));
         const countyBody = (
           <>
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <LocationSearchInput
-                value={locationSearch}
-                onChange={setLocationSearch}
-                placeholder="Search counties"
-              />
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-y-auto",
+                isDesktop ? "px-4 py-4" : "py-0",
+              )}
+            >
+              {isDesktop ? (
+                <LocationSearchInput
+                  value={locationSearch}
+                  onChange={setLocationSearch}
+                  placeholder="Search counties"
+                />
+              ) : null}
 
-              {!locationSearchTerm ? (
+              {!locationSearchTerm && isDesktop ? (
                 <button
                   type="button"
                   onClick={selectNationwide}
@@ -2369,24 +3009,93 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 </button>
               ) : null}
 
-              <div className="space-y-2">
-                {countySearchEmpty ? (
-                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                    {`No counties match "${locationSearch.trim()}".`}
-                  </p>
-                ) : (
-                  filteredCounties.map((item) => (
-                    <LocationOption
-                      key={item.id}
-                      item={item}
-                      active={selectedCounty?.id === item.id}
-                      indicator="chevron"
-                      onSelect={() => handleCountySelection(item)}
-                      onDrillIn={() => drillIntoSubcounties(item)}
-                    />
-                  ))
-                )}
-              </div>
+              {!locationSearchTerm && !isDesktop ? (
+                <button
+                  type="button"
+                  onClick={selectNationwide}
+                  disabled={nationwideCount === 0}
+                  className={cn(
+                    "flex min-h-16 w-full items-center justify-between border-b border-default px-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                    !hasLocation ? "bg-primary/5" : "bg-app",
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="text-[14px] font-medium text-default">
+                      All Kenya
+                    </span>
+                    <span className="text-[12px] text-muted-foreground">
+                      · {nationwideCount.toLocaleString()} {nationwideCount === 1 ? "ad" : "ads"}
+                    </span>
+                  </div>
+                  {!hasLocation ? (
+                    <Check size={17} className="shrink-0 text-primary" />
+                  ) : null}
+                </button>
+              ) : null}
+
+              {isDesktop ? (
+                <div className="space-y-2">
+                  {countySearchEmpty ? (
+                    <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                      {`No counties match "${locationSearch.trim()}".`}
+                    </p>
+                  ) : (
+                    filteredCounties.map((item) => (
+                      <LocationOption
+                        key={item.id}
+                        item={item}
+                        active={selectedCounty?.id === item.id}
+                        indicator="chevron"
+                        onSelect={() => handleCountySelection(item)}
+                        onDrillIn={() => drillIntoSubcounties(item)}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : countySearchEmpty ? (
+                <p className="px-4 py-5 text-[13px] text-muted-foreground">
+                  {`No counties match "${locationSearch.trim()}".`}
+                </p>
+              ) : (
+                <>
+                  {popularCounties.length > 0 ? (
+                    <>
+                      <div className="bg-elevated px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Popular
+                      </div>
+                      {popularCounties.map((item) => (
+                        <LocationOption
+                          key={item.id}
+                          item={item}
+                          active={selectedCounty?.id === item.id}
+                          indicator="chevron"
+                          listStyle={!isDesktop}
+                          onSelect={() => handleCountySelection(item)}
+                          onDrillIn={() => drillIntoSubcounties(item)}
+                        />
+                      ))}
+                    </>
+                  ) : null}
+                  {otherCounties.length > 0 ? (
+                    <>
+                      <div className="bg-elevated px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Other
+                      </div>
+                      {otherCounties.map((item) => (
+                        <LocationOption
+                          key={item.id}
+                          item={item}
+                          active={selectedCounty?.id === item.id}
+                          indicator="chevron"
+                          listStyle={!isDesktop}
+                          onSelect={() => handleCountySelection(item)}
+                          onDrillIn={() => drillIntoSubcounties(item)}
+                        />
+                      ))}
+                    </>
+                  ) : null}
+                </>
+              )}
             </div>
             <LocationStepFooter
               count={
@@ -2412,10 +3121,21 @@ export function DiscoverPage({ lang }: { lang: string }) {
           subCounties.length > 0 &&
           locationSearchTerm.length > 0 &&
           filteredSubCounties.length === 0;
+        const popularSubCounties = filteredSubCounties
+          .filter((item) => item.count > 0)
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+        const otherSubCounties = filteredSubCounties
+          .filter((item) => item.count === 0)
+          .sort((a, b) => a.name.localeCompare(b.name));
         const subcountyBody = (
           <>
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              {subCounties.length > 0 || subCountiesLoading ? (
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-y-auto",
+                isDesktop ? "px-4 py-4" : "py-0",
+              )}
+            >
+              {isDesktop && (subCounties.length > 0 || subCountiesLoading) ? (
                 <LocationSearchInput
                   value={locationSearch}
                   onChange={setLocationSearch}
@@ -2423,31 +3143,109 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 />
               ) : null}
 
-              <div className="space-y-2">
-                {subCountiesLoading ? (
-                  <LocationOptionSkeletonList />
-                ) : subCounties.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                    No subcounty clusters yet for this county. You can keep the
-                    county selection and continue browsing.
-                  </p>
-                ) : subcountySearchEmpty ? (
-                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                    {`No subcounties match "${locationSearch.trim()}".`}
-                  </p>
-                ) : (
-                  filteredSubCounties.map((item) => (
-                    <LocationOption
-                      key={item.id}
-                      item={item}
-                      active={selectedSubCounty?.id === item.id}
-                      indicator="chevron"
-                      onSelect={() => handleSubCountySelection(item)}
-                      onDrillIn={() => drillIntoWards(item)}
-                    />
-                  ))
-                )}
-              </div>
+              {!locationSearchTerm && !isDesktop && selectedCounty ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubCounty(null);
+                    setSelectedWard(null);
+                  }}
+                  className={cn(
+                    "flex min-h-16 w-full items-center justify-between border-b border-default px-4 text-left",
+                    !selectedSubCounty ? "bg-primary/5" : "bg-app",
+                  )}
+                >
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-[14px] font-medium text-default">
+                      Whole {selectedCounty.name}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-muted-foreground">
+                      · {selectedCounty.count.toLocaleString()} {selectedCounty.count === 1 ? "ad" : "ads"}
+                    </span>
+                  </span>
+                  {!selectedSubCounty ? (
+                    <Check size={17} className="shrink-0 text-primary" />
+                  ) : null}
+                </button>
+              ) : null}
+
+              {isDesktop ? (
+                <div className="space-y-2">
+                  {subCountiesLoading ? (
+                    <LocationOptionSkeletonList />
+                  ) : subCounties.length === 0 ? (
+                    <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                      No subcounty clusters yet for this county. You can keep
+                      the county selection and continue browsing.
+                    </p>
+                  ) : subcountySearchEmpty ? (
+                    <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                      {`No subcounties match "${locationSearch.trim()}".`}
+                    </p>
+                  ) : (
+                    filteredSubCounties.map((item) => (
+                      <LocationOption
+                        key={item.id}
+                        item={item}
+                        active={selectedSubCounty?.id === item.id}
+                        indicator="chevron"
+                        onSelect={() => handleSubCountySelection(item)}
+                        onDrillIn={() => drillIntoWards(item)}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : subCountiesLoading ? (
+                <LocationOptionSkeletonList />
+              ) : subCounties.length === 0 ? (
+                <p className="px-4 py-5 text-[13px] text-muted-foreground">
+                  No subcounty clusters yet for this county. You can keep the
+                  county selection and continue browsing.
+                </p>
+              ) : subcountySearchEmpty ? (
+                <p className="px-4 py-5 text-[13px] text-muted-foreground">
+                  {`No subcounties match "${locationSearch.trim()}".`}
+                </p>
+              ) : (
+                <>
+                  {popularSubCounties.length > 0 ? (
+                    <>
+                      <div className="bg-elevated px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Popular
+                      </div>
+                      {popularSubCounties.map((item) => (
+                        <LocationOption
+                          key={item.id}
+                          item={item}
+                          active={selectedSubCounty?.id === item.id}
+                          indicator="chevron"
+                          listStyle
+                          onSelect={() => handleSubCountySelection(item)}
+                          onDrillIn={() => drillIntoWards(item)}
+                        />
+                      ))}
+                    </>
+                  ) : null}
+                  {otherSubCounties.length > 0 ? (
+                    <>
+                      <div className="bg-elevated px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Other
+                      </div>
+                      {otherSubCounties.map((item) => (
+                        <LocationOption
+                          key={item.id}
+                          item={item}
+                          active={selectedSubCounty?.id === item.id}
+                          indicator="chevron"
+                          listStyle
+                          onSelect={() => handleSubCountySelection(item)}
+                          onDrillIn={() => drillIntoWards(item)}
+                        />
+                      ))}
+                    </>
+                  ) : null}
+                </>
+              )}
             </div>
             {subcountyFooterFacet ? (
               <LocationStepFooter
@@ -2467,8 +3265,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
           filteredWards.length === 0;
         const wardBody = (
           <>
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              {wards.length > 0 || wardsLoading ? (
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-y-auto",
+                isDesktop ? "px-4 py-4" : "py-0",
+              )}
+            >
+              {isDesktop && (wards.length > 0 || wardsLoading) ? (
                 <LocationSearchInput
                   value={locationSearch}
                   onChange={setLocationSearch}
@@ -2494,6 +3297,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                       key={item.id}
                       item={item}
                       active={selectedWard?.id === item.id}
+                      listStyle={!isDesktop}
                       onSelect={() => handleWardSelection(item)}
                     />
                   ))
@@ -2574,17 +3378,36 @@ export function DiscoverPage({ lang }: { lang: string }) {
         // and the county → subcounty → ward steps are views inside it, so
         // nothing stacks on top of anything — back steps between views, and
         // swiping down closes the lot.
-        const drawerOpen = filterOpen || (!isDesktop && locationDepth >= 1);
+        const drawerOpen =
+          filterOpen ||
+          picker != null ||
+          (!isDesktop && locationDepth >= 1);
         let drawerView: ReactNode;
         if (locationView) {
           drawerView = (
             <>
-              <FilterDrawerHeader
-                title={locationView.title}
-                subtitle={locationView.subtitle}
-                onBack={stepBackLocationSheet}
-                action={locationView.action}
-              />
+              {isDesktop ? (
+                <LocationSheetHeader
+                  title={locationView.title}
+                  subtitle={locationView.subtitle}
+                  onBack={stepBackLocationSheet}
+                  action={locationView.action}
+                />
+              ) : (
+                <MobileLocationSearchHeader
+                  title={locationView.title}
+                  value={locationSearch}
+                  onChange={setLocationSearch}
+                  placeholder={
+                    locationStep === "county"
+                      ? "Find a county..."
+                      : locationStep === "subcounty"
+                        ? "Find a subcounty..."
+                        : "Find a ward..."
+                  }
+                  onBack={stepBackLocationSheet}
+                />
+              )}
               {locationView.body}
             </>
           );
@@ -2598,6 +3421,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               selectedSubcategory={subcategory}
               specFacets={specFacets}
               specs={specs}
+              sort={sort}
               postedWithinDays={postedWithinDays}
               onBack={closePicker}
               onPickPosted={(days) => {
@@ -2616,31 +3440,58 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 setSpec(key, value);
                 closePicker();
               }}
+              onPickSort={(next) => {
+                setSort(next);
+                closePicker();
+              }}
             />
           );
         } else {
           drawerView = (
             <FilterFieldList
-              categoryLabel={selectedCategory?.name ?? "All categories"}
+              categoryLabel={
+                isSubcategoryRoute
+                  ? null
+                  : selectedCategory?.name ?? "All categories"
+              }
               subcategoryLabel={
-                selectedCategory && subcategories.length > 0
+                !isSubcategoryRoute && selectedCategory && subcategories.length > 0
                   ? (subcategory ?? `All ${selectedCategory.name}`)
                   : null
               }
               regionLabel={locationLabel}
+              sortLabel={activeSortLabel}
+              sortActive={sort !== "RELEVANCE"}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
               postedLabel={postedWithinLabel(postedWithinDays)}
               specFacets={specFacets}
               specFacetsLoading={
                 specFacetsLoading && specFacets.length === 0 && Boolean(selectedCategory || subcategory)
               }
               specs={specs}
+              marketplaceStyle={isSubcategoryRoute}
               negotiableOnly={negotiableOnly}
               onNegotiableOnly={setNegotiableOnly}
               onOpenPicker={openPicker}
               onOpenRegion={openCountySheet}
+              onOpenSort={() => openPicker({ kind: "sort" })}
+              onClearLocation={clearLocation}
+              onClearSort={() => setSort("RELEVANCE")}
+              onClearPrice={() => {
+                setMinPrice("");
+                setMaxPrice("");
+              }}
+              onClearPosted={() => setPostedWithinDays(null)}
+              onClearSpec={(key) => setSpec(key, null)}
               onClose={closeFilterSheet}
               onClear={clearFilters}
-              canClear={activeFilterCount > 0 || sort !== "RELEVANCE"}
+              canClear={
+                (isSubcategoryRoute
+                  ? activeFilterCount >
+                    Number(Boolean(selectedCategory)) + Number(Boolean(subcategory))
+                  : activeFilterCount > 0) || sort !== "RELEVANCE"
+              }
               resultLabel={resultButtonLabel}
             />
           );
@@ -2663,16 +3514,69 @@ export function DiscoverPage({ lang }: { lang: string }) {
         );
       })()}
 
-      {AskShopiGrid && askOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Ask Shopi"
-          className="fixed inset-0 z-90 overflow-y-auto overscroll-contain bg-surface"
-        >
-          <AskShopiGrid lang={lang} active onClose={closeAsk} />
-        </div>
-      ) : null}
+      <Drawer
+        open={subcategoryDrawerOpen}
+        onOpenChange={(open) => {
+          if (open) setSubcategoryDrawerOpen(true);
+          else closeCategoryDrawer();
+        }}
+      >
+        <DrawerContent className="mx-auto flex h-[min(85svh,680px)] w-full max-w-107.5 flex-col bg-app">
+          <DrawerHeader className="relative shrink-0 px-12 pb-3 pt-4 text-center">
+            <DrawerTitle className="text-base font-bold text-default">
+              Browse categories
+            </DrawerTitle>
+            <button
+              type="button"
+              onClick={closeCategoryDrawer}
+              className="absolute right-4 top-4 grid h-9 w-9 place-items-center text-default"
+              aria-label="Close categories"
+            >
+              <X className="h-7 w-7" strokeWidth={2.5} />
+            </button>
+          </DrawerHeader>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5">
+            {subcategoriesLoading ? (
+              <div className="flex flex-col gap-0">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex h-12 min-h-12 flex-none items-center justify-between"
+                  >
+                    <Skeleton className="h-5 w-2/3 rounded-md" />
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            ) : subcategories.length > 0 ? (
+              <div className="flex flex-col gap-0">
+                {subcategories.map((subcategory) => (
+                  <button
+                    key={subcategory.name}
+                    type="button"
+                    onClick={() => selectSubcategoryAndNavigate(subcategory.name)}
+                    className="flex h-12 min-h-12 w-full flex-none items-center justify-between text-left text-sm font-semibold leading-tight text-default active:opacity-65"
+                  >
+                    <span>{subcategory.name}</span>
+                    <span className="ml-4 flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+                      {subcategory.count.toLocaleString()}
+                      <ChevronRight
+                        className="h-6 w-6 text-default"
+                        strokeWidth={2.25}
+                      />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : drawerCategory ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                No subcategories available.
+              </p>
+            ) : null}
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <Drawer
         open={sortOpen}

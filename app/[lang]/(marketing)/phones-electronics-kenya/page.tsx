@@ -14,11 +14,11 @@ type Props = { params: Promise<{ lang: string }> };
 const faq = [
   {
     q: "Where can I find phones for sale in Kenya?",
-    a: "You can search Shopi for phones for sale in Kenya, including Samsung phones, iPhones, Tecno, Infinix, Oppo, Xiaomi and other brands. Open a listing, check the price and location, then message the seller directly.",
+    a: "You can search Shopi for new, used or refurbished phones in Kenya, including Samsung, Tecno, Infinix, Oppo, Xiaomi and iPhone models. Open a listing, check the price and location, then message the seller directly.",
   },
   {
     q: "Can I buy Samsung phones or iPhones on Shopi?",
-    a: "Yes. Shopi is built for local phone and electronics listings, including Samsung Galaxy phones, iPhones, used phones, new phones and accessories from sellers across Kenya.",
+    a: "Yes. Shopi is built for local phone and electronics listings, including Samsung Galaxy, Tecno, Infinix, Oppo, used and refurbished phones, new phones and accessories from sellers across Kenya.",
   },
   {
     q: "Can I sell a phone, TV or electronics item on Shopi?",
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: "/phones-electronics-kenya",
     title: "Phones, Samsung, iPhone, TVs and Electronics for Sale in Kenya",
     description:
-      "Find or sell phones, Samsung Galaxy, iPhone, TVs, laptops and electronics in Kenya on Shopi. Compare listings and message sellers directly.",
+      "Find used and refurbished phones, affordable laptops, Samsung, Tecno, Infinix, Oppo, TVs and accessories in Kenya. Message sellers directly.",
   });
 }
 
@@ -127,6 +127,14 @@ export default async function PhonesElectronicsKenyaPage({ params }: Props) {
       body: "Search iPhone for sale in Kenya, including used and new iPhones. Check storage, battery health, condition, accessories and seller location before chatting.",
     },
     {
+      title: "Affordable and refurbished devices",
+      body: "Compare used phones in Kenya and look for refurbished smartphones, cheap laptops in Nairobi and refurbished computers. Ask about battery health, repairs, warranty and accessories before agreeing to buy.",
+    },
+    {
+      title: "Phone accessories",
+      body: "Find phone accessories such as chargers and wireless earbuds from local sellers. Confirm compatibility and condition before arranging pickup or delivery.",
+    },
+    {
       title: "TVs and home electronics",
       body: "Browse televisions, sound systems, speakers, decoders, gaming consoles and home electronics from local sellers you can message directly.",
     },
@@ -136,13 +144,20 @@ export default async function PhonesElectronicsKenyaPage({ params }: Props) {
     "Samsung phones for sale in Kenya",
     "Samsung Galaxy for sale",
     "iPhone for sale in Kenya",
-    "Used phones for sale",
+    "Used phones in Kenya",
+    "Refurbished smartphones Kenya",
+    "Tecno phones for sale Kenya",
+    "Infinix phones for sale Kenya",
+    "Oppo phones for sale Kenya",
     "Phones for sale in Nairobi",
     "Televisions for sale in Kenya",
     "Smart TVs for sale",
-    "Laptops for sale in Kenya",
+    "Used laptops in Kenya",
+    "Cheap laptops in Nairobi",
+    "Refurbished computers Kenya",
     "Electronics for sale in Kenya",
     "Phone accessories Kenya",
+    "Chargers and wireless earbuds Kenya",
   ];
 
   return (

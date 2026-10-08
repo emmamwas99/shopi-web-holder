@@ -68,6 +68,7 @@ interface Props {
 export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   const client = useApolloClient();
   const pathname = usePathname();
+  const router = useRouter();
 
   // Frozen on purpose. Swiping rewrites the address bar with replaceState,
   // which Next never sees, so the route segment keeps rendering the original
@@ -95,6 +96,13 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // and the position is restored by jumping to the right index within that
   // list instead. See the restore effect below.
   const [seed] = useState(seedProp);
+  // The origin tab travels on the video URL so chat can push another route and
+  // the browser still knows where Back should return after the chat is closed.
+  const [returnToWatch] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("tab") === "watch",
+  );
 
   const { items, loading, loadingMore, hasMore, loadMore } = useVideoFeed(seed);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -212,7 +220,9 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // Writes the canonical slug path, the same one the feed card pushes and the
   // route treats as canonical, so copying the address bar mid-swipe yields a
   // shareable, indexable link rather than an id that would only redirect.
-  const nextPath = activePost ? videoPath(lang, activePost) : null;
+  const nextPath = activePost
+    ? `${videoPath(lang, activePost)}${returnToWatch ? "?tab=watch" : ""}`
+    : null;
   const lastWrittenPath = useRef<string | null>(null);
   useEffect(() => {
     if (!nextPath || nextPath === lastWrittenPath.current) return;
@@ -235,7 +245,9 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // A shared video link is the common way into this screen, and that arrival
   // has no app history behind it — a plain back() would do nothing at all and
   // trap the viewer open. Fall through to the feed instead.
-  const closeViewer = useAppBack(`/${lang}/for-you`);
+  const closeViewer = useAppBack(
+    `/${lang}/for-you${returnToWatch ? "?tab=watch" : ""}`,
+  );
   // Closing is a deliberate exit, so the remembered slide goes with it —
   // reopening this video later should start at the top, not mid-list.
   const close = useCallback(() => {
@@ -356,6 +368,17 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   if (loading) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Back"
+          className="absolute left-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:scale-95"
+          style={{
+            top: "var(--immersive-top, max(env(safe-area-inset-top, 0px), 16px))",
+          }}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
         <BufferSpinner />
       </div>
     );
@@ -364,10 +387,8 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   return (
     <div
       className="fixed inset-0 z-[100] bg-black"
-      // The header row's vertical position, published once here so the mute
-      // button — which lives inside the slide, a different component — can
-      // sit on exactly the same line as the back button without the two
-      // drifting apart.
+      // Publish the back button's vertical position here so it clears the
+      // safe area on the same line across loading and playback states.
       style={
         {
           "--immersive-top": "max(env(safe-area-inset-top, 0px), 16px)",
@@ -544,6 +565,7 @@ function SlideContainer({
 }) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
+  const contactHref = `/${lang}/notifications/${post.id}?source=content`;
   const {
     liked,
     likeCount,
@@ -567,8 +589,17 @@ function SlideContainer({
     // neighbouring slide, which is why coming back landed near the right video
     // instead of on it.
     rememberViewerSlide(routeSlug, contentSlugSegment(post));
-    router.push(`/${lang}/notifications/${post.id}?source=content`);
-  }, [requireAuth, router, lang, post, routeSlug]);
+    router.push(contactHref);
+  }, [requireAuth, router, contactHref, post, routeSlug]);
+
+  // This is a button-driven navigation rather than a Link, so Next cannot
+  // prefetch the chat route from its viewport. Warm it while the video is
+  // active so the click can enter the conversation without waiting for its
+  // route bundle and server payload first.
+  useEffect(() => {
+    if (state !== "active" || post.isMyContent) return;
+    void router.prefetch(contactHref);
+  }, [contactHref, post.isMyContent, router, state]);
 
   const { following, toggle: handleFollow } = useFollow({
     userId: post.creator?.id ?? post.creatorId,
@@ -592,21 +623,6 @@ function SlideContainer({
     return <div className="h-full w-full bg-black" aria-hidden />;
   }
 
-  const actions = (
-    <ImmersiveActions
-      liked={liked}
-      likeCount={likeCount}
-      onLike={handleLike}
-      saved={saved}
-      onSave={handleSave}
-      commentCount={post.stats?.comments ?? 0}
-      onComment={onOpenComments}
-      onShare={handleShare}
-      orientation="column"
-      tone="overlay"
-    />
-  );
-
   return (
     <ImmersiveSlide
       post={post}
@@ -618,7 +634,7 @@ function SlideContainer({
       // Mobile only — ImmersiveSlide renders this subtree under `md:hidden`.
       // The rail takes over on desktop, where the comments panel already
       // carries the composer and a full-width button would be wrong.
-      overlay={
+      overlay={(sound) => (
         <div className="flex h-full w-full flex-col justify-end gap-3 p-4 pb-[calc(var(--immersive-bottom)+2.25rem)]">
           {/* Action rail sits above the text block rather than beside it, so
               the meta below can use the full width for the price and the
@@ -626,7 +642,22 @@ function SlideContainer({
               ImmersiveMeta and ImmersiveActions opt their own interactive
               children in, leaving the rest of the frame tappable for
               play/pause. */}
-          <div className="flex justify-end">{actions}</div>
+          <div className="flex justify-end">
+            <ImmersiveActions
+              liked={liked}
+              likeCount={likeCount}
+              onLike={handleLike}
+              saved={saved}
+              onSave={handleSave}
+              commentCount={post.stats?.comments ?? 0}
+              onComment={onOpenComments}
+              onShare={handleShare}
+              muted={sound.muted}
+              onToggleMuted={sound.onToggleMuted}
+              orientation="column"
+              tone="overlay"
+            />
+          </div>
 
           <ImmersiveMeta
             post={post}
@@ -643,7 +674,7 @@ function SlideContainer({
                     event.stopPropagation();
                     openContact();
                   }}
-                  className="pointer-events-auto mt-0.5 mb-3 flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-[0.8rem] font-bold text-white transition-transform active:scale-[0.98]"
+                  className="pointer-events-auto relative z-30 mt-0.5 mb-3 flex min-h-11 w-full touch-manipulation items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-[0.8rem] font-bold text-white transition-transform active:scale-[0.98]"
                 >
                   <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
                   {/* Deliberately not "Chat to Buy". Half this marketplace is
@@ -657,12 +688,11 @@ function SlideContainer({
             }
           />
         </div>
-      }
+      )}
       // Gated on a real media query, not `hidden md:block`. CSS still mounts
       // the subtree and runs its comment query; on a phone that is a wasted
       // round trip per slide for a panel nobody can see.
-      rail={
-        desktop ? (
+      rail={desktop ? (sound) => (
           <div
             data-immersive-rail
             className="flex h-full min-h-0 flex-col overflow-hidden"
@@ -685,6 +715,8 @@ function SlideContainer({
                   commentCount={post.stats?.comments ?? 0}
                   onComment={onOpenComments}
                   onShare={handleShare}
+                  muted={sound.muted}
+                  onToggleMuted={sound.onToggleMuted}
                   orientation="row"
                   tone="surface"
                 />
@@ -715,8 +747,7 @@ function SlideContainer({
               )}
             </div>
           </div>
-        ) : null
-      }
+        ) : undefined}
     />
   );
 }
