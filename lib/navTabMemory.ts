@@ -9,7 +9,7 @@ import { useSyncExternalStore } from "react";
  *
  * Scroll restoration alone could not do this. A tab link pointed at the bare
  * route (`/en/explore`), while the screen being returned to was
- * `/en/explore?q=iphone` or the feed's Following sub-tab: the page rebuilt
+ * `/en/explore?q=iphone` or the feed's Watch sub-tab: the page rebuilt
  * itself from the bare URL, showed different content, and the saved position
  * no longer matched anything on it.
  *

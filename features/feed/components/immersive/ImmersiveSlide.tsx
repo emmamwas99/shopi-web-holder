@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { Play, RotateCcw } from "lucide-react";
 import { isAutoplayRefusal, useHlsVideo } from "@/lib/useHlsVideo";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { BufferSpinner } from "../BufferSpinner";
@@ -66,8 +66,8 @@ interface Props {
    */
   onSetMuted: (next: boolean) => void;
   /** Rendered over the video on mobile, beside it on desktop. */
-  overlay?: React.ReactNode;
-  rail?: React.ReactNode;
+  overlay?: (sound: { muted: boolean; onToggleMuted: () => void }) => React.ReactNode;
+  rail?: (sound: { muted: boolean; onToggleMuted: () => void }) => React.ReactNode;
   onRequestNext?: () => void;
 }
 
@@ -432,24 +432,6 @@ export function ImmersiveSlide({
           </button>
         )}
 
-        {active && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              toggleMuted();
-            }}
-            aria-label={actualMuted ? "Unmute video" : "Mute video"}
-            className="absolute right-4 top-[var(--immersive-top)] z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:scale-95"
-          >
-            {actualMuted ? (
-              <VolumeX className="h-5 w-5" />
-            ) : (
-              <Volume2 className="h-5 w-5" />
-            )}
-          </button>
-        )}
-
         {soundBlocked && (
           <button
             type="button"
@@ -478,7 +460,7 @@ export function ImmersiveSlide({
               className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-2/5 bg-linear-to-t from-black/85 via-black/45 to-transparent md:hidden"
             />
             <div className="pointer-events-none absolute inset-0 z-20 md:hidden">
-              {overlay}
+              {overlay?.({ muted: actualMuted, onToggleMuted: toggleMuted })}
             </div>
           </>
         )}
@@ -498,7 +480,7 @@ export function ImmersiveSlide({
           column is unconditionally black. */}
       {rail && (
         <aside className="hidden h-full min-h-0 overflow-hidden border-l border-default bg-background text-default md:block">
-          {rail}
+          {rail?.({ muted: actualMuted, onToggleMuted: toggleMuted })}
         </aside>
       )}
 

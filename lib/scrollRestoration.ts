@@ -96,7 +96,7 @@ const PENDING_TTL_MS = 15_000;
 const INTENT_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
 
 /**
- * The feed swaps its For You / Following / Nearby sub-tabs in place and keeps a
+ * Home swaps its For You / Watch sub-tabs in place and keeps a
  * position per sub-tab itself, so `tab` is not part of its identity here.
  * Every other page's `?tab=` (inbox, profile) is a different list and stays in
  * the key.
@@ -339,8 +339,8 @@ function escapeAttributeValue(value: string): string {
 }
 
 /**
- * The rendered element for an anchor. The same post can appear more than once
- * (For You and Following both mounted, one of them hidden), so hidden copies
+ * The rendered element for an anchor. The same video can appear more than once
+ * (Home and Watch can both surface it, one of them hidden), so hidden copies
  * are skipped and, among visible ones, the one nearest where it used to be
  * wins.
  */

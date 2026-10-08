@@ -154,7 +154,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               own sticky search bar, so showing this one too would put two
               search boxes on /explore and /search — the thing it replaced. The
               slot still has to grow, or the whole right-hand cluster collapses
-              back against the Browse link. */}
+                  back against the Browse link. */}
             <div className="flex min-w-0 flex-1 items-center">
               <NavSearch lang={lang} className="hidden w-full lg:flex" />
             </div>

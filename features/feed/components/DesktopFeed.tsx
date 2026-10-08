@@ -7,46 +7,45 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ShoppingBag } from "lucide-react";
-import { useForYouFeed, useFollowingFeed } from "../hooks/useFeed";
+import { useForYouFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
-import { useAuthStore } from "@/stores/auth";
 import { FeedPaginationSkeleton, PostCardSkeleton } from "./FeedSkeleton";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { PostCard } from "./PostCard";
 import { DesktopFeedRail } from "./DesktopFeedRail";
 import { StoriesBar } from "@/features/stories/components/StoriesBar";
+import { WatchGridSkeleton } from "./WatchGridSkeleton";
 import {
   captureScrollPosition,
   restoreScrollPosition,
   type ScrollPosition,
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
+import {
+  hasPendingWatchScrollPosition,
+  restoreWatchScrollPosition,
+} from "@/features/feed/lib/watchScrollPosition";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
-type Tab = "for-you" | "following" | "nearby";
+type Tab = "for-you" | "watch";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For You" },
-  { id: "following", label: "Following" },
-  { id: "nearby", label: "Nearby" },
+  { id: "watch", label: "Watch" },
 ];
 
 // `loading` gives each its own Suspense boundary (see FeedPage): without it the
 // first open suspended to the route boundary and replaced the whole feed with
 // its skeleton, snapping the window scroll.
-const DesktopNearbyColumn = dynamic(
-  () => import("./DesktopNearbyColumn").then((mod) => mod.DesktopNearbyColumn),
-  { loading: () => <ColumnSkeleton /> },
+const WatchGrid = dynamic(
+  () => import("./WatchGrid").then((mod) => mod.WatchGrid),
+  { loading: () => <WatchGridSkeleton /> },
 );
-
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" ||
-  v === "following" ||
-  v === "nearby";
+  v === "for-you" || v === "watch";
 
 const isDesktopViewport = () =>
   typeof window !== "undefined" &&
@@ -156,65 +155,6 @@ function ForYouColumn({ lang }: { lang: string }) {
   );
 }
 
-function FollowingColumn({ lang }: { lang: string }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
-  const { items, loading, loadingMore, hasMore, loadMore } = useFollowingFeed();
-  const { sentinelRef } = useInfiniteScroll({
-    hasMore,
-    loading: loading || loadingMore,
-    onLoadMore: loadMore,
-  });
-
-  if (!isAuthenticated) {
-    const returnTo = encodeURIComponent(`/${lang}/for-you?tab=following`);
-    return (
-      <EmptyState
-        title="Sign in to see your feed"
-        body="Follow sellers and creators to see their latest items here."
-        action={
-          <Link
-            href={`/${lang}/auth/login?returnTo=${returnTo}`}
-            className="rounded-full bg-main px-6 py-3 text-sm font-black text-elevated"
-          >
-            Sign in
-          </Link>
-        }
-      />
-    );
-  }
-
-  if (loading && items.length === 0) return <ColumnSkeleton />;
-
-  if (!loading && items.length === 0) {
-    return (
-      <EmptyState
-        title="Follow sellers you love"
-        body="Their latest listings will appear here once you follow someone."
-      />
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      {items.map((post, i) => (
-        <DesktopPostCard
-          key={post.id}
-          post={post}
-          lang={lang}
-          priority={i === 0}
-        />
-      ))}
-      <div ref={sentinelRef} className="h-1" />
-      {loadingMore && <FeedPaginationSkeleton />}
-      {!hasMore && items.length > 0 && (
-        <p className="py-6 text-center text-xs text-muted">
-          You&apos;re all caught up
-        </p>
-      )}
-    </div>
-  );
-}
-
 export default function DesktopFeed({
   lang = "en",
   visible = true,
@@ -222,6 +162,7 @@ export default function DesktopFeed({
   lang?: string;
   visible?: boolean;
 }) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialTab: Tab = (() => {
     const t = searchParams.get("tab");
@@ -256,9 +197,25 @@ export default function DesktopFeed({
       `${window.location.pathname}${qs ? `?${qs}` : ""}`,
     );
     // Next does not see a bare replaceState, so tell the nav tab memory the
-    // For You tab now returns to this sub-tab.
+    // Home now returns to this sub-tab.
     rememberNavTabUrl();
   }, []);
+
+  useLayoutEffect(() => {
+    if (
+      !isDesktopViewport() ||
+      !/\/(?:for-you|feed)\/?$/.test(pathname) ||
+      !hasPendingWatchScrollPosition()
+    ) {
+      return;
+    }
+    if (tab !== "watch") {
+      selectTab("watch");
+      return;
+    }
+    const frame = requestAnimationFrame(restoreWatchScrollPosition);
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, selectTab, tab]);
 
   useEffect(() => {
     if (!visible) return;
@@ -285,15 +242,11 @@ export default function DesktopFeed({
       <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
         <section className="min-w-0">
           <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
-            {/* Equal-width subtabs across the whole column, not a pill group.
-                The track count follows TABS so the row still divides evenly
-                when Ask Shopi is off (3 instead of 4); both class names are
-                spelled out literally because Tailwind only generates the
-                classes it can read in the source. */}
+            {/* Equal-width Home subtabs across the whole column. */}
             <div
               className={[
                 "grid w-full border-b border-border",
-                TABS.length === 4 ? "grid-cols-4" : "grid-cols-3",
+                TABS.length === 2 ? "grid-cols-2" : "grid-cols-3",
               ].join(" ")}
             >
               {TABS.map((t) => (
@@ -318,17 +271,9 @@ export default function DesktopFeed({
             <StoriesBar lang={lang} variant="desktop" />
             <ForYouColumn lang={lang} />
           </div>
-          {openedTabs.has("following") ? (
-            <div className={tab === "following" ? undefined : "hidden"}>
-              <FollowingColumn lang={lang} />
-            </div>
-          ) : null}
-          {openedTabs.has("nearby") ? (
-            <div className={tab === "nearby" ? undefined : "hidden"}>
-              <DesktopNearbyColumn
-                lang={lang}
-                active={visible && tab === "nearby"}
-              />
+          {openedTabs.has("watch") ? (
+            <div className={tab === "watch" ? undefined : "hidden"}>
+              <WatchGrid lang={lang} active={visible && tab === "watch"} />
             </div>
           ) : null}
         </section>

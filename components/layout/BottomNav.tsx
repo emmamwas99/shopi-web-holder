@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   House,
+  LayoutGrid,
   MessageCircle,
-  Search,
   SquarePlus,
   User,
   type LucideIcon,
@@ -31,16 +31,15 @@ const tabs: Tab[] = [
   {
     key: "feed",
     path: "for-you",
-    label: "For You",
+    label: "Home",
     icon: House,
   },
   {
     key: "explore",
     path: "explore",
-    // "Browse" says what the tab is for; desktop's top nav already calls it
-    // that. The route stays /explore.
-    label: "Browse",
-    icon: Search,
+    // The route stays /explore; the tab is named for its category-led view.
+    label: "Categories",
+    icon: LayoutGrid,
   },
   {
     key: "upload",

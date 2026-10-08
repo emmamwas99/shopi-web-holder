@@ -45,12 +45,16 @@ export function generateStaticParams() {
 const isRental = (label: string) => /\bfor rent$/i.test(label);
 
 function pageTitle(label: string) {
+  if (label === "Home services") return `${label} in Kenya`;
   return isRental(label) ? `${label} in Kenya` : `${label} for Sale in Kenya`;
 }
 
 // The intro is already on the page; the meta description is written for the
 // results page and kept under 155 chars so it isn't truncated.
 function pageDescription(page: SearchIntentPageData) {
+  if (page.category === "Services") {
+    return `Find ${page.pluralLabel} in Kenya from local providers. Compare services and locations, then contact providers directly on Shopi.`;
+  }
   const subject = isRental(page.label)
     ? page.pluralLabel
     : `${page.pluralLabel} for sale`;
@@ -118,12 +122,24 @@ export default async function SearchIntentLandingPage({ params }: Props) {
     .filter((related): related is SearchIntentPageData => Boolean(related));
   const faq = [
     {
-      q: `Can I find ${page.pluralLabel} for sale on Shopi?`,
-      a: `Yes. Shopi helps buyers find ${page.pluralLabel} in Kenya from local sellers. Open a listing, compare price and location, then message the seller directly.`,
+      q:
+        page.category === "Services"
+          ? `Can I find ${page.pluralLabel} on Shopi?`
+          : `Can I find ${page.pluralLabel} for sale on Shopi?`,
+      a:
+        page.category === "Services"
+          ? `Yes. Shopi helps people find ${page.pluralLabel} in Kenya from local providers. Review the service details and location, then contact the provider directly to confirm availability and price.`
+          : `Yes. Shopi helps buyers find ${page.pluralLabel} in Kenya from local sellers. Open a listing, compare price and location, then message the seller directly.`,
     },
     {
-      q: `How do I sell ${page.label.toLowerCase()} on Shopi?`,
-      a: `Create a free listing with clear photos or video, price, location and the details buyers search for. Shopi Agent can also help draft the title, description and specifications.`,
+      q:
+        page.category === "Services"
+          ? "How do I list a service on Shopi?"
+          : `How do I sell ${page.label.toLowerCase()} on Shopi?`,
+      a:
+        page.category === "Services"
+          ? "Create a free listing with the service you provide, areas covered, availability and clear contact details. Shopi Agent can help draft the title and description."
+          : `Create a free listing with clear photos or video, price, location and the details buyers search for. Shopi Agent can also help draft the title, description and specifications.`,
     },
     {
       q: "Does Shopi handle payment or delivery?",
