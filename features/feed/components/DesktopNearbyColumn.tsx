@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 /**
  * DesktopNearbyColumn — desktop version of the Nearby tab. Mirrors the
  * geolocation / permission flow of the mobile NearbyGrid, but renders
@@ -97,7 +99,7 @@ export function DesktopNearbyColumn({
   if (effectivePermState === "checking") {
     return (
       <Panel>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <InterlockingBalls size={32} />
         <p className="app-subcopy">Checking location…</p>
       </Panel>
     );
@@ -132,7 +134,7 @@ export function DesktopNearbyColumn({
   if (effectivePermState === "requesting") {
     return (
       <Panel>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <InterlockingBalls size={32} />
         <p className="app-subcopy">Finding your location…</p>
       </Panel>
     );

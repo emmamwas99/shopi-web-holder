@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
@@ -113,7 +115,7 @@ function StoryVideo({
 function Spinner() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-white/25 border-t-white" />
+      <InterlockingBalls size={36} />
     </div>
   );
 }

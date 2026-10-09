@@ -1,8 +1,10 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, Check, ChevronLeft, Loader2, X } from "lucide-react";
+import { Camera, Check, ChevronLeft, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { HTMLAttributes } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -331,7 +333,7 @@ function EditProfileForm({
             fontSize: "var(--text-sm)",
           }}
         >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : "Save"}
+          {loading ? <InterlockingBalls size={16} /> : "Save"}
         </Button>
       </header>
 
@@ -394,7 +396,7 @@ function EditProfileForm({
                   }}
                 >
                   {avatarUploading ? (
-                    <Loader2 size={22} className="animate-spin text-white" />
+                    <InterlockingBalls size={22} />
                   ) : (
                     <Camera
                       size={22}
@@ -587,11 +589,7 @@ function EditProfileForm({
                           {isUsername && usernameState !== "idle" && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 md:right-4">
                               {usernameState === "checking" && (
-                                <Loader2
-                                  size={15}
-                                  className="animate-spin"
-                                  style={{ color: "rgb(var(--color-text-muted))" }}
-                                />
+                                <InterlockingBalls size={15} />
                               )}
                               {usernameState === "available" && (
                                 <Check
@@ -662,7 +660,7 @@ function EditProfileForm({
           disabled={saveDisabled}
           className="pointer-events-auto h-12 rounded-2xl bg-primary px-5 text-sm font-bold text-white shadow-[0_12px_32px_rgb(var(--brand-primary)/0.28)] transition-all hover:bg-primary/90 hover:shadow-[0_16px_40px_rgb(var(--brand-primary)/0.34)]"
         >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : "Save changes"}
+          {loading ? <InterlockingBalls size={16} /> : "Save changes"}
         </Button>
       </div>
     </div>

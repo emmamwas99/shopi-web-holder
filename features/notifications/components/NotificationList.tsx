@@ -1,20 +1,10 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState } from "react";
 import Image from "next/image";
-import {
-  AlertCircle,
-  Bell,
-  Bookmark,
-  CheckCheck,
-  Gift,
-  Loader2,
-  Megaphone,
-  MessageSquareText,
-  PlayCircle,
-  Store,
-  UserPlus,
-} from "lucide-react";
+import { AlertCircle, Bell, Bookmark, CheckCheck, Gift, Megaphone, MessageSquareText, PlayCircle, Store, UserPlus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -104,7 +94,7 @@ export function NotificationList({
             title="Mark all as read"
           >
             {markingAllRead ? (
-              <Loader2 className="animate-spin text-muted" size={16} />
+              <InterlockingBalls size={16} />
             ) : (
               <CheckCheck size={16} />
             )}

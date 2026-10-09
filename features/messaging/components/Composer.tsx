@@ -1,8 +1,10 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Loader2, MapPin, Paperclip, Play, Send, X } from "lucide-react";
+import { MapPin, Paperclip, Play, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -211,7 +213,7 @@ export function Composer({
           title="Share my location"
         >
           {locating ? (
-            <Loader2 size={15} className="animate-spin" />
+            <InterlockingBalls size={15} />
           ) : (
             <MapPin size={15} />
           )}

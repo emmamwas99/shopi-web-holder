@@ -81,7 +81,10 @@ const SAMPLE_INTERVAL_MS = 120;
 /** Scroll idle time after which the resting position is persisted. */
 const IDLE_PERSIST_MS = 350;
 /** How long a restore waits for its content to render before giving up. */
-const RESTORE_TIMEOUT_MS = 2500;
+// Feed/profile/discovery results can take longer than a skeleton transition to
+// arrive, especially on a cold mobile session. Keep retrying for the full
+// route load window; any deliberate user input cancels restoration immediately.
+const RESTORE_TIMEOUT_MS = 10_000;
 /**
  * How long a reached position is held against late layout shifts. Chrome's
  * scroll anchoring already does this; Safari (the iPhone) has none, so an
@@ -321,12 +324,37 @@ function captureAnchor(): ScrollAnchor | undefined {
   if (width <= 0 || height <= 0) return undefined;
 
   for (const [fx, fy] of ANCHOR_PROBES) {
-    const hit = document.elementFromPoint(width * fx, height * fy);
-    const el = hit?.closest(`[${SCROLL_ANCHOR_ATTR}]`);
-    if (!el || !movesWithWindow(el)) continue;
-    const key = el.getAttribute(SCROLL_ANCHOR_ATTR);
-    if (!key) continue;
-    return { k: key, o: Math.round(el.getBoundingClientRect().top) };
+    const x = width * fx;
+    const y = height * fy;
+    const hit = document.elementFromPoint(x, y);
+    const hitAnchor = hit?.closest<HTMLElement>(`[${SCROLL_ANCHOR_ATTR}]`);
+    if (hitAnchor && movesWithWindow(hitAnchor)) {
+      const key = hitAnchor.getAttribute(SCROLL_ANCHOR_ATTR);
+      if (key) {
+        return { k: key, o: Math.round(hitAnchor.getBoundingClientRect().top) };
+      }
+    }
+
+    // A drawer or fixed sheet can cover every probe even though the page
+    // underneath is the thing whose position must survive the navigation.
+    // elementFromPoint only returns the top layer, so find the window-scrolling
+    // anchor whose box occupies this point, ignoring fixed/dialog descendants.
+    let underlying: HTMLElement | undefined;
+    for (const el of document.querySelectorAll<HTMLElement>(
+      `[${SCROLL_ANCHOR_ATTR}]`,
+    )) {
+      if (el.getClientRects().length === 0 || !movesWithWindow(el)) continue;
+      const rect = el.getBoundingClientRect();
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        continue;
+      }
+      underlying = el;
+      break;
+    }
+    const key = underlying?.getAttribute(SCROLL_ANCHOR_ATTR);
+    if (key && underlying) {
+      return { k: key, o: Math.round(underlying.getBoundingClientRect().top) };
+    }
   }
   return undefined;
 }
@@ -468,12 +496,20 @@ export function restoreScrollPosition(
         return;
       }
     } else {
+      // Keep the old pixel position visible while an async list is rendering.
+      // The anchor will refine it as soon as the original item appears; leaving
+      // the user at the top during that wait looks like restoration failed.
+      if (result === "missing" && target.a) {
+        scrollToY(Math.min(target.y, maxScrollY()));
+      }
       reachedAt = 0;
       if (now - startedAt >= RESTORE_TIMEOUT_MS) {
-        // Anchored and never found: the list changed, so the old offset
-        // would land on unrelated content — stay put. Without an anchor the
-        // page just came up short; get as close as it allows.
-        if (result === "partial" && !target.a) {
+        // If an anchor never appears, leave the best pixel-based position
+        // rather than discarding the saved position and jumping to the top.
+        if (
+          (result === "missing" && target.a) ||
+          (result === "partial" && !target.a)
+        ) {
           scrollToY(Math.min(target.y, maxScrollY()));
         }
         finish(true);
@@ -495,9 +531,9 @@ export function restoreScrollPosition(
   if (first === "done") {
     reachedAt = startedAt;
   } else if (first === "missing" || !target.a) {
-    // Nothing to line up with yet: wait at the top rather than wherever the
-    // previous page left the window.
-    scrollToY(0);
+    // Start at the saved pixel position while the anchored content hydrates.
+    // applyPosition will snap to the exact item once that item is rendered.
+    scrollToY(Math.min(target.y, maxScrollY()));
   }
   frame = requestAnimationFrame(tick);
 }

@@ -41,7 +41,7 @@ export function TikTokImportPage({ lang }: Props) {
       router.push(`/${lang}/upload`);
       return;
     }
-    router.push(`/${lang}/upload/create`);
+      router.push(`/${lang}/upload/create-manual`);
   }
 
   return (

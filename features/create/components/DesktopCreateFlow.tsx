@@ -1,9 +1,11 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
-import { ArrowLeft, Check, Home, Images, Clapperboard } from "lucide-react";
+import { ChevronLeft, Check, Home, Images, Clapperboard } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import {
@@ -188,15 +190,12 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
             }}
           >
             <button
+              type="button"
               onClick={handleBack}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text-muted))",
-              }}
+              aria-label="Back"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
             >
-              <ArrowLeft size={16} />
-              Back
+              <ChevronLeft size={22} />
             </button>
 
             {/* Stepper */}
@@ -278,10 +277,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               {!hydrated ? (
                 <div className="flex flex-1 items-center justify-center">
-                  <div
-                    className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  />
+                  <InterlockingBalls size={32} />
                 </div>
               ) : step === "pick" && tiktokOpen ? (
                 <div className="flex min-h-0 flex-1 flex-col">
@@ -391,7 +387,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                         color: "rgb(var(--color-text-muted))",
                       }}
                     >
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <InterlockingBalls size={16} />
                       Setting up your draft…
                     </p>
                   )}

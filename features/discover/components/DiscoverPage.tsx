@@ -32,6 +32,7 @@ import {
 import { SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,7 @@ import {
   type DiscoveryCategoryFacetsVars,
 } from "../categories";
 import { slugifyContentTitle } from "@/lib/content-url";
+import { rememberScrollBeforeNavigation } from "@/lib/scrollRestoration";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -881,29 +883,6 @@ function LocationStepFooter({
   );
 }
 
-/**
- * Stand-in for a list of LocationOptions while the facet query is still in
- * flight. Without this, a county with a slow-to-arrive (but non-empty)
- * subcounty list flashes the "nothing here" copy before the real rows land.
- */
-function LocationOptionSkeletonList() {
-  return (
-    <div className="space-y-2" aria-hidden>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div
-          key={index}
-          className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3"
-        >
-          <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-3.5 w-2/5" />
-            <Skeleton className="h-3 w-1/4" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function SortOption({
   label,
   hint,
@@ -1289,12 +1268,7 @@ function FilterFieldList({
         ) : null}
 
         {specFacetsLoading
-          ? Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="border-b border-border px-4 py-3.5" aria-hidden>
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="mt-2 h-4 w-28" />
-              </div>
-            ))
+          ? <DrawerLoadingIndicator className="min-h-32 border-b border-border" />
           : specFacets.map((facet) => {
               const value = specValue(facet.key);
               return (
@@ -1915,6 +1889,20 @@ export function DiscoverPage({
       ? selectedSubcategory
       : null;
 
+  // A deep-linked subcategory needs its category and canonical subcategory
+  // name resolved before the feed/spec queries run. Otherwise the page first
+  // requests category-wide data, then requests the actual subcategory data;
+  // that produces a second feed load and briefly shows irrelevant spec chips.
+  const subcategoryRouteReady =
+    !isSubcategoryRoute ||
+    Boolean(
+      initialCategorySlug &&
+        initialSubcategorySlug &&
+        selectedCategory?.slug === initialCategorySlug &&
+        subcategory &&
+        slugifyContentTitle(subcategory) === initialSubcategorySlug,
+    );
+
   const feedVariables = useMemo<DiscoveryFeedVars>(
     () => ({
       query: query || undefined,
@@ -1993,6 +1981,7 @@ export function DiscoverPage({
   const { data, loading, error, fetchMore, refetch, networkStatus } = useQuery(
     DISCOVERY_FEED,
     {
+      skip: !subcategoryRouteReady,
       variables: feedVariables,
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
@@ -2050,6 +2039,7 @@ export function DiscoverPage({
     DISCOVERY_LOCATION_FACETS,
     {
       variables: facetVariables,
+      skip: !subcategoryRouteReady,
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
@@ -2073,9 +2063,13 @@ export function DiscoverPage({
   const selectSubcategoryAndNavigate = useCallback(
     (name: string) => {
       if (!drawerCategory) return;
+      // Save the page behind the drawer before its exit animation begins.
+      // RouteScrollRestoration uses this anchored snapshot when Back returns.
+      rememberScrollBeforeNavigation();
       setSubcategoryDrawerOpen(false);
       router.push(
         `/${lang}/explore/${drawerCategory.slug}/${slugifyContentTitle(name)}`,
+        { scroll: false },
       );
     },
     [drawerCategory, lang, router],
@@ -2098,18 +2092,55 @@ export function DiscoverPage({
     {
       variables: facetVariables,
       skip:
+        !subcategoryRouteReady ||
         (!selectedCategory && !subcategory) ||
         (!isDesktop && !filterOpen && !isSubcategoryRoute),
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
   );
+  const specFacetScope = `${selectedCategory?.id ?? "all"}:${
+    subcategory ?? ""
+  }`;
+  const [resolvedSpecFacetScope, setResolvedSpecFacetScope] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (
+      !subcategoryRouteReady ||
+      specFacetsLoading ||
+      (!selectedCategory && !subcategory) ||
+      resolvedSpecFacetScope === specFacetScope
+    ) {
+      return;
+    }
+    setResolvedSpecFacetScope(specFacetScope);
+  }, [
+    selectedCategory,
+    resolvedSpecFacetScope,
+    specFacetScope,
+    specFacetsLoading,
+    subcategory,
+    subcategoryRouteReady,
+  ]);
+
   const specFacets = useMemo(
     () =>
-      selectedCategory || subcategory
+      subcategoryRouteReady &&
+      (selectedCategory || subcategory) &&
+      (!specFacetsLoading || resolvedSpecFacetScope === specFacetScope)
         ? (specFacetsData?.discoverySpecFacets ?? [])
         : [],
-    [selectedCategory, subcategory, specFacetsData?.discoverySpecFacets],
+    [
+      selectedCategory,
+      subcategory,
+      specFacetsLoading,
+      subcategoryRouteReady,
+      specFacetsData?.discoverySpecFacets,
+      resolvedSpecFacetScope,
+      specFacetScope,
+    ],
   );
 
   useEffect(() => {
@@ -2125,7 +2156,9 @@ export function DiscoverPage({
   // revisit (or a previously used filter combo) has cached items, renders them
   // instantly, and refreshes silently in the background — no skeleton flash,
   // no scroll loss.
-  const isReloading = loading && !isFetchingMore && items.length === 0;
+  const isReloading =
+    (isSubcategoryRoute && !subcategoryRouteReady) ||
+    (loading && !isFetchingMore && items.length === 0);
 
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
@@ -2669,7 +2702,9 @@ export function DiscoverPage({
   const showSubcategoryChips = subcategoryHeaderMode !== "search";
 
   return (
-    <div className="min-h-svh bg-app pb-24 md:pb-8">
+    <div
+      className={`min-h-svh bg-app ${isSubcategoryRoute ? "pb-0 md:pb-8" : "pb-24 md:pb-8"}`}
+    >
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
           <div
@@ -2965,6 +3000,7 @@ export function DiscoverPage({
         const otherCounties = filteredCounties
           .filter((item) => item.count === 0)
           .sort((a, b) => a.name.localeCompare(b.name));
+        const countiesLoading = counties.length === 0 && locationFacetsLoading;
         const countyBody = (
           <>
             <div
@@ -3033,7 +3069,9 @@ export function DiscoverPage({
                 </button>
               ) : null}
 
-              {isDesktop ? (
+              {countiesLoading ? (
+                <DrawerLoadingIndicator className="min-h-[40vh]" />
+              ) : isDesktop ? (
                 <div className="space-y-2">
                   {countySearchEmpty ? (
                     <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
@@ -3172,7 +3210,7 @@ export function DiscoverPage({
               {isDesktop ? (
                 <div className="space-y-2">
                   {subCountiesLoading ? (
-                    <LocationOptionSkeletonList />
+                    <DrawerLoadingIndicator className="min-h-full" />
                   ) : subCounties.length === 0 ? (
                     <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
                       No subcounty clusters yet for this county. You can keep
@@ -3196,7 +3234,7 @@ export function DiscoverPage({
                   )}
                 </div>
               ) : subCountiesLoading ? (
-                <LocationOptionSkeletonList />
+                <DrawerLoadingIndicator className="min-h-full" />
               ) : subCounties.length === 0 ? (
                 <p className="px-4 py-5 text-[13px] text-muted-foreground">
                   No subcounty clusters yet for this county. You can keep the
@@ -3281,7 +3319,7 @@ export function DiscoverPage({
 
               <div className="space-y-2">
                 {wardsLoading ? (
-                  <LocationOptionSkeletonList />
+                  <DrawerLoadingIndicator className="min-h-full" />
                 ) : wards.length === 0 ? (
                   <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
                     Ward-level options will show up here whenever listings are
@@ -3522,33 +3560,15 @@ export function DiscoverPage({
         }}
       >
         <DrawerContent className="mx-auto flex h-[min(85svh,680px)] w-full max-w-107.5 flex-col bg-app">
-          <DrawerHeader className="relative shrink-0 px-12 pb-3 pt-4 text-center">
+          <DrawerHeader className="shrink-0 px-5 pb-3 pt-4 text-center">
             <DrawerTitle className="text-base font-bold text-default">
               Browse categories
             </DrawerTitle>
-            <button
-              type="button"
-              onClick={closeCategoryDrawer}
-              className="absolute right-4 top-4 grid h-9 w-9 place-items-center text-default"
-              aria-label="Close categories"
-            >
-              <X className="h-7 w-7" strokeWidth={2.5} />
-            </button>
           </DrawerHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5">
             {subcategoriesLoading ? (
-              <div className="flex flex-col gap-0">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="flex h-12 min-h-12 flex-none items-center justify-between"
-                  >
-                    <Skeleton className="h-5 w-2/3 rounded-md" />
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                  </div>
-                ))}
-              </div>
+              <DrawerLoadingIndicator className="min-h-full" />
             ) : subcategories.length > 0 ? (
               <div className="flex flex-col gap-0">
                 {subcategories.map((subcategory) => (

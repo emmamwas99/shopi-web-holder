@@ -26,7 +26,7 @@ export default async function ExploreSubcategoryPage({ params }: Props) {
 
 function ExploreSubcategorySkeleton() {
   return (
-    <div className="min-h-svh bg-app pb-24 md:pb-8">
+    <div className="min-h-svh bg-app pb-0 md:pb-8">
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
           <Skeleton className="h-11 min-w-0 flex-1 rounded-full" />

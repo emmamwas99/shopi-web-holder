@@ -336,6 +336,57 @@ html.theme-switching *::after {
   animation: shopi-dot-wave 1.1s ease-in-out infinite;
 }
 
+/* Compact paired loader for drawers while their filter options are fetched. */
+.shopi-drawer-loader {
+  position: relative;
+  display: block;
+  width: var(--shopi-loader-size, 36px);
+  height: calc(var(--shopi-loader-size, 36px) * 0.56);
+}
+
+.shopi-drawer-loader__ball {
+  position: absolute;
+  top: 50%;
+  width: calc(var(--shopi-loader-size, 36px) * 0.5);
+  height: calc(var(--shopi-loader-size, 36px) * 0.5);
+  border-radius: 9999px;
+  margin-top: calc(var(--shopi-loader-size, 36px) * -0.25);
+  will-change: transform;
+}
+
+.shopi-drawer-loader__ball--primary {
+  left: 0;
+  z-index: 1;
+  background: rgb(var(--brand-primary));
+  animation: shopi-drawer-ball-primary 900ms ease-in-out infinite;
+}
+
+.shopi-drawer-loader__ball--secondary {
+  right: 0;
+  background: rgb(var(--brand-secondary));
+  animation: shopi-drawer-ball-secondary 900ms ease-in-out infinite;
+}
+
+@keyframes shopi-drawer-ball-primary {
+  0%,
+  100% {
+    transform: translateX(0) scale(0.92);
+  }
+  50% {
+    transform: translateX(var(--shopi-loader-overlap, 9px)) scale(1.04);
+  }
+}
+
+@keyframes shopi-drawer-ball-secondary {
+  0%,
+  100% {
+    transform: translateX(0) scale(0.92);
+  }
+  50% {
+    transform: translateX(calc(var(--shopi-loader-overlap, 9px) * -1)) scale(1.04);
+  }
+}
+
 /* A frozen loader reads as a stalled one, so keep signalling under reduced
    motion — but fade only, with no scaling. */
 @keyframes shopi-dot-fade {
@@ -353,6 +404,15 @@ html.theme-switching *::after {
     animation: shopi-dot-fade 1.6s ease-in-out infinite;
     animation-delay: 0s !important;
     transform: none;
+  }
+
+  .shopi-drawer-loader__ball {
+    animation: shopi-dot-fade 1.6s ease-in-out infinite;
+    transform: none;
+  }
+
+  .shopi-drawer-loader__ball--secondary {
+    animation-delay: 800ms;
   }
 }
 

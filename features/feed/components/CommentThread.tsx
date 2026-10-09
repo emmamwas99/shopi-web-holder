@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import {
@@ -416,7 +418,7 @@ function CommentRow({
         <div className="bg-surface/40">
           {repliesLoading && (
             <div className="flex justify-center py-3">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <InterlockingBalls size={16} />
             </div>
           )}
           {replies.map((r) => (
@@ -936,7 +938,7 @@ function CommentList({
     >
       {loading && comments.length === 0 && !hasResult && (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-sm">
-          <span className="mb-3 h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <InterlockingBalls size={20} className="mb-3" />
           Loading comments…
         </div>
       )}

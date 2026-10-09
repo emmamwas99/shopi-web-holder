@@ -252,7 +252,7 @@ const nextConfig: NextConfig = {
     // leaves product/feed/profile cards with blank media. Serve the original
     // CDN URLs directly instead; the upstream image variants already carry the
     // sizing work for this app.
-    unoptimized: true,
+    //unoptimized: true,
     // Serve AVIF first (≈20-30% smaller than WebP) then fall back to WebP.
     // Addresses Lighthouse "Improve image delivery" on the hero listing images.
     formats: ["image/avif", "image/webp"],

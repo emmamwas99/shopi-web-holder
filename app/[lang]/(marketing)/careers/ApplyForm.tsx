@@ -1,7 +1,9 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useRef, useState } from "react";
-import { Send, Paperclip, CheckCircle2, X, Loader2 } from "lucide-react";
+import { Send, Paperclip, CheckCircle2, X } from "lucide-react";
 
 const ROLE = "Customer Service Representative";
 const CAREERS_EMAIL = "tech.team@shopi.co.ke";
@@ -194,7 +196,7 @@ export function ApplyForm() {
           className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-[0.875rem] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {sending ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden />
+            <InterlockingBalls size={16} />
           ) : (
             <Send className="size-4" aria-hidden />
           )}

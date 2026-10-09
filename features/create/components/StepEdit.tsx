@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
+import { ChevronLeft } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { useCreateStore } from "@/stores/create";
 import {
@@ -762,24 +763,17 @@ export function StepEdit({
         {!embedded && (
           <div className="sticky top-0 z-50 flex shrink-0 items-center justify-between border-b border-border bg-background px-4 pt-4 pb-3">
             <button
+              type="button"
               onClick={onBack}
-              className="flex items-center gap-1 text-sm text-muted"
+              aria-label="Back to media"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Back
+              <ChevronLeft size={23} strokeWidth={2.2} />
             </button>
             <h2 className="text-lg font-semibold text-foreground">Details</h2>
             {/* Spacer balances the back button so the title stays centred.
                 The primary action now lives in the sticky bottom bar. */}
-            <span aria-hidden className="w-12" />
+            <span aria-hidden className="w-10 shrink-0" />
           </div>
         )}
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
@@ -353,27 +355,5 @@ export function StepPickMedia() {
 }
 
 function MiniSpinner() {
-  return (
-    <svg
-      className="animate-spin"
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="rgb(var(--brand-primary) / 0.2)"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 10 10"
-        stroke="rgb(var(--brand-primary))"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <InterlockingBalls size={18} />;
 }

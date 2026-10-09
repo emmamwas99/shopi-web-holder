@@ -1,19 +1,14 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
-import {
-  Check,
-  Copy,
-  Gift,
-  Loader2,
-  Share2,
-  Smartphone,
-} from "lucide-react";
+import { Check, Copy, Gift, Share2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import {
   ClaimReferralCodeDocument,
@@ -296,7 +291,7 @@ export function PayoutPhone({ program }: { program: Program }) {
             disabled={!phone.trim() || loading}
             className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:opacity-50"
           >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading && <InterlockingBalls size={16} />}
             Save
           </button>
         </div>
@@ -617,7 +612,7 @@ function ClaimCode({ program }: { program: Program }) {
           disabled={code.trim().length < 6 || loading}
           className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:opacity-50"
         >
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {loading && <InterlockingBalls size={16} />}
           Add
         </button>
       </div>

@@ -1,15 +1,9 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useMemo, useState } from "react";
-import {
-  ChevronLeft,
-  Flag,
-  Handshake,
-  Loader2,
-  RotateCcw,
-  Trash2,
-  UserX,
-} from "lucide-react";
+import { ChevronLeft, Flag, Handshake, RotateCcw, Trash2, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -266,7 +260,7 @@ export function ConversationActionsSheet({
               }}
               className="rounded-full text-white bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:hover:bg-primary"
             >
-              {isPending ? <Loader2 className="animate-spin" /> : null}
+              {isPending ? <InterlockingBalls size={20} /> : null}
               {view === "report"
                 ? "Submit report"
                 : view === "delete"

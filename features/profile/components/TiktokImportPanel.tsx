@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { useQuery, useMutation } from "@apollo/client/react";
@@ -11,15 +13,7 @@ import {
 import type { GetMyTiktokVideosQuery } from "@/types/__generated__/graphql";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ExternalLink,
-  Eye,
-  Heart,
-  Loader2,
-  RefreshCw,
-  Tv2,
-  Video,
-} from "lucide-react";
+import { ExternalLink, Eye, Heart, RefreshCw, Tv2, Video } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -112,7 +106,7 @@ function ConnectGate({ lang }: { lang: string }) {
           }}
         >
           {loading ? (
-            <Loader2 size={15} className="animate-spin" />
+            <InterlockingBalls size={15} />
           ) : (
             <ExternalLink size={15} />
           )}
@@ -356,10 +350,11 @@ export function TiktokImportPanel({ lang }: Props) {
           }}
           title="Refresh"
         >
-          <RefreshCw
-            size={14}
-            className={videosLoading ? "animate-spin" : ""}
-          />
+          {videosLoading ? (
+            <InterlockingBalls size={14} />
+          ) : (
+            <RefreshCw size={14} />
+          )}
         </button>
       </div>
 
@@ -410,11 +405,7 @@ export function TiktokImportPanel({ lang }: Props) {
       <div ref={videosSentinelRef} className="h-px" />
       {hasMore && (
         <div className="flex justify-center px-4 pt-3 pb-1">
-          <Loader2
-            size={18}
-            className="animate-spin"
-            style={{ color: "rgb(var(--color-text-muted))" }}
-          />
+          <InterlockingBalls size={18} />
         </div>
       )}
     </div>

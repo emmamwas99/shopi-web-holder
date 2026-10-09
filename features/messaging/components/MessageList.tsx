@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import {
   useCallback,
   useEffect,
@@ -9,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Loader2 } from "lucide-react";
+
 import type { Message } from "../types";
 import { dayKey, dayLabel } from "../lib/dateHeaders";
 import { MessageBubble } from "./MessageBubble";
@@ -233,7 +235,7 @@ export function MessageList({
     return (
       <div className="flex-1 overflow-y-auto bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4">
         <div className="flex h-[60vh] items-center justify-center">
-          <Loader2 size={40} className="animate-spin text-primary opacity-60" />
+          <InterlockingBalls size={40} className="opacity-60" />
         </div>
       </div>
     );
@@ -267,7 +269,7 @@ export function MessageList({
         <div ref={topSentinelRef} className="h-px" />
         {loadingOlder ? (
           <div className="flex justify-center py-2">
-            <Loader2 size={18} className="animate-spin opacity-60" />
+            <InterlockingBalls size={18} className="opacity-60" />
           </div>
         ) : null}
 

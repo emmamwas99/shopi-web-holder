@@ -115,6 +115,7 @@ export function ExploreCategoryGrid({
                     key={category.id}
                     type="button"
                     onClick={() => onSelect(category)}
+                    data-scroll-anchor={`category:${category.id}`}
                     className="flex min-w-0 cursor-pointer flex-col items-center gap-1.5 text-center text-foreground active:opacity-70"
                     aria-label={`Show ${category.name} category`}
                   >

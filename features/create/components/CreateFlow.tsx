@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
@@ -104,8 +106,16 @@ export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
 
   /** Leave the flow back to the picker without a route change (embedded). */
   function backToPicker() {
+    const returnToManualPicker =
+      useCreateStore.getState().creationMode === "manual";
     useCreateStore.getState().reset();
-    if (!embedded) router.replace(`/${lang}/upload`);
+    if (!embedded) {
+      router.replace(
+        returnToManualPicker
+          ? `/${lang}/upload/create-manual`
+          : `/${lang}/upload`,
+      );
+    }
   }
 
   // Track whether Zustand persist has finished loading from sessionStorage.
@@ -308,7 +318,7 @@ export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
         }
       >
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <InterlockingBalls size={32} />
           <span className="text-sm">Restoring your draft…</span>
         </div>
       </div>

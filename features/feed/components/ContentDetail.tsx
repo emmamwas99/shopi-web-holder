@@ -8,12 +8,12 @@ import {
   Download,
   Bookmark,
   Send,
-  Share2,
   X,
   MoreHorizontal,
   Link2,
   Flag,
   MessageCircle,
+  MapPin,
   Phone,
   Maximize2,
 } from "lucide-react";
@@ -43,6 +43,7 @@ import { useSellerPhone } from "../hooks/useSellerPhone";
 import { formatStoredPhone } from "@/lib/phone";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
@@ -104,11 +105,13 @@ function MobileImageCarousel({
   title,
   idx,
   onIdx,
+  onOpen,
 }: {
   media: MediaItem[];
   title: string;
   idx: number;
   onIdx: (i: number) => void;
+  onOpen: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -131,7 +134,11 @@ function MobileImageCarousel({
     <div
       ref={trackRef}
       onScroll={handleScroll}
-      className="flex h-full overflow-x-auto snap-x snap-mandatory no-scroll-indicator"
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+      className="flex h-full cursor-pointer overflow-x-auto snap-x snap-mandatory no-scroll-indicator"
       style={{ scrollSnapType: "x mandatory" }}
     >
       {media.map((item, i) => {
@@ -144,7 +151,7 @@ function MobileImageCarousel({
         return (
           <div
             key={i}
-            className="relative h-full shrink-0 w-full snap-center bg-black"
+            className="relative h-full shrink-0 w-full snap-center bg-surface"
           >
             {src && (
               <Image
@@ -831,6 +838,10 @@ export function ContentDetail({
   // gating on `!post` keeps cached content on screen instead of flashing the
   // skeleton each time the query refetches.
   if (loading && !post) {
+    if (isSheet) {
+      return <DrawerLoadingIndicator className="h-full min-h-0 bg-app" />;
+    }
+
     return (
       <>
         <div
@@ -1133,10 +1144,7 @@ export function ContentDetail({
             }}
             className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
           >
-            <Share2
-              className="w-4 h-4 shrink-0 text-muted-foreground"
-              strokeWidth={2.2}
-            />
+            <Send className="w-4 h-4 shrink-0 text-muted-foreground" />
             Share content
           </button>
 
@@ -1651,23 +1659,31 @@ export function ContentDetail({
               <p className="truncate text-sm font-semibold text-default">
                 {post.title}
               </p>
-              {/* {creatorName ? (
-                <p className="truncate text-xs text-muted-foreground">
-                  {creatorName}
-                </p>
-              ) : null} */}
             </div>
+            <button
+              type="button"
+              onClick={() => handleSave()}
+              aria-label={resolvedSaved ? "Remove saved listing" : "Save listing"}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
+            >
+              <Bookmark
+                className="h-5 w-5"
+                fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
+                stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "currentColor"}
+                strokeWidth={2}
+              />
+            </button>
             <button
               type="button"
               onClick={handleShare}
               aria-label="Share post"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
             >
-              <Share2 className="h-5 w-5" strokeWidth={2} />
+              <Send className="h-5 w-5" />
             </button>
           </header>
 
-          <section className="relative h-[56svh] min-h-85 max-h-155 bg-black">
+          <section className="relative h-[52svh] min-h-80 max-h-140 bg-surface">
             {isVideo && hlsUrl ? (
               <ContentVideo
                 hlsUrl={hlsUrl}
@@ -1692,6 +1708,7 @@ export function ContentDetail({
                 title={post.title}
                 idx={imgIdx}
                 onIdx={setImgIdx}
+                onOpen={() => setShowMediaDialog(true)}
               />
             )}
 
@@ -1749,24 +1766,16 @@ export function ContentDetail({
               </div>
             )}
 
-            {!isVideo && media.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowMediaDialog(true)}
-                aria-label="Open image fullscreen"
-                className="absolute left-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-transform active:scale-95"
-              >
-                <Maximize2 className="h-5 w-5" strokeWidth={2.2} />
-              </button>
-            )}
           </section>
 
-          <main className="pb-32">
-            <section className="border-b border-default px-4 py-4">
+          <main
+            className={`relative z-10 -mt-4 rounded-t-3xl bg-app ${isOwnPost ? "pb-6" : "pb-28"}`}
+          >
+            <section className="rounded-t-3xl border-b border-default px-4 pb-5 pt-5">
               {post.price && (
-                <div className="mb-2">
+                <div className="mb-2.5 flex flex-wrap items-center gap-2">
                   <span
-                    className="text-2xl font-extrabold tracking-normal"
+                    className="text-2xl font-extrabold tracking-tight"
                     style={{ color: "rgb(var(--brand-primary))" }}
                   >
                     {post.price.amount === 0
@@ -1774,24 +1783,23 @@ export function ContentDetail({
                       : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
                   </span>
                   {post.price.negotiable && (
-                    <span className="ml-2 text-sm font-semibold text-muted-foreground">
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                       Negotiable
                     </span>
                   )}
                 </div>
               )}
 
-              <h1 className="text-xl font-bold leading-snug text-default">
+              <h1 className="text-xl font-bold leading-snug tracking-tight text-default">
                 {post.title}
               </h1>
 
               {fullLocation && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {fullLocation && (
-                    <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted-foreground">
-                      {fullLocation}
-                    </span>
-                  )}
+                <div className="mt-3 flex flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {fullLocation}
+                  </span>
                 </div>
               )}
 
@@ -1857,61 +1865,21 @@ export function ContentDetail({
                 </p>
               )}
 
-              {/* Contact the seller — Message + Call (hidden on own posts) */}
-              {!isOwnPost && (
-                <div className="mt-4 grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!resolvedContentId) return;
-                      trackMessageIntent();
-                      if (!requireAuth({ contentId: resolvedContentId }))
-                        return;
-                      openMessageRoute();
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
-                  >
-                    <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
-                    Message
-                  </button>
-                  {/* First tap reveals the number, second dials it — the
-                      number is fetched on demand so it never ships in the
-                      public PDP payload. See useSellerPhone. */}
-                  <button
-                    type="button"
-                    disabled={sellerPhoneLoading}
-                    onClick={async () => {
-                      if (!resolvedContentId) return;
-                      if (!requireAuth({ contentId: resolvedContentId }))
-                        return;
-                      if (sellerPhone) {
-                        dialSeller();
-                        return;
-                      }
-                      const revealed = await revealSellerPhone();
-                      if (!revealed) {
-                        toast("This seller hasn't added a phone number");
-                      }
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-full border border-default py-3 text-sm font-bold text-default transition-colors active:bg-surface disabled:opacity-60"
-                  >
-                    <Phone className="h-4 w-4" strokeWidth={2.2} />
-                    {sellerPhoneLoading
-                      ? "Loading…"
-                      : sellerPhone
-                        ? formatStoredPhone(sellerPhone)
-                        : sellerPhoneUnavailable
-                          ? "No number"
-                          : "Show number"}
-                  </button>
-                </div>
-              )}
             </section>
 
-            <section className="border-b border-default">{CreatorRow}</section>
-            {DetailMeta}
-            <div ref={commentsRef} className="px-2 pt-2">
-              <h2 className="px-2 pb-1 text-sm font-bold text-default">
+            <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-default bg-elevated">
+              {CreatorRow}
+            </section>
+            {DetailMeta && (
+              <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-default bg-elevated">
+                {DetailMeta}
+              </section>
+            )}
+            <section
+              ref={commentsRef}
+              className="mx-3 mt-3 rounded-2xl border border-default bg-elevated px-4 py-4"
+            >
+              <h2 className="pb-3 text-sm font-bold text-default">
                 {resolvedCommentCount > 0
                   ? `${fmt(resolvedCommentCount)} Comments`
                   : "Comments"}
@@ -1921,108 +1889,121 @@ export function ContentDetail({
                 contentCreatorId={post.creatorId}
                 className=""
               />
-            </div>
+              {mobileReplyingTo && (
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-surface px-3 py-2 text-xs text-muted-foreground">
+                  <span>
+                    Replying to{" "}
+                    <span className="font-medium text-default">
+                      {mobileReplyingTo.author?.profile?.firstName ??
+                        `User ${mobileReplyingTo.creatorId.slice(-6)}`}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMobileReplyingTo(null)}
+                    className="ml-2 text-muted-foreground hover:text-default"
+                    aria-label="Cancel reply"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  ref={mobileCommentInputRef as React.RefObject<HTMLInputElement>}
+                  type="text"
+                  value={mobileCommentText}
+                  onChange={(e) => setMobileCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleMobileSend();
+                    }
+                  }}
+                  onFocus={() => {
+                    if (
+                      !resolvedContentId ||
+                      !requireAuth({
+                        contentId: resolvedContentId,
+                        action: "comment",
+                      })
+                    )
+                      mobileCommentInputRef.current?.blur();
+                  }}
+                  placeholder={mobileReplyingTo ? "Write a reply…" : "Add a comment…"}
+                  maxLength={500}
+                  className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-sm placeholder:text-muted-foreground focus:border-primary"
+                />
+                {mobileCommentText.trim() && (
+                  <button
+                    type="button"
+                    onClick={handleMobileSend}
+                    aria-label="Send comment"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight, var(--brand-primary))))",
+                    }}
+                  >
+                    <Send className="h-4 w-4" strokeWidth={2.2} />
+                  </button>
+                )}
+              </div>
+            </section>
             {related && <div className="border-t border-default">{related}</div>}
           </main>
 
-          <div
-            className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app/95 px-3 pt-2.5 backdrop-blur-md"
-            style={{
-              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-            }}
-          >
-            {/* Replying-to chip — appears when the user taps Reply on a comment */}
-            {mobileReplyingTo && (
-              <div className="mb-2 flex items-center justify-between rounded-full bg-surface px-3 py-1.5 text-xs text-muted-foreground">
-                <span>
-                  Replying to{" "}
-                  <span className="font-medium text-default">
-                    {mobileReplyingTo.author?.profile?.firstName ??
-                      `User ${mobileReplyingTo.creatorId.slice(-6)}`}
-                  </span>
-                </span>
+          {!isOwnPost && (
+            <div
+              className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app/95 px-3 pt-2.5 backdrop-blur-md"
+              style={{
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+              }}
+            >
+              <div className="mx-auto grid w-full max-w-xl grid-cols-[1fr_auto] gap-2">
                 <button
                   type="button"
-                  onClick={() => setMobileReplyingTo(null)}
-                  className="ml-2 text-muted-foreground hover:text-default"
-                  aria-label="Cancel reply"
+                  onClick={() => {
+                    if (!resolvedContentId) return;
+                    trackMessageIntent();
+                    if (!requireAuth({ contentId: resolvedContentId })) return;
+                    openMessageRoute();
+                  }}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                 >
-                  ✕
+                  <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
+                  Message seller
+                </button>
+                <button
+                  type="button"
+                  disabled={sellerPhoneLoading}
+                  onClick={async () => {
+                    if (!resolvedContentId) return;
+                    if (!requireAuth({ contentId: resolvedContentId })) return;
+                    if (sellerPhone) {
+                      dialSeller();
+                      return;
+                    }
+                    const revealed = await revealSellerPhone();
+                    if (!revealed) toast("This seller hasn't added a phone number");
+                  }}
+                  aria-label={sellerPhone ? "Call seller" : "Show seller phone number"}
+                  className="flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-xl border border-default bg-elevated px-3 text-sm font-semibold text-default transition-colors active:bg-surface disabled:opacity-60"
+                >
+                  <Phone className="h-4 w-4 shrink-0" strokeWidth={2.2} />
+                  <span className="max-w-32 truncate">
+                    {sellerPhoneLoading
+                      ? "Loading…"
+                      : sellerPhone
+                        ? formatStoredPhone(sellerPhone)
+                        : sellerPhoneUnavailable
+                          ? "No number"
+                          : "Call"}
+                  </span>
                 </button>
               </div>
-            )}
-            <div className="flex items-center gap-2">
-              {/* Comment / reply input — inline (no drawer) */}
-              <input
-                ref={mobileCommentInputRef as React.RefObject<HTMLInputElement>}
-                type="text"
-                value={mobileCommentText}
-                onChange={(e) => setMobileCommentText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleMobileSend();
-                  }
-                }}
-                onFocus={() => {
-                  if (
-                    !resolvedContentId ||
-                    !requireAuth({
-                      contentId: resolvedContentId,
-                      action: "comment",
-                    })
-                  )
-                    mobileCommentInputRef.current?.blur();
-                }}
-                placeholder={
-                  mobileReplyingTo ? "Write a reply…" : "Say something…"
-                }
-                maxLength={500}
-                className="min-w-0 placeholder:text-sm flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
-              />
-
-              {/* Send — only shown once there's text; the input is the bar's
-                  sole job now (Message/Call moved up under the stats). */}
-              <button
-                onClick={() => handleSave()}
-                className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2 rounded-full border text-xs font-semibold transition-all active:scale-95"
-                style={{
-                  borderColor: resolvedSaved
-                    ? "rgb(var(--brand-primary))"
-                    : "rgb(var(--color-border))",
-                  color: resolvedSaved
-                    ? "rgb(var(--brand-primary))"
-                    : "rgb(var(--color-text-default))",
-                  backgroundColor: resolvedSaved
-                    ? "rgb(var(--brand-primary) / 0.08)"
-                    : "transparent",
-                }}
-              >
-                <Bookmark
-                  className="w-4 h-4"
-                  fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
-                  strokeWidth={1.8}
-                />
-                <span>
-                  {resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
-                </span>
-              </button>
-              {mobileCommentText.trim() && (
-                <button
-                  type="button"
-                  onClick={handleMobileSend}
-                  aria-label="Send comment"
-                  className="flex h-9 w-9 lg:w-11 lg:h-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight, var(--brand-primary))))",
-                  }}
-                >
-                  <Send className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.2} />
-                </button>
-              )}
             </div>
-          </div>
+          )}
         </div>
       )}
 

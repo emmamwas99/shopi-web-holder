@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { UserRound } from "lucide-react";
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import { avatarGradient } from "@/lib/avatar";
 import { ringSegments, SEEN_RING_COLOR, UNSEEN_RING_COLOR } from "../lib/storyRing";
 
@@ -69,13 +70,9 @@ export function StoryAvatar({
 
   return (
     <span className="relative block shrink-0" style={{ width: size, height: size }}>
-      {state !== "none" && (
+      {(state === "stories" || state === "uploading") && (
         <svg
-          className={
-            state === "processing"
-              ? "absolute inset-0 animate-spin animation-duration-[1.2s]"
-              : "absolute inset-0"
-          }
+          className="absolute inset-0"
           width={size}
           height={size}
           viewBox={`0 0 ${size} ${size}`}
@@ -120,19 +117,14 @@ export function StoryAvatar({
               />
             </>
           )}
-          {state === "processing" && (
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={brand}
-              strokeWidth={STROKE}
-              strokeLinecap="round"
-              strokeDasharray={`${circumference * 0.3} ${circumference}`}
-            />
-          )}
         </svg>
+      )}
+
+      {state === "processing" && (
+        <InterlockingBalls
+          size={Math.max(14, Math.round(size * 0.4))}
+          className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+        />
       )}
 
       <span

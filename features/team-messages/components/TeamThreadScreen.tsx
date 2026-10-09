@@ -1,9 +1,11 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, BadgeCheck, Loader2, Send } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -198,7 +200,7 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
         {page?.hasMore ? (
           <div className="flex justify-center">
             <Button variant="outline" size="sm" onClick={() => void loadOlder()} disabled={loadingOlder}>
-              {loadingOlder ? <Loader2 className="animate-spin" size={14} /> : null}
+              {loadingOlder ? <InterlockingBalls size={14} /> : null}
               Load earlier messages
             </Button>
           </div>
@@ -255,7 +257,7 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
             aria-label="Send message"
           >
             {sending ? (
-              <Loader2 className="animate-spin text-white" size={18} />
+              <InterlockingBalls size={18} />
             ) : (
               <Send className="text-white" size={18} />
             )}
