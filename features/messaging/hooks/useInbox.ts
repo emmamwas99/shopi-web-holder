@@ -19,6 +19,7 @@ import {
 } from "@/lib/socket/socket-events";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuthStore } from "@/stores/auth";
+import { useAuthHydrated } from "@/lib/auth/useAuthHydrated";
 import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
 import type { Conversation, Message } from "../types";
 import {
@@ -68,6 +69,7 @@ function createConversationViewportTabId(): string {
 export function useInbox(lang: string) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const authHydrated = useAuthHydrated();
   const currentUser = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
   const { requireAuth } = useAuthGuard(lang);
@@ -134,7 +136,8 @@ export function useInbox(lang: string) {
     refetch: refetchConversations,
   } = useQuery(MY_DIRECT_CONVERSATIONS, {
     variables: { limit: 40 },
-    skip: !isAuthenticated,
+    // Don't render an empty inbox while persisted auth is still being read.
+    skip: !authHydrated || !isAuthenticated,
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
@@ -1608,7 +1611,7 @@ export function useInbox(lang: string) {
     typingUserId,
     unreadThreads,
     // loading flags
-    conversationsLoading,
+    conversationsLoading: !authHydrated || conversationsLoading,
     conversationLoading,
     messagesLoading,
     ensuringConversation,

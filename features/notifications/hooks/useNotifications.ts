@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useAuthStore } from "@/stores/auth";
+import { useAuthHydrated } from "@/lib/auth/useAuthHydrated";
 import { useSocket } from "@/hooks/useSocket";
 import { WS_EVENTS } from "@/lib/socket/socket-events";
 import {
@@ -15,12 +16,13 @@ import type { NotificationPage, NotificationSocketPayload } from "../types";
 const PAGE_SIZE = 30;
 
 export function useNotifications() {
+  const authHydrated = useAuthHydrated();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const { on } = useSocket();
 
   const { data, loading, fetchMore, refetch } = useQuery(MY_NOTIFICATIONS, {
     variables: { limit: PAGE_SIZE },
-    skip: !isAuthenticated,
+    skip: !authHydrated || !isAuthenticated,
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
@@ -90,7 +92,7 @@ export function useNotifications() {
   return {
     notifications,
     unreadCount,
-    loading,
+    loading: !authHydrated || loading,
     hasMore,
     markingRead,
     markingAllRead,
