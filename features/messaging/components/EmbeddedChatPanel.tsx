@@ -1,7 +1,9 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { Suspense, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+
 import { useInbox } from "../hooks/useInbox";
 import { ChatDetail } from "./ChatDetail";
 
@@ -35,7 +37,7 @@ export function EmbeddedChatPanel(props: Props) {
     <Suspense
       fallback={
         <div className="flex h-full flex-col items-center justify-center gap-3 bg-app">
-          <Loader2 size={26} className="animate-spin text-primary opacity-70" />
+          <InterlockingBalls size={26} className="opacity-70" />
         </div>
       }
     >

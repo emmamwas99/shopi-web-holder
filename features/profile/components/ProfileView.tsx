@@ -37,84 +37,100 @@ interface Props {
 
 function ProfileSkeleton() {
   return (
-    <div
-      className="min-h-screen animate-pulse"
-      style={{ backgroundColor: "rgb(var(--color-bg))" }}
-    >
-      <div
-        className="border-b"
-        style={{ borderColor: "rgb(var(--color-border))" }}
-      >
-        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-          <div className="flex gap-4">
-            <div
-              className="h-20 w-20 rounded-full sm:h-24 sm:w-24"
-              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-            />
-            <div className="min-w-0 flex-1 pt-1">
-              <div
-                className="mb-2 h-6 w-32 rounded-md"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div
-                className="mb-3 h-4 w-28 rounded-md"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div className="grid grid-cols-4 gap-1.5">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-12 rounded-md"
-                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                  />
+    <div className="min-h-screen bg-app">
+      <section className="border-b border-border bg-app">
+        <div className="w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="flex min-w-0 items-start gap-5 lg:gap-7">
+            <Skeleton className="h-20 w-20 shrink-0 rounded-full sm:h-24 sm:w-24 lg:h-30 lg:w-30" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <Skeleton className="h-6 w-36 rounded-md" />
+                  <Skeleton className="mt-1.5 h-4 w-24 rounded-md" />
+                </div>
+                <Skeleton className="h-9 w-28 shrink-0 rounded-full" />
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1">
+                {[0, 1, 2].map((item) => (
+                  <Skeleton key={item} className="h-4 w-20 rounded-md" />
                 ))}
               </div>
+              <Skeleton className="mt-3 h-10 w-36 rounded-full" />
             </div>
           </div>
-          <div className="mt-4 space-y-2">
-            <div
-              className="h-4 w-full max-w-sm rounded-md"
-              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-            />
-            <div
-              className="h-4 w-40 rounded-md"
-              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-            />
+          <div className="mt-4 max-w-3xl space-y-2">
+            <Skeleton className="h-4 w-full max-w-md rounded-md" />
+            <Skeleton className="h-4 w-40 rounded-md" />
           </div>
         </div>
-      </div>
-      {/* The menu's shape: a titled group of rows, beside the posts grid on
-          desktop. */}
-      <div className="flex gap-8 px-4 py-5 sm:px-6 lg:px-8">
-        <div className="w-full md:w-72 md:shrink-0 lg:w-80">
-          <div
-            className="mb-2 h-4 w-24 rounded-md"
-            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-          />
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="flex h-12 items-center gap-3.5 md:h-13 md:gap-4">
-              <div
-                className="h-5 w-5 rounded-full"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div
-                className="h-4 w-40 rounded-md"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
+      </section>
+
+      <div className="md:flex md:items-start md:gap-6 md:px-6 lg:gap-8 lg:px-8">
+        <aside className="px-4 py-5 md:sticky md:top-(--desktop-top-nav-height,68px) md:max-h-[calc(100dvh-var(--desktop-top-nav-height,68px))] md:w-72 md:shrink-0 md:overflow-y-auto md:px-0 md:py-6 lg:w-80">
+          <nav
+            aria-label="Loading profile menu"
+            className="flex flex-col gap-6 md:gap-7"
+          >
+            <div className="rounded-xl bg-surface px-4 py-3.5">
+              <Skeleton className="h-4 w-44 rounded" />
+              <Skeleton className="mt-2 h-3.5 w-full rounded" />
+              <Skeleton className="mt-1 h-3.5 w-4/5 rounded" />
+              <Skeleton className="mt-2.5 h-3.5 w-36 rounded" />
             </div>
-          ))}
-        </div>
-        <div className="hidden min-w-0 flex-1 grid-cols-3 gap-3 md:grid xl:grid-cols-4 xl:gap-4">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="aspect-9/10 rounded-lg"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-subtle))",
-              }}
-            />
-          ))}
-        </div>
+
+            {[
+              { title: true, rows: [0, 1, 2] },
+              { title: true, rows: [0, 1, 2] },
+              { title: true, rows: [0, 1, 2, 3] },
+              { title: true, rows: [0, 1, 2, 3] },
+              { title: false, rows: [0, 1] },
+            ].map((group, groupIndex) => (
+              <section key={groupIndex}>
+                {group.title ? (
+                  <Skeleton className="mb-0.5 h-5 w-24 rounded" />
+                ) : null}
+                {group.rows.map((row) => (
+                  <div
+                    key={row}
+                    className="flex h-12 items-center gap-3.5 md:h-13 md:gap-4"
+                  >
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-4 w-32 rounded" />
+                    <Skeleton className="ml-auto h-4 w-4 rounded" />
+                  </div>
+                ))}
+              </section>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="hidden min-w-0 md:block md:flex-1 md:border-l md:border-border">
+          <section className="px-4 py-5 sm:px-6 lg:px-8">
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <Skeleton className="h-4 w-24 rounded" />
+                <Skeleton className="mt-1 h-3.5 w-40 rounded" />
+              </div>
+              <Skeleton className="h-9 w-24 rounded-full" />
+            </div>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <Skeleton className="h-4 w-16 rounded" />
+              <Skeleton className="h-9 w-44 rounded-full" />
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <div key={index} className="flex flex-col">
+                  <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+                  <div className="space-y-1.5 px-0.5 pt-2">
+                    <Skeleton className="h-3.5 w-2/3 rounded" />
+                    <Skeleton className="h-3 w-4/5 rounded" />
+                    <Skeleton className="h-3 w-3/5 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   );

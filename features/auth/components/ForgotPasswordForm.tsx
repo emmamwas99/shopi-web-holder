@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
@@ -224,27 +226,5 @@ export function ForgotPasswordForm({ lang }: ForgotPasswordFormProps) {
 }
 
 function Spinner() {
-  return (
-    <svg
-      className="animate-spin"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-      />
-    </svg>
-  );
+  return <InterlockingBalls size={18} />;
 }

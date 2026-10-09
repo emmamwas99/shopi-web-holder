@@ -1,7 +1,9 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useRef, useState } from "react";
-import { Link2, LoaderCircle, Play, Trash2 } from "lucide-react";
+import { Link2, Play, Trash2 } from "lucide-react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSavedTiktoks } from "@/features/create/hooks/useSavedTiktoks";
 import { downloadTiktokVideo } from "@/features/create/utils/tiktokDownload";
@@ -214,10 +216,7 @@ export function TikTokLibrary({
       {downloading || (status.kind === "opening" && status.key === null) ? (
         <div className="rounded-xl border border-border bg-surface px-4 py-3">
           <div className="flex items-center gap-3">
-            <LoaderCircle
-              size={18}
-              className="shrink-0 animate-spin text-primary"
-            />
+            <InterlockingBalls size={18} className="shrink-0" />
             <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
               {downloading ? "Downloading from TikTok..." : "Adding to your post..."}
             </p>
@@ -310,10 +309,7 @@ export function TikTokLibrary({
                       </span>
                     </span>
                     {isOpening ? (
-                      <LoaderCircle
-                        size={18}
-                        className="shrink-0 animate-spin text-primary"
-                      />
+                      <InterlockingBalls size={18} className="shrink-0" />
                     ) : (
                       <span className="shrink-0 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-strong dark:text-primary">
                         Use

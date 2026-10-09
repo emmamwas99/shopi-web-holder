@@ -1,9 +1,11 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Loader2, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
+import { Pause, Play, Volume2, VolumeX, X } from "lucide-react";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { VideoProgressBar } from "@/features/feed/components/VideoProgressBar";
 
@@ -222,7 +224,7 @@ function VideoViewer({
         {/* Tap feedback + buffering */}
         {buffering ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <Loader2 size={40} className="animate-spin text-white/80" />
+            <InterlockingBalls size={40} />
           </div>
         ) : showIcon || !playing ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

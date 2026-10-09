@@ -1,7 +1,9 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useRef, useState } from "react";
-import { Loader2, LocateFixed } from "lucide-react";
+import { LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DISTANCE_MAX_KM,
@@ -267,7 +269,7 @@ export function DistanceFilter({ compact = false }: { compact?: boolean }) {
           )}
         >
           {locate === "locating" ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            <InterlockingBalls size={16} />
           ) : (
             <LocateFixed className="h-4 w-4" aria-hidden />
           )}

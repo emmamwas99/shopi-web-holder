@@ -1,8 +1,10 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState } from "react";
 import Image from "next/image";
-import { Loader2, Play, RotateCw, X } from "lucide-react";
+import { Play, RotateCw, X } from "lucide-react";
 import type { Message } from "../types";
 import {
   firstUrl,
@@ -85,7 +87,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
             </div>
           </>
         ) : (
-          <Loader2 size={24} className="animate-spin" />
+          <InterlockingBalls size={24} />
         )}
       </div>
     ) : null;
@@ -139,7 +141,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
                   </button>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <Loader2 size={22} className="animate-spin opacity-60" />
+                    <InterlockingBalls size={22} className="opacity-60" />
                   </div>
                 )
               ) : // Video
@@ -154,7 +156,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-black/10">
                   {!isUploading && !isFailed && (
-                    <Loader2 size={22} className="animate-spin opacity-60" />
+                    <InterlockingBalls size={22} className="opacity-60" />
                   )}
                 </div>
               )}

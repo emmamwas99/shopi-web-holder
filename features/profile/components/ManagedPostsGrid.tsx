@@ -1,21 +1,11 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  BarChart3,
-  Bookmark,
-  CircleAlert,
-  Eye,
-  Globe,
-  Loader2,
-  MoreHorizontal,
-  Play,
-  Plus,
-  ChevronRight,
-  X,
-} from "lucide-react";
+import { BarChart3, Bookmark, CircleAlert, Eye, Globe, MoreHorizontal, Play, Plus, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -1250,7 +1240,7 @@ function EditSurface({
                 onClick={onSubmit}
                 disabled={busy || !dirty}
               >
-                {busy ? <Loader2 className="animate-spin" /> : null}
+                {busy ? <InterlockingBalls size={20} /> : null}
                 Save changes
               </Button>
             </DialogFooter>
@@ -1311,7 +1301,7 @@ function EditSurface({
               onClick={onSubmit}
               disabled={busy || !dirty}
             >
-              {busy ? <Loader2 className="animate-spin" /> : null}
+              {busy ? <InterlockingBalls size={20} /> : null}
               {busy ? "Saving…" : "Save changes"}
             </Button>
           </div>
@@ -1354,7 +1344,7 @@ function DeleteSurface({
               Cancel
             </Button>
             <Button variant="destructive" onClick={onConfirm} disabled={busy}>
-              {busy ? <Loader2 className="animate-spin" /> : null}
+              {busy ? <InterlockingBalls size={20} /> : null}
               Delete
             </Button>
           </DialogFooter>
@@ -1380,7 +1370,7 @@ function DeleteSurface({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? <Loader2 className="animate-spin" /> : null}
+            {busy ? <InterlockingBalls size={20} /> : null}
             Delete
           </Button>
           <Button

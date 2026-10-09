@@ -79,7 +79,7 @@ export function LandingFooter({
             <div className="col-span-2 sm:col-span-3 lg:col-span-1">
               <Link href={`/${lang}`} className="inline-flex items-center gap-2 text-white no-underline"><ShopiLogo className="h-9 w-9" /><span className="text-xl font-bold">Shopi</span></Link>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">{sw ? "Gundua, nunua na uuze karibu nawe kwa msaada wa Shopi Agent." : "Discover, buy and sell locally with help from Shopi Agent."}</p>
-              <Link href="/en/upload" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline">{sw ? "Weka tangazo" : "Create a post"}</Link>
+              <Link href="/en/upload" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
               <a href="https://x.com/shopiapp" target="_blank" rel="noopener noreferrer" className="mt-6 block w-fit text-sm text-white/75 hover:text-white">Shopi on X</a>
             </div>
             {homeLinks.map(({ heading, links }) => <div key={heading} className="min-w-0">

@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
@@ -47,7 +49,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
   function handleClose() {
     // If there's a draft in progress, resume it instead of going to feed
     if (draftId && step !== "pick") {
-      router.push(`/${lang}/upload/create`);
+      router.push(`/${lang}/upload/create-manual`);
     } else {
       window.location.href = `/${lang}/for-you`;
     }
@@ -68,7 +70,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
     setContentType(kind);
     setStep("edit");
     setDraftPending(true);
-    router.push(`/${lang}/upload/create`);
+    router.push(`/${lang}/upload/create-manual`);
 
     const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
 
@@ -99,7 +101,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
   // function handleText() {
   //   reset();
   //   setContentType(null);
-  //   router.push(`/${lang}/upload/create`);
+  //   router.push(`/${lang}/upload/create-manual`);
   // }
 
   function handleVideoClick() {
@@ -127,13 +129,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
           aria-live="polite"
         >
           <div className="flex flex-col items-center gap-4 rounded-3xl bg-app px-8 py-7 shadow-2xl">
-            <span
-              className="inline-block h-9 w-9 animate-spin rounded-full border-[3px] border-transparent"
-              style={{
-                borderColor: "rgb(var(--color-border))",
-                borderTopColor: "rgb(var(--brand-primary))",
-              }}
-            />
+            <InterlockingBalls size={36} />
             <p className="text-md font-medium text-default">Opening TikTok import...</p>
           </div>
         </div>
@@ -152,7 +148,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
               <>
                 <Button
                   variant="ghost"
-                  onClick={() => router.push(`/${lang}/upload/create`)}
+                  onClick={() => router.push(`/${lang}/upload/create-manual`)}
                   className="w-full h-14 rounded-none active:bg-surface transition-colors"
                 >
                   <span className="text-md font-medium text-primary">Continue draft</span>

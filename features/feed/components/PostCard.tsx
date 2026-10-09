@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import {
   memo,
   useRef,
@@ -15,9 +17,11 @@ import {
   MapPin,
   Bookmark,
   Heart,
+  MessageCircle,
+  MessageSquare,
+  Send,
   Link2,
   Flag,
-  Share2,
   MoreVertical,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -72,11 +76,11 @@ import { rememberScrollBeforeNavigation } from "@/components/layout/RouteScrollR
 import { profileHref } from "@/lib/profile-url";
 import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAvatar";
 
-const CommentsDrawer = dynamic(() =>
-  import("./CommentsDrawer").then((mod) => mod.CommentsDrawer),
-);
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
+);
+const CommentsDrawer = dynamic(() =>
+  import("./CommentsDrawer").then((mod) => mod.CommentsDrawer),
 );
 const TikTokEmbedMedia = dynamic(() =>
   import("./TikTokEmbedMedia").then((mod) => mod.TikTokEmbedMedia),
@@ -1200,8 +1204,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   // The action bar is an even grid at every width so the cells stay the same
   // size as each other. Contact drops out on your own posts, so the column
   // count follows what's shown.
-  const actionCount = 2 + (isOwnPost ? 0 : 1);
-  const actionGridCols = actionCount === 3 ? "grid-cols-3" : "grid-cols-2";
+  const actionGridCols = isOwnPost ? "grid-cols-3" : "grid-cols-4";
 
   const caption = post.caption ?? "";
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
@@ -1282,6 +1285,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       // Cache priming is a UX optimization; navigation should never depend on it.
     }
 
+    rememberScrollBeforeNavigation();
     router.push(href, { scroll: false });
   }
 
@@ -1495,25 +1499,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               >
                 {isDownloading || videoDownload.isDownloading ? (
                   <>
-                    <svg
-                      className="w-4 h-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      />
-                    </svg>
+                    <InterlockingBalls size={16} />
                     {/* Mux encodes the MP4 on demand for older uploads, so a
                         video download can sit here for a few seconds. Saying
                         "Preparing" rather than "Downloading" is the difference
@@ -1541,10 +1527,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               }}
               className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
             >
-              <Share2
-                className="w-4 h-4 shrink-0 text-muted-foreground"
-                strokeWidth={2.2}
-              />
+              <Send className="w-4 h-4 shrink-0 text-muted-foreground" />
               Share content
             </button>
 
@@ -1572,9 +1555,13 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <p className="mb-1 text-[15px] font-extrabold leading-snug text-main md:text-[18px]">
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="mb-1 block w-full cursor-pointer text-left text-[15px] font-extrabold leading-snug text-main md:text-[18px]"
+        >
           {post.title}
-        </p>
+        </button>
 
         {/* Price sits with the title, above the media.
 
@@ -1603,7 +1590,19 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </div>
         {caption && (
           <div className="text-sm font-semibold leading-5 text-main md:text-[16px] md:leading-6">
-            <p ref={captionRef} className={cn(!expanded && "line-clamp-2")}>
+            <p
+              ref={captionRef}
+              role="link"
+              tabIndex={0}
+              onClick={handleOpen}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleOpen();
+                }
+              }}
+              className={cn("cursor-pointer", !expanded && "line-clamp-2")}
+            >
               {caption}
             </p>
             {(captionOverflows || expanded) && (
@@ -1722,6 +1721,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               <button
                 type="button"
                 onClick={openComments}
+                aria-label={`Open ${commentCount} comments`}
                 className="hover:underline lg:cursor-pointer"
               >
                 {fmt(commentCount)} comment{commentCount === 1 ? "" : "s"}
@@ -1743,18 +1743,21 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       {!hasEngagement && <div className="mt-2.5" />}
 
       {/* ── Action bar ──────────────────────────────────────────────────
-          Flat, evenly-split buttons under a divider, the shape people already
-          know from social feeds. The pills this replaced carried their own
-          borders and a filled CTA, which stacked three competing weights in a
-          row barely 40px tall on a phone. All three now share one weight; only
-          Save changes colour, and only once it is active. */}
-      <div className={cn("grid items-stretch gap-1 px-2 py-1", actionGridCols)}>
+          Compact, evenly-split actions with no divider above them. The actions
+          share one visual weight; only Save changes colour when active. */}
+      <div
+        className={cn(
+          "grid items-stretch gap-1 px-3 py-1",
+          actionGridCols,
+        )}
+      >
         {/* Save — active state fills the icon and tints the label */}
         <button
+          type="button"
           onClick={handleSavePress}
           className={cn(
-            "relative flex min-w-0 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-semibold transition-colors active:scale-95 lg:cursor-pointer",
-            "hover:bg-surface",
+            "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold transition-colors active:scale-95 lg:cursor-pointer",
+            "hover:bg-surface active:bg-surface",
             saved ? "text-primary" : "text-muted-foreground",
           )}
         >
@@ -1771,28 +1774,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               row directly above, and showing it twice read as two different
               numbers at a glance. */}
           <span className="truncate">Save</span>
-        </button>
-
-        {/* Comment — opens the lazy-loaded comments sheet */}
-        <button
-          onClick={openComments}
-          className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 lg:cursor-pointer"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.8}
-            stroke="currentColor"
-            className="h-4.5 w-4.5 shrink-0"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-            />
-          </svg>
-          <span className="truncate">Comment</span>
         </button>
 
         {!isOwnPost && (
@@ -1821,30 +1802,45 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 lg:cursor-pointer"
+            className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 active:bg-surface lg:cursor-pointer"
           >
-            <svg
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-              className="h-4.5 w-4.5 shrink-0"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
+            <MessageCircle className="h-4.5 w-4.5 shrink-0" strokeWidth={1.8} />
             <span className="truncate">Contact</span>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openComments();
+          }}
+          aria-label="Open comments"
+          className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 active:bg-surface lg:cursor-pointer"
+        >
+          <MessageSquare className="h-4.5 w-4.5 shrink-0" strokeWidth={1.8} />
+          <span className="truncate">Comment</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleShare();
+          }}
+          aria-label="Share listing"
+          className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 active:bg-surface lg:cursor-pointer"
+        >
+          <Send className="h-4.5 w-4.5 shrink-0" />
+          <span className="truncate">Share</span>
+        </button>
       </div>
 
       {latestComment && (
         <button
           type="button"
           onClick={openComments}
+          aria-label="Open comments"
           className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-start gap-2.5 rounded-3xl bg-surface px-3 py-2.5 text-left transition-transform active:scale-[0.99]"
         >
           {latestComment.author ? (
@@ -1866,8 +1862,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </button>
       )}
 
-      {/* ── Comments sheet — controlled like MediaCarouselDialog, so reopening
-          preserves the mounted comment thread instead of refetching the feed. ── */}
+      {/* ── Full-screen media viewer — images swipe as a carousel and Mux
+          videos retain the same dialog/back-button behaviour. ── */}
 
       <CommentsDrawer
         contentId={post.id}
@@ -1876,9 +1872,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         open={showComments}
         lang={lang}
       />
-
-      {/* ── Full-screen media viewer — images swipe as a carousel and Mux
-          videos retain the same dialog/back-button behaviour. ── */}
 
       <MediaCarouselDialog
         open={showCarousel}

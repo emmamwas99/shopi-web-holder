@@ -1,8 +1,10 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useRef } from "react";
 import Image from "next/image";
-import { Bell, BellOff, Loader2, MessageCircle } from "lucide-react";
+import { Bell, BellOff, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TeamThreadRow } from "@/features/team-messages/components/TeamThreadRow";
@@ -105,7 +107,7 @@ export function ConversationList({
                 }
               >
                 {pushUpdating ? (
-                  <Loader2 className="animate-spin text-muted" size={16} />
+                  <InterlockingBalls size={16} />
                 ) : pushEnabled ? (
                   <Bell size={16} />
                 ) : (
@@ -115,7 +117,7 @@ export function ConversationList({
             ) : null}
 
             {/* {(conversationsLoading) && (
-              <Loader2 className="animate-spin text-muted" size={18} />
+              <InterlockingBalls size={18} />
             )} */}
           </div>
         </div>

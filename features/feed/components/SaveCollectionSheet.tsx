@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { gql } from "@apollo/client";
@@ -256,10 +258,7 @@ export function SaveCollectionSheet({
                     className="shrink-0 p-1"
                   >
                     {isLoading ? (
-                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg>
+                      <InterlockingBalls size={20} />
                     ) : isIn ? (
                       <div
                         className="w-5 h-5 rounded-full flex items-center justify-center"

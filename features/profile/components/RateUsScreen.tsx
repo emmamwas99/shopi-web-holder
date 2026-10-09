@@ -1,9 +1,11 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ChevronLeft, Loader2, Star } from "lucide-react";
+import { ChevronLeft, Star } from "lucide-react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { toast } from "sonner";
 import {
@@ -204,7 +206,7 @@ function RateUsForm({
           disabled={stars < 1 || saving}
           className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-white transition-opacity active:opacity-80 disabled:opacity-50"
         >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          {saving && <InterlockingBalls size={16} />}
           {saving ? "Sending…" : existing ? "Update rating" : "Send rating"}
         </button>
       </form>

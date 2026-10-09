@@ -13,13 +13,11 @@ import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import {
   ArrowRight,
   Bot,
-  Camera,
   Check,
   ChevronLeft,
   ChevronRight,
   Globe,
   Images,
-  LoaderCircle,
   LockKeyhole,
   MapPin,
   Send,
@@ -85,6 +83,7 @@ import {
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { OrDivider } from "./OrDivider";
 import { TikTokImportDrawer } from "./TikTokImportDrawer";
+import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 
 const MAX_IMAGES = 10;
 const ATTACH_TIMEOUT_MS = 30_000;
@@ -180,7 +179,6 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const { user } = useAuthSession();
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const draftSetupInFlightRef = useRef(false);
   const analysisInFlightRef = useRef<string | null>(null);
   const locationAutofilledRef = useRef(false);
@@ -335,7 +333,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     // Never silently reinterpret an existing manual/legacy draft as a guided
     // one just because its URL was typed directly.
     if (draftId && creationMode !== "ai") {
-      router.replace(`/${lang}/upload/create`);
+      router.replace(`/${lang}/upload/create-manual`);
       return;
     }
     if (!draftId && creationMode !== "ai") setCreationMode("ai");
@@ -460,13 +458,18 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
     if (
       files.length === 0 ||
+      (kind === "video" && picked.length !== 1) ||
       picked.some((file) =>
         kind === "video"
           ? !file.type.startsWith("video/")
           : !file.type.startsWith("image/"),
       )
     ) {
-      setFormError("Choose either one video or a set of photos, not both.");
+      setFormError(
+        kind === "video" && picked.length > 1
+          ? "Choose one video at a time."
+          : "Choose either one video or a set of photos, not both.",
+      );
       return;
     }
 
@@ -1303,18 +1306,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   function switchToManual() {
     setCreationMode("manual");
-    router.push(`/${lang}/upload/create`);
+    router.push(`/${lang}/upload/create-manual`);
   }
 
   // Wait for the breakpoint too: on desktop the flow renders inside a dialog,
   // on mobile full-screen. Deciding before `isDesktop` resolves would flash the
   // wrong layout for a frame.
   if (!hydrated || isDesktop === null) {
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
-        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DrawerLoadingIndicator className="min-h-svh bg-background" />;
   }
 
   if (publishedContentId) {
@@ -1568,7 +1567,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           {guidedStage === "publishing" ? (
             <AgentBubble>
               <div className="flex items-center gap-3">
-                <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
+                <DrawerLoadingIndicator className="min-h-0 w-9 shrink-0" />
                 <div>
                   <p className="font-semibold">Getting your listing live…</p>
                   <p className="mt-0.5 text-sm text-muted">
@@ -1607,21 +1606,12 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                       <Upload size={26} />
                     </span>
                     <span className="mt-4 text-base font-semibold text-foreground">
-                      Upload photos or a video
+                      Choose photos or a video
                     </span>
                     <span className="mt-1 text-xs text-muted">
                       Up to {MAX_IMAGES} photos, or one video
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-border bg-elevated px-4 text-sm font-semibold text-foreground transition-colors hover:bg-surface sm:w-auto sm:px-5"
-                  >
-                    <Camera size={17} />
-                    Take photo
-                  </button>
-
                   <OrDivider className="my-4" />
 
                   <button
@@ -1663,13 +1653,6 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                     ) : null}
                     <button
                       type="button"
-                      onClick={() => cameraInputRef.current?.click()}
-                      className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground hover:bg-surface"
-                    >
-                      Take photo
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground hover:bg-surface"
                     >
@@ -1683,14 +1666,6 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                 type="file"
                 accept="image/*,video/*"
                 multiple
-                className="hidden"
-                onChange={handleMediaChange}
-              />
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={handleMediaChange}
               />
@@ -1752,7 +1727,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
               className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[rgb(var(--color-border-strong))] bg-transparent px-4 text-base font-semibold text-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
             >
               {savingDraft ? (
-                <LoaderCircle className="h-5 w-5 animate-spin" />
+                <DrawerLoadingIndicator className="min-h-0 w-9 shrink-0" />
               ) : (
                 "Draft"
               )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useQuery } from "@apollo/client/react";
 import { Eye, X } from "lucide-react";
 import { timeAgo } from "@/lib/time";
@@ -64,7 +66,7 @@ export function StoryViewersSheet({
         <div className="min-h-32 overflow-y-auto px-2 py-1">
           {loading && !result ? (
             <div className="flex justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-black/15 border-t-primary dark:border-white/20" />
+              <InterlockingBalls size={24} />
             </div>
           ) : !result || result.viewers.length === 0 ? (
             <p className="px-2 py-8 text-center text-sm text-muted">

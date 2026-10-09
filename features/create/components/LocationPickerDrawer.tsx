@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 /**
  * LocationPickerDrawer — RedNote-style location picker
  *
@@ -25,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import type { DraftLocation } from "@/stores/create";
 
@@ -179,13 +181,7 @@ function RadioCircle({ checked }: { checked: boolean }) {
 }
 
 function Spinner({ small }: { small?: boolean }) {
-  const s = small ? 14 : 24;
-  return (
-    <svg className="animate-spin text-primary" width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
+  return <InterlockingBalls size={small ? 14 : 20} />;
 }
 
 function LoadMoreRow({ label }: { label: string }) {
@@ -653,18 +649,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
           <div className="flex-1 overflow-y-auto" onScroll={handleNearbyScroll}>
 
             {nearbyStatus === "loading" && (
-              <div className="px-4 pt-3 space-y-0">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 border-b border-border py-3.5">
-                    <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-3.5 w-2/3 rounded" />
-                      <Skeleton className="h-3 w-1/2 rounded" />
-                    </div>
-                    <Skeleton className="h-3 w-10 rounded flex-shrink-0" />
-                  </div>
-                ))}
-              </div>
+              <DrawerLoadingIndicator className="min-h-full" />
             )}
 
             {nearbyStatus === "denied" && (
@@ -752,17 +737,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
           <div className="flex-1 overflow-y-auto" onScroll={handleAllScroll}>
 
             {wardStatus === "loading" && (
-              <div className="px-4 pt-3 space-y-0">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 border-b border-border py-3.5">
-                    <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-3.5 w-1/2 rounded" />
-                      <Skeleton className="h-3 w-1/3 rounded" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DrawerLoadingIndicator className="min-h-full" />
             )}
 
             {wardStatus !== "loading" && wards.length === 0 && query.trim().length >= 2 && (

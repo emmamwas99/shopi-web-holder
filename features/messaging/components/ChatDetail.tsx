@@ -1,16 +1,11 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  Handshake,
-  Loader2,
-  MessageCircle,
-  Phone,
-} from "lucide-react";
+import { ArrowLeft, ChevronLeft, Handshake, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { absoluteContentUrl } from "@/lib/content-url";
@@ -459,7 +454,7 @@ export function ChatDetail({
                     title="Call seller"
                   >
                     {sellerPhoneLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <InterlockingBalls size={16} />
                     ) : (
                       <Phone className="h-4 w-4" />
                     )}
@@ -476,7 +471,7 @@ export function ChatDetail({
                     title="Chat with seller on WhatsApp"
                   >
                     {sellerPhoneLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <InterlockingBalls size={16} />
                     ) : (
                       <WhatsAppIcon className="h-4 w-4" />
                     )}
@@ -616,7 +611,7 @@ export function ChatDetail({
                     className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                   >
                     {sellerPhoneLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <InterlockingBalls size={16} />
                     ) : (
                       <WhatsAppIcon className="h-4 w-4" />
                     )}

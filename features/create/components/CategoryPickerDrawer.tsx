@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { Check, ChevronRight, Loader2 } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { CategoriesDocument } from "@/types/__generated__/graphql";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 type CategoryPickerDrawerProps = {
@@ -127,16 +128,7 @@ export function CategoryPickerDrawer({
 
   const pickerList =
     loading && categories.length === 0 ? (
-      <div
-        className="flex h-32 items-center justify-center gap-2"
-        style={{
-          color: "rgb(var(--color-text-muted))",
-          fontSize: "var(--text-sm)",
-        }}
-      >
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading categories...
-      </div>
+      <DrawerLoadingIndicator className="h-32 min-h-0" />
     ) : categories.length === 0 ? (
       <div
         className="flex h-32 items-center justify-center text-center"

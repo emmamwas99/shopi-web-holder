@@ -4,7 +4,7 @@ import {
   Bookmark,
   Heart,
   MessageCircle,
-  Share2,
+  Send,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -102,7 +102,7 @@ export function ImmersiveActions({
       </ActionButton>
 
       <ActionButton label="Share" onClick={onShare} column={column} tone={tone}>
-        <Share2 className={icon} />
+        <Send className={icon} />
       </ActionButton>
 
       {onToggleMuted && (

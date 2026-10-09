@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 /**
  * StepMediaReview — shows the selected media with inline upload status.
  *
@@ -13,6 +15,7 @@
 
 import { useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
+import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { useCreateStore, MediaItem } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
@@ -88,23 +91,15 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
         style={{ backgroundColor: "rgb(var(--color-bg))" }}
       >
         <button
+          type="button"
           onClick={onBack}
-          className="flex items-center gap-1"
+          aria-label="Back to media selection"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors hover:bg-surface"
           style={{
             color: "rgb(var(--color-text-muted))",
-            fontSize: "var(--text-sm)",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Back
+          <ChevronLeft size={23} strokeWidth={2.2} />
         </button>
         <h2
           className="font-semibold"
@@ -143,7 +138,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
             border: "1px solid rgb(var(--brand-primary) / 0.2)",
           }}
         >
-          <MiniSpinner color="rgb(var(--brand-primary))" />
+          <MiniSpinner />
           <span
             style={{
               fontSize: "var(--text-xs)",
@@ -212,7 +207,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
           </>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <BounceDots />
+            <InterlockingBalls size={24} />
           </div>
         )}
       </div>
@@ -327,48 +322,6 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
   );
 }
 
-function MiniSpinner({ color = "white" }: { color?: string }) {
-  return (
-    <svg
-      className="animate-spin"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke={color}
-        strokeOpacity="0.25"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 10 10"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function BounceDots() {
-  return (
-    <div className="flex items-center gap-1.5">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="rounded-full animate-bounce"
-          style={{
-            width: 8,
-            height: 8,
-            backgroundColor: "rgb(var(--brand-primary))",
-            animationDelay: `${i * 0.15}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
+function MiniSpinner() {
+  return <InterlockingBalls size={14} />;
 }

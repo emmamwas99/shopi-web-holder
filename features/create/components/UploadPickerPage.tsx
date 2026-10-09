@@ -4,9 +4,9 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import {
-  ArrowLeft,
   Bot,
   Check,
+  ChevronLeft,
   ChevronRight,
   Images,
   Music2,
@@ -20,6 +20,7 @@ import { useUiStore } from "@/stores/ui";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import { DesktopCreateFlow, CreateBanner } from "./DesktopCreateFlow";
+import { CreateFlow } from "./CreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import {
@@ -37,14 +38,19 @@ import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
  * Desktop (>= md): the whole create flow lives here in a shadcn Dialog with a
  * stepper and a live post preview (DesktopCreateFlow); no route hops.
  *
- * Mobile: this page is the type picker; picking a type creates the draft and
- * navigates to /upload/create (full-page flow).
+ * Mobile: manual creation has a shareable route of its own. It shows the media
+ * picker until a draft exists, then mounts the full-page editor on this route.
  */
-export function UploadPickerPage({ lang }: { lang: string }) {
+export function UploadPickerPage({
+  lang,
+  manualRoute = false,
+}: {
+  lang: string;
+  manualRoute?: boolean;
+}) {
   const router = useRouter();
   const isDesktop = useIsDesktop();
   const [storeHydrated, setStoreHydrated] = useState(false);
-  const [manualSelected, setManualSelected] = useState(false);
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<"pick" | "tiktok">("pick");
   const [createError, setCreateError] = useState<string | null>(null);
@@ -57,6 +63,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     setStep,
     setError,
     draftId,
+    draftPending,
     step,
   } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
@@ -74,31 +81,39 @@ export function UploadPickerPage({ lang }: { lang: string }) {
 
   const hasActiveDraft = !!draftId && step !== "pick";
   const showingManual =
-    manualSelected ||
-    creationMode === "manual" ||
+    manualRoute ||
     (hasActiveDraft && creationMode !== "ai" && creationMode !== "choose");
 
   useEffect(() => {
     if (storeHydrated && hasActiveDraft && creationMode === "ai") {
       router.replace(`/${lang}/upload/create-ai`);
+      return;
     }
-  }, [creationMode, hasActiveDraft, lang, router, storeHydrated]);
+    if (storeHydrated && manualRoute && creationMode !== "manual") {
+      setCreationMode("manual");
+    }
+  }, [creationMode, hasActiveDraft, lang, manualRoute, router, setCreationMode, storeHydrated]);
 
   useEffect(() => {
     if (
       showingManual &&
+      !manualRoute &&
       isDesktop === false &&
       view === "pick" &&
       draftId &&
       step !== "pick"
     ) {
-      router.replace(`/${lang}/upload/create`);
+      router.replace(`/${lang}/upload/create-manual`);
     }
-  }, [isDesktop, view, draftId, step, lang, router, showingManual]);
+  }, [isDesktop, view, draftId, step, lang, manualRoute, router, showingManual]);
 
   if (isDesktop === null || !storeHydrated) return null;
 
   if (hasActiveDraft && creationMode === "ai") return null;
+
+  if (manualRoute && (hasActiveDraft || draftPending)) {
+    return isDesktop ? <DesktopCreateFlow lang={lang} /> : <CreateFlow lang={lang} />;
+  }
 
   if (!showingManual) {
     return (
@@ -107,7 +122,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
         isDesktop={isDesktop}
         onManual={() => {
           setCreationMode("manual");
-          setManualSelected(true);
+          router.push(`/${lang}/upload/create-manual`);
         }}
         onAgent={() => {
           setCreationMode("ai");
@@ -132,7 +147,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       setDraftId(data.createDraft.id);
       setContentType(kind);
       setStep("edit");
-      router.push(`/${lang}/upload/create`);
+      if (!manualRoute) router.push(`/${lang}/upload/create-manual`);
     } catch (err) {
       if (getSuspendedAccountMessage(err)) {
         setCreating(false);
@@ -144,7 +159,6 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   }
 
   function closePicker() {
-    if (!draftId) setCreationMode(null);
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;
@@ -188,7 +202,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
               aria-label="Back"
             >
-              <ArrowLeft size={20} />
+              <ChevronLeft size={22} />
             </button>
             <h1 className="text-base font-semibold text-foreground">
               Add from TikTok
@@ -197,7 +211,9 @@ export function UploadPickerPage({ lang }: { lang: string }) {
         </header>
         <TikTokPicker
           lang={lang}
-          onUsed={() => router.push(`/${lang}/upload/create`)}
+          onUsed={() => {
+            if (!manualRoute) router.push(`/${lang}/upload/create-manual`);
+          }}
           onError={(message) => setCreateError(message)}
         />
       </div>
@@ -217,7 +233,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground active:opacity-70"
             aria-label="Back"
           >
-            <ArrowLeft size={20} />
+            <ChevronLeft size={22} />
           </button>
           <div className="min-w-0">
             <h1 className="text-base font-semibold text-foreground">
@@ -230,17 +246,17 @@ export function UploadPickerPage({ lang }: { lang: string }) {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-5">
-        <div className="mb-5 rounded-lg border border-border bg-surface px-4 py-3">
-          <p className="text-sm font-semibold text-foreground">
-            What are you selling with?
-          </p>
-          <p className="mt-1 text-xs leading-5 text-muted">
-            Pick the media you already have. Details come next.
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-8 pt-7">
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            Add photos or a video
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Choose the media that best shows your item.
           </p>
         </div>
 
-        <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-elevated">
+        <div className="grid gap-3">
           {options.map((opt) => {
             const Icon = opt.icon;
             return (
@@ -248,22 +264,22 @@ export function UploadPickerPage({ lang }: { lang: string }) {
                 key={opt.label}
                 onClick={opt.onClick}
                 disabled={creating}
-                className={`${opt.hidden ? "hidden" : "flex"} min-h-20 w-full items-center gap-3 border-b border-border px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-surface disabled:opacity-50`}
+                className={`${opt.hidden ? "hidden" : "flex"} min-h-[82px] w-full items-center gap-3 rounded-2xl border border-border bg-elevated px-4 py-4 text-left transition-[border-color,background-color] hover:border-primary/35 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:bg-primary/5 disabled:opacity-50`}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-                  <Icon size={20} strokeWidth={2.1} />
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Icon size={19} strokeWidth={2.1} />
                 </span>
 
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-foreground">
+                  <span className="block text-[15px] font-semibold text-foreground">
                     {opt.label}
                   </span>
-                  <span className="mt-0.5 block text-xs leading-5 text-muted">
+                  <span className="mt-1 block text-[13px] leading-5 text-muted">
                     {opt.description}
                   </span>
                 </span>
 
-                <ChevronRight className="shrink-0 text-muted" size={18} />
+                <ChevronRight className="shrink-0 text-muted" size={18} aria-hidden />
               </button>
             );
           })}
@@ -280,18 +296,15 @@ const CREATION_MODES = [
     key: "agent" as const,
     label: "Shopi Agent",
     icon: Bot,
-    heading: "Guided setup",
     recommended: true,
-    description:
-      "Upload media and let Shopi Agent draft the title, category and useful details with you.",
+    description: "Get help with your title, category, and item details.",
   },
   {
     key: "manual" as const,
     label: "Manual",
     icon: PenLine,
-    heading: "Full control",
     recommended: false,
-    description: "Use the editor and enter every listing detail yourself.",
+    description: "Add the listing details yourself, step by step.",
   },
 ];
 
@@ -340,7 +353,7 @@ function CreationModeChooser({
     <div
       role="radiogroup"
       aria-label="How would you like to create your listing?"
-      className="overflow-hidden rounded-lg border border-border bg-elevated"
+      className="grid gap-3"
     >
       {CREATION_MODES.map((mode) => {
         const isSelected = selected === mode.key;
@@ -352,36 +365,30 @@ function CreationModeChooser({
             role="radio"
             aria-checked={isSelected}
             onClick={() => setSelected(mode.key)}
-            className={`flex w-full items-start gap-3 border-b border-border px-4 py-4 text-left outline-none transition-colors last:border-b-0 hover:bg-surface focus-visible:bg-surface ${
-              isSelected ? "bg-primary/5" : "bg-elevated"
+            className={`flex min-h-[88px] w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left outline-none transition-[border-color,background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-primary/40 ${
+              isSelected
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-border bg-elevated hover:border-primary/35 hover:bg-surface"
             }`}
           >
             <span
-              className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                isSelected
-                  ? "bg-primary text-white"
-                  : "bg-surface text-foreground"
-              }`}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
             >
               <Icon size={19} strokeWidth={2.1} />
             </span>
 
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  {mode.heading}
+                <span className="text-[15px] font-semibold text-foreground">
+                  {mode.label}
                 </span>
-                {mode.recommended && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary-strong dark:text-primary">
-                    <Sparkles size={12} />
-                    Recommended
+                {mode.recommended ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    <Sparkles size={11} /> Recommended
                   </span>
-                )}
+                ) : null}
               </span>
-              <span className="mt-1 block text-xs font-medium text-muted">
-                {mode.label}
-              </span>
-              <span className="app-subcopy mt-2 block">
+              <span className="mt-1 block text-[13px] leading-5 text-muted">
                 {mode.description}
               </span>
             </span>
@@ -397,7 +404,7 @@ function CreationModeChooser({
     <button
       type="button"
       onClick={handleContinue}
-      className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary/90 active:scale-[0.99]"
+      className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 active:scale-[0.99]"
     >
       Continue
     </button>
@@ -419,24 +426,21 @@ function CreationModeChooser({
               Choose how you&apos;d like to create your listing.
             </DialogDescription>
 
-            <div className="px-6 pt-6 pb-6">
+            <div className="px-6 pb-6 pt-7">
               <div className="pr-8">
-                <p className="text-xs font-semibold uppercase text-primary">
-                  Upload and sell
-                </p>
-                <h1 className="mt-2 text-lg font-semibold text-foreground">
+                <h1 className="text-xl font-semibold tracking-tight text-foreground">
                   Create a listing
                 </h1>
-                <p className="app-subcopy mt-1">
-                  Choose the path that fits how much help you want.
+                <p className="mt-1.5 text-sm text-muted">
+                  Choose how you&apos;d like to get started.
                 </p>
               </div>
 
-              <div className="mt-5">{modeCards}</div>
-              <div className="mt-5">{continueButton}</div>
+              <div className="mt-6">{modeCards}</div>
+              <div className="mt-6">{continueButton}</div>
 
-              <p className="mt-4 text-center text-xs leading-5 text-muted">
-                Nothing is posted until you review and confirm it.
+              <p className="mt-3 text-center text-xs text-muted">
+                Your listing only goes live after you confirm it.
               </p>
             </div>
           </DialogContent>
@@ -459,30 +463,26 @@ function CreationModeChooser({
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-base font-semibold text-foreground">
-              Create a listing
+              New listing
             </h1>
-            <p className="text-xs leading-tight text-muted">
-              Choose how to start
-            </p>
           </div>
           <span aria-hidden className="h-10 w-10 shrink-0" />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-5 md:px-6 md:py-10">
-        <div className="mb-5 rounded-lg border border-border bg-surface px-4 py-3">
-          <p className="text-sm font-semibold text-foreground">
-            Start faster with Shopi Agent.
-          </p>
-          <p className="app-microcopy mt-1">
-            Manual is still here when you want direct control.
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-8 pt-7 md:px-6 md:py-10">
+        <div className="mb-5">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+            Create a listing
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            Choose how you&apos;d like to get started.
           </p>
         </div>
-
         {modeCards}
 
-        <p className="mt-4 px-1 text-xs leading-5 text-muted">
-          Nothing is posted until you review and confirm it.
+        <p className="mt-4 px-1 text-xs text-muted">
+          Your listing only goes live after you confirm it.
         </p>
       </main>
 

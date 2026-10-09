@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -106,7 +108,7 @@ export function HlsVideoDialog({ open, onOpenChange, hlsUrl, poster, title }: Pr
           {/* Buffering spinner */}
           {buffering && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <InterlockingBalls size={32} />
             </div>
           )}
 

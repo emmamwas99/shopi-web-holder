@@ -1,7 +1,9 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState } from "react";
-import { Download, Link2, LoaderCircle } from "lucide-react";
+import { Download, Link2 } from "lucide-react";
 import type { Dictionary } from "@/i18n/getDictionary";
 
 type VideoInfo = {
@@ -106,7 +108,7 @@ export function TiktokSaverTool({ t }: { t: Dictionary["tiktokSaver"] }) {
             >
               {state === "loading" ? (
                 <>
-                  <LoaderCircle size={15} className="animate-spin" />
+                  <InterlockingBalls size={15} />
                   {t.fetching}
                 </>
               ) : (
@@ -157,7 +159,7 @@ export function TiktokSaverTool({ t }: { t: Dictionary["tiktokSaver"] }) {
               className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-white disabled:cursor-default disabled:opacity-70 sm:w-auto sm:shrink-0"
             >
               {saving ? (
-                <LoaderCircle size={15} className="animate-spin" />
+                <InterlockingBalls size={15} />
               ) : (
                 <Download size={15} />
               )}

@@ -9,7 +9,6 @@ import {
 } from "@/features/discover/components/DiscoverGridCard";
 import {
   ArrowLeft,
-  CheckCircle2,
   ExternalLink,
   Video,
 } from "lucide-react";
@@ -262,10 +261,23 @@ export function CreatorProfileView({
                     {displayName}
                   </h1>
                   {user.isVerified ? (
-                    <CheckCircle2
-                      className="h-5 w-5 shrink-0 text-primary"
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      className="shrink-0"
                       aria-label="Verified"
-                    />
+                    >
+                      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
+                      <path
+                        d="M6 10.5l2.5 2.5 5.5-5.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   ) : null}
                 </div>
                 {user.username ? (

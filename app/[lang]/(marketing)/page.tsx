@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -28,8 +28,8 @@ const COPY = {
     heroTitle: "Buy and sell anything in Kenya",
     heroBody:
       "Discover products nearby. Shopi Agent finds matches, drafts your post from a photo, and suggests a price.",
-    cta: "Create a post",
-    heroPost: "Create a post",
+    cta: "Sell an item",
+    heroPost: "Sell an item",
     heroPostNote: "Posting is free. Add a photo, price and location, then chat with buyers directly.",
     browse: "Browse listings",
     free: "Free to post",
@@ -51,7 +51,7 @@ const COPY = {
       "Add price and location",
       "Chat directly with buyers",
     ],
-    postCta: "Create a post",
+    postCta: "Sell an item",
     postLink: "Browse listings",
     closingTitle: "Ready to sell something?",
     closingBody: "Sign in, create a post and start hearing from buyers.",
@@ -82,8 +82,8 @@ const COPY = {
     heroTitle: "Nunua na uuze chochote Kenya",
     heroBody:
       "Gundua bidhaa karibu nawe. Shopi Agent hutafuta bidhaa, hukusaidia kuandika tangazo kwa picha na hupendekeza bei.",
-    cta: "Weka tangazo",
-    heroPost: "Weka tangazo",
+    cta: "Uza bidhaa",
+    heroPost: "Uza bidhaa",
     heroPostNote:
       "Kuweka tangazo ni bure. Ongeza picha, bei na eneo, kisha ongea na wanunuzi moja kwa moja.",
     browse: "Vinjari matangazo",
@@ -106,7 +106,7 @@ const COPY = {
       "Ongeza bei na eneo",
       "Ongea na wanunuzi moja kwa moja",
     ],
-    postCta: "Weka tangazo",
+    postCta: "Uza bidhaa",
     postLink: "Vinjari matangazo",
     closingTitle: "Uko tayari kuuza?",
     closingBody:
@@ -174,6 +174,29 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   if (!isValidLocale(lang)) notFound();
   const t = COPY[lang];
 
+  const heroImageCommon = {
+    alt: "An illustration of a local seller and buyer reviewing a listing together",
+    sizes: "(max-width: 768px) 100vw, 1500px",
+    quality: 80,
+    priority: true,
+  };
+  const {
+    props: { srcSet: heroDesktopSrcSet },
+  } = getImageProps({
+    ...heroImageCommon,
+    src: "/assets/hero/marketplace-banner.png",
+    width: 1774,
+    height: 887,
+  });
+  const {
+    props: { srcSet: heroMobileSrcSet, ...heroMobileImageProps },
+  } = getImageProps({
+    ...heroImageCommon,
+    src: "/assets/hero/marketplace-banner-mobile.png",
+    width: 1086,
+    height: 1448,
+  });
+
   return (
     <div id="top" className="bg-white text-[#172226]">
       <script
@@ -194,15 +217,19 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           className="px-4 pb-8 md:px-8 md:pb-14"
         >
           <div className="relative mx-auto flex min-h-[min(700px,72vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:min-h-[min(710px,72vh)] md:items-center">
-            <Image
-              src="/assets/og/seller.jpg"
-              alt="Kenyan seller checking his phone at work"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 1500px"
-              className="object-cover object-[55%_center] md:object-[center_45%]"
-            />
-            {/* Phones: darken only where the text sits, so the photo stays bright above it. */}
+            <picture className="absolute inset-0">
+              <source
+                media="(min-width: 768px)"
+                srcSet={heroDesktopSrcSet}
+                sizes={heroImageCommon.sizes}
+              />
+              <img
+                {...heroMobileImageProps}
+                srcSet={heroMobileSrcSet}
+                className="absolute h-full w-full object-cover object-[55%_center] md:object-[center_45%]"
+              />
+            </picture>
+            {/* Darken the image beneath the text so white copy stays readable. */}
             <div
               className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-none md:bg-black/50"
               aria-hidden
@@ -268,8 +295,12 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         >
           <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[#e8efef]">
             <Image
-              src="/assets/blog/sofa.jpg"
-              alt="Sofa photographed for a sale post"
+              src="/assets/blog/mazda-cx5-shopi-plate.png"
+              alt={
+                lang === "sw"
+                  ? "Mazda CX-5 inayouzwa Nairobi, Kenya"
+                  : "Mazda CX-5 listed for sale in Nairobi, Kenya"
+              }
               fill
               sizes="(max-width: 768px) 100vw, 600px"
               className="object-cover"

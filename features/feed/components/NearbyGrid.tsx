@@ -1,5 +1,7 @@
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { PostCard } from "./PostCard";
 import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useNearbyFeed } from "../hooks/useFeed";
@@ -51,7 +53,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
   if (effectivePermState === "checking") {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <InterlockingBalls size={32} />
         <p className="app-subcopy">Checking location…</p>
       </div>
     );
@@ -99,7 +101,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
   if (effectivePermState === "requesting") {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <InterlockingBalls size={32} />
         <p className="app-subcopy">Finding your location…</p>
       </div>
     );

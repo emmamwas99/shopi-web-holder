@@ -47,10 +47,59 @@ export function CommentsDrawer({
   // query and accidentally nudging the surrounding feed watchers.
   const hasOpenedRef = useRef(open || desktopInline);
   const [hasOpened, setHasOpened] = useState(open || desktopInline);
-  const requestClose = useCallback(() => {
-    onOpenChange?.(false);
-    onClose();
+  const onCloseRef = useRef(onClose);
+  const onOpenChangeRef = useRef(onOpenChange);
+  const closeRef = useRef<() => void>(() => {
+    onOpenChangeRef.current?.(false);
+    onCloseRef.current();
+  });
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    onOpenChangeRef.current = onOpenChange;
   }, [onClose, onOpenChange]);
+
+  // The native/browser Back action should dismiss the sheet before navigating
+  // away from the feed. Defer the history entry so Strict Mode's development
+  // effect replay cannot immediately pop the drawer closed.
+  useEffect(() => {
+    if (desktopInline || !open) return;
+
+    let pushed = false;
+    let closedByPop = false;
+    const onPop = () => {
+      closedByPop = true;
+      onOpenChangeRef.current?.(false);
+      onCloseRef.current();
+    };
+
+    const timer = window.setTimeout(() => {
+      window.history.pushState(
+        { ...window.history.state, commentsDrawer: true },
+        "",
+      );
+      pushed = true;
+      window.addEventListener("popstate", onPop);
+    }, 0);
+
+    closeRef.current = () => {
+      if (pushed && !closedByPop) {
+        closedByPop = true;
+        window.history.back();
+      } else {
+        onOpenChangeRef.current?.(false);
+        onCloseRef.current();
+      }
+    };
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("popstate", onPop);
+      if (pushed && !closedByPop) window.history.back();
+    };
+  }, [desktopInline, open]);
+
+  const requestClose = useCallback(() => closeRef.current(), []);
 
   useEffect(() => {
     if (open && !hasOpenedRef.current) {

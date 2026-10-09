@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@apollo/client/react";
 import Image from "next/image";
@@ -816,55 +818,9 @@ function fmt(secs: number): string {
 }
 
 function MiniSpinner() {
-  return (
-    <svg
-      className="animate-spin"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="white"
-        strokeOpacity="0.3"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 10 10"
-        stroke="white"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <InterlockingBalls size={18} />;
 }
 
 function MiniSpinnerDark() {
-  return (
-    <svg
-      className="animate-spin"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeOpacity="0.2"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 10 10"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <InterlockingBalls size={18} />;
 }

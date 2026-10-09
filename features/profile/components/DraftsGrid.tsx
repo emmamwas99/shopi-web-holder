@@ -54,7 +54,7 @@ export function DraftsGrid({ lang }: Props) {
     setDraftId(draft.id);
     setContentType(mapType(draft.type));
     setStep("edit");
-    router.push(`/${lang}/upload/create`);
+    router.push(`/${lang}/upload/create-manual`);
   }
 
   async function handlePublish(draft: DraftFieldsFragment) {
