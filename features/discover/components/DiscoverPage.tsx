@@ -11,7 +11,7 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
-import { useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { motion } from "framer-motion";
 import {
   ArrowUpDown,
@@ -158,6 +158,13 @@ type DiscoveryResultCountData = {
 // ragged last row while the next page loads.
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 280;
+const SEARCH_ANALYTICS_DEBOUNCE_MS = 500;
+
+const RECORD_SEARCH_TERM = gql`
+  mutation RecordSearchTerm($input: RecordSearchTermInput!) {
+    recordSearchTerm(input: $input)
+  }
+`;
 
 const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
   gql`
@@ -1586,6 +1593,7 @@ export function DiscoverPage({
   const searchDraft = useSearchStore((s) => s.draft);
   const setSearchDraft = useSearchStore((s) => s.setDraft);
   const [query, setQuery] = useState(() => searchParams.get("q")?.trim() ?? "");
+  const [recordSearchTerm] = useMutation(RECORD_SEARCH_TERM);
 
   // Seed the shared draft from a ?q= deep link on mount. The store outlives
   // this page (it is a module singleton), so without this a term typed on
@@ -1740,6 +1748,22 @@ export function DiscoverPage({
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
   }, [isSubcategoryRoute, searchDraft]);
+
+  // `query` is already debounced for feed requests. Wait briefly again so a
+  // quick edit does not create a second analytics event, then send it
+  // asynchronously; analytics must never delay the Explore results.
+  useEffect(() => {
+    const term = query.trim();
+    if (term.length < 2) return;
+
+    const handle = window.setTimeout(() => {
+      void recordSearchTerm({ variables: { input: { term } } }).catch(() => {
+        // Search analytics is best-effort and must not affect browsing.
+      });
+    }, SEARCH_ANALYTICS_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(handle);
+  }, [query, recordSearchTerm]);
 
   useEffect(() => {
     if (!isSubcategoryRoute) {

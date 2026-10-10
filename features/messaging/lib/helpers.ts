@@ -230,6 +230,9 @@ export function conversationThumb(conversation?: Conversation | null): string | 
     media?.imageUrl ??
     media?.r2Variants?.find((variant) => variant.variant === "medium")?.url ??
     media?.r2Variants?.[0]?.url ??
+    conversation?.story?.media?.muxThumbnailUrl ??
+    conversation?.story?.media?.thumbnailUrl ??
+    conversation?.story?.media?.imageUrl ??
     null
   );
 }
@@ -340,6 +343,9 @@ export function upsertConversation(
   items: Conversation[],
   payload: DirectConversationUpdatedPayload,
 ): Conversation[] {
+  if (!payload.lastMessageId) {
+    return removeConversation(items, payload.conversationId);
+  }
   const index = items.findIndex((item) => item.id === payload.conversationId);
   if (index === -1) return items;
 
@@ -350,6 +356,7 @@ export function upsertConversation(
     lastMessageType: payload.lastMessageType,
     lastMessageSenderId: payload.lastMessageSenderId,
     lastMessageAt: payload.lastMessageAt,
+    isPinned: payload.isPinned ?? items[index].isPinned,
     myUnreadCount: payload.myUnreadCount,
     blockedByMe: payload.blockedByMe ?? items[index].blockedByMe,
     blockedByOther: payload.blockedByOther ?? items[index].blockedByOther,
@@ -362,7 +369,14 @@ export function upsertConversation(
 
   const next = [...items];
   next[index] = updated;
-  return next;
+  return next.sort((left, right) => {
+    if (left.isPinned && !right.isPinned) return -1;
+    if (!left.isPinned && right.isPinned) return 1;
+    return (
+      new Date(right.lastMessageAt ?? 0).getTime() -
+      new Date(left.lastMessageAt ?? 0).getTime()
+    );
+  });
 }
 
 export function removeConversation(
@@ -454,6 +468,11 @@ export function applyMessageUpdate(
   messages: Message[],
   payload: DirectMessageUpdatedPayload,
 ): Message[] {
+  if (payload.kind === "deleted") {
+    const deletedIds = new Set(payload.messageIds);
+    return messages.filter((message) => !deletedIds.has(message.id));
+  }
+
   return messages.map((message) => {
     if (!payload.messageIds.includes(message.id)) return message;
 

@@ -24,7 +24,7 @@ const feedFieldPolicy = {
   // localFeed additionally keys on the selected location/radius so each nearby
   // search is its own cached list. Apollo ignores key names that a field does
   // not accept.
-  keyArgs: ["latitude", "longitude", "radiusKm", "county", "subregion"] as const,
+  keyArgs: ["seed", "latitude", "longitude", "radiusKm", "county", "subregion"] as const,
   merge(
     existing: FeedPage | undefined,
     incoming: FeedPage,

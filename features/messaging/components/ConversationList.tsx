@@ -4,7 +4,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useRef } from "react";
 import Image from "next/image";
-import { Bell, BellOff, MessageCircle } from "lucide-react";
+import { Bell, BellOff, MessageCircle, Pin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TeamThreadRow } from "@/features/team-messages/components/TeamThreadRow";
@@ -158,10 +158,19 @@ export function ConversationList({
             const selected = conversation.id === selectedConversationId;
             const thumb = conversationThumb(conversation);
             return (
-              <button
+              <div
                 key={conversation.id}
                 data-scroll-anchor={conversation.id}
-                type="button"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open conversation with ${participantName(conversation.otherParticipant)}`}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelect(conversation.id);
+                  }
+                }}
                 onClick={() => {
                   // Suppress the click that follows a long-press release.
                   if (longPressFired.current) {
@@ -198,7 +207,7 @@ export function ConversationList({
                     {thumb ? (
                       <Image
                         src={thumb}
-                        alt={conversation.content?.title || "Listing"}
+                        alt={conversation.content?.title || "Conversation"}
                         width={56}
                         height={56}
                         className="h-full w-full object-cover"
@@ -248,9 +257,12 @@ export function ConversationList({
                       {listTimestamp(conversation.lastMessageAt)}
                     </span>
                   </div>
-                  <p className="truncate text-sm font-semibold">
-                    {conversation.content?.title}
-                  </p>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold">
+                      {conversation.content?.title ??
+                        (conversation.story ? "Story enquiry" : "Enquiry")}
+                    </p>
+                  </div>
                   <div className="mt-1 flex items-center gap-2">
                     <p
                       className={`min-w-0 truncate ${
@@ -276,7 +288,28 @@ export function ConversationList({
                     {conversation.myUnreadCount}
                   </span>
                 ) : null}
-              </button>
+                {conversation.isPinned ? (
+                  <button
+                    type="button"
+                    aria-label="Pinned conversation options"
+                    title="Pinned conversation options"
+                    className="ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-main"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onTouchStart={(event) => event.stopPropagation()}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onLongPress(conversation);
+                    }}
+                  >
+                    <Pin size={16} />
+                  </button>
+                ) : null}
+              </div>
             );
           })
         )}

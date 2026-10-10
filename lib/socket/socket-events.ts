@@ -171,7 +171,7 @@ export interface DirectMessageCreatedPayload {
 }
 
 export interface DirectMessageUpdatedPayload {
-  kind: 'delivery' | 'read' | 'media';
+  kind: 'delivery' | 'read' | 'media' | 'deleted';
   conversationId: string;
   messageIds: string[];
   deliveredAt?: string;
@@ -190,6 +190,7 @@ export interface DirectConversationUpdatedPayload {
   lastMessageSenderId?: string;
   lastMessageAt?: string;
   myUnreadCount: number;
+  isPinned?: boolean;
   blockedByMe?: boolean;
   blockedByOther?: boolean;
   canSendMessages?: boolean;

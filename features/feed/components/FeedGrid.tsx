@@ -106,7 +106,7 @@ function FeedCards({
  * and therefore suspends until the query resolves.
  */
 function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
-  const { items, loadingMore, hasMore, loadMore, loading } = useForYouFeed();
+  const { items, loadingMore, hasMore, loadMore, loading } = useForYouFeed(active);
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,

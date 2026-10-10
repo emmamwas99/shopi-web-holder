@@ -291,7 +291,7 @@ function createClient() {
               // For You can be ranked with a soft location hint. A no-location
               // window and a location-ranked window have different cursor
               // streams, so they must not share the same cached list.
-              keyArgs: ["latitude", "longitude"],
+              keyArgs: ["seed", "latitude", "longitude"],
               merge: mergeFeedPage,
             },
             followingFeed: {

@@ -85,7 +85,7 @@ export default async function FeedPageRoute({
     try {
       const { data } = await query({
         query: ForYouFeedDocument,
-        variables: { limit: FEED_PAGE_SIZE },
+        variables: { limit: FEED_PAGE_SIZE, seed: "initial" },
         context: FEED_CACHE,
       });
       initialItems = (data?.forYouFeed?.items ??
@@ -112,7 +112,7 @@ export default async function FeedPageRoute({
   return (
     <PreloadQuery
       query={ForYouFeedDocument}
-      variables={{ limit: FEED_PAGE_SIZE }}
+      variables={{ limit: FEED_PAGE_SIZE, seed: "initial" }}
       context={FEED_CACHE}
     >
       {feed}

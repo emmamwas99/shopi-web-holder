@@ -98,6 +98,7 @@ function EmbeddedChatPanelBody({
         onClearStagedMedia={inbox.clearStagedMedia}
         onRetryMessage={inbox.retryMessage}
         onDiscardMessage={inbox.discardMessage}
+        onDeleteMessage={inbox.deleteMessage}
         onLoadOlder={inbox.loadOlderMessages}
         onDeleteConversation={inbox.deleteSelectedConversation}
         onBlockConversation={inbox.blockSelectedConversation}

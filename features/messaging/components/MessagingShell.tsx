@@ -13,14 +13,14 @@ interface Props {
   lang: string;
   /**
    * Route param when mounted at /notifications/[id]. A conversation id, or a
-   * content id when `mode === "content"`. Omitted at the inbox root.
+   * content/story id when opening a contextual conversation. Omitted at the inbox root.
    */
   conversationId?: string;
   /**
-   * "content" → the route param is a post/content id; ensure (create-or-reuse)
+   * "content" or "story" → the route param is a post/story id; ensure
    * the conversation directly here (no inbox-list redirect/flicker).
    */
-  mode?: "conversation" | "content";
+  mode?: "conversation" | "content" | "story";
 }
 
 /**
@@ -54,6 +54,8 @@ export function MessagingShell({
     if (!conversationId) return;
     if (mode === "content") {
       void inbox.ensureConversationByContent(conversationId);
+    } else if (mode === "story") {
+      void inbox.ensureConversationByStory(conversationId);
     } else {
       inbox.navigateToConversation(conversationId);
     }
@@ -66,7 +68,7 @@ export function MessagingShell({
   // resolve in the background. This `pending` flag tells ChatDetail to show the
   // chat shell (header skeleton + composer) right away.
   const resolvingFromContent =
-    mode === "content" &&
+    (mode === "content" || mode === "story") &&
     (inbox.ensuringConversation ||
       !inbox.selectedConversationId ||
       !inbox.selectedConversation);
@@ -176,6 +178,7 @@ export function MessagingShell({
             onClearStagedMedia={inbox.clearStagedMedia}
             onRetryMessage={inbox.retryMessage}
             onDiscardMessage={inbox.discardMessage}
+            onDeleteMessage={inbox.deleteMessage}
             onLoadOlder={inbox.loadOlderMessages}
             onDeleteConversation={inbox.deleteSelectedConversation}
             onBlockConversation={inbox.blockSelectedConversation}
@@ -197,7 +200,15 @@ export function MessagingShell({
         blockedByMe={actionsTarget?.blockedByMe}
         blockedByOther={actionsTarget?.blockedByOther}
         dealClosed={Boolean(actionsTarget?.dealClosedAt)}
+        isPinned={actionsTarget?.isPinned}
+        threadActionsOnly
         isPending={inbox.isConversationActionPending}
+        onTogglePin={() =>
+          inbox.setConversationPinned(
+            actionsTargetId ?? "",
+            !actionsTarget?.isPinned,
+          )
+        }
         onDeleteConversation={() =>
           inbox.deleteSelectedConversation(actionsTargetId ?? undefined)
         }

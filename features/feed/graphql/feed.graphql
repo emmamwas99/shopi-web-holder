@@ -123,8 +123,8 @@ fragment ContentCardFields on Content {
   }
 }
 
-query ForYouFeed($limit: Int, $after: String, $latitude: Float, $longitude: Float) {
-  forYouFeed(limit: $limit, after: $after, latitude: $latitude, longitude: $longitude) {
+query ForYouFeed($limit: Int, $after: String, $latitude: Float, $longitude: Float, $seed: String) {
+  forYouFeed(limit: $limit, after: $after, latitude: $latitude, longitude: $longitude, seed: $seed) {
     items {
       ...ContentCardFields
     }

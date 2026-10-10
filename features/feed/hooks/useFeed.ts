@@ -1,6 +1,10 @@
 "use client";
 
-import { useQuery, useSuspenseQuery } from "@apollo/client/react";
+import {
+  useApolloClient,
+  useQuery,
+  useSuspenseQuery,
+} from "@apollo/client/react";
 import {
   startTransition,
   useCallback,
@@ -72,13 +76,54 @@ export function usePaginationGuard(currentCount: number) {
   return run;
 }
 
-export function useForYouFeed() {
+export function useForYouFeed(active = true) {
   // Reuse the same permission/caching flow the Nearby tab already owns: this
   // never itself prompts for permission (no `requestLocation()` call here) —
   // it only picks up a fix the user already granted elsewhere, so ranking
   // reflects where they actually are right now instead of their saved
   // profile/listing address, without ambushing Home with a permission popup.
   const { location } = useNearbyLocation();
+  const apollo = useApolloClient();
+  const [seed, setSeed] = useState("initial");
+  const wasActive = useRef(active);
+
+  const newSeed = useCallback(() => {
+    try {
+      const key = "shopi:for-you-variant";
+      const stored = window.sessionStorage.getItem(key);
+      const saved = stored === null ? 3 : Number(stored);
+      const previous = Number.isInteger(saved) && saved >= 0 && saved < 16 ? saved : 3;
+      // Move to a different shared API variant on each refresh/return.
+      const next = (previous + 1 + Math.floor(Math.random() * 15)) % 16;
+      window.sessionStorage.setItem(key, String(next));
+      return `shopi-feed-${next}`;
+    } catch {
+      const value = globalThis.crypto?.randomUUID?.();
+      return value ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+  }, []);
+
+  const rotateSeed = useCallback(() => {
+    startTransition(() => {
+      // A visit gets a distinct field-cache key. Drop older For You windows so
+      // a long-lived app session does not accumulate one cache entry per visit.
+      apollo.cache.evict({ id: "ROOT_QUERY", fieldName: "forYouFeed" });
+      setSeed(newSeed());
+    });
+  }, [apollo, newSeed]);
+
+  useEffect(() => {
+    rotateSeed();
+  }, [rotateSeed]);
+
+  useEffect(() => {
+    if (active && !wasActive.current) {
+      // Returning to the For You tab starts a fresh ranked stream. The seed
+      // stays fixed while that stream paginates.
+      rotateSeed();
+    }
+    wasActive.current = active;
+  }, [active, rotateSeed]);
 
   const { data, error, fetchMore } = useSuspenseQuery(
     ForYouFeedDocument,
@@ -87,11 +132,10 @@ export function useForYouFeed() {
         limit: PAGE_SIZE,
         latitude: location?.latitude,
         longitude: location?.longitude,
+        seed,
       },
-      // Preserve the accumulated window on bottom-tab navigation. Freshly
-      // published content invalidates this field explicitly (see feedCache.ts);
-      // otherwise revisiting Home should show the same 30+ cached items, not a
-      // page-1 background refresh.
+      // The seed gives each visit a separate ranked stream. Apollo still keeps
+      // the old stream cached, so returning to it remains instant.
       fetchPolicy: "cache-first",
       // Apollo's default refetch write mode is "overwrite", which can replace
       // an exhausted 33-item window with the refreshed first page while leaving
@@ -121,12 +165,12 @@ export function useForYouFeed() {
       let request!: Promise<unknown>;
       startTransition(() => {
         request = fetchMore({
-          variables: { limit: LOAD_MORE_SIZE, after: cursor },
+          variables: { limit: LOAD_MORE_SIZE, after: cursor, seed },
         }).finally(() => setLoadingMore(false));
       });
       return request;
     });
-  }, [fetchMore, pageInfo, guard, itemCount]);
+  }, [fetchMore, pageInfo, guard, itemCount, seed]);
 
   return {
     items,

@@ -52,6 +52,26 @@ const CONVERSATION_CONTENT_FIELDS = gql`
   }
 `;
 
+const CONVERSATION_STORY_FIELDS = gql`
+  fragment ConversationStoryFields on Story {
+    id
+    caption
+    expiresAt
+    viewCount
+    isViewed
+    createdAt
+    media {
+      mediaType
+      imageUrl
+      thumbnailUrl
+      muxPlaybackId
+      muxThumbnailUrl
+      duration
+      processingStatus
+    }
+  }
+`;
+
 export const MY_DIRECT_CONVERSATIONS = gql`
   query MyDirectConversationsInbox($limit: Int!) {
     myDirectConversations(limit: $limit) {
@@ -65,18 +85,19 @@ export const MY_DIRECT_CONVERSATIONS = gql`
       lastMessageSenderId
       lastMessageAt
       messageCount
-    myUnreadCount
-    otherParticipantOnline
-    otherParticipantLastSeenAt
-    blockedByMe
-    blockedByOther
-    canSendMessages
-    lifecycleStatus
-    sellerFirstResponseMinutes
-    buyerFirstResponseMinutes
-    dealClosedAt
-    dealClosedByUserId
-    contactPhone
+      isPinned
+      myUnreadCount
+      otherParticipantOnline
+      otherParticipantLastSeenAt
+      blockedByMe
+      blockedByOther
+      canSendMessages
+      lifecycleStatus
+      sellerFirstResponseMinutes
+      buyerFirstResponseMinutes
+      dealClosedAt
+      dealClosedByUserId
+      contactPhone
     otherParticipant {
         id
         username
@@ -89,9 +110,13 @@ export const MY_DIRECT_CONVERSATIONS = gql`
       content {
         ...ConversationContentFields
       }
+      story {
+        ...ConversationStoryFields
+      }
     }
   }
   ${CONVERSATION_CONTENT_FIELDS}
+  ${CONVERSATION_STORY_FIELDS}
 `;
 
 export const DIRECT_CONVERSATION = gql`
@@ -107,6 +132,7 @@ export const DIRECT_CONVERSATION = gql`
       lastMessageSenderId
       lastMessageAt
       messageCount
+      isPinned
       myUnreadCount
       otherParticipantOnline
       otherParticipantLastSeenAt
@@ -131,9 +157,13 @@ export const DIRECT_CONVERSATION = gql`
       content {
         ...ConversationContentFields
       }
+      story {
+        ...ConversationStoryFields
+      }
     }
   }
   ${CONVERSATION_CONTENT_FIELDS}
+  ${CONVERSATION_STORY_FIELDS}
 `;
 
 export const DIRECT_MESSAGES = gql`
@@ -155,6 +185,7 @@ export const DIRECT_MESSAGES = gql`
       readAt
       createdAt
       isMine
+      isDeleted
       deliveryStatus
       mediaAsset {
         id
@@ -249,6 +280,21 @@ export const MARK_DIRECT_CONVERSATION_READ = gql`
 export const DELETE_DIRECT_CONVERSATION = gql`
   mutation DeleteDirectConversationInbox($conversationId: String!) {
     deleteDirectConversation(conversationId: $conversationId)
+  }
+`;
+
+export const DELETE_DIRECT_MESSAGE = gql`
+  mutation DeleteDirectMessageInbox($messageId: String!) {
+    deleteDirectMessage(messageId: $messageId)
+  }
+`;
+
+export const SET_DIRECT_CONVERSATION_PINNED = gql`
+  mutation SetDirectConversationPinnedInbox(
+    $conversationId: String!
+    $pinned: Boolean!
+  ) {
+    setDirectConversationPinned(conversationId: $conversationId, pinned: $pinned)
   }
 `;
 

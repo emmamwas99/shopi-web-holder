@@ -19,7 +19,7 @@ export default async function ConversationPage({
     <MessagingShell
       lang={lang}
       conversationId={id}
-      mode={source === "content" ? "content" : "conversation"}
+      mode={source === "content" || source === "story" ? source : "conversation"}
     />
   );
 }
