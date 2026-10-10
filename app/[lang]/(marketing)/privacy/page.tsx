@@ -129,6 +129,16 @@ export default async function PrivacyPage({ params }: Props) {
             service using a random session identifier and the relevant seller
             or listing reference; message and call content is not included.
           </p>
+          <h3>Explore search analytics</h3>
+          <p>
+            When you search in Explore, we may send the settled search phrase
+            to our service to understand what people are looking for and improve
+            the marketplace. We normalize and aggregate phrases into search
+            counts without attaching your account, session, or IP address to
+            those search records. Queries that look like an email address or a
+            phone number are filtered out. Please avoid entering personal or
+            sensitive information in a search.
+          </p>
           <h3>Analytics providers</h3>
           <p>
             We use Vercel Analytics for website usage measurement. We also use
