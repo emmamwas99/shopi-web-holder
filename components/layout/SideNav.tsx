@@ -8,7 +8,9 @@ import {
   ChevronDown,
   LogOut,
   MapPin,
+  Plus,
   Search,
+  Upload,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -145,12 +147,34 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             {/* Present on every desktop route, the feed included. Posting is
                 the one action the whole app exists for, and hiding it on the
                 busiest page meant the nav changed shape as you moved around. */}
-            <Link
-              href={`/${lang}/upload`}
-              className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
-            >
-              Sell item
-            </Link>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
+                >
+                  Sell item
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-52 rounded-xl border-border bg-elevated p-1.5 text-main shadow-lg">
+                <Link
+                  href={`/${lang}/upload`}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
+                >
+                  <Plus className="h-4 w-4 text-primary" aria-hidden />
+                  Single upload
+                </Link>
+                <button
+                  type="button"
+                  disabled
+                  title="Bulk upload is coming soon"
+                  className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-muted opacity-60"
+                >
+                  <Upload className="h-4 w-4" aria-hidden />
+                  Bulk upload
+                </button>
+              </PopoverContent>
+            </Popover>
 
             <Link
               href={`/${lang}/dashboard`}

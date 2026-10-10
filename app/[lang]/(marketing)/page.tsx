@@ -5,6 +5,8 @@ import {
   ArrowUpRight,
   Camera,
   Car,
+  Check,
+  FileSpreadsheet,
   MessageCircle,
   Wallet,
 } from "lucide-react";
@@ -53,6 +55,12 @@ const COPY = {
     agentBody:
       "Shopi Agent can draft your listing and suggest a price from a photo. Buyers can describe what they want to find matches.",
     agentLink: "More about Shopi Agent",
+    bulkEyebrow: "Bulk upload is coming soon",
+    bulkTitle: "More listings, less repetitive work.",
+    bulkBody:
+      "We’re preparing a faster way to add several listings together. For now, you can post each item individually and manage your catalogue from your dashboard.",
+    bulkCta: "Post a single item",
+    bulkPreview: "Bulk upload preview",
     postEyebrow: "Sell on Shopi",
     postTitle: "Post something people can buy today.",
     postBody:
@@ -117,6 +125,12 @@ const COPY = {
     agentBody:
       "Shopi Agent inaweza kukuandikia tangazo na kupendekeza bei kutokana na picha. Wanunuzi wanaweza kueleza wanachotafuta ili wapate bidhaa zinazofaa.",
     agentLink: "Zaidi kuhusu Shopi Agent",
+    bulkEyebrow: "Upakiaji wa bidhaa nyingi unakuja hivi karibuni",
+    bulkTitle: "Matangazo mengi, kazi ndogo ya kurudia.",
+    bulkBody:
+      "Tunatayarisha njia ya haraka ya kuongeza matangazo kadhaa kwa pamoja. Kwa sasa, unaweza kuweka kila tangazo kivyake na kusimamia bidhaa zako kupitia dashibodi.",
+    bulkCta: "Weka tangazo moja",
+    bulkPreview: "Muonekano wa upakiaji wa bidhaa nyingi",
     postEyebrow: "Uza kwenye Shopi",
     postTitle: "Weka bidhaa ambayo mtu anaweza kununua leo.",
     postBody:
@@ -432,6 +446,67 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 sizes="(max-width: 768px) 100vw, 600px"
                 className="object-cover"
               />
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="bulk-upload"
+          aria-labelledby="bulk-upload-title"
+          className="bg-white px-5 py-16 md:px-8 md:py-24"
+        >
+          <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
+            <div className="relative order-2 aspect-4/3 overflow-hidden rounded-md bg-[#f4f8f7] p-5 sm:p-8 md:order-1">
+              <div className="flex h-full flex-col justify-center rounded-xl border border-[#dce3e2] bg-white p-4 shadow-sm sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <FileSpreadsheet className="size-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-[#172226]">shopi-listings.xlsx</p>
+                      <p className="text-xs text-[#657275]">Excel spreadsheet</p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">Preview</span>
+                </div>
+                <div className="overflow-hidden rounded-lg border border-[#e5e9e9]">
+                  <div className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-[#e5e9e9] bg-[#f7f9f9] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-[#657275]">
+                    <span>Item</span><span>Category</span><span>Price</span>
+                  </div>
+                  {[
+                    ["Leather handbag", "Fashion", "KES 2,500"],
+                    ["Samsung phone", "Electronics", "KES 18,000"],
+                    ["Office chair", "Home", "KES 7,500"],
+                  ].map(([item, category, price]) => (
+                    <div key={item} className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-[#e5e9e9] px-3 py-2.5 text-[10px] text-[#354746] last:border-b-0 sm:text-xs">
+                      <span className="truncate font-medium">{item}</span><span className="truncate">{category}</span><span className="truncate">{price}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#657275]">
+                  <Check className="size-3.5 text-primary" aria-hidden /> Add multiple products in one go
+                </p>
+              </div>
+              <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-primary shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
+            </div>
+            <div className="order-1 max-w-lg md:order-2">
+              <p className="mb-3 text-sm font-semibold text-primary">{t.bulkEyebrow}</p>
+              <h2 id="bulk-upload-title" className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
+                {t.bulkTitle}
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-[#465458] md:text-lg">
+                {t.bulkBody}
+              </p>
+              <TrackedHomepageLink
+                href={`/${lang}/upload`}
+                buttonId="sell_item"
+                placement="bulk_upload_section"
+                className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline"
+              >
+                {t.bulkCta}
+                <ArrowUpRight size={18} aria-hidden />
+              </TrackedHomepageLink>
             </div>
           </div>
         </section>

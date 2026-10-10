@@ -19,14 +19,14 @@ export function LandingNav({ lang }: { lang: Locale }) {
       trackHomepageButtonClick("sell_item", "navigation", "/en/upload");
     }
   };
-  const accountHref = isAuthenticated ? "/en/for-you" : "/en/auth/login";
+  const accountHref = isAuthenticated ? `/${lang}/explore` : `/${lang}/auth/login`;
   const accountLabel = isAuthenticated
-    ? (sw ? "Nenda For You" : "Go to For You")
+    ? (sw ? "Vinjari matangazo" : "Browse listings")
     : (sw ? "Ingia" : "Sign in");
   const links = [
     { href: "#how-it-works", label: sw ? "Jinsi inavyofanya kazi" : "How it works" },
     { href: "/en/shopi-agent", label: "Shopi Agent" },
-    { href: "/en/for-you", label: sw ? "Angalia bidhaa" : "Browse" },
+    { href: `/${lang}/explore`, label: sw ? "Angalia bidhaa" : "Browse" },
   ];
 
   return (

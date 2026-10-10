@@ -111,7 +111,7 @@ export function DashboardListings({
             type="button"
             className="inline-flex h-9 items-center gap-2 rounded-xl border border-border bg-elevated px-3.5 text-xs font-bold text-main"
           >
-            <Download className="h-4 w-4" aria-hidden /> Download CSV
+            <Download className="h-4 w-4" aria-hidden /> Download Excel
           </button>
           <PostItemMenu
             onSingleUpload={onSingleUpload}
