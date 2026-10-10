@@ -21,6 +21,7 @@ import {
   trackDraftAutosave,
 } from "@/features/create/utils/draftAutosave";
 import { Switch } from "@/components/ui/switch";
+import { trackPostJourney } from "@/lib/analytics";
 
 interface EditFormValues {
   caption: string;
@@ -447,6 +448,11 @@ export function StepEdit({
           | undefined;
         if (serverStep === "PUBLISHING_OPTIONS" || serverStep === "READY") {
           setStep("options");
+          trackPostJourney("post_details_submitted", {
+            method: useCreateStore.getState().creationMode ?? "unknown",
+            category: categoryName ?? "unknown",
+            content_type: useCreateStore.getState().contentType ?? "unknown",
+          });
           return;
         }
         if (serverStep !== "EDITING") break;

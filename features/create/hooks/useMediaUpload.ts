@@ -20,6 +20,7 @@
 import { useCallback } from "react";
 import { useMutation, useLazyQuery } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
+import { trackPostJourney } from "@/lib/analytics";
 import {
   RequestImageUploadDocument,
   NotifyImageUploadedDocument,
@@ -149,6 +150,10 @@ export function useMediaUpload() {
   // ── Image: direct PUT to R2, then queued Sharp processing ──────────────────
   const startImageUpload = useCallback(
     (file: File, did: string, sortOrder = 0): string => {
+      trackPostJourney("post_media_upload_started", {
+        media_type: "image",
+        method: useCreateStore.getState().creationMode ?? "unknown",
+      });
       const localUri = URL.createObjectURL(file);
       const tempId = `temp-img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -203,7 +208,15 @@ export function useMediaUpload() {
             localUri: ready.url ?? localUri,
             thumbnailUrl: ready.thumbnailUrl ?? ready.url ?? localUri,
           });
+          trackPostJourney("post_media_upload_completed", {
+            media_type: "image",
+            method: useCreateStore.getState().creationMode ?? "unknown",
+          });
         } catch (err) {
+          trackPostJourney("post_media_upload_failed", {
+            media_type: "image",
+            method: useCreateStore.getState().creationMode ?? "unknown",
+          });
           const id = mediaAssetId ?? tempId;
           updateMediaItem(id, { status: "error", errorMessage: String(err) });
           if (mediaAssetId && mediaAssetId !== tempId) {
@@ -227,6 +240,10 @@ export function useMediaUpload() {
   // ── Video: fire-and-forget — user gets preview IMMEDIATELY from blob ────────
   const startVideoUpload = useCallback(
     (file: File, did: string): string => {
+      trackPostJourney("post_media_upload_started", {
+        media_type: "video",
+        method: useCreateStore.getState().creationMode ?? "unknown",
+      });
       const localUri = URL.createObjectURL(file);
       const tempId = `temp-vid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -279,7 +296,15 @@ export function useMediaUpload() {
             thumbnailUrl: ready.thumbnailUrl ?? localUri,
             muxPlaybackId: ready.muxPlaybackId,
           });
+          trackPostJourney("post_media_upload_completed", {
+            media_type: "video",
+            method: useCreateStore.getState().creationMode ?? "unknown",
+          });
         } catch (err) {
+          trackPostJourney("post_media_upload_failed", {
+            media_type: "video",
+            method: useCreateStore.getState().creationMode ?? "unknown",
+          });
           const id = mediaAssetId ?? tempId;
           updateMediaItem(id, { status: "error", errorMessage: String(err) });
           if (mediaAssetId && mediaAssetId !== tempId) {

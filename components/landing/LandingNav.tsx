@@ -6,11 +6,19 @@ import { Menu, X, ArrowUpRight } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { usePathname } from "next/navigation";
+import { trackHomepageButtonClick } from "@/lib/analytics";
 
 export function LandingNav({ lang }: { lang: Locale }) {
   const [open, setOpen] = useState(false);
   const { hydrated, isAuthenticated } = useAuthSession();
+  const pathname = usePathname();
   const sw = lang === "sw";
+  const trackSellClick = () => {
+    if (pathname === `/${lang}`) {
+      trackHomepageButtonClick("sell_item", "navigation", "/en/upload");
+    }
+  };
   const accountHref = isAuthenticated ? "/en/for-you" : "/en/auth/login";
   const accountLabel = isAuthenticated
     ? (sw ? "Nenda For You" : "Go to For You")
@@ -33,7 +41,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
         </div>
         <div className="hidden items-center gap-3 md:flex">
           {hydrated && <Link href={accountHref} className="rounded-full border border-[#172226] px-5 py-2.5 text-sm font-semibold text-[#172226] no-underline">{accountLabel}</Link>}
-          <Link href="/en/upload" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sw ? "Uza bidhaa" : "Sell an item"}<ArrowUpRight size={17} aria-hidden /></Link>
+          <Link href="/en/upload" onClick={trackSellClick} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sw ? "Uza bidhaa" : "Sell an item"}<ArrowUpRight size={17} aria-hidden /></Link>
         </div>
         <button type="button" className="inline-flex size-11 items-center justify-center rounded-full border border-[#d8dfe0] md:hidden" aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? <X size={21} /> : <Menu size={21} />}
@@ -43,7 +51,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
         {links.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block border-b border-[#e5e9e9] py-3 font-medium text-[#172226] no-underline">{item.label}</Link>)}
         <div className="mt-5 flex gap-3">
           {hydrated && <Link href={accountHref} onClick={() => setOpen(false)} className="flex-1 rounded-full border border-[#172226] px-4 py-3 text-center text-sm font-semibold text-[#172226] no-underline">{accountLabel}</Link>}
-          <Link href="/en/upload" className="flex-1 rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
+          <Link href="/en/upload" onClick={trackSellClick} className="flex-1 rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
         </div>
       </div>}
     </header>

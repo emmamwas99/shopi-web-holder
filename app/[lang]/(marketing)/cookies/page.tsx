@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
-const LAST_UPDATED = "14 July 2026";
+const LAST_UPDATED = "10 October 2026";
 
 const storageItems = [
   {
@@ -51,6 +51,41 @@ const storageItems = [
     purpose: "Restores your scroll position when navigating back to a feed.",
     expiry: "Until tab is closed",
   },
+  {
+    name: "shopi-session-id",
+    type: "Session storage — analytics",
+    purpose:
+      "A random identifier used with technical session details when you are signed in.",
+    expiry: "Until tab is closed",
+  },
+  {
+    name: "shopi-session-analytics-sent:*",
+    type: "Session storage — analytics",
+    purpose:
+      "Records that technical session details have already been sent for this signed-in session, to avoid sending them repeatedly.",
+    expiry: "Until tab is closed",
+  },
+  {
+    name: "shopi:seller-analytics:session",
+    type: "Session storage — analytics",
+    purpose:
+      "A random session identifier used to measure seller and listing interactions without putting your account ID in those events.",
+    expiry: "Until tab is closed",
+  },
+  {
+    name: "Google Analytics cookies (for example, _ga)",
+    type: "First-party cookie — analytics, when enabled",
+    purpose:
+      "Helps Google Analytics distinguish browsers and visits and report website usage.",
+    expiry: "Set by the Google Analytics tag configuration; may persist across visits",
+  },
+  {
+    name: "Other analytics or advertising identifiers",
+    type: "Cookie or similar storage — third-party tags, if enabled",
+    purpose:
+      "Tags configured in Google Tag Manager or the Meta Pixel may use identifiers to measure visits, interactions, or ad performance.",
+    expiry: "Set by the provider and tag configuration",
+  },
 ];
 
 type Props = { params: Promise<{ lang: string }> };
@@ -84,9 +119,11 @@ export default async function CookiesPage({ params }: Props) {
             (like local storage and session storage) in your browser.
           </p>
           <p>
-            Shopi keeps this simple: we only use what&apos;s needed to make the
-            app work. We don&apos;t run advertising or analytics tracking
-            scripts.
+            Shopi uses essential browser storage and analytics. Google Tag
+            Manager loads the tags configured for the site; Google Analytics
+            and the Meta Pixel may use cookies or similar identifiers when
+            enabled. Tag Manager itself manages tags, while each active tag
+            determines what data it collects and whether it stores cookies.
           </p>
         </LegalSection>
 
@@ -165,16 +202,25 @@ export default async function CookiesPage({ params }: Props) {
           </div>
         </LegalSection>
 
-        <LegalSection title="3. What We Don't Use">
-          <p>As of this policy&apos;s last update, Shopi does not use:</p>
-          <ul>
-            <li>Advertising cookies or ad-tracking pixels</li>
-            <li>Third-party analytics cookies (like Google Analytics)</li>
-            <li>Cross-site tracking technologies</li>
-          </ul>
+        <LegalSection title="3. Analytics and Advertising Tags">
           <p>
-            If this changes in the future, we&apos;ll update this policy and,
-            where required, ask for your consent first.
+            Shopi measures website and product usage, including page views,
+            homepage button clicks, seller and listing interactions, and steps
+            in creating and publishing a post. Events can include the clicked
+            button&apos;s placement, post category, media type, referral source,
+            and whether a publish succeeded. Analytics event payloads do not
+            include listing text, phone numbers, message text, or uploaded
+            photos and videos.
+          </p>
+          <p>
+            Vercel Analytics measures website usage. The app sends interaction
+            events to Google Tag Manager&apos;s data layer; Google Analytics
+            receives page views or those events only when the corresponding
+            tags are configured and published in the container. If the Meta
+            Pixel is enabled, it receives page views, account registrations,
+            and successful post publication events. The container may be
+            configured to load other tags; those providers may use their own
+            cookies or identifiers and privacy terms.
           </p>
         </LegalSection>
 
@@ -190,15 +236,11 @@ export default async function CookiesPage({ params }: Props) {
 
         <LegalSection title="5. Managing Local Storage and Cookies">
           <p>
-            You can clear cookies and local storage through your browser
-            settings at any time. Note that doing so will sign you out of Shopi
-            and reset your saved preferences.
-          </p>
-          <p>
-            Because we don&apos;t use tracking cookies, you generally don&apos;t
-            need to take any action for privacy reasons — the technologies above
-            exist to make Shopi function properly, not to track you across the
-            web.
+            You can block or clear cookies and browser storage in your browser
+            settings. This may sign you out, reset preferences, or reduce
+            analytics accuracy. Blocking cookies does not necessarily stop a
+            tag from sending event data, so use the privacy controls offered by
+            the relevant analytics or advertising provider as well.
           </p>
         </LegalSection>
 

@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
-const LAST_UPDATED = "14 July 2026";
+const LAST_UPDATED = "10 October 2026";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -105,8 +105,45 @@ export default async function PrivacyPage({ params }: Props) {
           <h3>Device and usage information</h3>
           <p>
             We automatically receive some technical information when you use
-            Shopi, such as your browser type, general usage patterns within the
-            app, and information needed to keep your session secure.
+            Shopi, such as your browser and device type, language, time zone,
+            screen and viewport dimensions, referral source, general usage
+            patterns, and information needed to keep your session secure. When
+            you are signed in, our service may also record a random session
+            identifier with browser and device details to understand sessions
+            and protect the service.
+          </p>
+          <h3>Analytics and interaction events</h3>
+          <p>
+            We measure how people use Shopi to improve the marketplace. Events
+            can include page views, which homepage buttons are clicked, seller
+            and listing interactions, and steps in creating a post — such as
+            starting a post, choosing a format, media upload status, submitting
+            details, saving a draft, and attempting or completing publication.
+            Event details may include the button placement, post category,
+            media type, page surface, and referral or campaign source.
+          </p>
+          <p>
+            These analytics events do not include your listing title or
+            description, phone number, message text, or the photo or video
+            itself. We store some seller and listing interaction events on our
+            service using a random session identifier and the relevant seller
+            or listing reference; message and call content is not included.
+          </p>
+          <h3>Analytics providers</h3>
+          <p>
+            We use Vercel Analytics for website usage measurement. We also use
+            Google Tag Manager to load and manage analytics tags. The app sends
+            interaction events to Google Tag Manager&apos;s data layer. Google
+            Analytics receives page views or those events only when the
+            container has the corresponding Google Analytics tags configured
+            and published. Those tags may also send technical, referral, and
+            campaign information. Google Analytics may use first-party cookies
+            such as <code>_ga</code> to distinguish visits.
+            If a Meta Pixel is enabled, Meta receives page views, account
+            registration, and successful post publication events. The tags
+            active in the Tag Manager container can change, and a tag may send
+            information to its provider under that provider&apos;s privacy
+            terms.
           </p>
           <h3>Location information</h3>
           <p>
@@ -131,10 +168,8 @@ export default async function PrivacyPage({ params }: Props) {
             where to send you after signing in.
           </p>
           <p>
-            We do not use tracking or analytics cookies. As of this
-            policy&apos;s last update, Shopi does not run any third-party
-            analytics, advertising, or tracking scripts. See our{" "}
-            <Link href={`${base}/cookies`}>Cookie Policy</Link> for full detail.
+            See our <Link href={`${base}/cookies`}>Cookie Policy</Link> for
+            details about browser storage and analytics tags.
           </p>
         </LegalSection>
 
