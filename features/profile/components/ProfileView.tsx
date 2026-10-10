@@ -187,9 +187,7 @@ function ProfileUnavailable({
           className="mt-5 inline-flex h-10 items-center justify-center rounded-lg px-5 font-semibold text-white active:opacity-80"
           style={{
             fontSize: "var(--text-sm)",
-            background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
-            boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+                        backgroundColor: "rgb(var(--brand-primary))",
           }}
         >
           Retry

@@ -236,9 +236,10 @@ export const DELETE_OWNED_CONTENT: TypedDocumentNode<
   }
 `;
 
-export function useMyManagedPosts(limit = 18) {
+export function useMyManagedPosts(limit = 18, skip = false) {
   return useQuery(MY_MANAGED_CONTENT, {
     variables: { limit },
+    skip,
     fetchPolicy: "cache-and-network",
     notifyOnNetworkStatusChange: true,
   });

@@ -4,24 +4,19 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  Bell,
   Check,
   ChevronDown,
-  Heart,
   LogOut,
   MapPin,
-  MessageCircle,
-  Moon,
   Search,
-  Sun,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useQuery } from "@apollo/client/react";
-import { useUnreadMessageCount } from "@/features/messaging/hooks/useUnreadCount";
-import { useUnreadNotificationCount } from "@/features/notifications/hooks/useUnreadNotificationCount";
-import { useLogout } from "@/features/auth/hooks/useLogout";
 import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useDiscoverFiltersStore } from "@/stores/discoverFilters";
 import {
@@ -30,42 +25,36 @@ import {
   PriceRangeFields,
 } from "@/features/discover/components/DiscoverFilterControls";
 import { useSearchStore } from "@/stores/search";
-import { useThemeStore } from "@/stores/theme";
 import { useNavTabHref } from "@/lib/navTabMemory";
 import { Logo } from "@/components/ui/Logo";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NavSearchDropdown } from "@/components/layout/NavSearchDropdown";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { shouldUnoptimize } from "@/lib/imageUtils";
 
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop({ ssrDefault: false });
   const { user } = useAuthSession();
-  // Two icons, two counts. The combined total that BottomNav uses is right for
-  // the phone, where Messages and Notifications share one Inbox tab — here they
-  // are separate buttons, so a combined badge on one of them counts things that
-  // button doesn't open.
-  const unreadMessages = useUnreadMessageCount();
-  const unreadNotifications = useUnreadNotificationCount();
+  const inboxUnreadCount = useInboxUnreadCount();
+  const { logout, loading: loggingOut } = useLogout(lang);
   // The tabs return to the screen they were left on (sub-tab, search,
   // filters); RouteScrollRestoration restores the scroll to match.
-  const feedHref = useNavTabHref("feed", `/${lang}/for-you`);
   const browseHref = useNavTabHref("explore", `/${lang}/explore`);
+  const watchHref = `/${lang}/for-you?tab=watch`;
   const storesHref = useNavTabHref("stores", `/${lang}/stores`);
+
+  useEffect(() => {
+    if (
+      !isDesktop ||
+      !pathname.startsWith(`/${lang}/for-you`) ||
+      searchParams.get("tab") === "watch"
+    ) return;
+    router.replace(`/${lang}/explore`);
+  }, [isDesktop, lang, pathname, router, searchParams]);
 
   if (
     pathname.includes("/upload/create") ||
@@ -78,16 +67,6 @@ export function SideNav({ lang = "en" }: { lang: string }) {
     user?.profile?.firstName ||
     user?.email?.split("@")[0] ||
     (user ? "Seller" : "Guest");
-  const initials =
-    displayName
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "S";
-  const homeActive =
-    pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`);
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
@@ -124,15 +103,19 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               this group and it starts flush on the 280px column edge. */}
           <div className="flex h-full min-w-0 flex-1 items-center gap-5 pr-6">
             <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
-              <TopNavLink href={feedHref} navTab="feed" active={homeActive}>
-                For You
-              </TopNavLink>
               <TopNavLink
                 href={browseHref}
                 navTab="explore"
                 active={browseActive}
               >
                 Browse
+              </TopNavLink>
+              <TopNavLink
+                href={watchHref}
+                navTab="feed"
+                active={pathname.startsWith(`/${lang}/for-you`) && searchParams.get("tab") === "watch"}
+              >
+                Watch
               </TopNavLink>
               {/* Desktop only, deliberately. This whole header is `hidden
                   md:block`, and Stores is not added to BottomNav: the phone bar
@@ -169,67 +152,68 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               Sell item
             </Link>
 
-            <div className="flex items-center gap-0.5">
-              {/* Messages/Inbox/Saved all need an account behind them — for a
-                  signed-out visitor they're dead ends that just bounce to
-                  login, so skip straight to the one control that applies:
-                  the log in button below. */}
-              {user ? (
-                <>
-                  {/* Both buttons land on the same screen, so "which tab is
-                      open" has to be read the way that screen reads it: it
-                      defaults to Messages and only shows Notifications on an
-                      explicit ?tab=notifications. Testing for `!== "messages"`
-                      lit the bell on a bare /notifications, which is the
-                      Messages tab. */}
-                  <IconNavButton
-                    href={`/${lang}/notifications?tab=messages`}
-                    label="Messages"
-                    active={
-                      pathname.startsWith(`/${lang}/notifications`) &&
-                      searchParams.get("tab") !== "notifications"
-                    }
-                  >
-                    <MessageCircle className="h-4.5 w-4.5" />
-                    {unreadMessages > 0 ? (
-                      <UnreadDot count={unreadMessages} />
-                    ) : null}
-                  </IconNavButton>
-                  <IconNavButton
-                    href={`/${lang}/notifications?tab=notifications`}
-                    label="Notifications"
-                    active={
-                      pathname.startsWith(`/${lang}/notifications`) &&
-                      searchParams.get("tab") === "notifications"
-                    }
-                  >
-                    <Bell className="h-4.5 w-4.5" />
-                    {unreadNotifications > 0 ? (
-                      <UnreadDot count={unreadNotifications} />
-                    ) : null}
-                  </IconNavButton>
-                  <IconNavButton
-                    href={`/${lang}/profile?tab=saved`}
-                    label="Saved"
-                    active={
-                      pathname.startsWith(`/${lang}/profile`) &&
-                      searchParams.get("tab") === "saved"
-                    }
-                  >
-                    <Heart className="h-4.5 w-4.5" />
-                  </IconNavButton>
-                </>
+            <Link
+              href={`/${lang}/dashboard`}
+              scroll={false}
+              aria-label={`Dashboard${inboxUnreadCount > 0 ? `, ${inboxUnreadCount} unread messages and notifications` : ""}`}
+              className="relative inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
+            >
+              Dashboard
+              {inboxUnreadCount > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white shadow-sm"
+                >
+                  {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                </span>
               ) : null}
-              <ThemeIconButton />
-            </div>
+            </Link>
 
             {user ? (
-              <AccountMenu
-                lang={lang}
-                displayName={displayName}
-                email={user.email}
-                initials={initials}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Open account menu"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 text-xs font-bold text-primary transition-shadow hover:ring-2 hover:ring-primary/20"
+                  >
+                    {user.profile?.avatar ? (
+                      <Image
+                        src={user.profile.avatar}
+                        alt=""
+                        width={36}
+                        height={36}
+                        unoptimized={shouldUnoptimize(user.profile.avatar)}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>{(user.profile?.firstName?.[0] ?? user.email?.[0] ?? "S").toUpperCase()}</span>
+                    )}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-60 rounded-xl border-border bg-elevated p-2 text-main shadow-lg">
+                  <div className="border-b border-border px-2 py-2">
+                    <p className="truncate text-sm font-bold text-main">{displayName}</p>
+                    {user.email ? <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p> : null}
+                  </div>
+                  <Link
+                    href={`/${lang}/dashboard`}
+                    scroll={false}
+                    className="mt-1 flex h-9 items-center rounded-lg px-2 text-xs font-medium text-main transition-colors hover:bg-surface"
+                  >
+                    My profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void logout()}
+                    disabled={loggingOut}
+                    className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    <LogOut className="h-3.5 w-3.5" aria-hidden />
+                    {loggingOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </PopoverContent>
+              </Popover>
             ) : (
               <Link
                 href={`/${lang}/auth/login`}
@@ -391,46 +375,6 @@ function TopNavLink({
   );
 }
 
-function IconNavButton({
-  href,
-  label,
-  active,
-  children,
-}: {
-  href: string;
-  label: string;
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      // Shortcuts to one exact screen (a specific inbox tab, Saved): arriving
-      // returns to where that screen was left. Not a tab, so no re-tap to top
-      // — Messages and Notifications share a path and differ only by ?tab=.
-      data-scroll-restore=""
-      aria-label={label}
-      title={label}
-      className={[
-        "relative flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-        active ? "bg-primary/10 text-primary" : "text-main hover:bg-surface",
-      ].join(" ")}
-      aria-current={active ? "page" : undefined}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function UnreadDot({ count }: { count: number }) {
-  return (
-    <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black leading-none text-white">
-      {count > 99 ? "99+" : count}
-    </span>
-  );
-}
-
 function BrowseCategories({ lang }: { lang: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -438,7 +382,6 @@ function BrowseCategories({ lang }: { lang: string }) {
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
   const activeCategory = searchParams.get("category");
-  const feedHref = useNavTabHref("feed", `/${lang}/for-you`);
   const { data, loading } = useQuery(DISCOVERY_CATEGORIES, {
     fetchPolicy: "cache-first",
     nextFetchPolicy: "cache-first",
@@ -456,29 +399,20 @@ function BrowseCategories({ lang }: { lang: string }) {
       name: category.name,
       slug: category.slug,
     }));
-  const categories = [{ name: "For You", slug: "for-you" }, ...liveCategories];
+  const categories = liveCategories;
 
   return (
     <div className="mt-4 min-h-0 overflow-y-auto pb-10 pr-1">
       <nav className="flex flex-col gap-0.5" aria-label="Browse categories">
         {categories.map((category, index) => {
-          const href =
-            index === 0
-              ? feedHref
-              : `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
-          const active =
-            index === 0
-              ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`)
-              : activeCategory === category.slug;
+          const href = `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
+          const active = activeCategory === category.slug;
 
           return (
             <Link
               key={`${category.slug}-${index}`}
               href={href}
               scroll={false}
-              // "For You" is the feed tab; a category is a fresh listing that
-              // starts at the top.
-              data-nav-tab={index === 0 ? "feed" : undefined}
               className={[
                 "block rounded-md py-2 text-sm font-semibold tracking-normal transition-colors",
                 active
@@ -492,10 +426,7 @@ function BrowseCategories({ lang }: { lang: string }) {
           );
         })}
 
-        {/* "For You" above is static and always real; only the categories
-            fetched from discoveryFacets need a loading stand-in — without
-            one, the list just looked permanently empty until the query
-            resolved. */}
+        {/* Show loading stand-ins while the category rail is first fetched. */}
         {categoriesLoading
           ? Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="py-2">
@@ -831,131 +762,5 @@ function DiscoverSidebarFilters() {
         </details>
       </div>
     </div>
-  );
-}
-
-function AccountMenu({
-  lang,
-  displayName,
-  email,
-  initials,
-}: {
-  lang: string;
-  displayName: string;
-  email?: string | null;
-  initials: string;
-}) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const { logout, loading } = useLogout(lang);
-
-  return (
-    <>
-      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary-soft text-[13px] font-black text-primary-strong shadow-sm transition-colors hover:bg-primary/15"
-            aria-label="Open account menu"
-          >
-            {initials.slice(0, 1)}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="end"
-          sideOffset={10}
-          className="w-72 rounded-2xl border border-border bg-elevated p-2 shadow-xl"
-        >
-          <div className="px-3 py-3">
-            <p className="truncate text-sm font-black text-main">
-              {displayName}
-            </p>
-            {email ? (
-              <p className="mt-0.5 truncate text-xs text-muted">{email}</p>
-            ) : null}
-          </div>
-          <div className="border-t border-border py-1">
-            <Link
-              href={`/${lang}/profile`}
-              scroll={false}
-              data-nav-tab="profile"
-              onClick={() => setMenuOpen(false)}
-              className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-surface"
-            >
-              View profile
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setConfirmOpen(true);
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-error transition-colors hover:bg-error/10"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-sm rounded-2xl border-border bg-elevated p-0 shadow-2xl">
-          <DialogHeader className="px-6 pb-2 pt-6 text-left">
-            <DialogTitle className="text-lg font-black text-main">
-              Sign out?
-            </DialogTitle>
-            <DialogDescription className="mt-2 text-sm leading-6 text-muted">
-              You&apos;ll need to sign in again to post items, message buyers,
-              or manage your profile.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 border-t border-border px-6 py-4 sm:space-x-0">
-            <button
-              type="button"
-              onClick={() => setConfirmOpen(false)}
-              className="h-10 rounded-full border border-border px-5 text-sm font-bold text-main transition-colors hover:bg-surface"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={logout}
-              disabled={loading}
-              className="h-10 rounded-full bg-primary px-5 text-sm font-bold text-white transition-opacity disabled:opacity-60"
-            >
-              {loading ? "Signing out..." : "Sign out"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-function ThemeIconButton() {
-  const { resolvedTheme, setTheme } = useThemeStore();
-  const [mounted, setMounted] = useState(false);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMounted(true), []);
-
-  // Matches IconNavButton's footprint so it sits flush in the same row before
-  // the theme is known, rather than the row reflowing once it mounts.
-  if (!mounted) return <span aria-hidden className="h-9 w-9 shrink-0" />;
-
-  const isDark = resolvedTheme === "dark";
-  const Icon = isDark ? Sun : Moon;
-
-  return (
-    <button
-      type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label="Toggle theme"
-      title="Toggle theme"
-      className="flex h-9 w-9 items-center justify-center rounded-full text-main transition-colors hover:bg-surface"
-    >
-      <Icon className="h-4.5 w-4.5" />
-    </button>
   );
 }

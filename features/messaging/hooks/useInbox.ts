@@ -50,6 +50,7 @@ import {
   SEND_DIRECT_MESSAGE,
   UNBLOCK_DIRECT_CONVERSATION,
 } from "../graphql/operations";
+import { MY_UNREAD_MESSAGE_COUNT } from "../graphql/unread";
 
 const PAGE_SIZE = 40;
 
@@ -68,7 +69,10 @@ function createConversationViewportTabId(): string {
   return `tab-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function useInbox(lang: string) {
+export function useInbox(
+  lang: string,
+  { embedded = false }: { embedded?: boolean } = {},
+) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const authHydrated = useAuthHydrated();
@@ -189,6 +193,7 @@ export function useInbox(lang: string) {
   const [sendDirectMessage] = useMutation(SEND_DIRECT_MESSAGE);
   const [markDirectConversationRead] = useMutation(
     MARK_DIRECT_CONVERSATION_READ,
+    { refetchQueries: [MY_UNREAD_MESSAGE_COUNT] },
   );
   const [requestImageUpload] = useMutation(REQUEST_IMAGE_UPLOAD);
   const [notifyImageUploaded] = useMutation(NOTIFY_IMAGE_UPLOADED);
@@ -371,7 +376,7 @@ export function useInbox(lang: string) {
         // DIRECT_CONVERSATION hydrates the header, listing and safety state as
         // soon as this id is selected; don't publish a half-shaped chat into
         // local/Apollo state while that query is in flight.
-        router.replace(`/${lang}/notifications/${conversationId}`);
+        if (!embedded) router.replace(`/${lang}/notifications/${conversationId}`);
         void refetchConversations();
       })
       .catch((error) => {
@@ -382,7 +387,7 @@ export function useInbox(lang: string) {
             : "Could not open the conversation",
         );
       });
-  }, [contentIdParam, ensureConversation, lang, refetchConversations, router]);
+  }, [contentIdParam, embedded, ensureConversation, lang, refetchConversations, router]);
 
   useEffect(() => {
     if (!selectedConversationId || !isAuthenticated) return;
@@ -546,12 +551,12 @@ export function useInbox(lang: string) {
             setSelectedConversationId(null);
             setMessages([]);
             setTypingUserId(null);
-            router.push(`/${lang}/notifications`);
+            if (!embedded) router.push(`/${lang}/notifications`);
           }
           void refetchUnreadCountRef.current();
         },
       ),
-    [lang, on, router],
+    [embedded, lang, on, router],
   );
 
   useEffect(
@@ -689,9 +694,9 @@ export function useInbox(lang: string) {
   const navigateToConversation = useCallback(
     (conversationId: string) => {
       setSelectedConversationId(conversationId);
-      router.push(`/${lang}/notifications/${conversationId}`);
+      if (!embedded) router.push(`/${lang}/notifications/${conversationId}`);
     },
-    [lang, router],
+    [embedded, lang, router],
   );
 
   /**
@@ -734,7 +739,7 @@ export function useInbox(lang: string) {
         // snapshot arrives instead of rendering a partial conversation.
         // Replace the URL without a navigation so we stay on the same chat
         // screen. Skipped when embedded so the post route stays in the URL.
-        if (!options?.skipUrlSync && typeof window !== "undefined") {
+        if (!embedded && !options?.skipUrlSync && typeof window !== "undefined") {
           window.history.replaceState(
             window.history.state,
             "",
@@ -752,7 +757,7 @@ export function useInbox(lang: string) {
         ensureKeyRef.current = null;
       }
     },
-    [ensureConversation, lang, refetchConversations],
+    [embedded, ensureConversation, lang, refetchConversations],
   );
 
   /** Ensure the seller conversation that a story's Enquire action opens. */
@@ -773,7 +778,7 @@ export function useInbox(lang: string) {
         if (!conversationId) return;
 
         setSelectedConversationId(conversationId);
-        if (typeof window !== "undefined") {
+        if (!embedded && typeof window !== "undefined") {
           window.history.replaceState(
             window.history.state,
             "",
@@ -791,7 +796,7 @@ export function useInbox(lang: string) {
         ensureKeyRef.current = null;
       }
     },
-    [ensureConversation, lang, refetchConversations],
+    [embedded, ensureConversation, lang, refetchConversations],
   );
 
   const handleBack = useCallback(() => {
@@ -799,8 +804,8 @@ export function useInbox(lang: string) {
     setActiveConversation(null);
     setMessages([]);
     setTypingUserId(null);
-    router.back();
-  }, [router]);
+    if (!embedded) router.back();
+  }, [embedded, router]);
 
   const sendTypingPulse = useCallback(() => {
     if (!selectedConversationId) return;
@@ -1474,7 +1479,7 @@ export function useInbox(lang: string) {
           setSelectedConversationId(null);
           setMessages([]);
           setTypingUserId(null);
-          router.push(`/${lang}/notifications`);
+          if (!embedded) router.push(`/${lang}/notifications`);
         }
         void refetchUnreadCount();
         toast.success("Conversation deleted");
@@ -1490,7 +1495,7 @@ export function useInbox(lang: string) {
         setIsConversationActionPending(false);
       }
     },
-    [deleteDirectConversation, lang, refetchUnreadCount, router],
+    [deleteDirectConversation, embedded, lang, refetchUnreadCount, router],
   );
 
   const setConversationPinned = useCallback(

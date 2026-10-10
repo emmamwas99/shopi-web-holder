@@ -41,6 +41,7 @@ const POST_TO_TIKTOK = gql`
 
 interface StepOptionsProps {
   lang: string;
+  onExit?: () => void;
   /** Inside the desktop create dialog: it owns the header (back/stepper) and
    *  the live preview panel, so this step renders only the settings column. */
   embedded?: boolean;
@@ -86,7 +87,7 @@ function toVisibilityMode(mode: Visibility): VisibilityMode {
   }
 }
 
-export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
+export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps) {
   const {
     draftId,
     price,
@@ -118,6 +119,12 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
+
+  function exitAfterCreate() {
+    reset();
+    if (onExit) onExit();
+    else router.push(`/${lang}/for-you`);
+  }
 
   const { data: meData, refetch: refetchMe } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
@@ -347,8 +354,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         category: categoryName ?? "unknown",
         content_type: contentType ?? "unknown",
       });
-      reset();
-      router.push(`/${lang}/for-you`);
+      exitAfterCreate();
     } finally {
       setAdvancing(false);
     }
@@ -364,11 +370,10 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         {!tiktokReconnectNeeded && (
           <CreateSuccessPrimaryAction
             onClick={() => {
-              reset();
-              router.push(`/${lang}/for-you`);
+              exitAfterCreate();
             }}
           >
-            Go to For You
+            {onExit ? "Back to listings" : "Go to For You"}
           </CreateSuccessPrimaryAction>
         )}
 
@@ -406,12 +411,11 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
             </button>
             <button
               onClick={() => {
-                reset();
-                router.push(`/${lang}/for-you`);
+                exitAfterCreate();
               }}
               className="mx-auto mt-2 block text-xs font-medium text-muted"
             >
-              Go to For You
+              {onExit ? "Back to listings" : "Go to For You"}
             </button>
           </div>
         )}

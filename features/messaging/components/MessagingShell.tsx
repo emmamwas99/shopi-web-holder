@@ -11,6 +11,8 @@ import { ChatDetail } from "./ChatDetail";
 
 interface Props {
   lang: string;
+  /** Keep thread selection local when rendered inside the dashboard modal. */
+  embedded?: boolean;
   /**
    * Route param when mounted at /notifications/[id]. A conversation id, or a
    * content/story id when opening a contextual conversation. Omitted at the inbox root.
@@ -36,10 +38,11 @@ interface Props {
  */
 export function MessagingShell({
   lang,
+  embedded = false,
   conversationId,
   mode = "conversation",
 }: Props) {
-  const inbox = useInbox(lang);
+  const inbox = useInbox(lang, { embedded });
   const pushNotifications = usePushNotifications(lang);
 
   // The conversation whose actions sheet is open from a list long-press. Kept
@@ -98,12 +101,12 @@ export function MessagingShell({
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  const desktopHeight = `calc(100svh - ${topOffset}px)`;
+  const desktopHeight = embedded ? "100%" : `calc(100svh - ${topOffset}px)`;
 
   return (
     <div
       ref={shellRef}
-      className="bg-app md:mx-auto md:w-full md:max-w-400 md:overflow-hidden md:bg-app"
+      className={`bg-app md:mx-auto md:w-full md:max-w-400 md:overflow-hidden md:bg-app ${embedded ? "h-full min-h-0" : ""}`}
       style={{ ["--ms-h" as string]: desktopHeight }}
     >
       {/* grid-rows-[minmax(0,1fr)]: the single implicit row would otherwise
@@ -111,7 +114,7 @@ export function MessagingShell({
           grid), so both panes overflow the viewport — the composer/list bottom
           gets cut off and the message list never scrolls internally. Pinning
           the row to the free space keeps the panes exactly viewport-high. */}
-      <div className="md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
+      <div className={`${embedded ? "h-full min-h-0" : ""} md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]`}>
         {/* ── Conversation list (left pane) ──────────────────────────── */}
         <div
           className={[

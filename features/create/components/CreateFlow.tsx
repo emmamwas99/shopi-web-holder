@@ -17,6 +17,7 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 interface CreateFlowProps {
   lang: string;
+  onExit?: () => void;
   /**
    * True when rendered inside the desktop create dialog (DesktopCreateFlow).
    * Embedded mode never navigates between routes — "back to picker" just
@@ -66,7 +67,7 @@ function getAssetPreviewUrl(asset: {
   );
 }
 
-export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
+export function CreateFlow({ lang, embedded = false, onExit }: CreateFlowProps) {
   const store = useCreateStore();
   const {
     step,
@@ -332,7 +333,7 @@ export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
     <>
       {step === "media" && <StepMediaReview onBack={handleBack} />}
       {step === "edit" && <StepEdit onBack={handleBack} embedded={embedded} />}
-      {step === "options" && <StepOptions lang={lang} embedded={embedded} />}
+      {step === "options" && <StepOptions lang={lang} embedded={embedded} onExit={onExit} />}
     </>
   );
 

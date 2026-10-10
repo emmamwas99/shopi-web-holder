@@ -42,7 +42,7 @@ const TABS: { id: Tab; label: string }[] = [
 // its skeleton, snapping the window scroll.
 const WatchGrid = dynamic(
   () => import("./WatchGrid").then((mod) => mod.WatchGrid),
-  { loading: () => <WatchGridSkeleton /> },
+  { loading: () => <WatchGridSkeleton desktopLayout /> },
 );
 const isTab = (v: string | null): v is Tab =>
   v === "for-you" || v === "watch";
@@ -230,6 +230,12 @@ export default function DesktopFeed({
 
   return (
     <div className="min-h-svh bg-app">
+      {tab === "watch" ? (
+        <div className="mx-auto w-full max-w-[1560px] px-2 lg:px-4">
+          <WatchGrid lang={lang} active={visible} desktopLayout />
+        </div>
+      ) : (
+      <>
       {/* Capped and centered like the Discover/Explore shell (same
           `lg:max-w-[1560px]` and `lg:px-8`) — without a cap, the fixed
           380/400px right rail just slides further from the feed column as
@@ -282,6 +288,8 @@ export default function DesktopFeed({
           <DesktopFeedRail lang={lang} />
         </aside>
       </div>
+      </>
+      )}
     </div>
   );
 }
