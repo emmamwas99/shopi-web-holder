@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  MessageCircle,
   MoreHorizontal,
   Pause,
   Play,
@@ -29,6 +30,7 @@ import { IMAGE_STORY_MS, MAX_STORY_VIDEO_SECONDS } from "../constants";
 import { StoryAvatar } from "./StoryAvatar";
 import { StoryViewersSheet } from "./StoryViewersSheet";
 import { StoryViewCountFragmentDoc } from "@/types/__generated__/graphql";
+import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
 
 interface Props {
   lang: string;
@@ -132,6 +134,7 @@ export function StoryViewer({
   onDelete,
 }: Props) {
   const router = useRouter();
+  const { requireAuth } = useAuthGuard(lang);
   const { requestClose, releaseHistory } = useOverlayBehaviour(onClose, "storyViewer");
 
   // Local copy so a deleted story can drop out without closing everything.
@@ -427,6 +430,19 @@ export function StoryViewer({
     onClose();
   };
 
+  const enquireAboutStory = () => {
+    if (!story || isOwn) return;
+    const hadOverlayEntry = releaseHistory();
+    if (!requireAuth({ storyId: story.id })) {
+      onClose();
+      return;
+    }
+    const href = `/${lang}/notifications/${story.id}?source=story`;
+    if (hadOverlayEntry) router.replace(href);
+    else router.push(href);
+    onClose();
+  };
+
   const deleteCurrent = async () => {
     if (!story || !ring) return;
     setDeleting(true);
@@ -605,6 +621,18 @@ export function StoryViewer({
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(env(safe-area-inset-bottom),16px)] ${chromeClass}`}
         >
+          {!isOwn && (
+            <div className="pointer-events-auto mb-3 flex justify-center">
+              <button
+                type="button"
+                onClick={enquireAboutStory}
+                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-semibold text-black shadow-lg transition-transform active:scale-95"
+              >
+                <MessageCircle size={14} strokeWidth={2} />
+                Enquire
+              </button>
+            </div>
+          )}
           {story.caption && (
             <p className="mb-3 line-clamp-4 whitespace-pre-line text-center text-[15px] leading-snug text-white drop-shadow-md">
               {story.caption}

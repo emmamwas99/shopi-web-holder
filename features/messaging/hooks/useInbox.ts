@@ -33,6 +33,8 @@ import {
 import {
   BLOCK_DIRECT_CONVERSATION,
   DELETE_DIRECT_CONVERSATION,
+  DELETE_DIRECT_MESSAGE,
+  SET_DIRECT_CONVERSATION_PINNED,
   DIRECT_CONVERSATION,
   DIRECT_MESSAGES,
   ENSURE_DIRECT_CONVERSATION,
@@ -193,6 +195,10 @@ export function useInbox(lang: string) {
   const [requestVideoUpload] = useMutation(REQUEST_VIDEO_UPLOAD);
   const [notifyVideoUploaded] = useMutation(NOTIFY_VIDEO_UPLOADED);
   const [deleteDirectConversation] = useMutation(DELETE_DIRECT_CONVERSATION);
+  const [deleteDirectMessage] = useMutation(DELETE_DIRECT_MESSAGE);
+  const [setDirectConversationPinnedMutation] = useMutation(
+    SET_DIRECT_CONVERSATION_PINNED,
+  );
   const [blockDirectConversation] = useMutation(BLOCK_DIRECT_CONVERSATION);
   const [unblockDirectConversation] = useMutation(UNBLOCK_DIRECT_CONVERSATION);
   const [reportDirectConversation] = useMutation(REPORT_DIRECT_CONVERSATION);
@@ -486,6 +492,9 @@ export function useInbox(lang: string) {
           if (payload.conversationId !== selectedConversationIdRef.current)
             return;
           setMessages((prev) => applyMessageUpdate(prev, payload));
+          if (payload.kind === "deleted") {
+            void refetchConversationsRef.current();
+          }
         },
       ),
     [on],
@@ -509,6 +518,7 @@ export function useInbox(lang: string) {
                     lastMessageSenderId: payload.lastMessageSenderId,
                     lastMessageAt: payload.lastMessageAt,
                     myUnreadCount: payload.myUnreadCount,
+                    isPinned: payload.isPinned ?? prev.isPinned,
                     dealClosedAt: payload.dealClosedAt ?? null,
                     dealClosedByUserId: payload.dealClosedByUserId ?? null,
                   }
@@ -725,6 +735,45 @@ export function useInbox(lang: string) {
         // Replace the URL without a navigation so we stay on the same chat
         // screen. Skipped when embedded so the post route stays in the URL.
         if (!options?.skipUrlSync && typeof window !== "undefined") {
+          window.history.replaceState(
+            window.history.state,
+            "",
+            `/${lang}/notifications/${conversationId}`,
+          );
+        }
+        void refetchConversations();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not open the conversation",
+        );
+      } finally {
+        ensureKeyRef.current = null;
+      }
+    },
+    [ensureConversation, lang, refetchConversations],
+  );
+
+  /** Ensure the seller conversation that a story's Enquire action opens. */
+  const ensureConversationByStory = useCallback(
+    async (storyId: string) => {
+      const key = `story:${storyId}`;
+      if (ensureKeyRef.current === key) return;
+      ensureKeyRef.current = key;
+      try {
+        const result = await ensureConversation({
+          variables: { input: { storyId } },
+        });
+        const conversationId = (
+          result.data as
+            | { ensureDirectConversationId?: string }
+            | undefined
+        )?.ensureDirectConversationId;
+        if (!conversationId) return;
+
+        setSelectedConversationId(conversationId);
+        if (typeof window !== "undefined") {
           window.history.replaceState(
             window.history.state,
             "",
@@ -1444,6 +1493,99 @@ export function useInbox(lang: string) {
     [deleteDirectConversation, lang, refetchUnreadCount, router],
   );
 
+  const setConversationPinned = useCallback(
+    async (conversationId: string, pinned: boolean) => {
+      if (!conversationId) return false;
+      setIsConversationActionPending(true);
+      try {
+        const { data } = await setDirectConversationPinnedMutation({
+          variables: { conversationId, pinned },
+        });
+        const ok = (
+          data as { setDirectConversationPinned?: boolean } | undefined
+        )?.setDirectConversationPinned;
+        if (!ok) {
+          toast.error("Could not update this conversation");
+          return false;
+        }
+
+        setConversations((prev) =>
+          prev
+            .map((conversation) =>
+              conversation.id === conversationId
+                ? { ...conversation, isPinned: pinned }
+                : conversation,
+            )
+            .sort((left, right) => {
+              if (left.isPinned && !right.isPinned) return -1;
+              if (!left.isPinned && right.isPinned) return 1;
+              return (
+                new Date(right.lastMessageAt ?? 0).getTime() -
+                new Date(left.lastMessageAt ?? 0).getTime()
+              );
+            }),
+        );
+        setActiveConversation((prev) =>
+          prev?.id === conversationId ? { ...prev, isPinned: pinned } : prev,
+        );
+        toast.success(pinned ? "Conversation pinned" : "Conversation unpinned");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not update this conversation",
+        );
+        return false;
+      } finally {
+        setIsConversationActionPending(false);
+      }
+    },
+    [setDirectConversationPinnedMutation],
+  );
+
+  const deleteMessage = useCallback(
+    async (message: Message) => {
+      if (
+        !currentUser?.id ||
+        message.senderId !== currentUser.id ||
+        message.isDeleted ||
+        message.pendingStatus
+      ) {
+        return false;
+      }
+
+      try {
+        const { data } = await deleteDirectMessage({
+          variables: { messageId: message.id },
+        });
+        const ok = (data as { deleteDirectMessage?: boolean } | undefined)
+          ?.deleteDirectMessage;
+        if (!ok) {
+          toast.error("Could not delete this message");
+          return false;
+        }
+
+        setMessages((prev) =>
+          applyMessageUpdate(prev, {
+            kind: "deleted",
+            conversationId: message.conversationId,
+            messageIds: [message.id],
+          }),
+        );
+        void refetchConversations();
+        toast.success("Message deleted for everyone");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not delete this message",
+        );
+        return false;
+      }
+    },
+    [currentUser, deleteDirectMessage, refetchConversations],
+  );
+
   const blockSelectedConversation = useCallback(
     async (targetId?: string) => {
       const conversationId = targetId ?? selectedConversationIdRef.current;
@@ -1623,6 +1765,7 @@ export function useInbox(lang: string) {
     // actions
     navigateToConversation,
     ensureConversationByContent,
+    ensureConversationByStory,
     handleBack,
     handleComposerChange,
     handleSendText,
@@ -1636,6 +1779,8 @@ export function useInbox(lang: string) {
     loadOlderMessages,
     handleContinue,
     deleteSelectedConversation,
+    setConversationPinned,
+    deleteMessage,
     blockSelectedConversation,
     unblockSelectedConversation,
     reportSelectedConversation,

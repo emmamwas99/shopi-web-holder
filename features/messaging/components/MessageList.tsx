@@ -30,6 +30,7 @@ interface Props {
   onLoadOlder: () => Promise<number>;
   onRetryMessage: (message: Message) => void;
   onDiscardMessage: (message: Message) => void;
+  onDeleteMessage: (message: Message) => Promise<boolean>;
 }
 
 /** A day-separator chip (Today / Yesterday / date). */
@@ -70,6 +71,7 @@ export function MessageList({
   onLoadOlder,
   onRetryMessage,
   onDiscardMessage,
+  onDeleteMessage,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -90,6 +92,7 @@ export function MessageList({
     > = [];
     let lastDay = "";
     for (const m of messages) {
+      if (m.isDeleted) continue;
       const key = dayKey(m.createdAt);
       if (key !== lastDay) {
         out.push({
@@ -295,6 +298,7 @@ export function MessageList({
                 )}
                 onRetry={onRetryMessage}
                 onDiscard={onDiscardMessage}
+                onDelete={onDeleteMessage}
               />
             ),
           )}

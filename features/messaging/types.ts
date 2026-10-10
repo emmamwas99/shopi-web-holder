@@ -42,9 +42,21 @@ export type ContentLite = {
   media?: ContentMedia[] | null;
 };
 
+export type StoryLite = {
+  id: string;
+  caption?: string | null;
+  media?: {
+    mediaType: string;
+    imageUrl?: string | null;
+    thumbnailUrl?: string | null;
+    muxThumbnailUrl?: string | null;
+  } | null;
+};
+
 export type Conversation = {
   updatedAt: string | null | undefined;
   id: string;
+  isPinned?: boolean | null;
   contentId: string;
   sellerId: string;
   buyerId: string;
@@ -70,6 +82,7 @@ export type Conversation = {
   /** Which participant closed the deal. */
   dealClosedByUserId?: string | null;
   content?: ContentLite | null;
+  story?: StoryLite | null;
 };
 
 export type MessageMedia = {
@@ -111,6 +124,7 @@ export type Message = {
   readAt?: string | null;
   createdAt: string;
   isMine?: boolean | null;
+  isDeleted?: boolean | null;
   deliveryStatus?: string | null;
   mediaAsset?: MessageMedia | null;
   // ── Client-only fields (optimistic UI; never sent to the server) ──

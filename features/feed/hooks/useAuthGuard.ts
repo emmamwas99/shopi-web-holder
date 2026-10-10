@@ -7,6 +7,7 @@ const INTENT_KEY = "shopi-auth-intent";
 
 export interface AuthIntent {
   contentId?: string;
+  storyId?: string;
   action?: "like" | "comment" | "save";
 }
 

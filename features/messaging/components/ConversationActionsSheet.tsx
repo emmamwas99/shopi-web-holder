@@ -3,7 +3,7 @@
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, Flag, Handshake, RotateCcw, Trash2, UserX } from "lucide-react";
+import { ChevronLeft, Flag, Handshake, Pin, RotateCcw, Trash2, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -39,7 +39,10 @@ interface Props {
   blockedByMe?: boolean | null;
   blockedByOther?: boolean | null;
   dealClosed?: boolean | null;
+  isPinned?: boolean | null;
+  threadActionsOnly?: boolean;
   isPending: boolean;
+  onTogglePin?: () => Promise<boolean>;
   onDeleteConversation: () => Promise<boolean>;
   onBlockConversation: () => Promise<boolean>;
   onUnblockConversation: () => Promise<boolean>;
@@ -63,7 +66,10 @@ export function ConversationActionsSheet({
   blockedByMe,
   blockedByOther,
   dealClosed,
+  isPinned,
+  threadActionsOnly = false,
   isPending,
+  onTogglePin,
   onDeleteConversation,
   onBlockConversation,
   onUnblockConversation,
@@ -147,25 +153,56 @@ export function ConversationActionsSheet({
 
         {view === "menu" ? (
           <div className="px-4 pb-3">
-            <button
-              type="button"
-              onClick={() => setView("deal")}
-              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent"
-            >
-              {dealClosed ? <RotateCcw size={18} /> : <Handshake size={18} />}
-              <span className="text-sm font-semibold">
-                {dealClosed ? "Reopen deal" : "Mark deal as closed"}
-              </span>
-            </button>
+            {!threadActionsOnly ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setView("deal")}
+                  className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent"
+                >
+                  {dealClosed ? <RotateCcw size={18} /> : <Handshake size={18} />}
+                  <span className="text-sm font-semibold">
+                    {dealClosed ? "Reopen deal" : "Mark deal as closed"}
+                  </span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setView("report")}
-              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent"
-            >
-              <Flag size={18} />
-              <span className="text-sm font-semibold">Report conversation</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setView("report")}
+                  className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent"
+                >
+                  <Flag size={18} />
+                  <span className="text-sm font-semibold">Report conversation</span>
+                </button>
+              </>
+            ) : null}
+
+            {threadActionsOnly ? (
+              <button
+                type="button"
+                onClick={() => setView("delete")}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-red-600 transition-colors hover:bg-accent"
+              >
+                <Trash2 size={18} />
+                <span className="text-sm font-semibold">Delete conversation</span>
+              </button>
+            ) : null}
+
+            {onTogglePin ? (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={async () => {
+                  if (await onTogglePin()) close();
+                }}
+                className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent disabled:opacity-60"
+              >
+                <Pin size={18} />
+                <span className="text-sm font-semibold">
+                  {isPinned ? "Unpin conversation" : "Pin conversation"}
+                </span>
+              </button>
+            ) : null}
 
             <button
               type="button"
@@ -176,14 +213,16 @@ export function ConversationActionsSheet({
               <span className="text-sm font-semibold">{blockTitle}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setView("delete")}
-              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-red-600 transition-colors hover:bg-accent"
-            >
-              <Trash2 size={18} />
-              <span className="text-sm font-semibold">Delete conversation</span>
-            </button>
+            {!threadActionsOnly ? (
+              <button
+                type="button"
+                onClick={() => setView("delete")}
+                className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-red-600 transition-colors hover:bg-accent"
+              >
+                <Trash2 size={18} />
+                <span className="text-sm font-semibold">Delete conversation</span>
+              </button>
+            ) : null}
           </div>
         ) : null}
 

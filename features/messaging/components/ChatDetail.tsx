@@ -74,6 +74,7 @@ interface Props {
   onClearStagedMedia: () => void;
   onRetryMessage: (message: Message) => void;
   onDiscardMessage: (message: Message) => void;
+  onDeleteMessage: (message: Message) => Promise<boolean>;
   onLoadOlder: () => Promise<number>;
   onDeleteConversation: () => Promise<boolean>;
   onBlockConversation: () => Promise<boolean>;
@@ -114,6 +115,7 @@ export function ChatDetail({
   onClearStagedMedia,
   onRetryMessage,
   onDiscardMessage,
+  onDeleteMessage,
   onLoadOlder,
   onDeleteConversation,
   onBlockConversation,
@@ -123,6 +125,7 @@ export function ChatDetail({
 }: Props) {
   const router = useRouter();
   const contentSummary = selectedConversation?.content;
+  const storySummary = selectedConversation?.story;
   const {
     dial: dialSellerPhone,
     reveal: revealSellerPhone,
@@ -555,6 +558,35 @@ export function ChatDetail({
                 </div>
               </div>
             ) : null}
+
+            {storySummary ? (
+              <div
+                className="mt-3 flex items-center gap-3 rounded-2xl border p-2"
+                style={{
+                  backgroundColor: "rgb(var(--color-bg-subtle))",
+                  borderColor: "rgb(var(--color-border))",
+                }}
+              >
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-surface">
+                  {conversationThumb(selectedConversation) ? (
+                    <Image
+                      src={conversationThumb(selectedConversation)!}
+                      alt="Story you enquired about"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-muted">Story enquiry</p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-default">
+                    {storySummary.caption || "You enquired about this story"}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {conversationNudge ? (
@@ -623,6 +655,7 @@ export function ChatDetail({
             onLoadOlder={onLoadOlder}
             onRetryMessage={onRetryMessage}
             onDiscardMessage={onDiscardMessage}
+            onDeleteMessage={onDeleteMessage}
           />
 
           <Composer

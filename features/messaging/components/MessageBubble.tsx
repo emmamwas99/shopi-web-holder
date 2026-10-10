@@ -4,7 +4,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useState } from "react";
 import Image from "next/image";
-import { Play, RotateCw, X } from "lucide-react";
+import { Play, RotateCw, Trash2, X } from "lucide-react";
 import type { Message } from "../types";
 import {
   firstUrl,
@@ -24,6 +24,7 @@ interface Props {
   mine: boolean;
   onRetry?: (message: Message) => void;
   onDiscard?: (message: Message) => void;
+  onDelete?: (message: Message) => Promise<boolean>;
 }
 
 // Fixed media container - no overflow, proper sizing
@@ -37,7 +38,7 @@ const MEDIA_BOX_STYLE = {
   maxWidth: "100%",
 } as const;
 
-export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
+export function MessageBubble({ message, mine, onRetry, onDiscard, onDelete }: Props) {
   const kind = messageKind(message.type);
   const status = mediaStatus(message.mediaAsset?.status);
   const imageUrl = imageForMessage(message);
@@ -60,6 +61,8 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
   const canViewImage =
     kind === "image" && Boolean(imageUrl) && !isUploading && !isFailed;
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  if (message.isDeleted) return null;
 
   const mediaOverlay =
     isUploading || isFailed ? (
@@ -273,6 +276,20 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
           style={{ fontSize: "11px" }}
         >
           <span>{shortTime(message.createdAt)}</span>
+          {mine && !message.pendingStatus && onDelete ? (
+            <button
+              type="button"
+              aria-label="Delete message"
+              title="Delete message for everyone"
+              className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-white/15"
+              onClick={async () => {
+                if (!window.confirm("Delete this message for everyone?")) return;
+                await onDelete(message);
+              }}
+            >
+              <Trash2 size={12} />
+            </button>
+          ) : null}
           {mine ? <MessageTicks message={message} /> : null}
         </div>
       </div>
