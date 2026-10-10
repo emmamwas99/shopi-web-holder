@@ -24,6 +24,18 @@ declare global {
 }
 
 type AuthMethod = "email" | "google" | "apple" | "facebook" | "tiktok";
+type AnalyticsProperties = Record<string, string | number | boolean>;
+type PostJourneyEvent =
+  | "post_flow_started"
+  | "post_method_selected"
+  | "post_content_type_selected"
+  | "post_media_upload_started"
+  | "post_media_upload_completed"
+  | "post_media_upload_failed"
+  | "post_details_submitted"
+  | "post_publish_started"
+  | "post_publish_failed"
+  | "post_draft_saved";
 
 function pushDataLayer(event: string, params: Record<string, string> = {}) {
   try {
@@ -32,6 +44,41 @@ function pushDataLayer(event: string, params: Record<string, string> = {}) {
   } catch {
     // Analytics must never break the flow that fired it.
   }
+}
+
+function trackEvent(event: string, properties: AnalyticsProperties = {}) {
+  try {
+    track(event, properties);
+  } catch {
+    // Analytics must never break the flow that fired it.
+  }
+  try {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event, ...properties });
+  } catch {
+    // Analytics must never break the flow that fired it.
+  }
+}
+
+/** Records which homepage CTA was clicked, including its position. */
+export function trackHomepageButtonClick(
+  buttonId: string,
+  placement: string,
+  destination: string,
+) {
+  trackEvent("homepage_button_click", {
+    button_id: buttonId,
+    placement,
+    destination,
+  });
+}
+
+/** Records a step in the listing creation flow without sending listing text. */
+export function trackPostJourney(
+  event: PostJourneyEvent,
+  properties: AnalyticsProperties = {},
+) {
+  trackEvent(event, properties);
 }
 
 function metaPixel(...args: unknown[]) {
@@ -74,12 +121,16 @@ export function trackAuthSuccess(
  * Fired when a post goes live — the seller-side conversion. `surface` separates
  * the create flow from publishing a saved draft off the profile.
  */
-export function trackPostPublished(surface: "create" | "drafts") {
-  try {
-    track("post_published", { surface, ...attributionProps() });
-  } catch {
-    // Analytics must never break a publish.
-  }
-  pushDataLayer("post_published", { surface });
+export function trackPostPublished(
+  surface: "create" | "drafts",
+  details: { category?: string | null; contentType?: string | null } = {},
+) {
+  const properties: AnalyticsProperties = {
+    surface,
+    ...attributionProps(),
+    ...(details.category ? { category: details.category } : {}),
+    ...(details.contentType ? { content_type: details.contentType } : {}),
+  };
+  trackEvent("post_published", properties);
   metaPixel("trackCustom", "PostPublished", { surface });
 }

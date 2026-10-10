@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
+import { trackPostJourney } from "@/lib/analytics";
 
 /**
  * /upload - the "Upload & sell" entry point.
@@ -79,6 +80,11 @@ export function UploadPickerPage({
     );
   }, []);
 
+  useEffect(() => {
+    if (!storeHydrated || manualRoute) return;
+    trackPostJourney("post_flow_started", { surface: "upload_picker" });
+  }, [manualRoute, storeHydrated]);
+
   const hasActiveDraft = !!draftId && step !== "pick";
   const showingManual =
     manualRoute ||
@@ -121,10 +127,12 @@ export function UploadPickerPage({
         lang={lang}
         isDesktop={isDesktop}
         onManual={() => {
+          trackPostJourney("post_method_selected", { method: "manual" });
           setCreationMode("manual");
           router.push(`/${lang}/upload/create-manual`);
         }}
         onAgent={() => {
+          trackPostJourney("post_method_selected", { method: "ai_agent" });
           setCreationMode("ai");
           router.push(`/${lang}/upload/create-ai`);
         }}
@@ -136,6 +144,7 @@ export function UploadPickerPage({
 
   async function handlePickType(kind: "image" | "video") {
     if (creating) return;
+    trackPostJourney("post_content_type_selected", { content_type: kind });
     setError(null);
     setCreating(true);
     try {

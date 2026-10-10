@@ -69,7 +69,7 @@ import {
 } from "@/components/ui/dialog";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useSocket } from "@/hooks/useSocket";
-import { trackPostPublished } from "@/lib/analytics";
+import { trackPostJourney, trackPostPublished } from "@/lib/analytics";
 import {
   WS_EVENTS,
   type AgentStreamDeltaPayload,
@@ -1194,6 +1194,16 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
     setFormError(null);
     setGuidedStage("publishing");
+    trackPostJourney("post_details_submitted", {
+      method: "ai_agent",
+      category: categoryName ?? "unknown",
+      content_type: contentType ?? "unknown",
+    });
+    trackPostJourney("post_publish_started", {
+      method: "ai_agent",
+      category: categoryName ?? "unknown",
+      content_type: contentType ?? "unknown",
+    });
     try {
       await waitForMediaAttachment();
       await saveDraft(draftId, {
@@ -1246,10 +1256,15 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       }
 
       const contentId = response.data.publishDraft.id;
-      trackPostPublished("create");
+      trackPostPublished("create", { category: categoryName, contentType });
       reset();
       setPublishedContentId(contentId);
     } catch (error) {
+      trackPostJourney("post_publish_failed", {
+        method: "ai_agent",
+        category: categoryName ?? "unknown",
+        content_type: contentType ?? "unknown",
+      });
       setFormError(error instanceof Error ? error.message : String(error));
       setGuidedStage("options");
     }
@@ -1289,6 +1304,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         visibilityMode: visibilityToApi(visibilityMode),
         allowDownload,
         hdEnabled,
+      });
+      trackPostJourney("post_draft_saved", {
+        method: "ai_agent",
+        category: categoryName ?? "unknown",
+        content_type: contentType ?? "unknown",
       });
       reset();
       router.replace(`/${lang}/for-you`);

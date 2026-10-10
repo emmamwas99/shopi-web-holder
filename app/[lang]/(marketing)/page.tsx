@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   Camera,
+  Car,
   MessageCircle,
   Wallet,
 } from "lucide-react";
@@ -12,6 +13,7 @@ import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { siteConfig } from "@/config/site";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
 import {
   organizationSchema,
   websiteSchema,
@@ -35,6 +37,15 @@ const COPY = {
     free: "Free to post",
     commission: "No commission",
     direct: "Talk to buyers directly",
+    categoriesEyebrow: "For car sellers",
+    categoriesTitle: "Selling a car? Reach buyers across Kenya.",
+    carsTitle: "Sell your car in Kenya",
+    carsBody:
+      "Car dealers and private owners can post used cars for free. Add the make, model, year, price, location and clear photos so interested buyers can contact you directly — no broker, listing fee or commission.",
+    carsBrowse: "See cars for sale",
+    carsSell: "Post your car free",
+    carExamplesLabel: "Popular models to list",
+    carsSearches: ["Toyota Vitz", "Toyota Probox", "Toyota Fielder", "Toyota Premio"],
     howTitle: "Post it. Talk to buyers.",
     howBody:
       "Add a photo, set your price and share where you are. Your post appears on Shopi for people to find.",
@@ -90,6 +101,15 @@ const COPY = {
     free: "Kuweka tangazo ni bure",
     commission: "Hakuna kamisheni",
     direct: "Ongea na wanunuzi moja kwa moja",
+    categoriesEyebrow: "Kwa wauzaji wa magari",
+    categoriesTitle: "Unauza gari? Wafikie wanunuzi kote Kenya.",
+    carsTitle: "Uza gari lako Kenya",
+    carsBody:
+      "Wauzaji wa magari na wamiliki binafsi wanaweza kutangaza magari bure. Ongeza aina, modeli, mwaka, bei, eneo na picha wazi ili wanunuzi wakufikie moja kwa moja bila dalali, ada wala kamisheni.",
+    carsBrowse: "Angalia magari yaliyotangazwa",
+    carsSell: "Tangaza gari lako bure",
+    carExamplesLabel: "Modeli maarufu za kutangaza",
+    carsSearches: ["Toyota Vitz", "Toyota Probox", "Toyota Fielder", "Toyota Premio"],
     howTitle: "Weka tangazo. Ongea na wanunuzi.",
     howBody:
       "Ongeza picha, weka bei na eneo lako. Tangazo lako litaonekana kwenye Shopi ili watu walipate.",
@@ -245,22 +265,76 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.heroBody}
               </p>
               <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 md:mx-0 md:mt-8 md:max-w-none md:flex-row md:flex-wrap">
-                <Link
-                  href="/en/upload"
+                <TrackedHomepageLink
+                  href={`/${lang}/upload`}
+                  buttonId="sell_item"
+                  placement="hero"
                   className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
                 >
                   {t.heroPost}
                   <ArrowUpRight size={18} aria-hidden />
-                </Link>
-                <Link
-                  href="/en/explore"
+                </TrackedHomepageLink>
+                <TrackedHomepageLink
+                  href={`/${lang}/explore`}
+                  buttonId="browse_listings"
+                  placement="hero"
                   className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline backdrop-blur-sm hover:bg-white/20"
                 >
                   {t.browse}
                   <ArrowUpRight size={18} aria-hidden />
-                </Link>
+                </TrackedHomepageLink>
               </div>
               <p className="mt-3 text-balance text-sm text-white/75">{t.heroPostNote}</p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="popular-categories-title"
+          className="px-5 py-14 md:px-8 md:py-20"
+        >
+          <div className="mx-auto max-w-7xl">
+            <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+              {t.categoriesEyebrow}
+            </p>
+            <h2
+              id="popular-categories-title"
+              className="mt-2 max-w-3xl font-display text-[1.8rem] font-semibold leading-tight md:text-[2.75rem]"
+            >
+              {t.categoriesTitle}
+            </h2>
+            <div className="mt-7 grid gap-5">
+              <article className="rounded-md border border-[#dce3e2] bg-[#f4f8f7] p-6 md:p-8">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-white text-primary">
+                    <Car className="size-6" aria-hidden />
+                  </span>
+                  <h3 className="font-display text-xl font-semibold md:text-2xl">
+                    {t.carsTitle}
+                  </h3>
+                </div>
+                <p className="mt-4 max-w-2xl leading-relaxed text-[#465458]">
+                  {t.carsBody}
+                </p>
+                <p className="mt-5 text-sm font-semibold text-[#465458]">
+                  {t.carExamplesLabel}
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-2 p-0">
+                  {t.carsSearches.map((model) => (
+                    <li key={model} className="rounded-full border border-[#dce3e2] bg-white px-3 py-1.5 text-sm font-medium text-[#172226]">
+                      {model}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <TrackedHomepageLink href={`/${lang}/upload`} buttonId="post_car" placement="car_seller_section" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline">
+                    {t.carsSell}<ArrowUpRight size={17} aria-hidden />
+                  </TrackedHomepageLink>
+                  <TrackedHomepageLink href={`/${lang}/for-sale/cars`} buttonId="browse_cars" placement="car_seller_section" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#aab7b5] px-5 py-2.5 text-sm font-semibold text-[#172226] no-underline hover:bg-white">
+                    {t.carsBrowse}<ArrowUpRight size={17} aria-hidden />
+                  </TrackedHomepageLink>
+                </div>
+              </article>
             </div>
           </div>
         </section>
@@ -313,13 +387,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <p className="mt-5 text-base leading-relaxed text-[#465458] md:text-lg">
               {t.howBody}
             </p>
-            <Link
-              href="/en/upload"
+            <TrackedHomepageLink
+              href={`/${lang}/upload`}
+              buttonId="sell_item"
+              placement="how_it_works"
               className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline"
             >
               {t.cta}
               <ArrowUpRight size={18} aria-hidden />
-            </Link>
+            </TrackedHomepageLink>
           </div>
         </section>
 
@@ -338,13 +414,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <p className="mt-5 text-base leading-relaxed text-[#465458] md:text-lg">
                 {t.agentBody}
               </p>
-              <Link
-                href="/en/shopi-agent"
+              <TrackedHomepageLink
+                href={`/${lang}/shopi-agent`}
+                buttonId="shopi_agent"
+                placement="agent_section"
                 className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline"
               >
                 {t.agentLink}
                 <ArrowUpRight size={18} aria-hidden />
-              </Link>
+              </TrackedHomepageLink>
             </div>
             <div className="relative aspect-4/3 overflow-hidden rounded-md bg-[#dbe7e4] md:order-2">
               <Image
@@ -379,19 +457,23 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.postBody}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <Link
-                  href="/en/upload"
+                <TrackedHomepageLink
+                  href={`/${lang}/upload`}
+                  buttonId="sell_item"
+                  placement="sell_section"
                   className="inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
                 >
                   {t.postCta}
                   <ArrowUpRight size={18} aria-hidden />
-                </Link>
-                <Link
-                  href="/en/explore"
+                </TrackedHomepageLink>
+                <TrackedHomepageLink
+                  href={`/${lang}/explore`}
+                  buttonId="browse_listings"
+                  placement="sell_section"
                   className="font-semibold text-white underline underline-offset-4"
                 >
                   {t.postLink}
-                </Link>
+                </TrackedHomepageLink>
               </div>
             </div>
             <ol className="grid gap-3 p-0">
@@ -438,13 +520,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <p className="mx-auto mt-4 max-w-lg text-base text-[#354746] md:text-lg">
             {t.closingBody}
           </p>
-          <Link
-            href="/en/upload"
+          <TrackedHomepageLink
+            href={`/${lang}/upload`}
+            buttonId="sell_item"
+            placement="closing_section"
             className="mt-7 inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-7 py-3 text-base font-semibold text-white no-underline hover:opacity-90"
           >
             {t.cta}
             <ArrowUpRight size={19} aria-hidden />
-          </Link>
+          </TrackedHomepageLink>
         </section>
       </main>
       <LandingFooter lang={lang} homeOnly />

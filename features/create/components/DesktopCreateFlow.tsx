@@ -21,6 +21,7 @@ import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
+import { trackPostJourney } from "@/lib/analytics";
 
 const STEPS = [
   { n: 1, label: "Choose type" },
@@ -76,6 +77,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
 
   async function handlePickType(kind: "image" | "video") {
     if (creating) return;
+    trackPostJourney("post_content_type_selected", { content_type: kind });
     setError(null);
     setCreating(true);
     try {

@@ -18,7 +18,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
-import { trackPostPublished } from "@/lib/analytics";
+import { trackPostJourney, trackPostPublished } from "@/lib/analytics";
 import {
   awaitDraftAutosaves,
   blockDraftAutosave,
@@ -96,6 +96,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     negotiable,
     mediaItems,
     contentType,
+    categoryName,
     tiktokEmbed,
     visibilityMode,
     allowDownload,
@@ -223,6 +224,11 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     if (!draftId || publishing || advancing) return;
     setError(null);
     setPublishing(true);
+    trackPostJourney("post_publish_started", {
+      method: useCreateStore.getState().creationMode ?? "unknown",
+      category: categoryName ?? "unknown",
+      content_type: contentType ?? "unknown",
+    });
 
     // Stop every component's debounced autosave for this draft before anything
     // else — publishing moves the draft out of ACTIVE, so a save that fires
@@ -279,7 +285,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       const contentId = pubData.publishDraft.id as string;
       didPublish = true;
       setPublished(true);
-      trackPostPublished("create");
+      trackPostPublished("create", { category: categoryName, contentType });
 
       // 4. Optional TikTok cross-post
       if (postOnTiktok && contentId) {
@@ -307,7 +313,14 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       setPublishing(false);
       // Publish failed — the draft is still ACTIVE, so let autosave resume and
       // keep the user's edits safe while they retry.
-      if (!didPublish) unblockDraftAutosave(draftId);
+      if (!didPublish) {
+        trackPostJourney("post_publish_failed", {
+          method: useCreateStore.getState().creationMode ?? "unknown",
+          category: categoryName ?? "unknown",
+          content_type: contentType ?? "unknown",
+        });
+        unblockDraftAutosave(draftId);
+      }
     }
   }
 
@@ -329,6 +342,11 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
           },
         }).catch(() => undefined);
       }
+      trackPostJourney("post_draft_saved", {
+        method: useCreateStore.getState().creationMode ?? "unknown",
+        category: categoryName ?? "unknown",
+        content_type: contentType ?? "unknown",
+      });
       reset();
       router.push(`/${lang}/for-you`);
     } finally {
