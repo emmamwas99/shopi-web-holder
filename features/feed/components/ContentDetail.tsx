@@ -485,8 +485,8 @@ interface Props {
   categoryTrail?: Array<{ name: string; slug: string }>;
   /**
    * Server-rendered related listings (ListingRelated), from the listing route
-   * only. Placed inside whichever layout is showing — the mobile layout is a
-   * fixed overlay, so content appended after this component would be hidden.
+   * only. Placed inside whichever layout is showing, above the mobile layout's
+   * fixed action bar.
    */
   related?: ReactNode;
 }
@@ -607,13 +607,14 @@ export function ContentDetail({
   }, [requireAuth, resolvedContentId, onChatOpenChange, trackMessageIntent]);
   const openMessageRoute = useCallback(() => {
     if (!resolvedContentId) return;
-    const href = `/${lang}/notifications/${resolvedContentId}?source=content`;
-    if (typeof window !== "undefined" && !isDesktop) {
-      window.location.href = href;
-      return;
-    }
-    router.push(href);
-  }, [isDesktop, lang, resolvedContentId, router]);
+    // A client-side push on every viewport. This was a full page load on
+    // phones, from when the listing was an intercepted @modal route; it threw
+    // away the app behind the chat, so Back reloaded the listing and then the
+    // feed under it — re-ranked, at the top.
+    router.push(`/${lang}/notifications/${resolvedContentId}?source=content`, {
+      scroll: false,
+    });
+  }, [lang, resolvedContentId, router]);
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
@@ -913,7 +914,7 @@ export function ContentDetail({
             </div>
           </div>
         </div>
-        <div className="fixed inset-0 z-70 overflow-x-hidden overflow-y-auto bg-app md:hidden">
+        <div className="relative min-h-svh overflow-x-clip bg-app md:hidden">
           {/* Header — back + title + share */}
           <div
             className="sticky top-0 z-10 flex items-center gap-2 bg-app px-3 pb-2.5"
@@ -1861,10 +1862,17 @@ export function ContentDetail({
       )}
 
       {/* ════════════════════════════════════════════════════════
-          MOBILE LAYOUT  (< md) — full PDP in the intercepted route
+          MOBILE LAYOUT  (< md)
+          Scrolls the window like every other screen, so a return to the
+          listing (Back from the seller, a related listing, the chat) lands
+          where it was left — RouteScrollRestoration only tracks the window.
+          It used to be a fixed overlay with its own scroller, from when it
+          was drawn over the feed; that position was lost on every return.
+          `overflow-x-clip`, not hidden: hidden would make this the scroll
+          container and the sticky header would stop sticking.
       ════════════════════════════════════════════════════════ */}
       {isDesktop === false && (
-        <div className="fixed inset-0 z-70 overflow-x-hidden overflow-y-auto overscroll-contain bg-app">
+        <div className="relative min-h-svh overflow-x-clip bg-app">
           <header
             className="sticky top-0 z-40 flex items-center gap-2 bg-app/95 px-3 pb-2.5 backdrop-blur-md"
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}

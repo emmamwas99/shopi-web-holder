@@ -21,6 +21,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { useAuthStore } from "@/stores/auth";
 import { useAuthHydrated } from "@/lib/auth/useAuthHydrated";
 import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
+import { goBackOr } from "@/lib/useAppBack";
 import type { Conversation, Message } from "../types";
 import {
   applyMessageUpdate,
@@ -551,7 +552,9 @@ export function useInbox(
             setSelectedConversationId(null);
             setMessages([]);
             setTypingUserId(null);
-            if (!embedded) router.push(`/${lang}/notifications`);
+            // Pop the removed chat rather than stacking the inbox on it, so
+            // Back cannot reopen it.
+            if (!embedded) goBackOr(router, `/${lang}/notifications`);
           }
           void refetchUnreadCountRef.current();
         },
@@ -804,8 +807,9 @@ export function useInbox(
     setActiveConversation(null);
     setMessages([]);
     setTypingUserId(null);
-    if (!embedded) router.back();
-  }, [embedded, router]);
+    // A chat opened from a push notification has nothing of ours behind it.
+    if (!embedded) goBackOr(router, `/${lang}/notifications`);
+  }, [embedded, lang, router]);
 
   const sendTypingPulse = useCallback(() => {
     if (!selectedConversationId) return;
@@ -1479,7 +1483,9 @@ export function useInbox(
           setSelectedConversationId(null);
           setMessages([]);
           setTypingUserId(null);
-          if (!embedded) router.push(`/${lang}/notifications`);
+          // Pop the deleted chat rather than stacking the inbox on it, so
+          // Back cannot reopen it.
+          if (!embedded) goBackOr(router, `/${lang}/notifications`);
         }
         void refetchUnreadCount();
         toast.success("Conversation deleted");

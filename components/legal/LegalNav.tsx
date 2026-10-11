@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
+import { useAppBack } from "@/lib/useAppBack";
 
 export function LegalNav({ lang }: { lang: string }) {
-  const router = useRouter();
+  // Legal pages are mostly opened from a link elsewhere (a footer, an app
+  // store listing); with nothing of ours behind, Back goes to the homepage.
+  const goBack = useAppBack(`/${lang}`);
 
   return (
     <header
@@ -17,7 +19,7 @@ export function LegalNav({ lang }: { lang: string }) {
         {/* Back button */}
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={goBack}
           aria-label="Go back"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-muted active:opacity-60 transition-opacity"
         >

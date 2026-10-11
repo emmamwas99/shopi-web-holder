@@ -76,7 +76,37 @@ export function usePaginationGuard(currentCount: number) {
   return run;
 }
 
-export function useForYouFeed(active = true) {
+/**
+ * The For You stream this page load reads, once settled. Module scope, so it
+ * outlives the feed: the feed unmounts whenever another screen is opened.
+ */
+let visitSeed: string | null = null;
+/** The mounted feed's seed setter, while a feed is mounted. */
+let showSeed: ((seed: string) => void) | null = null;
+
+/** A different shared API variant from the one the last visit got. */
+function nextVisitSeed(): string {
+  try {
+    const key = "shopi:for-you-variant";
+    const stored = window.sessionStorage.getItem(key);
+    const saved = stored === null ? 3 : Number(stored);
+    const previous = Number.isInteger(saved) && saved >= 0 && saved < 16 ? saved : 3;
+    const next = (previous + 1 + Math.floor(Math.random() * 15)) % 16;
+    window.sessionStorage.setItem(key, String(next));
+    return `shopi-feed-${next}`;
+  } catch {
+    const value = globalThis.crypto?.randomUUID?.();
+    return value ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+/**
+ * @param serverRendered The page's HTML already holds the shared "initial"
+ *   stream (the signed-out route renders it on the server).
+ */
+export function useForYouFeed({
+  serverRendered = false,
+}: { serverRendered?: boolean } = {}) {
   // Reuse the same permission/caching flow the Nearby tab already owns: this
   // never itself prompts for permission (no `requestLocation()` call here) —
   // it only picks up a fix the user already granted elsewhere, so ranking
@@ -84,46 +114,68 @@ export function useForYouFeed(active = true) {
   // profile/listing address, without ambushing Home with a permission popup.
   const { location } = useNearbyLocation();
   const apollo = useApolloClient();
-  const [seed, setSeed] = useState("initial");
-  const wasActive = useRef(active);
-
-  const newSeed = useCallback(() => {
-    try {
-      const key = "shopi:for-you-variant";
-      const stored = window.sessionStorage.getItem(key);
-      const saved = stored === null ? 3 : Number(stored);
-      const previous = Number.isInteger(saved) && saved >= 0 && saved < 16 ? saved : 3;
-      // Move to a different shared API variant on each refresh/return.
-      const next = (previous + 1 + Math.floor(Math.random() * 15)) % 16;
-      window.sessionStorage.setItem(key, String(next));
-      return `shopi-feed-${next}`;
-    } catch {
-      const value = globalThis.crypto?.randomUUID?.();
-      return value ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  // Each page load reads one ranked stream, a different variant per load, and
+  // keeps it until the next load. Coming back to the feed — Back from a
+  // listing, the Home tab, the For You sub-tab — finds that stream still
+  // cached, with the card the user left from in it. Re-ranking on every mount
+  // replaced the list, and Back landed near the top of a different feed.
+  const [seed, setSeed] = useState(() => {
+    if (visitSeed === null && !serverRendered && typeof window !== "undefined") {
+      // Rendered on the client alone (signed in): choose the variant up
+      // front — one request, and nothing to swap out later.
+      visitSeed = nextVisitSeed();
     }
+    return visitSeed ?? "initial";
+  });
+
+  useEffect(() => {
+    showSeed = setSeed;
+    return () => {
+      if (showSeed === setSeed) showSeed = null;
+    };
   }, []);
 
-  const rotateSeed = useCallback(() => {
-    startTransition(() => {
-      // A visit gets a distinct field-cache key. Drop older For You windows so
-      // a long-lived app session does not accumulate one cache entry per visit.
-      apollo.cache.evict({ id: "ROOT_QUERY", fieldName: "forYouFeed" });
-      setSeed(newSeed());
-    });
-  }, [apollo, newSeed]);
-
+  // A server-rendered load opens on the shared "initial" stream in its HTML. A
+  // fresh variant takes over only if it arrives before the user starts
+  // browsing. Swapping the list in later moved it under someone mid-scroll,
+  // and if they had already left for a listing, Back came home to a different
+  // feed than the one they left.
+  const latitude = location?.latitude;
+  const longitude = location?.longitude;
   useEffect(() => {
-    rotateSeed();
-  }, [rotateSeed]);
-
-  useEffect(() => {
-    if (active && !wasActive.current) {
-      // Returning to the For You tab starts a fresh ranked stream. The seed
-      // stays fixed while that stream paginates.
-      rotateSeed();
+    if (visitSeed !== null) return;
+    visitSeed = "initial";
+    const candidate = nextVisitSeed();
+    let engaged = false;
+    const engage = () => {
+      engaged = true;
+    };
+    const intent = ["scroll", "pointerdown", "keydown"] as const;
+    for (const type of intent) {
+      window.addEventListener(type, engage, { capture: true, passive: true });
     }
-    wasActive.current = active;
-  }, [active, rotateSeed]);
+    apollo
+      .query({
+        query: ForYouFeedDocument,
+        variables: { limit: PAGE_SIZE, latitude, longitude, seed: candidate },
+        fetchPolicy: "network-only",
+      })
+      .then(() => {
+        if (engaged || !showSeed || visitSeed !== "initial") return;
+        visitSeed = candidate;
+        const show = showSeed;
+        // Already cached, so this renders without suspending.
+        startTransition(() => show(candidate));
+      })
+      .catch(() => {
+        // Keep the stream on screen.
+      })
+      .finally(() => {
+        for (const type of intent) {
+          window.removeEventListener(type, engage, { capture: true });
+        }
+      });
+  }, [apollo, latitude, longitude]);
 
   const { data, error, fetchMore } = useSuspenseQuery(
     ForYouFeedDocument,

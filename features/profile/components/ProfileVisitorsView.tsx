@@ -63,6 +63,7 @@ function VisitorRow({
 
   return (
     <li
+      data-scroll-anchor={visitor.id}
       className="flex items-center gap-3 px-4 py-3.5 md:px-6 md:py-4"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
@@ -173,7 +174,7 @@ interface Props {
 export function ProfileVisitorsView({ lang, embedded = false }: Props) {
   // Owner-only, but still a linkable URL — an arrival with no app history
   // behind it would otherwise get a back button that does nothing.
-  const goBack = useAppBack(`/${lang}/for-you`);
+  const goBack = useAppBack(`/${lang}/profile`);
   const { data, loading, networkStatus, fetchMore } = useQuery(
     MyProfileVisitorsDocument,
     {

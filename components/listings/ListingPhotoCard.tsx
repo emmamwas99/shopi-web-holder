@@ -51,8 +51,11 @@ export function ListingPhotoCard({
   );
 
   return (
+    // data-scroll-anchor: a return to this list lines back up with this card
+    // (lib/scrollRestoration.ts).
     <Link
       href={contentPath(lang, listing)}
+      data-scroll-anchor={listing.id}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-default bg-surface no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
     >
       <div className="relative aspect-square overflow-hidden bg-subtle">

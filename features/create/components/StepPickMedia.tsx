@@ -10,6 +10,7 @@ import { useCreateStore } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
+import { goBackOr } from "@/lib/useAppBack";
 
 export function StepPickMedia() {
   const { draftId, setDraftId, setContentType, setStep, setError, error } =
@@ -22,12 +23,8 @@ export function StepPickMedia() {
   const [creating, setCreating] = useState(false);
 
   function handleBack() {
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      const lang = window.location.pathname.split("/")[1] || "en";
-      router.push(`/${lang}/for-you`);
-    }
+    const lang = window.location.pathname.split("/")[1] || "en";
+    goBackOr(router, `/${lang}/for-you`);
   }
 
   const [createDraft] = useMutation(CreateDraftDocument);

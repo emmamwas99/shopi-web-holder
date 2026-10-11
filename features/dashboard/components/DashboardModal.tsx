@@ -38,6 +38,7 @@ import { DashboardInboxTab } from "./DashboardInboxTab";
 import { DesktopCreateFlow } from "@/features/create/components/DesktopCreateFlow";
 import { useAuthStore } from "@/stores/auth";
 import { DashboardTour, type DashboardTourStep } from "./DashboardTour";
+import { goBackOr } from "@/lib/useAppBack";
 
 export function DashboardModal({
   lang,
@@ -121,15 +122,12 @@ export function DashboardModal({
         return;
       }
       setOpen(false);
-      window.setTimeout(() => {
-        if (forceOpen) {
-          router.replace(`/${lang}/for-you`);
-        } else {
-          router.back();
-        }
-      }, 300);
+      // Back to the page the dashboard was opened over. Loaded directly
+      // (forceOpen) after a refresh, that page is still behind it in history;
+      // only a dashboard opened with nothing of ours behind lands on Home.
+      window.setTimeout(() => goBackOr(router, `/${lang}/for-you`), 300);
     },
-    [forceOpen, lang, router],
+    [lang, router],
   );
 
   if (!isActiveRoute) return null;

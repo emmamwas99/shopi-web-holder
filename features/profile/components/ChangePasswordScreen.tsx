@@ -12,6 +12,8 @@ import { ChangePasswordDocument } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import { profileReturnHref } from "../lib/settingsReturn";
+import { goBackOr } from "@/lib/useAppBack";
+import { BackLink } from "@/components/layout/BackLink";
 
 /** Matches the server's rule, so the form fails before the round trip. */
 const MIN_LENGTH = 8;
@@ -60,7 +62,7 @@ export function ChangePasswordScreen({ lang }: { lang: string }) {
       }
 
       toast.success("Password changed. Other devices have been signed out.");
-      router.replace(backHref);
+      goBackOr(router, backHref);
     } catch (caught) {
       // The server's message is the useful one here — wrong current password,
       // reused password, social-only account all read differently.
@@ -83,13 +85,13 @@ export function ChangePasswordScreen({ lang }: { lang: string }) {
           WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
-        <Link
+        <BackLink
           href={backHref}
           aria-label="Back"
           className="flex h-10 w-10 items-center justify-center rounded-md"
         >
           <ChevronLeft size={30} strokeWidth={2.5} aria-hidden />
-        </Link>
+        </BackLink>
         <h1 className="text-base font-bold text-default">Change password</h1>
       </header>
 

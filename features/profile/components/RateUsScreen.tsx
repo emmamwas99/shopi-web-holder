@@ -2,7 +2,6 @@
 
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ChevronLeft, Star } from "lucide-react";
@@ -14,6 +13,8 @@ import {
 } from "@/types/__generated__/graphql";
 import { cn } from "@/lib/utils";
 import { profileReturnHref } from "../lib/settingsReturn";
+import { goBackOr } from "@/lib/useAppBack";
+import { BackLink } from "@/components/layout/BackLink";
 
 const MAX_STARS = 5;
 const COMMENT_MAX = 1000;
@@ -77,7 +78,7 @@ function RateUsForm({
         refetchQueries: [{ query: MyAppRatingDocument }],
       });
       toast.success("Thanks for the feedback.");
-      router.replace(backHref);
+      goBackOr(router, backHref);
     } catch (caught) {
       toast.error(
         caught instanceof Error ? caught.message : "Could not send your rating.",
@@ -96,13 +97,13 @@ function RateUsForm({
           WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
-        <Link
+        <BackLink
           href={backHref}
           aria-label="Back"
           className="flex h-10 w-10 items-center justify-center rounded-md"
         >
           <ChevronLeft size={30} strokeWidth={2.5} aria-hidden />
-        </Link>
+        </BackLink>
         <h1 className="text-base font-bold text-default">Rate us</h1>
       </header>
 
@@ -224,13 +225,13 @@ function RateUsSkeleton({ lang }: { lang: string }) {
           borderColor: "rgb(var(--color-border))",
         }}
       >
-        <Link
+        <BackLink
           href={`/${lang}/profile?tab=settings`}
           aria-label="Back"
           className="flex h-10 w-10 items-center justify-center rounded-md"
         >
           <ChevronLeft size={30} strokeWidth={2.5} aria-hidden />
-        </Link>
+        </BackLink>
         <h1 className="text-base font-bold text-default">Rate us</h1>
       </header>
       <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6 px-4 py-8">

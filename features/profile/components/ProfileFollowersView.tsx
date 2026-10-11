@@ -64,6 +64,7 @@ function FollowerRow({
 
   return (
     <li
+      data-scroll-anchor={user.id}
       className="flex items-center gap-3 px-4 py-2.5 md:rounded-2xl md:border md:border-default md:bg-elevated md:px-3 md:py-3 md:transition-colors md:hover:bg-surface"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
@@ -185,7 +186,7 @@ interface Props {
 export function ProfileFollowersView({ lang, embedded = false }: Props) {
   // Owner-only, but still a linkable URL — an arrival with no app history
   // behind it would otherwise get a back button that does nothing.
-  const goBack = useAppBack(`/${lang}/for-you`);
+  const goBack = useAppBack(`/${lang}/profile`);
   const { data, loading, networkStatus, fetchMore } = useQuery(
     MyFollowersDocument,
     {

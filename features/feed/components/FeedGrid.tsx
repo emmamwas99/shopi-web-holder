@@ -105,8 +105,18 @@ function FeedCards({
  * The live feed. Reads through `useForYouFeed`, which uses `useSuspenseQuery`
  * and therefore suspends until the query resolves.
  */
-function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
-  const { items, loadingMore, hasMore, loadMore, loading } = useForYouFeed(active);
+function LiveFeedCards({
+  lang,
+  active,
+  serverRendered,
+}: {
+  lang: string;
+  active: boolean;
+  serverRendered: boolean;
+}) {
+  const { items, loadingMore, hasMore, loadMore, loading } = useForYouFeed({
+    serverRendered,
+  });
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
@@ -197,7 +207,11 @@ function FeedGrid({ lang, active = true, initialItems }: Props) {
           )
         }
       >
-        <LiveFeedCards lang={lang} active={active} />
+        <LiveFeedCards
+          lang={lang}
+          active={active}
+          serverRendered={Boolean(initialItems?.length)}
+        />
       </Suspense>
     </div>
   );

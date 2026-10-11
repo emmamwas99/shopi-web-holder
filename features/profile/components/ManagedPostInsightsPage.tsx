@@ -7,6 +7,7 @@ import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MuxVideo } from "@/components/ui/MuxVideo";
 import { contentPath } from "@/lib/content-url";
+import { BackLink } from "@/components/layout/BackLink";
 import { useMyManagedPost } from "../hooks/useManagedPosts";
 
 function formatPrice(amount: number, currency: string) {
@@ -158,14 +159,14 @@ export function ManagedPostInsightsPage({
     <div className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
       <div className="w-full space-y-5">
         <div className="flex items-center justify-between gap-2 sm:flex-wrap sm:justify-start sm:gap-3">
-          <Link
+          <BackLink
             href={`/${lang}/profile`}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-[12px] font-medium transition-colors hover:bg-surface sm:h-11 sm:gap-2 sm:rounded-xl sm:px-3.5 sm:text-sm sm:font-semibold"
             style={{ borderColor: "rgb(var(--color-border))" }}
           >
             <ArrowLeft size={14} />
             Back
-          </Link>
+          </BackLink>
 
           <Link
             href={contentPath(lang, post)}

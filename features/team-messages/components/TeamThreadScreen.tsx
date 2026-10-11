@@ -14,6 +14,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { WS_EVENTS } from "@/lib/socket/socket-events";
 import { linkifyParts, shortTime } from "@/features/messaging/lib/helpers";
 import { profileReturnHref } from "@/features/profile/lib/settingsReturn";
+import { goBackOr } from "@/lib/useAppBack";
 import {
   MARK_TEAM_THREAD_READ,
   MY_TEAM_MESSAGES,
@@ -84,8 +85,9 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const stickToBottom = useRef(true);
 
-  // Opened from the profile menu's "Contact support" row (`?from=settings`),
-  // back returns there; otherwise to the inbox this thread is pinned in.
+  // Back returns to wherever the thread was opened from. Opened with nothing
+  // of ours behind it, it lands on the profile menu's "Contact support" row
+  // (`?from=settings`), or else the inbox this thread is pinned in.
   const from = searchParams.get("from");
   const backHref = from ? profileReturnHref(lang, from) : `/${lang}/notifications`;
 
@@ -173,7 +175,7 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
       >
         <button
           type="button"
-          onClick={() => router.push(backHref)}
+          onClick={() => goBackOr(router, backHref)}
           className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-subtle"
           aria-label="Back"
         >
