@@ -169,9 +169,6 @@ export default function DesktopFeed({
     return isTab(t) ? t : "for-you";
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
-    () => new Set([initialTab]),
-  );
   const prevTab = useRef<Tab>(initialTab);
 
   useLayoutEffect(() => {
@@ -186,7 +183,6 @@ export default function DesktopFeed({
     if (next === current) return;
     if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
     setTab(next);
-    setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
     const params = new URLSearchParams(window.location.search);
     if (next === "for-you") params.delete("tab");
     else params.set("tab", next);
@@ -225,7 +221,6 @@ export default function DesktopFeed({
     if (t === current) return;
     if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
     setTab(t);
-    setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
   }, [searchParams, visible]);
 
   return (
@@ -277,11 +272,6 @@ export default function DesktopFeed({
             <StoriesBar lang={lang} variant="desktop" />
             <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
           </div>
-          {openedTabs.has("watch") ? (
-            <div className={tab === "watch" ? undefined : "hidden"}>
-              <WatchGrid lang={lang} active={visible && tab === "watch"} />
-            </div>
-          ) : null}
         </section>
 
         <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">
