@@ -44,6 +44,7 @@ import {
   type DraftFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { DashboardListingActions } from "./DashboardListingActions";
+import type { DashboardTourStepId } from "./DashboardTour";
 
 function formatPrice(post: ManagedPost) {
   if (post.price.amount <= 0) return "Price on request";
@@ -80,19 +81,22 @@ function PostItemMenu({
   onSingleUpload,
   onBulkUpload,
   className,
+  forceOpen = false,
 }: {
   onSingleUpload: () => void;
   onBulkUpload: () => void;
   className: string;
+  forceOpen?: boolean;
 }) {
   const [popoverContainer, setPopoverContainer] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={forceOpen || open} onOpenChange={(next) => { if (!forceOpen) setOpen(next); }}>
       <PopoverTrigger asChild>
         <button
           type="button"
+          data-dashboard-tour="dashboard-tour-create-listing"
           onPointerDown={(event) =>
             setPopoverContainer(
               event.currentTarget.closest<HTMLElement>('[role="dialog"]'),
@@ -114,6 +118,7 @@ function PostItemMenu({
         </button>
         <button
           type="button"
+          data-dashboard-tour="dashboard-tour-bulk-upload"
           onClick={() => { setOpen(false); onBulkUpload(); }}
           className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
         >
@@ -130,11 +135,13 @@ export function DashboardListings({
   onSingleUpload,
   autoOpenBulk = false,
   onBulkUploadHandled,
+  tourStep = null,
 }: {
   lang: string;
   onSingleUpload: () => void;
   autoOpenBulk?: boolean;
   onBulkUploadHandled?: () => void;
+  tourStep?: DashboardTourStepId | null;
 }) {
   const { isAuthenticated } = useAuthSession();
   const apolloClient = useApolloClient();
@@ -231,7 +238,7 @@ export function DashboardListings({
       })()
     : null;
   const selectedBulkLocation = bulkLocationTouched ? bulkLocation : defaultBulkLocation;
-  const bulkDialogOpen = bulkOpen || (pendingBulkDrafts.length > 0 && !dismissPendingBulk);
+  const bulkDialogOpen = !tourStep && (bulkOpen || (pendingBulkDrafts.length > 0 && !dismissPendingBulk));
   const bulkWorkflowComplete = pendingBulkDrafts.length > 0 && pendingBulkDrafts.every(
     (draft) => draft.bulkStage === "COMPLETE" && bulkAgentStates[draft.id] === "ready",
   );
@@ -592,7 +599,7 @@ export function DashboardListings({
 
   return (
     <section className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col px-5 md:px-8">
-      <header className="z-10 flex shrink-0 flex-wrap items-end justify-between gap-3 bg-app pb-4 pt-5 md:pb-5 md:pt-6">
+      <header data-dashboard-tour="dashboard-tour-listings-page" className="z-10 flex shrink-0 flex-wrap items-end justify-between gap-3 bg-app pb-4 pt-5 md:pb-5 md:pt-6">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-main">My listings</h1>
           <p className="mt-1 text-xs text-muted">Manage your posts and see how they are performing.</p>
@@ -601,12 +608,13 @@ export function DashboardListings({
           <PostItemMenu
             onSingleUpload={onSingleUpload}
             onBulkUpload={openBulkUpload}
+            forceOpen={tourStep === "bulk-menu"}
             className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-3.5 text-xs font-bold text-white hover:opacity-90"
           />
         </div>
       </header>
 
-      <div ref={setListingsScrollRoot} className="min-h-0 flex-1 overflow-auto rounded-2xl border border-border bg-elevated shadow-sm">
+      <div ref={setListingsScrollRoot} data-dashboard-tour="dashboard-tour-listing-table" className="min-h-0 flex-1 overflow-auto rounded-2xl border border-border bg-elevated shadow-sm">
           <table className="w-full min-w-[790px] border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 bg-surface text-[10px] font-bold uppercase tracking-wide text-muted">
               <tr>

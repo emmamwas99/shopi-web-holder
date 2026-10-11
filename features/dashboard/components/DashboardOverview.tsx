@@ -103,7 +103,7 @@ export function DashboardOverview({ lang }: { lang: string }) {
         </div>
       ) : null}
 
-      <section aria-label="Shop overview" className="grid grid-cols-1 items-stretch gap-4 pt-1 lg:grid-cols-2 xl:grid-cols-3">
+      <section data-dashboard-tour="dashboard-tour-overview" aria-label="Shop overview" className="grid grid-cols-1 items-stretch gap-4 pt-1 lg:grid-cols-2 xl:grid-cols-3">
         <Panel title="Listings overview" icon={Package}>
           {loading && !overview ? <RowsSkeleton /> : (
             <div className="space-y-0.5">
@@ -115,7 +115,7 @@ export function DashboardOverview({ lang }: { lang: string }) {
           )}
         </Panel>
 
-        <Panel title="Shop growth" icon={ArrowUpRight}>
+        <Panel tourId="dashboard-tour-growth" title="Shop growth" icon={ArrowUpRight}>
           {loading && !analytics ? <GrowthSkeleton /> : (
             <div className="flex min-h-[250px] flex-1 flex-col">
               <div className="grid grid-cols-2 gap-3">
@@ -198,9 +198,9 @@ export function DashboardOverview({ lang }: { lang: string }) {
   );
 }
 
-function Panel({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: React.ReactNode }) {
+function Panel({ title, icon: Icon, children, tourId }: { title: string; icon: LucideIcon; children: React.ReactNode; tourId?: string }) {
   return (
-    <article className="flex min-h-[320px] flex-col rounded-2xl border border-border bg-elevated p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
+    <article data-dashboard-tour={tourId} className="flex min-h-[320px] flex-col rounded-2xl border border-border bg-elevated p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
       <h2 className="mb-4 flex items-center justify-center gap-2 text-center text-base font-extrabold tracking-tight text-main">
         <Icon className="h-4 w-4 text-primary" aria-hidden /> {title}
       </h2>
