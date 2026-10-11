@@ -4,6 +4,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronLeft, Handshake, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
@@ -384,31 +385,29 @@ export function ChatDetail({
               {hideParticipantHeader ? null : pending && !otherParticipant ? (
                 <div className="h-10 w-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
               ) : otherParticipant?.profile?.avatar ? (
-                <div
-                  onClick={() => {
-                    router.push(profileHref(lang, otherParticipant));
-                  }}
-                  className="relative h-10 w-10 overflow-hidden rounded-full"
+                <Link
+                  href={profileHref(lang, otherParticipant)}
+                  aria-label={`View ${participantName(otherParticipant)}'s profile`}
+                  className="relative block h-10 w-10 overflow-hidden rounded-full"
                 >
                   <Image
                     src={otherParticipant.profile.avatar}
-                    alt={participantName(otherParticipant)}
+                    alt=""
                     fill
                     className="object-cover"
                     sizes="40px"
                   />
-                </div>
+                </Link>
               ) : (
-                <div
-                  onClick={() => {
-                    router.push(profileHref(lang, otherParticipant));
-                  }}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${avatarGradient(
+                <Link
+                  href={profileHref(lang, otherParticipant)}
+                  aria-label={`View ${participantName(otherParticipant)}'s profile`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br no-underline ${avatarGradient(
                     otherParticipant?.id ?? "0",
                   )} text-sm font-semibold text-white`}
                 >
                   {initialsForUser(otherParticipant)}
-                </div>
+                </Link>
               )}
 
               <div className="min-w-0 flex-1">
@@ -510,11 +509,9 @@ export function ChatDetail({
             </div>
 
             {contentSummary ? (
-              <div
-                onClick={() =>
-                  router.push(`/${lang}/content/${contentSummary.id}`)
-                }
-                className="mt-3 flex items-center gap-3 rounded-2xl border p-1"
+              <Link
+                href={`/${lang}/content/${contentSummary.id}`}
+                className="mt-3 flex items-center gap-3 rounded-2xl border p-1 text-default no-underline"
                 style={{
                   backgroundColor: "rgb(var(--color-bg-subtle))",
                   borderColor: "rgb(var(--color-border))",
@@ -556,7 +553,7 @@ export function ChatDetail({
                       contentSummary.location?.county}
                   </p>
                 </div>
-              </div>
+              </Link>
             ) : null}
 
             {storySummary ? (

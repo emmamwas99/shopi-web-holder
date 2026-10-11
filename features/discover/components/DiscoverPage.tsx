@@ -2724,7 +2724,7 @@ export function DiscoverPage({
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
           <div
-            className="sticky top-0 z-30 grid border-b border-default bg-white [overflow-anchor:none] lg:hidden"
+            className="sticky top-0 z-30 grid border-b border-default bg-app [overflow-anchor:none] lg:hidden"
             style={{
               gridTemplateRows:
                 isSubcategoryRoute && subcategoryHeaderMode === "expanded"

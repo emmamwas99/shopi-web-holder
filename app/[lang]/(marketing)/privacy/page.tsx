@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
-const LAST_UPDATED = "10 October 2026";
+const LAST_UPDATED = "11 October 2026";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -81,6 +81,25 @@ export default async function PrivacyPage({ params }: Props) {
             specifications you add, and the location you choose (county,
             sub-county, ward, and place details). You choose what location
             detail to share on each listing.
+          </p>
+          <h3>Contact number</h3>
+          <p>
+            If you add a phone number when posting, we save it to your account
+            and your listings so you only type it once. It is not shown
+            publicly: a signed-in buyer can reveal it on your listing to call
+            or WhatsApp you.
+          </p>
+          <h3>Bulk uploads</h3>
+          <p>
+            If you upload listings from an Excel sheet, we read the titles,
+            descriptions, prices and other details in it to create your draft
+            listings.
+          </p>
+          <h3>Invite programme</h3>
+          <p>
+            If you invite people to Shopi, we store your invite code, who joined
+            through your link, and the M-Pesa number you give us for rewards. We
+            send rewards over M-Pesa and never ask for your M-Pesa PIN.
           </p>
           <h3>Media you upload</h3>
           <p>
@@ -155,6 +174,22 @@ export default async function PrivacyPage({ params }: Props) {
             information to its provider under that provider&apos;s privacy
             terms.
           </p>
+          <p>
+            Google Tag Manager, Google Analytics and the Meta Pixel load only if
+            you accept analytics cookies. You can change your choice at any time
+            with the &quot;Cookie settings&quot; link in the site footer.
+          </p>
+          <h3>Approximate location from your IP address</h3>
+          <p>
+            When you first sign in, we work out an approximate location (county
+            level at best) from your IP address to understand where our users
+            are. We don&apos;t store the IP address itself.
+          </p>
+          <h3>Profile visits</h3>
+          <p>
+            If you view someone&apos;s profile while signed in, we record the
+            visit and that person can see that you viewed their profile.
+          </p>
           <h3>Location information</h3>
           <p>
             If you allow it, we use your browser&apos;s location permission to
@@ -207,14 +242,32 @@ export default async function PrivacyPage({ params }: Props) {
           </ul>
         </LegalSection>
 
-        <LegalSection title="4. AI-Assisted Features">
+        <LegalSection title="4. AI-Assisted Features (Shopi Agent)">
           <p>
-            Shopi uses an automated system to suggest a category for listings
-            based on the content you provide (title, photos, description). This
-            helps buyers find your listing more easily. This classification is
-            generated automatically and may occasionally be inaccurate — it does
-            not affect your ownership of the listing content and you can always
-            edit your listing details.
+            Shopi Agent is our built-in AI assistant. To do its job, it
+            processes the content you give it:
+          </p>
+          <ul>
+            <li>
+              <strong>Creating listings:</strong> from your photos, videos and
+              any text you add, it suggests a title, description, category,
+              specifications and price. For bulk uploads, it fills in the
+              category and specifications from the media you attach.
+            </li>
+            <li>
+              <strong>Finding products:</strong> it reads what you type, or a
+              photo you share, to find matching listings.
+            </li>
+            <li>
+              <strong>Categories:</strong> it suggests a category for listings
+              so buyers can find them.
+            </li>
+          </ul>
+          <p>
+            Suggestions are generated automatically and can be wrong. You
+            review and can edit everything before a listing is published —
+            nothing is posted without you. Shopi Agent does not message,
+            negotiate or buy on anyone&apos;s behalf.
           </p>
         </LegalSection>
 
@@ -230,9 +283,12 @@ export default async function PrivacyPage({ params }: Props) {
             <strong>Service providers:</strong> We work with infrastructure
             providers that help us run Shopi, including cloud storage providers
             for hosting your photos, a video hosting and streaming provider for
-            your videos, and mapping and location providers to resolve addresses
-            and coordinates. These providers only process data on our behalf and
-            are not permitted to use it for their own purposes.
+            your videos, mapping and location providers to resolve addresses
+            and coordinates, AI providers (OpenAI and Google) that process the
+            photos, videos and text you submit to Shopi Agent, and an email
+            delivery provider for account emails. These providers only process
+            data on our behalf and are not permitted to use it for their own
+            purposes.
           </p>
           <p>
             <strong>Legal reasons:</strong> We may disclose information if
@@ -280,12 +336,23 @@ export default async function PrivacyPage({ params }: Props) {
             <li>Object to certain processing</li>
             <li>
               Withdraw consent where processing is based on consent (such as
-              location access or push notifications) — you can do this at any
-              time through your device or browser settings, or by contacting us
+              analytics cookies, location access or push notifications) — you
+              can do this at any time with &quot;Cookie settings&quot; in the
+              site footer, through your device or browser settings, or by
+              contacting us
             </li>
           </ul>
           <p>
             You can update most of your profile information directly in the app.
+          </p>
+          <p>
+            <strong>Delete your account:</strong> you can do this yourself at
+            any time from your profile menu (Profile → Delete account). Your
+            account is locked and anonymised, and your listings, comments and
+            saved items stop being visible. You can also ask us to delete your
+            data by email.
+          </p>
+          <p>
             To exercise other rights, contact us using the details below.
           </p>
         </LegalSection>

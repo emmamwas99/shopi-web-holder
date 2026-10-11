@@ -64,6 +64,18 @@
   --desktop-top-nav-height: 68px;
   --side-nav-width: 304px;
   --desktop-content-max-width: 1440px;
+
+  /* Homepage palette — the marketing page's green-grey ink and surfaces,
+     with dark counterparts below so it follows the app theme. */
+  --landing-page: #ffffff;
+  --landing-card: #ffffff;
+  --landing-surface: #f4f8f7;
+  --landing-tint: #e8efef;
+  --landing-ink: #172226;
+  --landing-body: #465458;
+  --landing-muted: #657275;
+  --landing-line: #dce3e2;
+  --landing-line-strong: #aab7b5;
 }
 
 /* Header, fixed rail and page share the PDP's centered desktop frame. */
@@ -101,7 +113,8 @@
   --color-text: 240 240 245;
   --color-text-main: 240 240 245; /* dark mode: main text reads light */
   --color-text-muted: 148 148 165;
-  --color-text-placeholder: 90 90 105;
+  /* 5.0:1 on --color-bg, 4.6:1 on --color-bg-subtle (WCAG AA); was 2.96:1. */
+  --color-text-placeholder: 126 126 142;
 
   /* Incoming chat bubbles / muted fills — same subtle lift as inputs. */
   --color-subtle: 20 20 24;
@@ -109,6 +122,16 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+
+  --landing-page: rgb(8 8 10);
+  --landing-card: #151b1d;
+  --landing-surface: #0f1517;
+  --landing-tint: #1a2224;
+  --landing-ink: #eef2f1;
+  --landing-body: #b6c2c2;
+  --landing-muted: #93a0a2;
+  --landing-line: #263032;
+  --landing-line-strong: #46545a;
 }
 
 /* ─── Tailwind v4 theme tokens ─────────────────────────────────── */
@@ -141,6 +164,16 @@
   --color-foreground: rgb(var(--color-text));
   --color-main: rgb(var(--color-text-main));
   --color-muted: rgb(var(--color-text-muted));
+
+  --color-landing-page: var(--landing-page);
+  --color-landing-card: var(--landing-card);
+  --color-landing-surface: var(--landing-surface);
+  --color-landing-tint: var(--landing-tint);
+  --color-landing-ink: var(--landing-ink);
+  --color-landing-body: var(--landing-body);
+  --color-landing-muted: var(--landing-muted);
+  --color-landing-line: var(--landing-line);
+  --color-landing-line-strong: var(--landing-line-strong);
 
   --color-success: rgb(var(--color-success));
   --color-warning: rgb(var(--color-warning));

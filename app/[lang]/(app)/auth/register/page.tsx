@@ -33,7 +33,7 @@ export default async function RegisterPage({
   const Footer = (
     <div className="flex flex-col gap-3 mt-5">
       <p className="text-center text-xs text-placeholder leading-relaxed">
-        By creating an account you agree to our{" "}
+        By creating an account you confirm you&apos;re 18 or older and agree to our{" "}
         <Link
           href={`/${lang}/terms`}
           className="text-muted underline underline-offset-2 font-semibold"

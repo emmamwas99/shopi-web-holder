@@ -184,7 +184,7 @@ export const siteConfig = {
       path: "/search",
       title: "Search Cars, Phones and More for Sale in Kenya",
       description:
-        "Search cars, phones, fashion, furniture, farm produce and thousands of local listings across Kenya.",
+        "Search cars, phones, fashion, furniture, farm produce and other local listings across Kenya.",
     },
 
     // The directory of sellers. Indexed: every card is an internal link to a

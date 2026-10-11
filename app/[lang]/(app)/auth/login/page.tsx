@@ -32,7 +32,26 @@ export default async function LoginPage({
   );
 
   const Footer = (
-    <div className="mt-5">
+    <div className="mt-5 flex flex-col gap-3">
+      {/* Google/Apple here can create a new account, so the same notice as
+          sign-up applies. */}
+      <p className="text-center text-xs leading-relaxed text-placeholder">
+        By continuing you confirm you&apos;re 18 or older and agree to our{" "}
+        <Link
+          href={`/${lang}/terms`}
+          className="text-muted underline underline-offset-2"
+        >
+          Terms
+        </Link>{" "}
+        &{" "}
+        <Link
+          href={`/${lang}/privacy`}
+          className="text-muted underline underline-offset-2"
+        >
+          Privacy Policy
+        </Link>
+        .
+      </p>
       <p className="text-center text-sm text-muted">
         New to Shopi?{" "}
         <Link href={registerHref} className="font-semibold text-primary">

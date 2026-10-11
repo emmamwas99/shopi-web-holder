@@ -36,3 +36,11 @@ export const FEED_LOAD_MORE_SIZE = 12;
 export const VIDEO_FEED_PAGE_SIZE = 8;
 export const VIDEO_FEED_LOAD_MORE_SIZE = 8;
 export const VIDEO_FEED_PREFETCH_AHEAD = 4;
+
+/**
+ * Watch tab grid pages. Unlike the viewer, many posters show at once, so a page
+ * should add whole rows: 10 fills the phone grid's 2 columns, 18 the desktop
+ * grid's 6 (and three full rows of 5 plus change at lg).
+ */
+export const WATCH_GRID_PAGE_SIZE = 10;
+export const WATCH_GRID_DESKTOP_PAGE_SIZE = 18;

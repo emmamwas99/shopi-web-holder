@@ -10,8 +10,8 @@ import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 import {
-  VIDEO_FEED_LOAD_MORE_SIZE,
-  VIDEO_FEED_PAGE_SIZE,
+  WATCH_GRID_DESKTOP_PAGE_SIZE,
+  WATCH_GRID_PAGE_SIZE,
 } from "@/features/feed/constants";
 import {
   isPlayableVideo,
@@ -33,9 +33,10 @@ export function WatchGrid({
   desktopLayout?: boolean;
 }) {
   const { location } = useNearbyLocation();
+  const pageSize = desktopLayout ? WATCH_GRID_DESKTOP_PAGE_SIZE : WATCH_GRID_PAGE_SIZE;
   const { data, loading, fetchMore } = useQuery(VideoFeedDocument, {
     variables: {
-      limit: VIDEO_FEED_PAGE_SIZE,
+      limit: pageSize,
       latitude: location?.latitude,
       longitude: location?.longitude,
     },
@@ -53,16 +54,19 @@ export function WatchGrid({
     guard(cursor, items.length, () => {
       setLoadingMore(true);
       return fetchMore({
-        variables: { limit: VIDEO_FEED_LOAD_MORE_SIZE, after: cursor },
+        variables: { limit: pageSize, after: cursor },
       }).finally(() => setLoadingMore(false));
     });
-  }, [fetchMore, guard, items.length, pageInfo]);
+  }, [fetchMore, guard, items.length, pageInfo, pageSize]);
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
     hasMore: pageInfo?.hasNextPage ?? false,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
+    // Posters are tall (9:16): start the next page about two rows early so it
+    // has landed by the time the user reaches the end.
+    rootMargin: "800px",
   });
 
   if (loading && items.length === 0) {

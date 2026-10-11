@@ -1,6 +1,9 @@
-import Script from "next/script";
 import { Bricolage_Grotesque, JetBrains_Mono, Manrope } from "next/font/google";
 import { RouteProviders } from "@/components/providers/RouteProviders";
+import {
+  ConsentedTagManager,
+  CookieConsentBanner,
+} from "@/components/layout/CookieConsent";
 import { cultureCode } from "@/i18n/config";
 
 const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
@@ -83,34 +86,16 @@ export function AppDocument({
         href="/catalog.json"
         title="Current Shopi marketplace catalog (JSON)"
       />
-      {/* Google Tag Manager.
-          Loaded by hand rather than via @next/third-parties' <GoogleTagManager>
-          because that component hard-codes next/script's default
-          "afterInteractive" strategy, which emits a <link rel="preload"> for
-          gtm.js into the document head. On the feed that put a third-party
-          analytics container in front of the LCP thumbnail in the network
-          queue. "lazyOnload" defers it until after the window load event, so
-          tags still fire but never compete with feed content. The dataLayer
-          shim is inline (and cheap) so anything queueing events before the
-          container arrives is still captured. */}
-      {gtmId && (
-        <>
-          <Script id="gtm-datalayer" strategy="lazyOnload">
-            {`window.dataLayer=window.dataLayer||[];window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});`}
-          </Script>
-          <Script
-            id="gtm"
-            strategy="lazyOnload"
-            src={`https://www.googletagmanager.com/gtm.js?id=${gtmId}`}
-          />
-        </>
-      )}
       <body className="min-h-full flex flex-col bg-app text-default">
         <script
           id="theme-script"
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
         <RouteProviders>{children}</RouteProviders>
+        {/* Google Tag Manager (and the Google Analytics / Meta Pixel tags it
+            carries) loads only after the visitor accepts analytics cookies. */}
+        <ConsentedTagManager gtmId={gtmId} />
+        <CookieConsentBanner />
       </body>
     </html>
   );

@@ -429,7 +429,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
 
       {/* Terms */}
       <p className="text-xs text-muted text-center leading-relaxed">
-        By creating an account you agree to our{" "}
+        By creating an account you confirm you&apos;re 18 or older and agree to our{" "}
         <Link
           href={`/${lang}/terms`}
           className="text-primary underline-offset-2 underline"

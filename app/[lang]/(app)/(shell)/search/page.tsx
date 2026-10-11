@@ -50,7 +50,7 @@ export default async function SearchPage({ params }: Props) {
         <BrowseHub
           lang={lang}
           heading="Search local listings across Kenya"
-          intro="Search cars, phones, fashion, furniture, farm produce, livestock and thousands of other listings from sellers near you. Message any seller directly to agree on price, payment and delivery."
+          intro="Search cars, phones, fashion, furniture, farm produce, livestock and other listings from sellers near you. Message any seller directly to agree on price, payment and delivery."
         />
       }
     >
