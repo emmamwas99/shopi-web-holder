@@ -63,6 +63,24 @@
      here makes those fallbacks inert and gives the height one home. */
   --desktop-top-nav-height: 68px;
   --side-nav-width: 304px;
+  --desktop-content-max-width: 1440px;
+}
+
+/* Header, fixed rail and page share the PDP's centered desktop frame. */
+@media (min-width: 768px) {
+  .desktop-app-frame {
+    width: 100%;
+    max-width: var(--desktop-content-max-width);
+    margin-inline: auto;
+  }
+
+  .desktop-app-frame--with-sidebar {
+    padding-left: var(--side-nav-width);
+  }
+
+  .desktop-side-nav {
+    left: max(0px, calc((100% - var(--desktop-content-max-width)) / 2));
+  }
 }
 
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
@@ -572,6 +590,36 @@ body.comments-open .bottom-nav {
   width: 0 !important;
   height: 0 !important;
   display: none !important; /* Chrome, Safari, Opera */
+}
+
+/* Slim, quiet scrollbar for side rails: invisible until the area is hovered,
+   then a thin rounded thumb on a transparent track. */
+.thin-scrollbar {
+  scrollbar-width: thin; /* Firefox, Chrome 121+ */
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
+}
+
+.thin-scrollbar:hover {
+  scrollbar-color: rgb(var(--color-border-strong)) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-border-strong));
 }
 
 /* Chat composer input must never show a scrollbar track, even while it scrolls

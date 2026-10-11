@@ -5,7 +5,6 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { siteConfig } from "@/config/site";
 import {
   organizationSchema,
-  founderSchema,
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
@@ -24,6 +23,10 @@ export async function generateMetadata({
 }
 
 type Props = { params: Promise<{ lang: string }> };
+
+const anonymousOrganizationSchema = Object.fromEntries(
+  Object.entries(organizationSchema).filter(([key]) => key !== "founder"),
+);
 
 export default async function AboutPage({ params }: Props) {
   const { lang } = await params;
@@ -53,8 +56,7 @@ export default async function AboutPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: jsonLd(
-            organizationSchema,
-            founderSchema,
+            anonymousOrganizationSchema,
             breadcrumbSchema([
               { name: "Home", url: `${siteConfig.url}/${lang}` },
               { name: "About", url: `${siteConfig.url}/${lang}/about` },
@@ -130,69 +132,14 @@ export default async function AboutPage({ params }: Props) {
         </section>
 
         {/* Team */}
-        {/* The founder bio is rendered here on purpose. It used to exist only
-            in JSON-LD, and the result was that answer engines asked "who
-            founded Shopi?" returned a different person entirely — they ground
-            on visible text, and there was none to ground on. The heading is
-            phrased as the question people actually ask so the answer is easy
-            to lift. Keep this in sync with founderSchema. */}
         <section className="mx-auto max-w-195 px-5 py-16">
           <h2 className="mb-3 font-display text-[1.6rem] font-bold tracking-[-0.02em] text-foreground">
-            Who founded Shopi
+            A team building for East Africa
           </h2>
-          <p className="mb-8 max-w-140 text-[0.95rem] leading-[1.7] text-muted">
-            We are a small, focused team building consumer technology and
-            commerce for East Africa.
+          <p className="max-w-140 text-[0.95rem] leading-[1.7] text-muted">
+            Shopi is built by a small, Kenya-based team focused on making local
+            buying and selling more discoverable, trusted, and accessible.
           </p>
-
-          <div className="rounded-2xl border border-border bg-elevated p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-              <span
-                aria-hidden="true"
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-[1.4rem] font-bold text-white"
-              >
-                MM
-              </span>
-              <div>
-                <h3 className="font-display text-[1.15rem] font-bold text-foreground">
-                  Mwangi Maina
-                </h3>
-                <p className="mt-1 text-[0.85rem] font-semibold text-primary">
-                  Founder, Shopi
-                </p>
-                <p className="mt-4 text-[0.95rem] leading-[1.75] text-muted">
-                  Shopi was founded by Mwangi Maina, a Kenyan software engineer
-                  based in Nairobi. He studied computer science at Maseno
-                  University before moving into industry in 2021, working with
-                  the US startup Playback and then Bettercoach in Germany. He is
-                  now a senior software engineer at{" "}
-                  <a
-                    href="https://www.ooodles.com"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    className="text-primary underline"
-                  >
-                    Ooodles
-                  </a>
-                  , where he was one of the pioneer engineers who built the
-                  platform from scratch.
-                </p>
-                <p className="mt-3.5 text-[0.95rem] leading-[1.75] text-muted">
-                  Shopi is his own company, started in Nairobi in 2025 and run
-                  from Kenya. It is not connected to any other business trading
-                  under the name Shopi elsewhere in the world.
-                </p>
-                <a
-                  href="https://www.linkedin.com/in/mwangi-maina-6463281ab/"
-                  rel="noopener noreferrer me"
-                  target="_blank"
-                  className="mt-5 inline-block text-[0.875rem] font-semibold text-primary underline"
-                >
-                  Mwangi Maina on LinkedIn
-                </a>
-              </div>
-            </div>
-          </div>
 
           <div className="mt-5 rounded-2xl border border-border bg-elevated p-8 text-center">
             <p className="text-[0.95rem] leading-[1.7] text-muted">

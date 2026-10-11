@@ -6,6 +6,7 @@ import { useAppBack } from "@/lib/useAppBack";
 import {
   DISCOVER_GRID,
   DiscoverGridCard,
+  DiscoverGridSkeleton,
 } from "@/features/discover/components/DiscoverGridCard";
 import {
   ArrowLeft,
@@ -23,7 +24,6 @@ import {
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { useAuthStore } from "@/stores/auth";
 import { trackSellerEvent } from "@/lib/seller-analytics";
-import { Skeleton } from "@/components/ui/skeleton";
 import { appendUnique } from "../lib/appendUnique";
 import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAvatar";
 
@@ -370,17 +370,7 @@ export function CreatorProfileView({
         </div>
 
         {postsLoading && posts.length === 0 ? (
-          <div className={DISCOVER_GRID}>
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i}>
-                <Skeleton className="aspect-3/4 w-full rounded-xl" />
-                <div className="space-y-2 pt-2">
-                  <Skeleton className="h-3.5 w-1/2" />
-                  <Skeleton className="h-3 w-4/5" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <DiscoverGridSkeleton showSeller={false} />
         ) : posts.length === 0 ? (
           <div className="flex min-h-72 flex-col items-center justify-center py-12 text-center">
             <p className="text-base font-black text-main">
@@ -416,11 +406,7 @@ export function CreatorProfileView({
             {/* Only for a real next-page fetch — not while the client's first
                 query refreshes the server-rendered page. */}
             {postsLoading && Boolean(data) && posts.length > 0 && (
-              <div className={`mt-5 ${DISCOVER_GRID}`}>
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-3/4 w-full rounded-xl" />
-                ))}
-              </div>
+              <DiscoverGridSkeleton rows={1} showSeller={false} className="mt-5" />
             )}
           </>
         )}

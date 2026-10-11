@@ -135,12 +135,16 @@ export function DashboardListings({
   onSingleUpload,
   autoOpenBulk = false,
   onBulkUploadHandled,
+  onBulkUploadStart,
+  onBulkUploadClose,
   tourStep = null,
 }: {
   lang: string;
   onSingleUpload: () => void;
   autoOpenBulk?: boolean;
   onBulkUploadHandled?: () => void;
+  onBulkUploadStart?: () => void;
+  onBulkUploadClose?: () => void;
   tourStep?: DashboardTourStepId | null;
 }) {
   const { isAuthenticated } = useAuthSession();
@@ -238,7 +242,7 @@ export function DashboardListings({
       })()
     : null;
   const selectedBulkLocation = bulkLocationTouched ? bulkLocation : defaultBulkLocation;
-  const bulkDialogOpen = !tourStep && (bulkOpen || (pendingBulkDrafts.length > 0 && !dismissPendingBulk));
+  const bulkDialogOpen = !tourStep && (bulkOpen || autoOpenBulk);
   const bulkWorkflowComplete = pendingBulkDrafts.length > 0 && pendingBulkDrafts.every(
     (draft) => draft.bulkStage === "COMPLETE" && bulkAgentStates[draft.id] === "ready",
   );
@@ -255,6 +259,12 @@ export function DashboardListings({
     onBulkUploadHandled?.();
   }, [autoOpenBulk, onBulkUploadHandled]);
 
+  useEffect(() => {
+    if (tourStep || bulkOpen || dismissPendingBulk || pendingBulkDrafts.length === 0) return;
+    onBulkUploadStart?.();
+    setBulkOpen(true);
+  }, [bulkOpen, dismissPendingBulk, onBulkUploadStart, pendingBulkDrafts.length, tourStep]);
+
   async function downloadTemplate() {
     setMessage("");
     try {
@@ -269,7 +279,6 @@ export function DashboardListings({
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Download failed. Please try again.");
-      setBulkOpen(true);
     }
   }
 
@@ -293,8 +302,6 @@ export function DashboardListings({
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.message ?? "The Excel file could not be imported.");
       setImportSummary(payload);
-      setDismissPendingBulk(false);
-      setBulkOpen(true);
       setMessage(payload.drafts > 0
         ? `Added ${payload.drafts} new listing${payload.drafts === 1 ? "" : "s"}. Add media below and Shopi Agent will finish each listing here. ${payload.failed} row${payload.failed === 1 ? " needs" : "s need"} attention.`
         : `Updated ${payload.updated} listing${payload.updated === 1 ? "" : "s"}; ${payload.failed} row${payload.failed === 1 ? " needs" : "s need"} attention.`);
@@ -578,13 +585,9 @@ export function DashboardListings({
   }
 
   function openBulkUpload() {
+    onBulkUploadStart?.();
     setBulkOpen(true);
     setDismissPendingBulk(false);
-    setFile(null);
-    setImportSummary(null);
-    setMessage("");
-    setBulkLocation(null);
-    setBulkLocationTouched(false);
   }
 
   if (!isAuthenticated) {
@@ -695,8 +698,14 @@ export function DashboardListings({
         open={bulkDialogOpen}
         onOpenChange={(open) => {
           setBulkOpen(open);
-          if (open) setDismissPendingBulk(false);
-          else if (pendingBulkDrafts.length > 0) setDismissPendingBulk(true);
+          if (open) {
+            setDismissPendingBulk(false);
+            onBulkUploadStart?.();
+          } else {
+            // A pending request may finish after Close. Do not reopen on its response.
+            setDismissPendingBulk(true);
+            onBulkUploadClose?.();
+          }
         }}
         file={file}
         setFile={(nextFile) => { setFile(nextFile); setImportSummary(null); setMessage(""); }}

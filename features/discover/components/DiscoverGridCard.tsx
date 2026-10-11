@@ -10,6 +10,7 @@ import { contentPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
 import { idInitials } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
 import { useSaveToggle } from "@/features/feed/hooks/useSaveToggle";
 import {
@@ -364,3 +365,69 @@ function DiscoverGridCardImpl({
 // keeps already-rendered tiles from re-rendering when pages append (Apollo
 // cache items are referentially stable).
 export const DiscoverGridCard = memo(DiscoverGridCardImpl);
+
+/**
+ * Loading stand-in with the tile's exact anatomy — seller row, 3:4 cover,
+ * two-line title, price • place — so nothing shifts when real tiles land.
+ */
+export function DiscoverGridCardSkeleton({
+  showSeller = true,
+  className,
+}: {
+  showSeller?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col", className)} aria-hidden>
+      {showSeller ? (
+        <div className="mb-2.5 flex items-center gap-2">
+          <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
+          <Skeleton className="h-3.5 w-24" />
+        </div>
+      ) : null}
+      <Skeleton className="aspect-3/4 w-full rounded-xl" />
+      <div className="pt-3">
+        <Skeleton className="h-3.5 w-11/12 md:h-4" />
+        <Skeleton className="mt-1.5 h-3.5 w-2/3 md:h-4" />
+        <div className="mt-2 flex items-center gap-1.5">
+          <Skeleton className="h-3.5 w-16" />
+          <Skeleton className="h-3.5 w-20" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Tiles shown per breakpoint: always `rows` complete rows of DISCOVER_GRID's
+ * column count (2 → 3 → 4 → 5), so a loading grid never ends in a ragged row.
+ */
+function fullRowsClass(index: number, rows: number) {
+  if (index >= rows * 4) return "hidden min-[90rem]:flex";
+  if (index >= rows * 3) return "hidden xl:flex";
+  if (index >= rows * 2) return "hidden md:flex";
+  return undefined;
+}
+
+/** A whole DISCOVER_GRID of skeleton tiles that fills its rows at every width. */
+export function DiscoverGridSkeleton({
+  rows = 4,
+  showSeller = true,
+  className,
+}: {
+  rows?: number;
+  showSeller?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn(DISCOVER_GRID, className)} role="status" aria-label="Loading listings">
+      {Array.from({ length: rows * 5 }).map((_, index) => (
+        <DiscoverGridCardSkeleton
+          key={index}
+          showSeller={showSeller}
+          className={fullRowsClass(index, rows)}
+        />
+      ))}
+    </div>
+  );
+}

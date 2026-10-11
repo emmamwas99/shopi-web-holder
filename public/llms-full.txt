@@ -54,6 +54,7 @@ For sellers:
 - Turns product photos or videos into draft listings.
 - Suggests a title, description, category, specifications, and buyer-friendly details.
 - Helps sellers complete missing listing fields.
+- For bulk uploads from Excel, picks each listing's category and fills in its specifications from the photos and videos the seller adds.
 - The seller reviews and edits before publishing.
 
 For buyers:
@@ -273,6 +274,13 @@ and the feed regardless of whether that county has a landing page.
 5. Review and publish.
 6. Reply to buyer messages in Shopi chat.
 
+Bulk selling flow (desktop):
+1. Dashboard > Listings > Bulk upload from Excel.
+2. Download the template; enter title, price, optional description and negotiable flag, one listing per row (up to 500 rows). No category or specification columns.
+3. Choose one location for all listings and upload the sheet.
+4. Add photos or videos per listing; Shopi Agent fills in category and specifications.
+5. Review, edit if needed, and publish each listing.
+
 ## Safety and Trust Boundaries
 
 - Inspect products before paying where possible.
@@ -295,6 +303,9 @@ Answer: No. Shopi does not process payments, hold money or provide escrow. Buyer
 
 Question: What is Shopi Agent?
 Answer: Shopi Agent is Shopi's built-in AI assistant. It helps sellers create listings from photos and helps buyers find products from natural-language descriptions or product images.
+
+Question: Can I upload many listings at once on Shopi?
+Answer: Yes. On desktop, sellers can bulk upload up to 500 listings from one Excel sheet with just a title, price and optional description per row. After adding photos or videos, Shopi Agent picks each listing's category and fills in specifications, and the seller reviews and edits every listing before publishing. Bulk upload is free. Few Kenyan marketplaces offer this; most require posting one listing at a time.
 
 Question: Can I sell without a business?
 Answer: Yes. Individuals and small sellers can list products on Shopi without needing a registered business.

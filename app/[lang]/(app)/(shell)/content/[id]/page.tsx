@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { ContentDetail } from "@/features/feed/components/ContentDetail";
 import { ListingRelated } from "@/features/feed/components/ListingRelated";
 import { query } from "@/lib/apollo/ApolloClient";
 import { ContentDetailDocument } from "@/features/feed/queries/contentDetail";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { CategoriesDocument } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
@@ -14,7 +16,7 @@ import {
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
-import { contentPath, contentSlugSegment } from "@/lib/content-url";
+import { contentPath, contentSlugSegment, slugifyContentTitle } from "@/lib/content-url";
 import { canonicalUrl, localeAlternates } from "@/lib/metadata";
 import { profileHref } from "@/lib/profile-url";
 import {
@@ -51,6 +53,15 @@ type Post = ContentCardFieldsFragment & {
   } | null;
 };
 
+type CategoryEntry = {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+};
+
+type CategoryCrumb = Pick<CategoryEntry, "name" | "slug">;
+
 // The full PDP query — the same document ContentDetail runs on the client, so
 // one server fetch feeds the metadata, the JSON-LD *and* the first render of
 // the page itself (passed down as `initialPost`). Fetching the narrower
@@ -62,7 +73,7 @@ type Post = ContentCardFieldsFragment & {
 // soft 404 that engines keep recrawling. Any other failure (API down) leaves
 // `gone` false and falls through to the client render, so an outage can't
 // deindex listings.
-async function getPost(id: string): Promise<{ post: Post | null; gone: boolean }> {
+const getPost = cache(async (id: string): Promise<{ post: Post | null; gone: boolean }> => {
   let result;
   try {
     result = await query({
@@ -80,6 +91,56 @@ async function getPost(id: string): Promise<{ post: Post | null; gone: boolean }
     CombinedGraphQLErrors.is(result.error) &&
     result.error.errors.some((e) => e.extensions?.code === "NOT_FOUND");
   return { post, gone };
+});
+
+const getCategoryEntries = cache(async (): Promise<CategoryEntry[]> => {
+  try {
+    const result = await query({ query: CategoriesDocument });
+    return (result.data?.categories ?? []).map((category) => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      parentId: category.parentId,
+    }));
+  } catch {
+    return [];
+  }
+});
+
+async function getCategoryTrail(
+  categoryId: string | null | undefined,
+  fallback?: { name?: string | null; slug?: string | null } | null,
+): Promise<CategoryCrumb[]> {
+  if (!categoryId) {
+    return fallback?.name && fallback.slug
+      ? [{ name: fallback.name, slug: fallback.slug }]
+      : [];
+  }
+
+  const categories = await getCategoryEntries();
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const path: CategoryEntry[] = [];
+  let category = byId.get(categoryId);
+  let remaining = 5;
+  while (category && remaining > 0) {
+    path.unshift(category);
+    category = category.parentId ? byId.get(category.parentId) : undefined;
+    remaining -= 1;
+  }
+
+  if (path.length > 0) {
+    return path.map(({ name, slug }) => ({ name, slug }));
+  }
+  return fallback?.name && fallback.slug
+    ? [{ name: fallback.name, slug: fallback.slug }]
+    : [];
+}
+
+function categoryHref(lang: string, trail: CategoryCrumb[], index: number): string {
+  if (index === 0) {
+    return `/${lang}/explore?category=${encodeURIComponent(trail[0].slug)}`;
+  }
+  return `/${lang}/explore/${trail[0].slug}/${slugifyContentTitle(trail[index].name)}`;
 }
 
 function sellerName(post: Post): string | null {
@@ -258,6 +319,9 @@ export default async function ContentDetailPage({ params }: Props) {
   const { lang, id } = await params;
   const { post, gone } = await getPost(id);
   if (gone) notFound();
+  const categoryTrail = post
+    ? await getCategoryTrail(post.categoryId, post.category)
+    : [];
   const canonical = canonicalUrl(
     lang,
     `/content/${post ? contentSlugSegment(post) : id}`,
@@ -329,12 +393,11 @@ export default async function ContentDetailPage({ params }: Props) {
               // their storefront. Falls back to Explore without a handle.
               breadcrumbSchema([
                 { name: "Home", url: `${siteConfig.url}/${lang}` },
-                post.creator?.username
-                  ? {
-                      name: sellerName(post) ?? `@${post.creator.username}`,
-                      url: `${siteConfig.url}${profileHref(lang, post.creator)}`,
-                    }
-                  : { name: "Browse", url: `${siteConfig.url}/${lang}/explore` },
+                { name: "Explore", url: `${siteConfig.url}/${lang}/explore` },
+                ...categoryTrail.map((category, index) => ({
+                  name: category.name,
+                  url: `${siteConfig.url}${categoryHref(lang, categoryTrail, index)}`,
+                })),
                 { name: post.title, url: canonical },
               ]),
             ),
@@ -346,6 +409,7 @@ export default async function ContentDetailPage({ params }: Props) {
         lang={lang}
         desktopMode="page"
         initialPost={post}
+        categoryTrail={categoryTrail}
         related={post ? <ListingRelated lang={lang} post={post} /> : undefined}
       />
     </>

@@ -8,6 +8,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  FileSpreadsheet,
   Images,
   Music2,
   PenLine,
@@ -135,6 +136,9 @@ export function UploadPickerPage({
           trackPostJourney("post_method_selected", { method: "ai_agent" });
           setCreationMode("ai");
           router.push(`/${lang}/upload/create-ai`);
+        }}
+        onBulkUpload={() => {
+          router.push(`/${lang}/dashboard?tab=listings&bulk=1`);
         }}
       />
     );
@@ -298,7 +302,7 @@ export function UploadPickerPage({
   );
 }
 
-type CreationModeKey = "agent" | "manual";
+type CreationModeKey = "agent" | "manual" | "bulk";
 
 const CREATION_MODES = [
   {
@@ -314,6 +318,13 @@ const CREATION_MODES = [
     icon: PenLine,
     recommended: false,
     description: "Add the listing details yourself, step by step.",
+  },
+  {
+    key: "bulk" as const,
+    label: "Bulk upload",
+    icon: FileSpreadsheet,
+    recommended: false,
+    description: "Upload multiple listings from an Excel spreadsheet.",
   },
 ];
 
@@ -334,11 +345,13 @@ function CreationModeChooser({
   isDesktop,
   onManual,
   onAgent,
+  onBulkUpload,
 }: {
   lang: string;
   isDesktop: boolean;
   onManual: () => void;
   onAgent: () => void;
+  onBulkUpload: () => void;
 }) {
   const router = useRouter();
   const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
@@ -355,7 +368,8 @@ function CreationModeChooser({
 
   function handleContinue() {
     if (selected === "agent") onAgent();
-    else onManual();
+    else if (selected === "manual") onManual();
+    else if (isDesktop) onBulkUpload();
   }
 
   const modeCards = (
@@ -373,11 +387,15 @@ function CreationModeChooser({
             type="button"
             role="radio"
             aria-checked={isSelected}
+            aria-disabled={mode.key === "bulk" && !isDesktop}
+            disabled={mode.key === "bulk" && !isDesktop}
             onClick={() => setSelected(mode.key)}
-            className={`flex min-h-[88px] w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left outline-none transition-[border-color,background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-primary/40 ${
-              isSelected
-                ? "border-primary bg-primary/5 shadow-sm"
-                : "border-border bg-elevated hover:border-primary/35 hover:bg-surface"
+            className={`flex min-h-[88px] w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left outline-none transition-[border-color,background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed ${
+              mode.key === "bulk" && !isDesktop
+                ? "border-border bg-surface/70"
+                : isSelected
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-border bg-elevated hover:border-primary/35 hover:bg-surface"
             }`}
           >
             <span
@@ -395,14 +413,26 @@ function CreationModeChooser({
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                     <Sparkles size={11} /> Recommended
                   </span>
+                ) : mode.key === "bulk" ? (
+                  <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold text-muted">
+                    Desktop only
+                  </span>
                 ) : null}
               </span>
               <span className="mt-1 block text-[13px] leading-5 text-muted">
-                {mode.description}
+                {mode.key === "bulk" && !isDesktop
+                  ? "Use a computer to upload multiple listings from Excel."
+                  : mode.key === "bulk"
+                    ? "Upload an Excel file. Shopi Agent fills in categories and product specs."
+                    : mode.description}
               </span>
             </span>
 
-            <RadioDot selected={isSelected} />
+            {mode.key === "bulk" && !isDesktop ? (
+              <span className="shrink-0 text-xs font-semibold text-muted">Unavailable</span>
+            ) : (
+              <RadioDot selected={isSelected} />
+            )}
           </button>
         );
       })}

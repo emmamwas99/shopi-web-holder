@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@apollo/client/react";
+import { MyPendingBulkUploadDraftsDocument } from "@/types/__generated__/graphql";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
@@ -50,11 +52,26 @@ export function DashboardModal({
   const [open, setOpen] = useState(forceOpen);
   const isActiveRoute = pathname === `/${lang}/dashboard`;
   const activeTab = searchParams.get("tab") ?? "overview";
+  const bulkRequested = searchParams.get("bulk") === "1";
+  // Once bulk work starts, defer the tour for the rest of this dashboard visit.
+  const [tourDeferred, setTourDeferred] = useState(bulkRequested);
   const push = usePushNotifications(lang);
   const unreadMessages = useUnreadMessageCount();
   const unreadNotifications = useUnreadNotificationCount();
   const tourUserId = useAuthStore((state) => state.user?.id ?? null);
   const [tourStepId, setTourStepId] = useState<DashboardTourStep["id"] | null>(null);
+  // Resolve unfinished bulk work before starting a tour on Listings. Apollo
+  // shares this request/cache with DashboardListings, which owns polling.
+  const checkPendingBulk = open && isActiveRoute && activeTab === "listings" && !!tourUserId && !bulkRequested && !tourDeferred && tourStepId === null;
+  const { data: pendingBulk, loading: checkingBulk, error: bulkCheckError } = useQuery(
+    MyPendingBulkUploadDraftsDocument,
+    { skip: !checkPendingBulk, fetchPolicy: "network-only" },
+  );
+  const waitingForBulk = checkPendingBulk && (
+    checkingBulk || !pendingBulk || !!bulkCheckError || pendingBulk.myPendingBulkUploadDrafts.length > 0
+  );
+  const suppressTour = bulkRequested || tourDeferred || waitingForBulk;
+
 
   const selectTab = useCallback((tab: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -66,8 +83,29 @@ export function DashboardModal({
   }, [pathname, searchParams]);
 
   const onTourStepChange = useCallback((step: DashboardTourStep | null) => {
+    if (suppressTour) return;
     setTourStepId(step?.id ?? null);
     if (step) selectTab(step.tab);
+  }, [selectTab, suppressTour]);
+
+  const deferTourForBulk = useCallback(() => {
+    setTourDeferred(true);
+    setTourStepId(null);
+  }, []);
+
+  const onBulkUploadStart = useCallback(() => {
+    deferTourForBulk();
+    // Keep this in the URL while open so a refresh resumes the same dialog.
+    if (!bulkRequested) {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("tab", "listings");
+      nextParams.set("bulk", "1");
+      window.history.replaceState(null, "", `${pathname}?${nextParams.toString()}`);
+    }
+  }, [bulkRequested, deferTourForBulk, pathname, searchParams]);
+
+  const onBulkUploadClose = useCallback(() => {
+    selectTab("listings");
   }, [selectTab]);
 
   useEffect(() => {
@@ -185,9 +223,11 @@ export function DashboardModal({
                   <DashboardListings
                     lang={lang}
                     onSingleUpload={() => selectTab("create")}
-                    autoOpenBulk={searchParams.get("bulk") === "1"}
-                    onBulkUploadHandled={() => selectTab("listings")}
-                    tourStep={tourStepId}
+                    autoOpenBulk={bulkRequested}
+                    onBulkUploadHandled={deferTourForBulk}
+                    onBulkUploadStart={onBulkUploadStart}
+                    onBulkUploadClose={onBulkUploadClose}
+                    tourStep={suppressTour ? null : tourStepId}
                   />
                 ) : activeTab === "overview" ? (
                   <DashboardOverview lang={lang} />
@@ -207,7 +247,7 @@ export function DashboardModal({
           </div>
           <DashboardTour
             key={tourUserId ?? "anonymous"}
-            enabled={open && isActiveRoute}
+            enabled={open && isActiveRoute && !suppressTour}
             userId={tourUserId}
             onStepChange={onTourStepChange}
           />

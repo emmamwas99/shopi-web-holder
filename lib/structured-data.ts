@@ -227,6 +227,7 @@ export const marketplaceSchema = {
     "Photo and video marketplace posts",
     "Built-in buyer and seller messaging",
     "AI-assisted listing creation",
+    "Bulk listing upload from Excel (up to 500 listings at once)",
     "AI-assisted product discovery",
     "Local discovery across Kenya",
   ],
@@ -260,6 +261,7 @@ export const agentSchema = {
   featureList: [
     "Turns product photos into listing drafts",
     "Suggests titles, descriptions, categories and specifications",
+    "Auto-categorises bulk-uploaded Excel listings and fills in their specifications from photos and videos",
     "Helps buyers find products from plain-language requests",
     "Uses product photos to understand buyer searches",
   ],

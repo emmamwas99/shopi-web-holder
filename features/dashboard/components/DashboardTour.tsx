@@ -159,7 +159,8 @@ export function DashboardTour({
   );
 
   useEffect(() => {
-    if (!enabled || !userId || progressLoading || (!progressData && !progressError)) return;
+    // A failed request is not evidence that this user has never taken the tour.
+    if (!enabled || !userId || progressLoading || progressError || !progressData?.myDashboardTourProgress) return;
     if (initializedUserRef.current === userId) return;
 
     let progress = progressData?.myDashboardTourProgress;
@@ -219,7 +220,7 @@ export function DashboardTour({
   const activeStep = stepIndex === null ? null : TOUR_STEPS[stepIndex] ?? null;
 
   useEffect(() => {
-    if (!visible || !activeStep) {
+    if (!enabled || !visible || !activeStep) {
       return;
     }
 
@@ -270,7 +271,7 @@ export function DashboardTour({
       window.clearTimeout(retryTimer);
       cleanupMeasure();
     };
-  }, [activeStep, visible]);
+  }, [activeStep, enabled, visible]);
 
   const persistProgress = (
     status: SaveMyDashboardTourProgressVariables["status"],

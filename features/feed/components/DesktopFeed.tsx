@@ -226,7 +226,7 @@ export default function DesktopFeed({
   return (
     <div className="min-h-svh bg-app">
       {tab === "watch" ? (
-        <div className="mx-auto w-full max-w-[1560px] px-2 lg:px-4">
+        <div className="mx-auto w-full max-w-[1560px] px-2 md:px-5 lg:px-8">
           <WatchGrid lang={lang} active={visible} desktopLayout />
         </div>
       ) : (

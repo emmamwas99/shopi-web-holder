@@ -133,6 +133,15 @@ export function FeedSkeleton() {
           container, grid and column widths) so nothing jumps when the real
           feed mounts: tabs + stories + card column, sellers in the RIGHT rail
           on xl. */}
+      {/* Desktop Watch is a full-width video grid with no tabs or right rail
+          (DesktopFeed), so its placeholder is that grid alone. */}
+      {activeTab === "watch" ? (
+        <div className="hidden min-h-svh bg-app md:block">
+          <div className="mx-auto w-full max-w-[1560px] px-2 md:px-5 lg:px-8">
+            <WatchGridSkeleton desktopLayout />
+          </div>
+        </div>
+      ) : (
       <div className="hidden min-h-svh bg-app md:block">
         <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 md:px-6 md:pt-6 xl:px-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
@@ -143,9 +152,7 @@ export function FeedSkeleton() {
                 className="mb-4"
               />
 
-              {activeTab === "watch" ? (
-                <WatchGridSkeleton />
-              ) : (
+              {(
                 <>
                   {/* Stories belong to For You, not Watch. */}
                   <div className="mb-4 flex gap-2.5 overflow-hidden rounded-xl border border-border bg-elevated p-4">
@@ -206,6 +213,7 @@ export function FeedSkeleton() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

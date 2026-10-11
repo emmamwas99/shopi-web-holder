@@ -247,6 +247,7 @@ function CountyOption({
   );
 }
 
+// Same anatomy as StoreTile's two layouts, so tiles land without shifting.
 function StoreTileSkeleton() {
   return (
     <>
@@ -255,16 +256,20 @@ function StoreTileSkeleton() {
           <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-3.5 w-2/3" />
-            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-3 w-1/2" />
           </div>
           <Skeleton className="h-8 w-20 rounded-full" />
         </div>
+        <Skeleton className="mt-2.5 h-3.5 w-4/5" />
         <div className="mt-3 grid grid-cols-4 gap-1.5">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="aspect-square rounded-lg" />
           ))}
         </div>
-        <Skeleton className="mt-3 h-3 w-3/5" />
+        <div className="mt-2.5 flex items-center gap-3">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-12" />
+        </div>
       </div>
       <StoreTileSkeletonDesktop />
     </>
@@ -273,18 +278,22 @@ function StoreTileSkeleton() {
 
 function StoreTileSkeletonDesktop() {
   return (
-    <div className="hidden overflow-hidden rounded-2xl border border-border bg-elevated md:block">
+    <div className="hidden flex-col overflow-hidden rounded-2xl border border-border bg-elevated md:flex">
       <Skeleton className="aspect-3/2 w-full rounded-none" />
-      <div className="flex gap-2.5 p-3.5">
-        <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-3.5 w-2/3" />
-          <Skeleton className="h-3 w-1/3" />
-          <Skeleton className="h-3 w-1/2" />
+      <div className="flex flex-1 flex-col gap-2 p-3.5">
+        <div className="flex items-start gap-2.5">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2 pt-0.5">
+            <Skeleton className="h-3.5 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
         </div>
-      </div>
-      <div className="border-t border-border px-3.5 py-2.5">
-        <Skeleton className="h-3 w-4/5" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3 w-1/2" />
+        <div className="mt-1 flex items-center gap-2">
+          <Skeleton className="h-8 flex-1 rounded-full" />
+          <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+        </div>
       </div>
     </div>
   );

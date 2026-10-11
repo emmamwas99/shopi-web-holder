@@ -16,6 +16,7 @@ import {
   MapPin,
   Phone,
   Maximize2,
+  ArrowLeft,
 } from "lucide-react";
 import { gql } from "@apollo/client";
 import { toast } from "sonner";
@@ -55,7 +56,7 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
-import { absoluteContentUrl } from "@/lib/content-url";
+import { absoluteContentUrl , slugifyContentTitle} from "@/lib/content-url";
 import { ContentDetailDocument } from "../queries/contentDetail";
 import { ListingSeoSummary } from "./ListingSeoSummary";
 import { profileHref } from "@/lib/profile-url";
@@ -481,6 +482,7 @@ interface Props {
    * client round trip from LCP.
    */
   initialPost?: DetailPost | null;
+  categoryTrail?: Array<{ name: string; slug: string }>;
   /**
    * Server-rendered related listings (ListingRelated), from the listing route
    * only. Placed inside whichever layout is showing — the mobile layout is a
@@ -496,6 +498,7 @@ export function ContentDetail({
   onRequestClose,
   onChatOpenChange,
   initialPost,
+  categoryTrail = [],
   related,
 }: Props) {
   const router = useRouter();
@@ -503,6 +506,8 @@ export function ContentDetail({
   // so a plain back() leaves the user stuck on the page. Land on the feed.
   const backOrFeed = useAppBack(`/${lang}/for-you`);
   const goBack = onRequestClose ?? backOrFeed;
+  // Desktop PDP breadcrumb back: previous page, or Browse when arrived directly.
+  const backOrBrowse = useAppBack(`/${lang}/explore`);
   const { requireAuth } = useAuthGuard(lang);
   const isSheet = desktopMode === "sheet";
   // Stored in state (not a ref) so the Popover portal target is stable across
@@ -1423,7 +1428,7 @@ export function ContentDetail({
           Left col: media (sticky)   Right col: info + comments
           Inspired by Facebook/Instagram post detail
       ════════════════════════════════════════════════════════ */}
-      {isDesktop === true && (
+      {isDesktop === true && isSheet && (
         <div
           className={[
             "flex overflow-hidden",
@@ -1621,6 +1626,235 @@ export function ContentDetail({
           )}
         </div>
       )}
+      {isDesktop === true && !isSheet && (
+        <main className="mx-auto w-full max-w-[1440px] px-5 pb-12 pt-6 lg:px-8">
+          <nav aria-label="Breadcrumb" className="mb-6 flex min-w-0 items-center gap-2 overflow-hidden text-sm">
+            <button
+              type="button"
+              onClick={backOrBrowse}
+              aria-label="Go back"
+              title="Go back"
+              className="mr-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-default text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <Link href={`/${lang}/for-you`} className="shrink-0 font-medium text-muted-foreground transition-colors hover:text-default">Home</Link>
+            <span aria-hidden className="text-muted-foreground/50">/</span>
+            <Link href={`/${lang}/explore`} className="shrink-0 font-medium text-muted-foreground transition-colors hover:text-default">Explore</Link>
+            {categoryTrail.map((category, index) => (
+              <span key={category.slug} className="flex min-w-0 shrink items-center gap-2">
+                <span aria-hidden className="shrink-0 text-muted-foreground/50">/</span>
+                <Link
+                  href={index === 0
+                    ? `/${lang}/explore?category=${encodeURIComponent(category.slug)}`
+                    : `/${lang}/explore/${categoryTrail[0].slug}/${slugifyContentTitle(category.name)}`}
+                  className="truncate font-medium text-muted-foreground transition-colors hover:text-default"
+                  title={category.name}
+                >
+                  {category.name}
+                </Link>
+              </span>
+            ))}
+            <span aria-hidden className="shrink-0 text-muted-foreground/50">/</span>
+            <span aria-current="page" className="min-w-0 truncate font-semibold text-default">{post.title}</span>
+          </nav>
+
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] lg:gap-8 xl:gap-10">
+            <section className="min-w-0 self-start lg:sticky lg:top-[calc(var(--desktop-top-nav-height,68px)+24px)]">
+              <div className="relative aspect-[4/3] max-h-[760px] overflow-hidden rounded-3xl border border-default bg-[#111318] shadow-sm">
+                {isVideo && hlsUrl ? (
+                  <ContentVideo
+                    hlsUrl={hlsUrl}
+                    thumbnailUrl={videoThumbnail}
+                    muted={muted}
+                    setMuted={setVideoMuted}
+                    showMuteButton
+                    fullscreenOpen={showMediaDialog}
+                    resumeTime={fullscreenVideoTime}
+                    onFullscreen={(time) => {
+                      setFullscreenVideoTime(time);
+                      setShowMediaDialog(true);
+                    }}
+                    onVideoCompleted={handleVideoCompleted}
+                    onVideoReplayed={handleVideoReplayed}
+                  />
+                ) : (
+                  <div className="absolute inset-0">
+                    {media[imgIdx] && (
+                      <Image
+                        src={
+                          media[imgIdx].r2Variants?.find((variant) => variant.variant === "large")?.url ??
+                          media[imgIdx].r2Variants?.[0]?.url ??
+                          media[imgIdx].imageUrl ??
+                          media[imgIdx].thumbnailUrl ??
+                          ""
+                        }
+                        alt={post.title}
+                        fill
+                        sizes="(max-width: 1280px) 55vw, 720px"
+                        className="object-contain"
+                        priority
+                        placeholder="blur"
+                        blurDataURL={SHIMMER}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {!isVideo && media.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setImgIdx((index) => Math.max(0, index - 1))}
+                      disabled={imgIdx === 0}
+                      aria-label="Previous photo"
+                      className="absolute left-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-black/75 disabled:opacity-35"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImgIdx((index) => Math.min(media.length - 1, index + 1))}
+                      disabled={imgIdx === media.length - 1}
+                      aria-label="Next photo"
+                      className="absolute right-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-black/75 disabled:opacity-35"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
+                      </svg>
+                    </button>
+                    <span className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                      {imgIdx + 1} / {media.length}
+                    </span>
+                  </>
+                )}
+
+                {!isVideo && media.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaDialog(true)}
+                    aria-label="View photo fullscreen"
+                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition hover:bg-black/75"
+                  >
+                    <Maximize2 className="h-4 w-4" aria-hidden />
+                  </button>
+                )}
+              </div>
+
+              {!isVideo && media.length > 1 && (
+                <div className="mt-3 grid grid-cols-6 gap-2 xl:grid-cols-7">
+                  {media.slice(0, 7).map((item, index) => {
+                    const thumbnail = item.r2Variants?.find((variant) => variant.variant === "small")?.url ??
+                      item.r2Variants?.[0]?.url ?? item.imageUrl ?? item.thumbnailUrl ?? "";
+                    return (
+                      <button
+                        key={`${item.url}-${index}`}
+                        type="button"
+                        onClick={() => setImgIdx(index)}
+                        aria-label={`View photo ${index + 1}`}
+                        aria-pressed={imgIdx === index}
+                        className={`relative aspect-square overflow-hidden rounded-xl border-2 bg-surface transition ${imgIdx === index ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"}`}
+                      >
+                        {thumbnail && <Image src={thumbnail} alt="" fill sizes="96px" className="object-cover" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <div className="min-w-0 space-y-5">
+              <article className="overflow-hidden rounded-3xl border border-default bg-elevated shadow-sm">
+                <div className="border-b border-default">{CreatorRow}</div>
+                <div className="px-6 py-6">
+                  {post.price && (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="font-display text-3xl font-extrabold tracking-tight text-primary">
+                        {post.price.amount === 0 ? "Free" : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                      </span>
+                      {post.price.negotiable && (
+                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Negotiable</span>
+                      )}
+                    </div>
+                  )}
+                  <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-default xl:text-3xl">{post.title}</h1>
+                  {post.location && (post.location.placeName || post.location.county) && (
+                    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                      {[post.location.placeName, post.location.county].filter(Boolean).join(", ")}
+                    </p>
+                  )}
+                  {caption && (
+                    <div className="mt-5 border-t border-default pt-5">
+                      <p className="whitespace-pre-line text-sm leading-6 text-default/85">
+                        {displayCaption}
+                        {isLongCaption && (
+                          <button type="button" onClick={() => setCaptionExpanded((expanded) => !expanded)} className="ml-1 font-semibold text-primary hover:underline">
+                            {captionExpanded ? "Show less" : "Read more"}
+                          </button>
+                        )}
+                      </p>
+                      {post.hashtags && post.hashtags.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {post.hashtags.map((tag) => (
+                            <span key={tag} className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-muted-foreground">#{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {specs.length > 0 && (
+                    <section className="mt-5 border-t border-default pt-5" aria-labelledby="listing-specs-heading">
+                      <h2 id="listing-specs-heading" className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Item details</h2>
+                      <dl className="grid grid-cols-2 gap-2.5">
+                        {specs.map((spec) => (
+                          <div key={`${spec.key}-${spec.value}`} className="min-w-0 rounded-xl bg-surface px-3 py-2.5">
+                            <dt className="truncate text-[11px] font-medium text-muted-foreground">{spec.key}</dt>
+                            <dd className="mt-1 truncate text-sm font-semibold text-default">{spec.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  )}
+                </div>
+                {DesktopActions}
+              </article>
+
+              {!isOwnPost && (
+                <aside className="rounded-2xl border border-default bg-surface px-5 py-4">
+                  <h2 className="text-sm font-bold text-default">Shop safely</h2>
+                  <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+                    Confirm availability and condition with the seller. Inspect the item before paying and agree on pickup or delivery directly.
+                  </p>
+                </aside>
+              )}
+            </div>
+          </div>
+
+          <section ref={commentsRef} className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]" aria-labelledby="listing-comments-heading">
+            <div className="flex h-[560px] min-h-0 flex-col overflow-hidden rounded-3xl border border-default bg-elevated shadow-sm">
+              <header className="shrink-0 border-b border-default px-6 py-4">
+                <h2 id="listing-comments-heading" className="font-display text-lg font-bold text-default">Questions and comments</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Ask the seller or see what other buyers have asked.</p>
+              </header>
+              <div className="flex min-h-0 flex-1 flex-col">
+                {resolvedContentId && (
+                  <CommentThread contentId={resolvedContentId} contentCreatorId={post.creatorId} lang={lang} />
+                )}
+              </div>
+            </div>
+            <aside className="self-start rounded-3xl border border-default bg-elevated p-6">
+              <h2 className="font-display text-base font-bold text-default">Buying on Shopi</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Message the seller to confirm availability, condition and the final price. Meet in a public place when possible, inspect before paying, and agree on pickup or delivery directly.
+              </p>
+            </aside>
+          </section>
+        </main>
+      )}
+
       {/* Below the full-height listing, reached by scrolling the page. */}
       {isDesktop === true && !isSheet && related && (
         <div className="border-t border-default">{related}</div>

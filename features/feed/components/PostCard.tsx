@@ -37,13 +37,10 @@ import Shimmer, {
 import { pauseAllVideos, registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
-import {
-  GetContentDocument,
-  type ContentCardFieldsFragment,
-} from "@/types/__generated__/graphql";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { gql } from "@apollo/client";
-import { useApolloClient, useMutation } from "@apollo/client/react";
+import { useMutation } from "@apollo/client/react";
 import { shouldFire } from "@/lib/interactionDedup";
 import { useFeedChat } from "./FeedChatContext";
 import { fmtCompact as fmt } from "@/lib/format";
@@ -1114,7 +1111,6 @@ function ImageMedia({
 
 function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const router = useRouter();
-  const client = useApolloClient();
   const socialPost = post as FeedPostSocialPreview;
   // Desktop feed provides an inline-chat opener via context; an explicit
   // `onMessage` prop still wins if passed directly.
@@ -1263,30 +1259,10 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }
     const href = contentPath(lang, post);
-    const routeId = decodeURIComponent(href.split("/").pop() || post.id);
-
-    try {
-      // The public URL uses the SEO slug, but the feed entity is normalized by
-      // Mongo id. Seed Query.content(slug) so the intercepted detail sheet can
-      // paint from this card immediately instead of flashing its full skeleton.
-      client.cache.writeQuery({
-        query: GetContentDocument,
-        variables: { id: routeId },
-        data: { content: post },
-      });
-      if (routeId !== post.id) {
-        client.cache.writeQuery({
-          query: GetContentDocument,
-          variables: { id: post.id },
-          data: { content: post },
-        });
-      }
-    } catch {
-      // Cache priming is a UX optimization; navigation should never depend on it.
-    }
-
+    // This is a standalone PDP document route. A hard navigation also avoids
+    // retaining stale parallel-route state from the feed's former detail sheet.
     rememberScrollBeforeNavigation();
-    router.push(href, { scroll: false });
+    window.location.assign(href);
   }
 
   async function handleCopyLink() {

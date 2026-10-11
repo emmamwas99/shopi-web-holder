@@ -7,7 +7,6 @@
  */
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { gql, type TypedDocumentNode } from "@apollo/client";
@@ -206,7 +205,6 @@ function TrendingRow({
   lang: string;
   rank: number;
 }) {
-  const router = useRouter();
   const thumb = trendingThumb(post);
   const views = post.stats?.views ?? 0;
   const detail = [
@@ -220,7 +218,7 @@ function TrendingRow({
     <li>
       <button
         type="button"
-        onClick={() => router.push(contentPath(lang, post), { scroll: false })}
+        onClick={() => window.location.assign(contentPath(lang, post))}
         className="group flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-surface"
       >
         <span className="w-4 shrink-0 text-center text-sm font-black text-muted">

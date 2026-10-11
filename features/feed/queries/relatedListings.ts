@@ -49,7 +49,8 @@ const SIMILAR_LISTINGS = gql`
   }
 `;
 
-const SHOW = 8;
+// 12 fills whole rows on desktop (4 or 6 across); phones show the first 8.
+const SHOW = 12;
 // Over-fetch: the current listing and the seller's own stock are filtered out
 // of "similar", and a seller who dominates a category can fill a whole page.
 const SIMILAR_FETCH = 24;
