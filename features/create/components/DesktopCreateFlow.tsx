@@ -40,7 +40,15 @@ const STEPS = [
  * step lives in the create store (session-persisted), so a refresh resumes
  * where the user left off.
  */
-export function DesktopCreateFlow({ lang }: { lang: string }) {
+export function DesktopCreateFlow({
+  lang,
+  embeddedInDashboard = false,
+  onDashboardClose,
+}: {
+  lang: string;
+  embeddedInDashboard?: boolean;
+  onDashboardClose?: () => void;
+}) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   // TikTok import renders inline in this dialog (same surface as the other
@@ -98,6 +106,11 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
   }
 
   function goHome() {
+    if (embeddedInDashboard) {
+      if (step === "pick") setCreationMode(null);
+      onDashboardClose?.();
+      return;
+    }
     // Keep the draft — it's autosaved and session-persisted, so coming back to
     // /upload resumes exactly where the user left off.
     if (step === "pick") setCreationMode(null);
@@ -105,6 +118,11 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
   }
 
   function closeDialog() {
+    if (embeddedInDashboard) {
+      if (step === "pick") setCreationMode(null);
+      onDashboardClose?.();
+      return;
+    }
     if (step === "pick") setCreationMode(null);
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
@@ -161,28 +179,8 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
     },
   ];
 
-  return (
+  const flowContent = (
     <>
-      <CreateBanner />
-
-      <CreateErrorDialog
-        message={createError}
-        onClose={() => setCreateError(null)}
-      />
-
-      <Dialog
-        open
-        onOpenChange={(open) => {
-          if (!open) closeDialog();
-        }}
-      >
-        <DialogContent className="flex h-[min(92vh,800px)] w-[min(96vw,1120px)] max-w-none flex-col gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
-          <DialogTitle className="sr-only">Upload & sell</DialogTitle>
-          <DialogDescription className="sr-only">
-            Create a new post in three steps: choose a type, add details, then
-            publish.
-          </DialogDescription>
-
           {/* ── Header: back · stepper · home ── */}
           <div
             className="flex shrink-0 items-center gap-3 border-b px-5"
@@ -260,17 +258,16 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
               })}
             </div>
 
-            {/* mr-9 clears the dialog's built-in ✕ close button */}
             <button
               onClick={goHome}
-              className="mr-9 flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface ${embeddedInDashboard ? "" : "mr-9"}`}
               style={{
                 fontSize: "var(--text-sm)",
                 color: "rgb(var(--color-text-muted))",
               }}
             >
-              <Home size={16} />
-              Home
+              {embeddedInDashboard ? <ChevronLeft size={16} /> : <Home size={16} />}
+              {embeddedInDashboard ? "Dashboard" : "Home"}
             </button>
           </div>
 
@@ -395,7 +392,11 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                   )}
                 </div>
               ) : (
-                <CreateFlow lang={lang} embedded />
+                <CreateFlow
+                  lang={lang}
+                  embedded
+                  onExit={embeddedInDashboard ? onDashboardClose : undefined}
+                />
               )}
             </div>
 
@@ -410,6 +411,41 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
               <CreatePreviewPanel />
             </aside>
           </div>
+    </>
+  );
+
+  if (embeddedInDashboard) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-app">
+        <CreateErrorDialog
+          message={createError}
+          onClose={() => setCreateError(null)}
+        />
+        {flowContent}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <CreateBanner />
+      <CreateErrorDialog
+        message={createError}
+        onClose={() => setCreateError(null)}
+      />
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+      >
+        <DialogContent className="flex h-[min(92vh,800px)] w-[min(96vw,1120px)] max-w-none flex-col gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+          <DialogTitle className="sr-only">Upload & sell</DialogTitle>
+          <DialogDescription className="sr-only">
+            Create a new post in three steps: choose a type, add details, then
+            publish.
+          </DialogDescription>
+          {flowContent}
         </DialogContent>
       </Dialog>
     </>

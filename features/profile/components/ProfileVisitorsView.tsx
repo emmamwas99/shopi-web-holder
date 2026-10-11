@@ -166,10 +166,11 @@ function RowSkeleton() {
 
 interface Props {
   lang: string;
+  embedded?: boolean;
 }
 
 /** "Who viewed your profile" — paginated, infinite-scroll list. Owner-only. */
-export function ProfileVisitorsView({ lang }: Props) {
+export function ProfileVisitorsView({ lang, embedded = false }: Props) {
   // Owner-only, but still a linkable URL — an arrival with no app history
   // behind it would otherwise get a back button that does nothing.
   const goBack = useAppBack(`/${lang}/for-you`);
@@ -237,7 +238,7 @@ export function ProfileVisitorsView({ lang }: Props) {
 
   return (
     <div
-      className="min-h-screen"
+      className={embedded ? "min-h-full" : "min-h-screen"}
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
       {/* Header */}
@@ -249,7 +250,7 @@ export function ProfileVisitorsView({ lang }: Props) {
           backdropFilter: "blur(8px)",
         }}
       >
-        <button
+        {!embedded && <button
           type="button"
           onClick={goBack}
           className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity active:opacity-60"
@@ -257,7 +258,7 @@ export function ProfileVisitorsView({ lang }: Props) {
           aria-label="Back"
         >
           <ArrowLeft size={20} strokeWidth={2.2} />
-        </button>
+        </button>}
         <div className="min-w-0">
           <h1
             className="font-bold leading-tight"

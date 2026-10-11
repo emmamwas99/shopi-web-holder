@@ -195,6 +195,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     agentReady,
     draftId,
     mediaItems,
+    contentType,
     title,
     caption,
     categoryId,

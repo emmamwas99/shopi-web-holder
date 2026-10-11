@@ -17,6 +17,7 @@ import { trackPostPublished } from "@/lib/analytics";
 
 interface Props {
   lang: string;
+  hideHeading?: boolean;
 }
 
 function mapType(type?: string | null): "image" | "video" | null {
@@ -35,7 +36,7 @@ function formatDate(value: unknown) {
   });
 }
 
-export function DraftsGrid({ lang }: Props) {
+export function DraftsGrid({ lang, hideHeading = false }: Props) {
   const router = useRouter();
   const { setDraftId, setContentType, setStep } = useCreateStore();
 
@@ -150,8 +151,7 @@ export function DraftsGrid({ lang }: Props) {
             className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
             style={{
               fontSize: "var(--text-sm)",
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight)))",
+              backgroundColor: "rgb(var(--brand-primary))",
             }}
           >
             <Plus size={16} strokeWidth={2.4} /> New post
@@ -166,7 +166,7 @@ export function DraftsGrid({ lang }: Props) {
       <div className="mx-auto w-full ">
         {/* Header — same heading/description pattern + sizes as the Storefront
             (Posts) tab for consistency across subtabs. */}
-        <div className="mb-4">
+        {!hideHeading && <div className="mb-4">
           <h2
             className="font-bold leading-tight"
             style={{
@@ -185,7 +185,7 @@ export function DraftsGrid({ lang }: Props) {
           >
             {drafts.length} {drafts.length === 1 ? "draft" : "drafts"}
           </p>
-        </div>
+        </div>}
 
         {/* Same columns as Explore, Saved and Posts, so a draft sits in the
             same grid rhythm as everything else the profile shows. */}

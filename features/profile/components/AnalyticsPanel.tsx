@@ -21,6 +21,7 @@ type ViewPoint = Analytics["viewsByDay"][number];
 interface Props {
   data: Analytics;
   lang: string;
+  hideHeading?: boolean;
 }
 
 function formatCompact(value: number) {
@@ -398,7 +399,7 @@ function LastSevenBars({ data }: { data: ViewPoint[] }) {
   );
 }
 
-export function AnalyticsPanel({ data, lang }: Props) {
+export function AnalyticsPanel({ data, lang, hideHeading = false }: Props) {
   const viewsByDay = data.viewsByDay ?? [];
   const weekChange = getWeekChange(viewsByDay);
   const averageDailyViews =
@@ -413,7 +414,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full flex-col gap-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        {!hideHeading && <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2
               className="font-bold leading-tight"
@@ -452,7 +453,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
               {formatPercent(weekChange)} vs previous week
             </span>
           </div>
-        </div>
+        </div>}
 
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-5 lg:gap-3">
           <MetricCard

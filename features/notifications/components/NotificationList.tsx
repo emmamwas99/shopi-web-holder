@@ -28,6 +28,7 @@ interface Props {
   onSelect: (notification: NotificationItem) => void;
   onMarkAllRead: () => void;
   onLoadMore: () => void;
+  embedded?: boolean;
 }
 
 function actorInitials(notification: NotificationItem): string {
@@ -51,6 +52,7 @@ export function NotificationList({
   onSelect,
   onMarkAllRead,
   onLoadMore,
+  embedded = false,
 }: Props) {
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
@@ -71,8 +73,8 @@ export function NotificationList({
   }
 
   return (
-    <section className="flex min-h-[calc(100svh-48px)] flex-col md:mx-auto md:h-full md:w-full md:max-w-[1600px] md:bg-app">
-      <div className="flex items-center justify-between border-b border-border px-4 py-4 md:px-0 md:py-5">
+    <section className={`flex flex-col md:mx-auto md:w-full md:max-w-[1600px] md:bg-app ${embedded ? "h-full min-h-0" : "min-h-[calc(100svh-48px)] md:h-full"}`}>
+      <div className={`flex items-center justify-between border-b border-border px-4 py-4 md:py-5 ${embedded ? "md:px-8" : "md:px-0"}`}>
         <div>
           <h1 className="text-base font-black text-main md:text-lg">
             Notifications
@@ -105,7 +107,7 @@ export function NotificationList({
 
       <div className="flex-1 overflow-y-auto pb-14 md:pb-6">
         {loading && notifications.length === 0 ? (
-          <div className="space-y-4 px-4 py-5 md:px-0">
+          <div className={`space-y-4 px-4 py-5 ${embedded ? "md:px-8" : "md:px-0"}`}>
             {Array.from({ length: 10 }).map((_, index) => (
               <div key={index} className="flex gap-3">
                 <Skeleton className="h-10 w-10 rounded-full" />
@@ -140,7 +142,7 @@ export function NotificationList({
                   data-scroll-anchor={notification.id}
                   type="button"
                   onClick={() => onSelect(notification)}
-                  className={`flex w-full items-start gap-3 border-b border-border/70 px-4 py-3.5 text-left transition-colors md:px-0 md:py-4 ${
+                  className={`flex w-full items-start gap-3 border-b border-border/70 px-4 py-3.5 text-left transition-colors md:py-4 ${embedded ? "md:px-8" : "md:px-0"} ${
                     notification.isRead
                       ? "hover:bg-surface/60"
                       : "bg-primary/5 hover:bg-primary/10"

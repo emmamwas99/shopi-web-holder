@@ -26,9 +26,11 @@ import { WatchGridSkeleton } from "./WatchGridSkeleton";
 export function WatchGrid({
   lang,
   active,
+  desktopLayout = false,
 }: {
   lang: string;
   active: boolean;
+  desktopLayout?: boolean;
 }) {
   const { location } = useNearbyLocation();
   const { data, loading, fetchMore } = useQuery(VideoFeedDocument, {
@@ -64,7 +66,7 @@ export function WatchGrid({
   });
 
   if (loading && items.length === 0) {
-    return <WatchGridSkeleton />;
+    return <WatchGridSkeleton desktopLayout={desktopLayout} />;
   }
 
   if (!loading && items.length === 0) {
@@ -85,8 +87,17 @@ export function WatchGrid({
   }
 
   return (
-    <section aria-label="Videos to watch" className="px-2 pt-4 pb-8">
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+    <section
+      aria-label="Videos to watch"
+      className={desktopLayout ? "px-0 pt-3 pb-8" : "px-2 pt-4 pb-8"}
+    >
+      <div
+        className={
+          desktopLayout
+            ? "mx-auto grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
+            : "mx-auto grid max-w-5xl grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
+        }
+      >
         {items.map((post) => (
           <WatchTile key={post.id} post={post} lang={lang} />
         ))}

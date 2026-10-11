@@ -10,6 +10,7 @@ import {
   MARK_ALL_NOTIFICATIONS_READ,
   MARK_NOTIFICATION_READ,
   MY_NOTIFICATIONS,
+  MY_UNREAD_NOTIFICATION_COUNT,
 } from "../graphql/operations";
 import type { NotificationPage, NotificationSocketPayload } from "../types";
 
@@ -30,9 +31,11 @@ export function useNotifications() {
 
   const [markReadMutation, { loading: markingRead }] = useMutation(
     MARK_NOTIFICATION_READ,
+    { refetchQueries: [{ query: MY_UNREAD_NOTIFICATION_COUNT }] },
   );
   const [markAllReadMutation, { loading: markingAllRead }] = useMutation(
     MARK_ALL_NOTIFICATIONS_READ,
+    { refetchQueries: [{ query: MY_UNREAD_NOTIFICATION_COUNT }] },
   );
 
   useEffect(() => {

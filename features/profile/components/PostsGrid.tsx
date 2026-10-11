@@ -32,6 +32,7 @@ interface Props {
   onLoadMore: () => void;
   loading: boolean;
   lang: string;
+  hideHeading?: boolean;
 }
 
 export function PostsGrid({
@@ -40,6 +41,7 @@ export function PostsGrid({
   onLoadMore,
   loading,
   lang,
+  hideHeading = false,
 }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   // Keep the latest onLoadMore without re-subscribing the observer each render.
@@ -123,7 +125,7 @@ export function PostsGrid({
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mb-4">
+      {!hideHeading && <div className="mb-4">
         <h2
           className="font-bold leading-tight"
           style={{
@@ -142,7 +144,7 @@ export function PostsGrid({
         >
           {posts.length} {posts.length === 1 ? "post" : "posts"}
         </p>
-      </div>
+      </div>}
 
       <div className={DISCOVER_GRID}>
         {posts.map((post, index) => (

@@ -51,20 +51,21 @@ function initials(name: string) {
 }
 
 const column = "mx-auto flex w-full max-w-2xl flex-col gap-7 px-4 py-5 sm:px-6 md:py-6";
+const dashboardGrid = "mx-auto grid w-full max-w-[1440px] grid-cols-1 items-start gap-4 px-5 py-5 md:grid-cols-2 md:gap-5 md:px-8 md:py-6";
 
-export function ReferralPausedPanel() {
+export function ReferralPausedPanel({ dashboard = false }: { dashboard?: boolean }) {
   const { data, loading, error, refetch } = useQuery(MyReferralProgramDocument, {
     fetchPolicy: "cache-and-network",
   });
 
-  if (loading && !data) return <ReferralPausedSkeleton />;
+  if (loading && !data) return <ReferralPausedSkeleton dashboard={dashboard} />;
 
   const program = data?.myReferralProgram;
   if (!program) {
     return (
-      <section className={column}>
-        <ReferralPausedBanner />
-        <div className="text-center">
+      <section className={dashboard ? dashboardGrid : column}>
+        <ReferralPausedBanner className={dashboard ? "md:col-span-2" : undefined} />
+        <div className={cn("text-center", dashboard && "rounded-2xl border border-border bg-elevated p-6 md:col-span-2")}>
           <p className="text-sm text-muted">
             {error ? "Couldn’t load your referrals." : "No referral details yet."}
           </p>
@@ -81,12 +82,18 @@ export function ReferralPausedPanel() {
   }
 
   return (
-    <section className={column}>
-      <ReferralPausedBanner />
-      <PayoutSummary program={program} />
-      <InviteLinkPaused />
-      <PayoutPhone program={program} />
-      <Referrals program={program} />
+    <section className={dashboard ? dashboardGrid : column}>
+      <ReferralPausedBanner className={dashboard ? "md:col-span-2" : undefined} />
+      <div className={dashboard ? "rounded-2xl border border-border bg-elevated p-5 shadow-sm md:p-6" : undefined}>
+        <PayoutSummary program={program} />
+      </div>
+      <div className={cn("flex flex-col gap-4", dashboard && "rounded-2xl border border-border bg-elevated p-5 shadow-sm md:p-6")}>
+        <InviteLinkPaused />
+        <PayoutPhone program={program} />
+      </div>
+      <div className={cn(dashboard && "rounded-2xl border border-border bg-elevated p-5 shadow-sm md:col-span-2 md:p-6")}>
+        <Referrals program={program} />
+      </div>
     </section>
   );
 }
@@ -249,12 +256,13 @@ function PersonAvatar({ person }: { person: Person }) {
   );
 }
 
-function ReferralPausedSkeleton() {
+function ReferralPausedSkeleton({ dashboard = false }: { dashboard?: boolean }) {
   return (
-    <section className={column}>
-      <Skeleton className="h-28 rounded-xl" />
-      <Skeleton className="h-32 rounded-xl" />
-      <div className="flex flex-col gap-3">
+    <section className={dashboard ? dashboardGrid : column}>
+      <Skeleton className={cn("h-28 rounded-xl", dashboard && "md:col-span-2")} />
+      <Skeleton className="h-44 rounded-2xl" />
+      <Skeleton className="h-44 rounded-2xl" />
+      <div className={cn("flex flex-col gap-3", dashboard && "rounded-2xl border border-border bg-elevated p-5 md:col-span-2")}>
         {Array.from({ length: 3 }).map((_, index) => (
           <div key={index} className="flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-full" />

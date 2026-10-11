@@ -42,7 +42,7 @@ const TABS: { id: Tab; label: string }[] = [
 // its skeleton, snapping the window scroll.
 const WatchGrid = dynamic(
   () => import("./WatchGrid").then((mod) => mod.WatchGrid),
-  { loading: () => <WatchGridSkeleton /> },
+  { loading: () => <WatchGridSkeleton desktopLayout /> },
 );
 const isTab = (v: string | null): v is Tab =>
   v === "for-you" || v === "watch";
@@ -169,9 +169,6 @@ export default function DesktopFeed({
     return isTab(t) ? t : "for-you";
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
-  const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
-    () => new Set([initialTab]),
-  );
   const prevTab = useRef<Tab>(initialTab);
 
   useLayoutEffect(() => {
@@ -186,7 +183,6 @@ export default function DesktopFeed({
     if (next === current) return;
     if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
     setTab(next);
-    setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
     const params = new URLSearchParams(window.location.search);
     if (next === "for-you") params.delete("tab");
     else params.set("tab", next);
@@ -225,11 +221,16 @@ export default function DesktopFeed({
     if (t === current) return;
     if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
     setTab(t);
-    setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
   }, [searchParams, visible]);
 
   return (
     <div className="min-h-svh bg-app">
+      {tab === "watch" ? (
+        <div className="mx-auto w-full max-w-[1560px] px-2 lg:px-4">
+          <WatchGrid lang={lang} active={visible} desktopLayout />
+        </div>
+      ) : (
+      <>
       {/* Capped and centered like the Discover/Explore shell (same
           `lg:max-w-[1560px]` and `lg:px-8`) — without a cap, the fixed
           380/400px right rail just slides further from the feed column as
@@ -271,17 +272,14 @@ export default function DesktopFeed({
             <StoriesBar lang={lang} variant="desktop" />
             <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
           </div>
-          {openedTabs.has("watch") ? (
-            <div className={tab === "watch" ? undefined : "hidden"}>
-              <WatchGrid lang={lang} active={visible && tab === "watch"} />
-            </div>
-          ) : null}
         </section>
 
         <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">
           <DesktopFeedRail lang={lang} />
         </aside>
       </div>
+      </>
+      )}
     </div>
   );
 }

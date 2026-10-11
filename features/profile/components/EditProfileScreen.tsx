@@ -161,21 +161,23 @@ function useProfileBackHref(lang: string): string {
   return profileReturnHref(lang, searchParams.get("from"));
 }
 
-export function EditProfileScreen({ lang }: { lang: string }) {
+export function EditProfileScreen({ lang, embedded = false }: { lang: string; embedded?: boolean }) {
   const { data, loading } = useMyProfile();
 
   if (loading && !data) return <EditProfileSkeleton lang={lang} />;
   if (!data?.me) return null;
 
-  return <EditProfileForm key={data.me.id} user={data.me} lang={lang} />;
+  return <EditProfileForm key={data.me.id} user={data.me} lang={lang} embedded={embedded} />;
 }
 
 function EditProfileForm({
   user,
   lang,
+  embedded = false,
 }: {
   user: ProfileUserFieldsFragment;
   lang: string;
+  embedded?: boolean;
 }) {
   const backHref = useProfileBackHref(lang);
   const router = useRouter();
@@ -285,7 +287,7 @@ function EditProfileForm({
       });
     }
 
-    router.replace(`/${lang}/profile`);
+    if (!embedded) router.replace(`/${lang}/profile`);
   }
 
   return (
@@ -299,7 +301,7 @@ function EditProfileForm({
           WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
-        <Button
+        {!embedded && <Button
           asChild
           variant="ghost"
           size="icon"
@@ -309,7 +311,7 @@ function EditProfileForm({
           <Link href={backHref} aria-label="Back to profile">
             <ChevronLeft size={38} strokeWidth={2.5} />
           </Link>
-        </Button>
+        </Button>}
 
         <h1
           className="font-bold"
