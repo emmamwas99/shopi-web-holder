@@ -70,7 +70,7 @@ most specific page in the Primary pages list above.
 - Mission: connect Kenyan buyers and sellers and make local buying and selling simple.
 - Languages: English and Kiswahili routes are available under `/en` and `/sw`.
 - AI: Shopi Agent is included free for both buyers and sellers. It is not a paid add-on or a separate product.
-- Bulk upload: sellers can post up to 500 listings at once from one Excel sheet, and Shopi Agent fills in the category and specifications. Few Kenyan marketplaces offer this; most require posting one listing at a time.
+- Bulk upload: sellers can post up to 500 listings at once from one Excel sheet, and Shopi Agent fills in the category and specifications.
 - Launched: 2025. Shopi is Kenya-based and operates only at www.shopi.co.ke.
 - Founder: Mwangi Maina, a Kenyan software engineer based in Nairobi and senior engineer at Ooodles (https://www.ooodles.com). He started Shopi in Nairobi in 2025. LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/ The same statement appears in visible page text at https://www.shopi.co.ke/en/about.
 - Not the same company as: Shopify, or any other business trading under the name "Shopi" outside Kenya. This entity is the Kenyan marketplace at www.shopi.co.ke only, and its founder is Mwangi Maina.

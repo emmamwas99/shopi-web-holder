@@ -86,7 +86,7 @@ export async function SocialProofSection({
     <section
       id="social-proof"
       aria-labelledby="social-proof-heading"
-      className="border-b border-[#e0e5e4] px-5 py-16 md:px-8 md:py-24"
+      className="border-b border-landing-line px-5 py-16 md:px-8 md:py-24"
     >
       <script
         type="application/ld+json"
@@ -99,7 +99,7 @@ export async function SocialProofSection({
             <SellerSpotlight seller={sellers[0]} lang="en" locale={locale} t={t} />
           ) : (
             <div>
-              <h2 id="social-proof-heading" className="mb-7 font-display text-[2rem] font-semibold leading-tight text-[#172226] md:text-[3.25rem]">{t.headline}</h2>
+              <h2 id="social-proof-heading" className="mb-7 font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]">{t.headline}</h2>
               <ul className="grid list-none gap-5 p-0 md:grid-cols-2 xl:grid-cols-3">
                 {sellers.map((seller) => <li key={seller.id}><SellerCard seller={seller} lang="en" locale={locale} t={t} /></li>)}
               </ul>
@@ -135,8 +135,8 @@ function SellerSpotlight({
       <div className="min-w-0">
         {listing && (
           <div data-sp-content={listing.id}>
-            <Link href={contentPath(lang, listing)} className="group block text-[#172226] no-underline">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[#eef2f1]">
+            <Link href={contentPath(lang, listing)} className="group block text-landing-ink no-underline">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-landing-tint">
                 {cover ? (
                   <Image src={cover} alt={listing.title ?? ""} fill sizes="(max-width: 768px) 100vw, 600px" unoptimized={shouldUnoptimize(cover)} className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                 ) : (
@@ -153,11 +153,11 @@ function SellerSpotlight({
       </div>
 
       <div className="min-w-0 max-w-lg">
-        <h2 id="social-proof-heading" className="font-display text-[2rem] font-semibold leading-tight text-[#172226] md:text-[3.25rem]">{t.headline}</h2>
+        <h2 id="social-proof-heading" className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]">{t.headline}</h2>
         <div className="mt-6 flex items-center gap-3">
           <SellerAvatar seller={seller} size={48} />
           <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold text-[#172226]">
+            <h3 className="truncate text-base font-semibold text-landing-ink">
               <Link href={href} className="text-inherit no-underline hover:text-primary">{seller.displayName}</Link>
             </h3>
             <p className="flex min-w-0 items-center gap-1.5 text-sm text-muted">
@@ -166,10 +166,10 @@ function SellerSpotlight({
             </p>
           </div>
         </div>
-        {seller.headline && <p className="mt-4 text-base leading-relaxed text-[#465458]">{seller.headline}</p>}
+        {seller.headline && <p className="mt-4 text-base leading-relaxed text-landing-body">{seller.headline}</p>}
         <SellerPlace seller={seller} className="mt-2" />
         <SellerStats seller={seller} locale={locale} t={t} className="mt-5" />
-        <Link href={href} className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline">
+        <Link href={href} className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline">
           {seeAllLabel(t, seller, count)} <ArrowRight size={18} aria-hidden />
         </Link>
       </div>

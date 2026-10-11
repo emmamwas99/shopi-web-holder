@@ -138,6 +138,11 @@ export default async function ContactPage({ params }: Props) {
               {supportEmail}
             </a>
           </div>
+          {/* Who operates Shopi — the same details as the legal pages. */}
+          <address className="mt-5 border-t border-border pt-4 text-[0.875rem] not-italic leading-[1.7] text-muted">
+            <strong className="text-foreground">Shopi Limited</strong> · Nairobi,
+            Kenya
+          </address>
         </section>
 
         {/* ── Report abuse — deliberately above the topic grid ──────────── */}

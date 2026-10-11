@@ -246,7 +246,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   });
 
   return (
-    <div id="top" className="bg-white text-[#172226]">
+    <div id="top" className="bg-landing-page text-landing-ink">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -273,6 +273,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               />
               <img
                 {...heroMobileImageProps}
+                alt={heroImageCommon.alt}
                 srcSet={heroMobileSrcSet}
                 className="absolute h-full w-full object-cover object-[55%_center] md:object-[center_45%]"
               />
@@ -306,7 +307,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   href={`/${lang}/explore`}
                   buttonId="browse_listings"
                   placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline backdrop-blur-sm hover:bg-white/20"
+                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline backdrop-blur-sm hover:bg-landing-card/20"
                 >
                   {t.browse}
                   <ArrowUpRight size={18} aria-hidden />
@@ -332,24 +333,24 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               {t.categoriesTitle}
             </h2>
             <div className="mt-7 grid gap-5">
-              <article className="rounded-md border border-[#dce3e2] bg-[#f4f8f7] p-6 md:p-8">
+              <article className="rounded-md border border-landing-line bg-landing-surface p-6 md:p-8">
                 <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-white text-primary">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-landing-card text-primary">
                     <Car className="size-6" aria-hidden />
                   </span>
                   <h3 className="font-display text-xl font-semibold md:text-2xl">
                     {t.carsTitle}
                   </h3>
                 </div>
-                <p className="mt-4 max-w-2xl leading-relaxed text-[#465458]">
+                <p className="mt-4 max-w-2xl leading-relaxed text-landing-body">
                   {t.carsBody}
                 </p>
-                <p className="mt-5 text-sm font-semibold text-[#465458]">
+                <p className="mt-5 text-sm font-semibold text-landing-body">
                   {t.carExamplesLabel}
                 </p>
                 <ul className="mt-2 flex flex-wrap gap-2 p-0">
                   {t.carsSearches.map((model) => (
-                    <li key={model} className="rounded-full border border-[#dce3e2] bg-white px-3 py-1.5 text-sm font-medium text-[#172226]">
+                    <li key={model} className="rounded-full border border-landing-line bg-landing-card px-3 py-1.5 text-sm font-medium text-landing-ink">
                       {model}
                     </li>
                   ))}
@@ -358,7 +359,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   <TrackedHomepageLink href={`/${lang}/upload`} buttonId="post_car" placement="car_seller_section" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline">
                     {t.carsSell}<ArrowUpRight size={17} aria-hidden />
                   </TrackedHomepageLink>
-                  <TrackedHomepageLink href={`/${lang}/for-sale/cars`} buttonId="browse_cars" placement="car_seller_section" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#aab7b5] px-5 py-2.5 text-sm font-semibold text-[#172226] no-underline hover:bg-white">
+                  <TrackedHomepageLink href={`/${lang}/for-sale/cars`} buttonId="browse_cars" placement="car_seller_section" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-landing-line-strong px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline hover:bg-landing-card">
                     {t.carsBrowse}<ArrowUpRight size={17} aria-hidden />
                   </TrackedHomepageLink>
                 </div>
@@ -370,7 +371,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="features"
           aria-label={lang === "sw" ? "Faida za Shopi" : "Why sell on Shopi"}
-          className="border-y border-[#e0e5e4] bg-[#f4f8f7] px-5 py-7 md:px-8 md:py-9"
+          className="border-y border-landing-line bg-landing-surface px-5 py-7 md:px-8 md:py-9"
         >
           <ul className="mx-auto grid max-w-7xl gap-5 p-0 text-sm font-semibold sm:grid-cols-3 md:text-base">
             <li className="flex items-center gap-3">
@@ -395,7 +396,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           id="how-it-works"
           className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-16 md:grid-cols-2 md:gap-16 md:px-8 md:py-24"
         >
-          <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[#e8efef]">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-landing-tint">
             <Image
               src="/assets/blog/mazda-cx5-shopi-plate.png"
               alt={
@@ -412,14 +413,14 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <h2 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
               {t.howTitle}
             </h2>
-            <p className="mt-5 text-base leading-relaxed text-[#465458] md:text-lg">
+            <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
               {t.howBody}
             </p>
             <TrackedHomepageLink
               href={`/${lang}/upload`}
               buttonId="sell_item"
               placement="how_it_works"
-              className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline"
+              className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
             >
               {t.cta}
               <ArrowUpRight size={18} aria-hidden />
@@ -429,7 +430,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
 
         <section
           id="shopi-agent"
-          className="bg-[#f4f8f7] px-5 py-16 md:px-8 md:py-24"
+          className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
             <div className="max-w-lg md:order-1">
@@ -439,20 +440,20 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <h2 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
                 {t.agentTitle}
               </h2>
-              <p className="mt-5 text-base leading-relaxed text-[#465458] md:text-lg">
+              <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
                 {t.agentBody}
               </p>
               <TrackedHomepageLink
                 href={`/${lang}/shopi-agent`}
                 buttonId="shopi_agent"
                 placement="agent_section"
-                className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline"
+                className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
               >
                 {t.agentLink}
                 <ArrowUpRight size={18} aria-hidden />
               </TrackedHomepageLink>
             </div>
-            <div className="relative aspect-4/3 overflow-hidden rounded-md bg-[#dbe7e4] md:order-2">
+            <div className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint md:order-2">
               <Image
                 src="/assets/blog/iphone-13.jpg"
                 alt="Phone shown as a product for sale"
@@ -467,25 +468,25 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="bulk-upload"
           aria-labelledby="bulk-upload-title"
-          className="bg-white px-5 py-16 md:px-8 md:py-24"
+          className="bg-landing-page px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-            <div className="relative order-2 aspect-4/3 overflow-hidden rounded-md bg-[#f4f8f7] p-5 sm:p-8 md:order-1">
-              <div className="flex h-full flex-col justify-center rounded-xl border border-[#dce3e2] bg-white p-4 shadow-sm sm:p-6">
+            <div className="relative order-2 aspect-4/3 overflow-hidden rounded-md bg-landing-surface p-5 sm:p-8 md:order-1">
+              <div className="flex h-full flex-col justify-center rounded-xl border border-landing-line bg-landing-card p-4 shadow-sm sm:p-6">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <FileSpreadsheet className="size-5" aria-hidden />
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#172226]">shopi-listings.xlsx</p>
-                      <p className="text-xs text-[#657275]">Excel spreadsheet</p>
+                      <p className="truncate text-sm font-semibold text-landing-ink">shopi-listings.xlsx</p>
+                      <p className="text-xs text-landing-muted">Excel spreadsheet</p>
                     </div>
                   </div>
                   <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">Preview</span>
                 </div>
-                <div className="overflow-hidden rounded-lg border border-[#e5e9e9]">
-                  <div className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-[#e5e9e9] bg-[#f7f9f9] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-[#657275]">
+                <div className="overflow-hidden rounded-lg border border-landing-line">
+                  <div className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-landing-line bg-landing-surface px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-landing-muted">
                     <span>Item</span><span>Category</span><span>Price</span>
                   </div>
                   {[
@@ -493,16 +494,16 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                     ["Samsung phone", "Electronics", "KES 18,000"],
                     ["Office chair", "Home", "KES 7,500"],
                   ].map(([item, category, price]) => (
-                    <div key={item} className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-[#e5e9e9] px-3 py-2.5 text-[10px] text-[#354746] last:border-b-0 sm:text-xs">
+                    <div key={item} className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-landing-line px-3 py-2.5 text-[10px] text-landing-body last:border-b-0 sm:text-xs">
                       <span className="truncate font-medium">{item}</span><span className="truncate">{category}</span><span className="truncate">{price}</span>
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#657275]">
+                <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-landing-muted">
                   <Check className="size-3.5 text-primary" aria-hidden /> Category and specs filled by Shopi Agent
                 </p>
               </div>
-              <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-primary shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
+              <span className="absolute right-3 top-3 rounded-full bg-landing-card px-3 py-1 text-[10px] font-bold text-primary shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
             </div>
             <div className="order-1 max-w-lg md:order-2">
               <p className="mb-3 hidden text-sm font-semibold text-primary md:block">{t.bulkEyebrowDesktop}</p>
@@ -510,17 +511,17 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <h2 id="bulk-upload-title" className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
                 {t.bulkTitle}
               </h2>
-              <p className="mt-5 hidden text-base leading-relaxed text-[#465458] md:block md:text-lg">
+              <p className="mt-5 hidden text-base leading-relaxed text-landing-body md:block md:text-lg">
                 {t.bulkBodyDesktop}
               </p>
-              <p className="mt-5 text-base leading-relaxed text-[#465458] md:hidden">
+              <p className="mt-5 text-base leading-relaxed text-landing-body md:hidden">
                 {t.bulkBodyMobile}
               </p>
               <TrackedHomepageLink
                 href={`/${lang}/dashboard?tab=listings&bulk=1`}
                 buttonId="sell_item"
                 placement="bulk_upload_section"
-                className="mt-7 hidden items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline md:inline-flex"
+                className="mt-7 hidden items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline md:inline-flex"
               >
                 {t.bulkCta}
                 <ArrowUpRight size={18} aria-hidden />
@@ -592,13 +593,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <h2 className="font-display text-[1.9rem] font-semibold md:text-[2.6rem]">
             {t.questions}
           </h2>
-          <div className="mt-6 border-t border-[#dce3e2]">
+          <div className="mt-6 border-t border-landing-line">
             {t.faq.map(({ q, a }) => (
-              <details key={q} className="group border-b border-[#dce3e2] py-5">
+              <details key={q} className="group border-b border-landing-line py-5">
                 <summary className="cursor-pointer pr-5 text-base font-semibold marker:text-primary md:text-lg">
                   {q}
                 </summary>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#465458] md:text-base">
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-landing-body md:text-base">
                   {a}
                 </p>
               </details>
@@ -610,7 +611,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <h2 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
             {t.closingTitle}
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-base text-[#354746] md:text-lg">
+          <p className="mx-auto mt-4 max-w-lg text-base text-landing-body md:text-lg">
             {t.closingBody}
           </p>
           <TrackedHomepageLink

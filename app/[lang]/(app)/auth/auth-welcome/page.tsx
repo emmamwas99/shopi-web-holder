@@ -63,7 +63,7 @@ export default async function WelcomePage({
       </Link>
 
       <p className="text-center text-xs text-placeholder leading-relaxed pt-1">
-        By continuing you agree to our{" "}
+        By continuing you confirm you&apos;re 18 or older and agree to our{" "}
         <Link
           href={`/${lang}/terms`}
           className="text-muted underline underline-offset-2"

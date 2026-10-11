@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HomeLanguageSelect } from "./HomeLanguageSelect";
+import { CookieSettingsButton } from "@/components/layout/CookieConsent";
 //import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
@@ -89,7 +90,7 @@ export function LandingFooter({
               </ul>
             </div>)}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-5 pt-7 text-sm text-white/70"><span>© {new Date().getFullYear()} Shopi · {sw ? "Imetengenezwa Kenya" : "Made in Kenya"}</span><HomeLanguageSelect current={sw ? "sw" : "en"} /></div>
+          <div className="flex flex-wrap items-center justify-between gap-5 pt-7 text-sm text-white/70"><span>© {new Date().getFullYear()} Shopi · {sw ? "Imetengenezwa Kenya" : "Made in Kenya"}</span><div className="flex flex-wrap items-center gap-5"><CookieSettingsButton className="cursor-pointer text-sm text-white/75 underline-offset-2 hover:text-white hover:underline">{sw ? "Mipangilio ya kuki" : "Cookie settings"}</CookieSettingsButton><HomeLanguageSelect current={sw ? "sw" : "en"} /></div></div>
         </div>
       </footer>
     );
@@ -256,7 +257,10 @@ export function LandingFooter({
             ) ??
               `© ${new Date().getFullYear()} Shopi Limited. All rights reserved.`}
           </span>
-          <span>Made in Kenya</span>
+          <span className="flex items-center gap-4">
+            <CookieSettingsButton className="cursor-pointer text-xs text-muted underline-offset-2 hover:text-main hover:underline" />
+            <span>Made in Kenya</span>
+          </span>
         </div>
       </footer>
     </div>

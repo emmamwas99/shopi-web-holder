@@ -3,6 +3,7 @@ import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { publicPageMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/config/site";
+import { CookieSettingsButton } from "@/components/layout/CookieConsent";
 
 export async function generateMetadata({ params }: Props) {
   const { lang } = await params;
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
-const LAST_UPDATED = "10 October 2026";
+const LAST_UPDATED = "11 October 2026";
 
 const storageItems = [
   {
@@ -31,6 +32,13 @@ const storageItems = [
     purpose:
       "Keeps you signed in across visits so you don't have to log in every time.",
     expiry: "Until sign out or cleared",
+  },
+  {
+    name: "shopi-cookie-consent (local storage)",
+    type: "Local storage — essential",
+    purpose:
+      "Remembers whether you accepted or declined analytics cookies, so we don't ask again on every visit.",
+    expiry: "Until cleared or you change your choice",
   },
   {
     name: "shopi-theme (local storage)",
@@ -124,6 +132,13 @@ export default async function CookiesPage({ params }: Props) {
             and the Meta Pixel may use cookies or similar identifiers when
             enabled. Tag Manager itself manages tags, while each active tag
             determines what data it collects and whether it stores cookies.
+          </p>
+          <p>
+            Google Tag Manager, and with it Google Analytics and the Meta
+            Pixel, loads only if you accept analytics cookies in the banner
+            shown on your first visit. If you decline, they don&apos;t load.
+            Essential storage and Vercel Analytics, which doesn&apos;t use
+            cookies, work either way.
           </p>
         </LegalSection>
 
@@ -235,6 +250,11 @@ export default async function CookiesPage({ params }: Props) {
         </LegalSection>
 
         <LegalSection title="5. Managing Local Storage and Cookies">
+          <p>
+            You can change your analytics cookie choice at any time:{" "}
+            <CookieSettingsButton className="cursor-pointer font-semibold text-primary underline underline-offset-2" />
+            . The same link is in the site footer.
+          </p>
           <p>
             You can block or clear cookies and browser storage in your browser
             settings. This may sign you out, reset preferences, or reduce

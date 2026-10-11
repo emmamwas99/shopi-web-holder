@@ -31,7 +31,7 @@ function ExploreSubcategorySkeleton() {
   return (
     <div className="min-h-svh bg-app pb-0 md:pb-8">
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
-        <div className="sticky top-0 z-30 border-b border-default bg-white lg:hidden">
+        <div className="sticky top-0 z-30 border-b border-default bg-app lg:hidden">
           <div className="flex items-center gap-1.5 px-4 py-3">
             <Skeleton className="h-9 w-7 shrink-0 rounded-full" />
             <Skeleton className="h-11 min-w-0 flex-1 rounded-full" />
