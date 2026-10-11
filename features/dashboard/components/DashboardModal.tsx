@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@apollo/client/react";
+import { MyPendingBulkUploadDraftsDocument } from "@/types/__generated__/graphql";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
@@ -34,6 +36,8 @@ import { useUnreadMessageCount } from "@/features/messaging/hooks/useUnreadCount
 import { useUnreadNotificationCount } from "@/features/notifications/hooks/useUnreadNotificationCount";
 import { DashboardInboxTab } from "./DashboardInboxTab";
 import { DesktopCreateFlow } from "@/features/create/components/DesktopCreateFlow";
+import { useAuthStore } from "@/stores/auth";
+import { DashboardTour, type DashboardTourStep } from "./DashboardTour";
 
 export function DashboardModal({
   lang,
@@ -48,17 +52,61 @@ export function DashboardModal({
   const [open, setOpen] = useState(forceOpen);
   const isActiveRoute = pathname === `/${lang}/dashboard`;
   const activeTab = searchParams.get("tab") ?? "overview";
+  const bulkRequested = searchParams.get("bulk") === "1";
+  // Once bulk work starts, defer the tour for the rest of this dashboard visit.
+  const [tourDeferred, setTourDeferred] = useState(bulkRequested);
   const push = usePushNotifications(lang);
   const unreadMessages = useUnreadMessageCount();
   const unreadNotifications = useUnreadNotificationCount();
+  const tourUserId = useAuthStore((state) => state.user?.id ?? null);
+  const [tourStepId, setTourStepId] = useState<DashboardTourStep["id"] | null>(null);
+  // Resolve unfinished bulk work before starting a tour on Listings. Apollo
+  // shares this request/cache with DashboardListings, which owns polling.
+  const checkPendingBulk = open && isActiveRoute && activeTab === "listings" && !!tourUserId && !bulkRequested && !tourDeferred && tourStepId === null;
+  const { data: pendingBulk, loading: checkingBulk, error: bulkCheckError } = useQuery(
+    MyPendingBulkUploadDraftsDocument,
+    { skip: !checkPendingBulk, fetchPolicy: "network-only" },
+  );
+  const waitingForBulk = checkPendingBulk && (
+    checkingBulk || !pendingBulk || !!bulkCheckError || pendingBulk.myPendingBulkUploadDrafts.length > 0
+  );
+  const suppressTour = bulkRequested || tourDeferred || waitingForBulk;
+
 
   const selectTab = useCallback((tab: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("bulk");
     if (tab === "overview") nextParams.delete("tab");
     else nextParams.set("tab", tab);
     const query = nextParams.toString();
     window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
   }, [pathname, searchParams]);
+
+  const onTourStepChange = useCallback((step: DashboardTourStep | null) => {
+    if (suppressTour) return;
+    setTourStepId(step?.id ?? null);
+    if (step) selectTab(step.tab);
+  }, [selectTab, suppressTour]);
+
+  const deferTourForBulk = useCallback(() => {
+    setTourDeferred(true);
+    setTourStepId(null);
+  }, []);
+
+  const onBulkUploadStart = useCallback(() => {
+    deferTourForBulk();
+    // Keep this in the URL while open so a refresh resumes the same dialog.
+    if (!bulkRequested) {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("tab", "listings");
+      nextParams.set("bulk", "1");
+      window.history.replaceState(null, "", `${pathname}?${nextParams.toString()}`);
+    }
+  }, [bulkRequested, deferTourForBulk, pathname, searchParams]);
+
+  const onBulkUploadClose = useCallback(() => {
+    selectTab("listings");
+  }, [selectTab]);
 
   useEffect(() => {
     if (!isActiveRoute) return;
@@ -107,19 +155,19 @@ export function DashboardModal({
                 <p className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
                   Your content
                 </p>
-                <DashboardNavLink onClick={() => selectTab("listings")} active={activeTab === "listings" || activeTab === "create"} icon={Package}>
+                <DashboardNavLink tourId="dashboard-tour-listings-nav" onClick={() => selectTab("listings")} active={activeTab === "listings" || activeTab === "create"} icon={Package}>
                   My listings
                 </DashboardNavLink>
-                <DashboardNavLink onClick={() => selectTab("drafts")} active={activeTab === "drafts"} icon={FileEdit}>
+                <DashboardNavLink tourId="dashboard-tour-drafts-nav" onClick={() => selectTab("drafts")} active={activeTab === "drafts"} icon={FileEdit}>
                   Drafts
                 </DashboardNavLink>
                 <DashboardNavLink onClick={() => selectTab("saved")} active={activeTab === "saved"} icon={Bookmark}>
                   Saved items
                 </DashboardNavLink>
-                <p className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
+                <p data-dashboard-tour="dashboard-tour-audience-nav" className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
                   Audience
                 </p>
-                <DashboardNavLink onClick={() => selectTab("analytics")} active={activeTab === "analytics"} icon={ChartColumn}>
+                <DashboardNavLink tourId="dashboard-tour-analytics-nav" onClick={() => selectTab("analytics")} active={activeTab === "analytics"} icon={ChartColumn}>
                   Analytics
                 </DashboardNavLink>
                 <DashboardNavLink onClick={() => selectTab("followers")} active={activeTab === "followers"} icon={Users}>
@@ -175,6 +223,11 @@ export function DashboardModal({
                   <DashboardListings
                     lang={lang}
                     onSingleUpload={() => selectTab("create")}
+                    autoOpenBulk={bulkRequested}
+                    onBulkUploadHandled={deferTourForBulk}
+                    onBulkUploadStart={onBulkUploadStart}
+                    onBulkUploadClose={onBulkUploadClose}
+                    tourStep={suppressTour ? null : tourStepId}
                   />
                 ) : activeTab === "overview" ? (
                   <DashboardOverview lang={lang} />
@@ -192,6 +245,12 @@ export function DashboardModal({
               </div>
             </div>
           </div>
+          <DashboardTour
+            key={tourUserId ?? "anonymous"}
+            enabled={open && isActiveRoute && !suppressTour}
+            userId={tourUserId}
+            onStepChange={onTourStepChange}
+          />
         </DialogContent>
       </Dialog>
     </>
@@ -221,17 +280,20 @@ function DashboardNavLink({
   icon: Icon,
   active = false,
   badge,
+  tourId,
   children,
 }: {
   onClick: () => void;
   icon: LucideIcon;
   active?: boolean;
   badge?: number;
+  tourId?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
+      data-dashboard-tour={tourId}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       aria-label={badge && badge > 0 ? `${children}, ${badge} unread` : undefined}

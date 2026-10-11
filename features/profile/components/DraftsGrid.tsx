@@ -38,7 +38,7 @@ function formatDate(value: unknown) {
 
 export function DraftsGrid({ lang, hideHeading = false }: Props) {
   const router = useRouter();
-  const { setDraftId, setContentType, setStep } = useCreateStore();
+  const { reset, setCreationMode, setDraftId, setGuidedStage, setContentType, setStep } = useCreateStore();
 
   const { data, loading, refetch } = useQuery(MyDraftsDocument, {
     variables: { limit: 30 },
@@ -52,9 +52,17 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
   const drafts = (data?.myDrafts ?? []) as DraftFieldsFragment[];
 
   function continueEditing(draft: DraftFieldsFragment) {
+    reset();
     setDraftId(draft.id);
     setContentType(mapType(draft.type));
     setStep("edit");
+    if (draft.bulkStage === "COMPLETE") {
+      setCreationMode("ai");
+      setGuidedStage("analyzing");
+      router.push(`/${lang}/upload/create-ai`);
+      return;
+    }
+    setCreationMode("manual");
     router.push(`/${lang}/upload/create-manual`);
   }
 

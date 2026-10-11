@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
+import { hasDesktopSideNav } from "@/components/layout/SideNav";
 import { usePreloadInbox } from "@/features/notifications/hooks/usePreloadInbox";
 import { useUiStore } from "@/stores/ui";
 
@@ -23,9 +24,11 @@ export function MainShell({
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
+  const showSideNav = hasDesktopSideNav(pathname, lang);
   // Explore (desktop's "Browse"). Not the For You feed — re-tapping its nav
   // tab already scrolls it to the top.
   const hasBackToTop = pathname.startsWith(`/${lang}/explore`);
+
   usePreloadInbox();
 
   return (
@@ -36,7 +39,9 @@ export function MainShell({
           "mx-auto",
           isImmersiveCreate
             ? "md:mx-0 md:ml-0 md:max-w-none"
-            : "md:mx-0 md:ml-(--side-nav-width,280px) md:max-w-none md:pt-(--desktop-top-nav-height,68px)",
+            : showSideNav
+              ? "desktop-app-frame desktop-app-frame--with-sidebar md:pt-(--desktop-top-nav-height,68px)"
+              : "desktop-app-frame md:pt-(--desktop-top-nav-height,68px)",
         ].join(" ")}
       >
         {/* The bottom padding clears the fixed BottomNav, which is md:hidden —

@@ -78,7 +78,10 @@ export function DashboardProfileTab({
         <h1 className="text-lg font-extrabold tracking-tight text-main">{copy.title}</h1>
         <p className="mt-1 text-xs text-muted">{copy.description}</p>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto"
+        data-dashboard-tour={section === "drafts" ? "dashboard-tour-drafts-page" : section === "analytics" ? "dashboard-tour-audience-page" : undefined}
+      >
         {section === "drafts" ? (
           <DraftsGrid lang={lang} hideHeading />
         ) : section === "invite" ? (

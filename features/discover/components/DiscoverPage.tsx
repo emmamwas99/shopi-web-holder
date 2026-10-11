@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/drawer";
 import { SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
@@ -46,7 +45,11 @@ import type {
   ContentCardFieldsFragment,
   ContentType,
 } from "@/types/__generated__/graphql";
-import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
+import {
+  DISCOVER_GRID,
+  DiscoverGridCard,
+  DiscoverGridSkeleton,
+} from "./DiscoverGridCard";
 import { ExploreCategoryGrid } from "./ExploreCategoryGrid";
 import {
   ContentTypeSegments,
@@ -571,19 +574,8 @@ function isDiscoverContentType(
 function DiscoverFeedSkeleton() {
   return (
     <div className="px-4 pb-8 pt-3 lg:px-0">
-      {/* 15 tiles so every column count (2 → 5) fills the viewport with full
-          rows — fewer left the tail columns empty on wide screens. */}
-      <div className={DISCOVER_GRID}>
-        {Array.from({ length: 15 }).map((_, i) => (
-          <div key={i}>
-            <Skeleton className="aspect-3/4 w-full rounded-xl" />
-            <div className="space-y-2 pt-2">
-              <Skeleton className="h-3.5 w-1/2" />
-              <Skeleton className="h-3 w-4/5" />
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="mb-4 border-t border-border/60" />
+      <DiscoverGridSkeleton />
     </div>
   );
 }

@@ -56,8 +56,13 @@ function mapContentType(
 function getAssetPreviewUrl(asset: {
   r2Variants?: Array<{ variant: string; url: string }> | null;
   thumbnailUrl?: string | null;
+  muxMeta?: { playbackId?: string | null; thumbnailUrl?: string | null } | null;
 }): string | undefined {
   return (
+    asset.muxMeta?.thumbnailUrl ??
+    (asset.muxMeta?.playbackId
+      ? `https://image.mux.com/${asset.muxMeta.playbackId}/thumbnail.jpg?time=0`
+      : undefined) ??
     asset.r2Variants?.find((v) => v.variant === "original")?.url ??
     asset.r2Variants?.find((v) => v.variant === "large")?.url ??
     asset.r2Variants?.find((v) => v.variant === "medium")?.url ??
@@ -73,7 +78,6 @@ export function CreateFlow({ lang, embedded = false, onExit }: CreateFlowProps) 
     step,
     draftId,
     draftPending,
-    mediaItems,
     setStep,
     setTitle,
     setCaption,
@@ -86,9 +90,10 @@ export function CreateFlow({ lang, embedded = false, onExit }: CreateFlowProps) 
     setVisibilityMode,
     setAllowDownload,
     setHdEnabled,
+    setLocation,
+    setContactPhone,
     setError,
     addMediaItem,
-    updateMediaItem,
     setTiktokEmbed,
   } = store;
 
@@ -151,39 +156,9 @@ export function CreateFlow({ lang, embedded = false, onExit }: CreateFlowProps) 
       return;
     }
 
-    // Store has a real step already (persisted from before the reload).
-    // Still need to re-hydrate media items whose blob localUris were stripped.
-    if (step !== "pick") {
-      const missingBlobs = mediaItems.filter((m) => !m.localUri);
-      if (missingBlobs.length > 0) {
-        missingBlobs.forEach((item) => {
-          apolloClient
-            .query({
-              query: GetMediaAssetDocument,
-              variables: { id: item.id },
-              fetchPolicy: "network-only",
-            })
-            .then(({ data }) => {
-              const a = data?.mediaAsset;
-              if (!a) return;
-              const url = getAssetPreviewUrl(a);
-              updateMediaItem(item.id, {
-                status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
-                localUri: url ?? item.localUri,
-                thumbnailUrl: a.thumbnailUrl ?? undefined,
-                r2Variants: a.r2Variants ?? undefined,
-                muxPlaybackId: a.muxMeta?.playbackId ?? item.muxPlaybackId,
-                errorMessage: a.errorMessage ?? undefined,
-              });
-            })
-            .catch(() => undefined);
-        });
-      }
-      return;
-    }
-
-    // draftId exists but step got reset to "pick" (e.g. sessionStorage only had
-    // a partial write). Re-fetch from the API to get the authoritative step.
+    // Always restore the selected draft from the API. The editor can be opened
+    // with a stale persisted step and fields, especially after choosing a draft
+    // from the profile page.
     let cancelled = false;
     setRestoring(true);
 
@@ -216,6 +191,18 @@ export function CreateFlow({ lang, embedded = false, onExit }: CreateFlowProps) 
         );
         setAllowDownload(d.allowDownload ?? true);
         setHdEnabled(d.hdEnabled ?? true);
+        setContactPhone(d.contactPhone ?? null);
+        setLocation(
+          d.location?.placeName && d.location.placeId
+            ? {
+                placeName: d.location.placeName,
+                formattedAddress: d.location.formattedAddress ?? "",
+                placeId: d.location.placeId,
+                county: d.location.county ?? undefined,
+                subregion: d.location.subregion ?? undefined,
+              }
+            : null,
+        );
         if (d.price) {
           setPrice(d.price.amount, d.price.amount === 0);
           setNegotiable(d.price.negotiable);
@@ -252,32 +239,33 @@ export function CreateFlow({ lang, embedded = false, onExit }: CreateFlowProps) 
 
         // Re-hydrate media items from the API — blob localUris are not persisted
         const knownIds = new Set(useCreateStore.getState().mediaItems.map((m) => m.id));
-        const type = mapContentType(d.type) ?? "image";
+        const fallbackType = mapContentType(d.type) ?? "image";
         const newIds = (d.mediaAssetIds ?? []).filter((id) => !knownIds.has(id));
-        newIds.forEach((id) => {
-          apolloClient
-            .query({
+        return Promise.all(newIds.map(async (id) => {
+          try {
+            const { data: ad } = await apolloClient.query({
               query: GetMediaAssetDocument,
               variables: { id },
               fetchPolicy: "network-only",
-            })
-            .then(({ data: ad }) => {
-              const a = ad?.mediaAsset;
-              if (!a || cancelled) return;
-              const url = getAssetPreviewUrl(a);
-              addMediaItem({
-                id,
-                localUri: url ?? "",
-                type,
-                status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
-                thumbnailUrl: a.thumbnailUrl ?? undefined,
-                r2Variants: a.r2Variants ?? undefined,
-                muxPlaybackId: a.muxMeta?.playbackId ?? undefined,
-                errorMessage: a.errorMessage ?? undefined,
-              });
-            })
-            .catch(() => undefined);
-        });
+            });
+            const a = ad?.mediaAsset;
+            if (!a || cancelled) return;
+            const url = getAssetPreviewUrl(a);
+            addMediaItem({
+              id,
+              localUri: url ?? "",
+              type: a.type === "VIDEO" ? "video" : a.type === "IMAGE" ? "image" : fallbackType,
+              status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
+              thumbnailUrl: a.muxMeta?.thumbnailUrl ?? a.thumbnailUrl ?? undefined,
+              r2Variants: a.r2Variants ?? undefined,
+              muxPlaybackId: a.muxMeta?.playbackId ?? undefined,
+              errorMessage: a.errorMessage ?? undefined,
+            });
+          } catch {
+            // Keep other saved media visible when one asset is temporarily
+            // unavailable; the draft and its remaining media still restore.
+          }
+        }));
       })
       .catch((err) => {
         if (cancelled) return;

@@ -94,6 +94,15 @@ export const siteConfig = {
     "photo to listing AI",
     "find products with AI",
 
+    // Bulk upload
+    "bulk upload listings Kenya",
+    "bulk upload products from Excel",
+    "upload multiple listings at once",
+    "post many items at once Kenya",
+    "bulk listing tool Kenya",
+    "AI bulk listing upload",
+    "auto categorize products AI",
+
     // Categories
     "Mazda Atenza for sale Kenya",
     "Toyota Premio for sale Kenya",

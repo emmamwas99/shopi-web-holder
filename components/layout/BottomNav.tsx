@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { useUiStore } from "@/stores/ui";
 import { useNavTabHref } from "@/lib/navTabMemory";
 
@@ -79,7 +80,11 @@ export function shouldHideBottomNav(pathname: string) {
 
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
-  const unreadCount = useInboxUnreadCount();
+  // Hydration-safe: no badge until the persisted session has rehydrated, so
+  // the first client paint matches the server HTML.
+  const { hydrated } = useAuthSession();
+  const liveUnreadCount = useInboxUnreadCount();
+  const unreadCount = hydrated ? liveUnreadCount : 0;
   // Screens that own the full viewport (e.g. the create-mode chooser) set this
   // to hide the nav WITHOUT unmounting it — a class toggle, so there's no
   // remount flash when they appear or leave.

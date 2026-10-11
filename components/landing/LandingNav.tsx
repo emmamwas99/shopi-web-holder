@@ -31,7 +31,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
 
   return (
     <header className="sticky top-0 z-50 bg-white text-[#172226]">
-      <nav aria-label={sw ? "Menyu kuu" : "Main navigation"} className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5 md:h-22 md:px-8">
+      <nav aria-label={sw ? "Menyu kuu" : "Main navigation"} className="mx-auto flex h-18 w-[calc(100%-2.5rem)] max-w-[1500px] items-center justify-between gap-4 md:h-22 md:w-[calc(100%-4rem)]">
         <Link href={`/${lang}`} aria-label="Shopi home" className="flex items-center gap-2 no-underline">
           <ShopiLogo className="h-9 w-9" />
           <span className="text-xl font-bold text-[#172226]">Shopi</span>

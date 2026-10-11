@@ -2,10 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { Bookmark } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   DISCOVER_GRID,
   DiscoverGridCard,
+  DiscoverGridSkeleton,
 } from "@/features/discover/components/DiscoverGridCard";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
@@ -72,17 +72,7 @@ export function PostsGrid({
   if (posts.length === 0 && loading) {
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
-        <div className={DISCOVER_GRID}>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i}>
-              <Skeleton className="aspect-3/4 w-full rounded-xl" />
-              <div className="space-y-2 pt-2">
-                <Skeleton className="h-3.5 w-1/2" />
-                <Skeleton className="h-3 w-4/5" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <DiscoverGridSkeleton />
       </section>
     );
   }

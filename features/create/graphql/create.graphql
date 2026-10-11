@@ -2,6 +2,7 @@ fragment DraftFields on DraftContent {
   id
   currentStep
   status
+  bulkStage
   type
   title
   caption
@@ -213,6 +214,19 @@ query GetDraft($id: String!) {
 query MyDrafts($limit: Int, $afterId: String) {
   myDrafts(limit: $limit, afterId: $afterId) {
     ...DraftFields
+  }
+}
+
+query MyPendingBulkUploadDrafts {
+  myPendingBulkUploadDrafts {
+    ...DraftFields
+  }
+}
+
+mutation CompleteBulkImportDraft($id: String!, $mediaType: ContentType!) {
+  completeBulkImportDraft(id: $id, mediaType: $mediaType) {
+    id
+    bulkStage
   }
 }
 

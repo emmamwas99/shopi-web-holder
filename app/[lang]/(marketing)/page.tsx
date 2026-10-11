@@ -55,11 +55,14 @@ const COPY = {
     agentBody:
       "Shopi Agent can draft your listing and suggest a price from a photo. Buyers can describe what they want to find matches.",
     agentLink: "More about Shopi Agent",
-    bulkEyebrow: "Bulk upload is coming soon",
-    bulkTitle: "More listings, less repetitive work.",
-    bulkBody:
-      "We’re preparing a faster way to add several listings together. For now, you can post each item individually and manage your catalogue from your dashboard.",
-    bulkCta: "Post a single item",
+    bulkEyebrowDesktop: "New: AI bulk upload",
+    bulkEyebrowMobile: "New: AI bulk upload",
+    bulkTitle: "Bulk upload from Excel.",
+    bulkBodyDesktop:
+      "Type title and price. Shopi Agent adds category and specs from your photos. Check, then publish. Free.",
+    bulkBodyMobile:
+      "Type title and price. Shopi Agent adds the rest. Works on desktop.",
+    bulkCta: "Open bulk upload",
     bulkPreview: "Bulk upload preview",
     postEyebrow: "Sell on Shopi",
     postTitle: "Post something people can buy today.",
@@ -91,6 +94,10 @@ const COPY = {
       {
         q: "Do I need an account?",
         a: "You can browse without signing in. To create a post, you need to sign in.",
+      },
+      {
+        q: "Can I upload many listings at once?",
+        a: "Yes. On desktop, add up to 500 items to our Excel template, upload it and add photos. Shopi Agent fills in category and specs. You check, then publish.",
       },
     ],
   },
@@ -125,11 +132,14 @@ const COPY = {
     agentBody:
       "Shopi Agent inaweza kukuandikia tangazo na kupendekeza bei kutokana na picha. Wanunuzi wanaweza kueleza wanachotafuta ili wapate bidhaa zinazofaa.",
     agentLink: "Zaidi kuhusu Shopi Agent",
-    bulkEyebrow: "Upakiaji wa bidhaa nyingi unakuja hivi karibuni",
-    bulkTitle: "Matangazo mengi, kazi ndogo ya kurudia.",
-    bulkBody:
-      "Tunatayarisha njia ya haraka ya kuongeza matangazo kadhaa kwa pamoja. Kwa sasa, unaweza kuweka kila tangazo kivyake na kusimamia bidhaa zako kupitia dashibodi.",
-    bulkCta: "Weka tangazo moja",
+    bulkEyebrowDesktop: "Mpya: upakiaji wa bidhaa nyingi kwa AI",
+    bulkEyebrowMobile: "Mpya: upakiaji wa bidhaa nyingi kwa AI",
+    bulkTitle: "Pakia bidhaa nyingi kutoka Excel.",
+    bulkBodyDesktop:
+      "Andika jina na bei. Shopi Agent itaongeza kategoria na sifa kutoka picha zako. Kagua, kisha chapisha. Bure.",
+    bulkBodyMobile:
+      "Andika jina na bei. Shopi Agent itamalizia. Inapatikana kwenye kompyuta.",
+    bulkCta: "Fungua upakiaji wa matangazo mengi",
     bulkPreview: "Muonekano wa upakiaji wa bidhaa nyingi",
     postEyebrow: "Uza kwenye Shopi",
     postTitle: "Weka bidhaa ambayo mtu anaweza kununua leo.",
@@ -162,6 +172,10 @@ const COPY = {
       {
         q: "Je, ninahitaji akaunti?",
         a: "Unaweza kuangalia bidhaa bila kuingia. Ili kuweka tangazo, unahitaji kuingia.",
+      },
+      {
+        q: "Je, naweza kupakia matangazo mengi kwa mara moja?",
+        a: "Ndiyo. Kwenye kompyuta, weka hadi bidhaa 500 kwenye kiolezo cha Excel, kipakie na uongeze picha. Shopi Agent itajaza kategoria na sifa. Kagua, kisha chapisha.",
       },
     ],
   },
@@ -485,24 +499,28 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   ))}
                 </div>
                 <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#657275]">
-                  <Check className="size-3.5 text-primary" aria-hidden /> Add multiple products in one go
+                  <Check className="size-3.5 text-primary" aria-hidden /> Category and specs filled by Shopi Agent
                 </p>
               </div>
               <span className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-primary shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
             </div>
             <div className="order-1 max-w-lg md:order-2">
-              <p className="mb-3 text-sm font-semibold text-primary">{t.bulkEyebrow}</p>
+              <p className="mb-3 hidden text-sm font-semibold text-primary md:block">{t.bulkEyebrowDesktop}</p>
+              <p className="mb-3 text-sm font-semibold text-primary md:hidden">{t.bulkEyebrowMobile}</p>
               <h2 id="bulk-upload-title" className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
                 {t.bulkTitle}
               </h2>
-              <p className="mt-5 text-base leading-relaxed text-[#465458] md:text-lg">
-                {t.bulkBody}
+              <p className="mt-5 hidden text-base leading-relaxed text-[#465458] md:block md:text-lg">
+                {t.bulkBodyDesktop}
+              </p>
+              <p className="mt-5 text-base leading-relaxed text-[#465458] md:hidden">
+                {t.bulkBodyMobile}
               </p>
               <TrackedHomepageLink
-                href={`/${lang}/upload`}
+                href={`/${lang}/dashboard?tab=listings&bulk=1`}
                 buttonId="sell_item"
                 placement="bulk_upload_section"
-                className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline"
+                className="mt-7 hidden items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-[#172226] no-underline md:inline-flex"
               >
                 {t.bulkCta}
                 <ArrowUpRight size={18} aria-hidden />

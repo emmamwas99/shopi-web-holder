@@ -66,7 +66,7 @@ export async function ListingRelated({
   if (!fromSeller.length && !similar.length && !hubs.length) return null;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8 md:px-6">
+    <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8 md:max-w-[1440px] md:px-5 md:py-10 lg:px-8">
       {fromSeller.length > 0 && (
         <RelatedGrid
           title={`More from ${sellerName}`}
@@ -137,14 +137,14 @@ function RelatedGrid({
           </Link>
         )}
       </div>
-      <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 lg:grid-cols-4">
-        {listings.map((listing) => (
-          <li key={listing.id}>
+      <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-6">
+        {listings.map((listing, index) => (
+          <li key={listing.id} className={index >= 8 ? "hidden md:block" : undefined}>
             <ListingPhotoCard
               listing={listing}
               lang={lang}
               locale={cultureCode(lang)}
-              sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, 240px"
+              sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, (max-width: 1280px) 24vw, 230px"
             />
           </li>
         ))}

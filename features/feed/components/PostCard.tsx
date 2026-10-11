@@ -24,6 +24,7 @@ import {
   Flag,
   MoreVertical,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
@@ -37,13 +38,10 @@ import Shimmer, {
 import { pauseAllVideos, registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
-import {
-  GetContentDocument,
-  type ContentCardFieldsFragment,
-} from "@/types/__generated__/graphql";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { gql } from "@apollo/client";
-import { useApolloClient, useMutation } from "@apollo/client/react";
+import { useMutation } from "@apollo/client/react";
 import { shouldFire } from "@/lib/interactionDedup";
 import { useFeedChat } from "./FeedChatContext";
 import { fmtCompact as fmt } from "@/lib/format";
@@ -1114,7 +1112,6 @@ function ImageMedia({
 
 function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const router = useRouter();
-  const client = useApolloClient();
   const socialPost = post as FeedPostSocialPreview;
   // Desktop feed provides an inline-chat opener via context; an explicit
   // `onMessage` prop still wins if passed directly.
@@ -1262,31 +1259,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }
-    const href = contentPath(lang, post);
-    const routeId = decodeURIComponent(href.split("/").pop() || post.id);
-
-    try {
-      // The public URL uses the SEO slug, but the feed entity is normalized by
-      // Mongo id. Seed Query.content(slug) so the intercepted detail sheet can
-      // paint from this card immediately instead of flashing its full skeleton.
-      client.cache.writeQuery({
-        query: GetContentDocument,
-        variables: { id: routeId },
-        data: { content: post },
-      });
-      if (routeId !== post.id) {
-        client.cache.writeQuery({
-          query: GetContentDocument,
-          variables: { id: post.id },
-          data: { content: post },
-        });
-      }
-    } catch {
-      // Cache priming is a UX optimization; navigation should never depend on it.
-    }
-
     rememberScrollBeforeNavigation();
-    router.push(href, { scroll: false });
+    router.push(contentPath(lang, post), { scroll: false });
   }
 
   async function handleCopyLink() {
@@ -1555,13 +1529,19 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <button
-          type="button"
-          onClick={handleOpen}
-          className="mb-1 block w-full cursor-pointer text-left text-[15px] font-extrabold leading-snug text-main md:text-[18px]"
+        <Link
+          href={contentPath(lang, post)}
+          scroll={false}
+          onClick={() => {
+            if (shouldFire(post.id, "DETAIL_VIEWED")) {
+              trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
+            }
+            rememberScrollBeforeNavigation();
+          }}
+          className="mb-1 block w-full cursor-pointer text-left text-[15px] font-extrabold leading-snug text-main no-underline md:text-[18px]"
         >
           {post.title}
-        </button>
+        </Link>
 
         {/* Price sits with the title, above the media.
 

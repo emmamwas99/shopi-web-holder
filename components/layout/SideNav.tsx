@@ -35,13 +35,28 @@ import { NavSearchDropdown } from "@/components/layout/NavSearchDropdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { shouldUnoptimize } from "@/lib/imageUtils";
 
+/**
+ * The desktop side rail (categories + filters) belongs to Browse only. Watch,
+ * Stores and every other screen drop it and use the full frame width.
+ */
+export function hasDesktopSideNav(pathname: string, lang: string) {
+  return (
+    pathname.startsWith(`/${lang}/explore`) ||
+    pathname.startsWith(`/${lang}/search`)
+  );
+}
+
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop({ ssrDefault: false });
-  const { user } = useAuthSession();
-  const inboxUnreadCount = useInboxUnreadCount();
+  const { user, hydrated } = useAuthSession();
+  // The count reads the persisted (localStorage) session directly, so the
+  // server and the first client paint must both show no badge; it appears
+  // once the session has rehydrated, avoiding a hydration mismatch.
+  const liveUnreadCount = useInboxUnreadCount();
+  const inboxUnreadCount = hydrated ? liveUnreadCount : 0;
   const { logout, loading: loggingOut } = useLogout(lang);
   // The tabs return to the screen they were left on (sub-tab, search,
   // filters); RouteScrollRestoration restores the scroll to match.
@@ -73,21 +88,16 @@ export function SideNav({ lang = "en" }: { lang: string }) {
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
   const storesActive = pathname.startsWith(`/${lang}/stores`);
+  const showSideNav = hasDesktopSideNav(pathname, lang);
 
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border bg-elevated/95 backdrop-blur md:block">
-        <div className="flex h-full items-center">
-          {/* The logo sits in its own column, the same width and padding as the
-              side rail below it (w-(--side-nav-width) px-6), so it lines up
-              over "Hi {name}!" and everything after it begins exactly on the
-              main content's left edge — MainShell offsets that content by the
-              same variable. A plain shrink-0 logo left the nav starting at
-              whatever the wordmark happened to measure, which is what put it
-              out of line with the column below. */}
+        <div className="desktop-app-frame flex h-full items-center gap-4 px-5 lg:px-8 xl:gap-0">
+          {/* Align the logo with the PDP and the sidebar's inner edge. */}
           <Link
             href={`/${lang}?view=home`}
-            className="flex h-full w-(--side-nav-width,280px) shrink-0 items-center px-6"
+            className="flex h-full shrink-0 items-center xl:w-[calc(var(--side-nav-width)-2rem)]"
             aria-label="Shopi home"
           >
             {/* The full lockup, so the wordmark is the real artwork rather than
@@ -100,10 +110,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             <Logo variant="lockup" size={60} />
           </Link>
 
-          {/* Everything right of the logo column. The gap and the right padding
-              live here rather than on the row, so no gap is inserted before
-              this group and it starts flush on the 280px column edge. */}
-          <div className="flex h-full min-w-0 flex-1 items-center gap-5 pr-6">
+          <div className="flex h-full min-w-0 flex-1 items-center gap-2 xl:gap-5">
             <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
               <TopNavLink
                 href={browseHref}
@@ -158,7 +165,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-52 rounded-xl border-border bg-elevated p-1.5 text-main shadow-lg">
                 <Link
-                  href={`/${lang}/upload`}
+                  href={`/${lang}/dashboard?tab=create`}
                   className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
                 >
                   <Plus className="h-4 w-4 text-primary" aria-hidden />
@@ -166,12 +173,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                 </Link>
                 <button
                   type="button"
-                  disabled
-                  title="Bulk upload is coming soon"
-                  className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-muted opacity-60"
+                  onClick={() => router.push(`/${lang}/dashboard?tab=listings&bulk=1`)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
                 >
                   <Upload className="h-4 w-4" aria-hidden />
-                  Bulk upload
+                  Bulk upload from Excel
                 </button>
               </PopoverContent>
             </Popover>
@@ -250,15 +256,17 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         </div>
       </header>
 
-      <aside className="fixed bottom-0 left-0 top-(--desktop-top-nav-height,68px) z-40 hidden w-(--side-nav-width,280px) flex-col border-r border-border bg-elevated px-6 py-6 md:flex">
-        <div className="border-b border-border pb-4">
-          <h2 className="text-base font-black tracking-normal text-main">
-            Hi {displayName}!
-          </h2>
-        </div>
+      {showSideNav && (
+        <aside className="desktop-side-nav fixed bottom-0 top-(--desktop-top-nav-height,68px) z-40 hidden w-(--side-nav-width,280px) flex-col border-r border-border bg-elevated px-5 py-6 md:flex lg:px-8">
+          <div className="border-b border-border pb-4">
+            <h2 className="text-base font-black tracking-normal text-main">
+              Hi {displayName}!
+            </h2>
+          </div>
 
-        {isDesktop ? <BrowseCategories lang={lang} /> : null}
-      </aside>
+          {isDesktop ? <BrowseCategories lang={lang} /> : null}
+        </aside>
+      )}
     </>
   );
 }
@@ -426,7 +434,7 @@ function BrowseCategories({ lang }: { lang: string }) {
   const categories = liveCategories;
 
   return (
-    <div className="mt-4 min-h-0 overflow-y-auto pb-10 pr-1">
+    <div className="thin-scrollbar -mr-4 mt-4 min-h-0 overflow-y-auto pb-10 pr-3 lg:-mr-7 lg:pr-6">
       <nav className="flex flex-col gap-0.5" aria-label="Browse categories">
         {categories.map((category, index) => {
           const href = `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
@@ -438,10 +446,10 @@ function BrowseCategories({ lang }: { lang: string }) {
               href={href}
               scroll={false}
               className={[
-                "block rounded-md py-2 text-sm font-semibold tracking-normal transition-colors",
+                "block cursor-pointer rounded-md py-2 text-sm font-semibold tracking-normal transition-colors",
                 active
                   ? "text-primary"
-                  : "text-muted hover:text-main dark:hover:text-foreground",
+                  : "text-muted hover:text-primary",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >
@@ -541,10 +549,10 @@ function DiscoverSidebarFilters() {
     specs.find((spec) => spec.key === key)?.value?.toLowerCase();
   const optionClass = (active: boolean) =>
     [
-      "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+      "flex w-full items-center justify-between gap-2 cursor-pointer rounded-md px-2 py-1.5 text-left text-xs transition-colors",
       active
         ? "bg-primary/10 font-black text-primary"
-        : "font-semibold text-muted hover:bg-surface hover:text-main",
+        : "font-semibold text-muted hover:bg-primary/5 hover:text-primary",
     ].join(" ");
 
   return (
@@ -557,7 +565,7 @@ function DiscoverSidebarFilters() {
           <button
             type="button"
             onClick={clearAll}
-            className="text-xs font-bold text-primary hover:underline"
+            className="cursor-pointer text-xs font-bold text-primary hover:underline"
           >
             Clear
           </button>
@@ -565,94 +573,9 @@ function DiscoverSidebarFilters() {
       </div>
 
       <div className="divide-y divide-border">
-        <details open className="group py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
-            Type
-            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="mt-2 space-y-1">
-            {CONTENT_TYPE_OPTIONS.map((option) => (
-              <button
-                key={option.value ?? "all"}
-                type="button"
-                onClick={() => setSelectedType(option.value)}
-                className={[
-                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors",
-                  selectedType === option.value
-                    ? "bg-primary/10 font-black text-primary"
-                    : "font-semibold text-muted hover:bg-surface hover:text-main",
-                ].join(" ")}
-              >
-                {option.label}
-                {selectedType === option.value ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : null}
-              </button>
-            ))}
-          </div>
-        </details>
-
-        <details open className="group py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
-            Location
-            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="mt-2 space-y-2">
-            <button
-              type="button"
-              onClick={openLocationPicker}
-              className="flex w-full items-center justify-between rounded-lg border border-border px-2.5 py-2 text-left text-xs font-semibold text-main transition-colors hover:bg-surface"
-            >
-              <span className="truncate">{locationLabel}</span>
-              <MapPin className="h-4 w-4 shrink-0 text-muted" />
-            </button>
-            {locationLabel !== "All Kenya" ? (
-              <button
-                type="button"
-                onClick={clearLocation}
-                className="text-xs font-semibold text-muted hover:text-main"
-              >
-                Clear location
-              </button>
-            ) : null}
-          </div>
-        </details>
-
-        <details open={Boolean(nearby)} className="group py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
-            Distance
-            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="mt-2">
-            <DistanceFilter compact />
-          </div>
-        </details>
-
-        <details open className="group py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
-            Sort by
-            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="mt-2 space-y-1">
-            {SORT_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setSort(option.value)}
-                className={[
-                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors",
-                  sort === option.value
-                    ? "bg-primary/10 font-black text-primary"
-                    : "font-semibold text-muted hover:bg-surface hover:text-main",
-                ].join(" ")}
-              >
-                {option.label}
-                {sort === option.value ? <Check className="h-3.5 w-3.5" /> : null}
-              </button>
-            ))}
-          </div>
-        </details>
-
+        {/* Ordered the way a shopper narrows down: what → how much → where →
+            how fresh → extras. Media and sort shape the view, not the
+            results, so they come last. */}
         {selectedCategory && subcategories.length > 0 ? (
           <details open className="group py-3">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
@@ -664,10 +587,10 @@ function DiscoverSidebarFilters() {
                 type="button"
                 onClick={() => setSelectedSubcategory(null)}
                 className={[
-                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                  "flex w-full items-center justify-between cursor-pointer rounded-md px-2 py-1.5 text-left text-xs transition-colors",
                   !selectedSubcategory
                     ? "bg-primary/10 font-black text-primary"
-                    : "font-semibold text-muted hover:bg-surface hover:text-main",
+                    : "font-semibold text-muted hover:bg-primary/5 hover:text-primary",
                 ].join(" ")}
               >
                 All
@@ -683,10 +606,10 @@ function DiscoverSidebarFilters() {
                     )
                   }
                   className={[
-                    "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                    "flex w-full items-center justify-between gap-2 cursor-pointer rounded-md px-2 py-1.5 text-left text-xs transition-colors",
                     selectedSubcategory === item.name
                       ? "bg-primary/10 font-black text-primary"
-                      : "font-semibold text-muted hover:bg-surface hover:text-main",
+                      : "font-semibold text-muted hover:bg-primary/5 hover:text-primary",
                   ].join(" ")}
                 >
                   <span className="truncate">{item.name}</span>
@@ -709,7 +632,7 @@ function DiscoverSidebarFilters() {
                 {facet.label}
                 <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
               </summary>
-              <div className="mt-2 max-h-64 space-y-1 overflow-y-auto">
+              <div className="thin-scrollbar mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
                 <button
                   type="button"
                   onClick={() => setSpec(facet.key, null)}
@@ -737,13 +660,49 @@ function DiscoverSidebarFilters() {
           );
         })}
 
-        <details className="group py-3">
+        <details open className="group py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
             Price
             <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-2">
             <PriceRangeFields compact />
+          </div>
+        </details>
+
+        <details open className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Location
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-2">
+            <button
+              type="button"
+              onClick={openLocationPicker}
+              className="flex w-full items-center justify-between cursor-pointer rounded-lg border border-border px-2.5 py-2 text-left text-xs font-semibold text-main transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <span className="truncate">{locationLabel}</span>
+              <MapPin className="h-4 w-4 shrink-0 text-muted" />
+            </button>
+            {locationLabel !== "All Kenya" ? (
+              <button
+                type="button"
+                onClick={clearLocation}
+                className="cursor-pointer text-xs font-semibold text-muted hover:text-primary"
+              >
+                Clear location
+              </button>
+            ) : null}
+          </div>
+        </details>
+
+        <details open={Boolean(nearby)} className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Distance
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2">
+            <DistanceFilter compact />
           </div>
         </details>
 
@@ -783,6 +742,58 @@ function DiscoverSidebarFilters() {
               aria-label="Toggle negotiable only"
             />
           </label>
+        </details>
+
+        <details open={Boolean(selectedType)} className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Media
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-1">
+            {CONTENT_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.value ?? "all"}
+                type="button"
+                onClick={() => setSelectedType(option.value)}
+                className={[
+                  "flex w-full items-center justify-between cursor-pointer rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                  selectedType === option.value
+                    ? "bg-primary/10 font-black text-primary"
+                    : "font-semibold text-muted hover:bg-primary/5 hover:text-primary",
+                ].join(" ")}
+              >
+                {option.label}
+                {selectedType === option.value ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </details>
+
+        <details open className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Sort by
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-1">
+            {SORT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSort(option.value)}
+                className={[
+                  "flex w-full items-center justify-between cursor-pointer rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                  sort === option.value
+                    ? "bg-primary/10 font-black text-primary"
+                    : "font-semibold text-muted hover:bg-primary/5 hover:text-primary",
+                ].join(" ")}
+              >
+                {option.label}
+                {sort === option.value ? <Check className="h-3.5 w-3.5" /> : null}
+              </button>
+            ))}
+          </div>
         </details>
       </div>
     </div>
