@@ -5,11 +5,9 @@ import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
   ArrowUpRight,
-  Eye,
   LayoutGrid,
   Package,
   Plus,
-  UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -25,7 +23,8 @@ type DashboardOverviewData = {
   };
   myAnalytics: {
     last30DaysViews: number;
-    viewsByDay: { date: string; views: number }[];
+    last30DaysSaves: number;
+    viewsByDay: { date: string; views: number; saves: number }[];
   };
 };
 
@@ -43,9 +42,11 @@ const DASHBOARD_OVERVIEW = gql`
     }
     myAnalytics {
       last30DaysViews
+      last30DaysSaves
       viewsByDay {
         date
         views
+        saves
       }
     }
   }
@@ -78,34 +79,31 @@ export function DashboardOverview({ lang }: { lang: string }) {
   const analytics = data?.myAnalytics;
   const categories = overview?.categoryCounts ?? [];
   const maxCategoryCount = Math.max(1, ...categories.map(({ count }) => count));
-  const trend = analytics?.viewsByDay.slice(-14) ?? [];
-  const maxDailyViews = Math.max(1, ...trend.map(({ views }) => views));
+  const trend = analytics?.viewsByDay.slice(-30) ?? [];
+  const maxDailyActivity = Math.max(
+    1,
+    ...trend.flatMap(({ views, saves }) => [views, saves]),
+  );
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col">
-      <header className="z-10 shrink-0 bg-app px-2 pb-4 pt-5 text-center md:pb-5 md:pt-6">
-        <h1 className="text-2xl font-black tracking-tight text-main sm:text-3xl">
+      <header className="z-10 shrink-0 bg-app px-4 pb-4 pt-5 md:px-6 md:pb-5 md:pt-6">
+        <h1 className="text-xl font-black tracking-tight text-main sm:text-2xl">
           Dashboard <span className="text-primary">Overview</span>
         </h1>
-        <p className="mx-auto mt-2 max-w-2xl text-xs font-medium leading-5 text-muted sm:text-sm">
+        <p className="mt-1.5 max-w-2xl text-xs font-medium leading-5 text-muted sm:text-sm">
           See how your listings and shop are growing.
         </p>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 md:px-6">
       {error && !overview ? (
         <div role="alert" className="mx-auto max-w-xl rounded-2xl border border-border bg-elevated p-6 text-center text-sm text-muted">
           We couldn’t load your dashboard right now. Please refresh and try again.
         </div>
       ) : null}
 
-      <section aria-label="Shop summary" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 xl:gap-4">
-        <MetricCard icon={Package} label="Active listings" value={overview?.totalActiveListings} loading={loading && !overview} />
-        <MetricCard icon={Eye} label="Total views" value={overview?.totalViews} loading={loading && !overview} />
-        <MetricCard icon={UsersRound} label="Followers" value={overview?.totalFollowers} loading={loading && !overview} />
-      </section>
-
-      <section aria-label="Shop details" className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:mt-4 xl:grid-cols-3 xl:gap-4">
+      <section aria-label="Shop overview" className="grid grid-cols-1 items-stretch gap-4 pt-1 lg:grid-cols-2 xl:grid-cols-3">
         <Panel title="Listings overview" icon={Package}>
           {loading && !overview ? <RowsSkeleton /> : (
             <div className="space-y-0.5">
@@ -119,27 +117,48 @@ export function DashboardOverview({ lang }: { lang: string }) {
 
         <Panel title="Shop growth" icon={ArrowUpRight}>
           {loading && !analytics ? <GrowthSkeleton /> : (
-            <div className="flex h-full min-h-[230px] flex-col">
-              <div className="flex items-end justify-between gap-3">
+            <div className="flex min-h-[250px] flex-1 flex-col">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs font-semibold text-muted">Views in the last 30 days</p>
+                  <p className="text-xs font-semibold text-muted">Views · 30 days</p>
                   <p className="mt-1 text-2xl font-black tracking-tight text-primary">{numberFormat.format(analytics?.last30DaysViews ?? 0)}</p>
                 </div>
-                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">Last 14 days</span>
+                <div className="text-right">
+                  <p className="text-xs font-semibold text-muted">Saves · 30 days</p>
+                  <p className="mt-1 text-2xl font-black tracking-tight text-sky-600">{numberFormat.format(analytics?.last30DaysSaves ?? 0)}</p>
+                </div>
               </div>
               {trend.length > 0 ? (
-                <div className="mt-auto flex h-20 items-end gap-1.5 overflow-hidden pt-4" role="img" aria-label="Daily views over the last 14 days">
-                  {trend.map((point, index) => (
-                    <div
-                      key={`${point.date}-${index}`}
-                      className="min-h-1 min-w-0 flex-1 rounded-t-md bg-primary transition-colors hover:bg-primary-strong"
-                      style={{ height: `${Math.max(5, (point.views / maxDailyViews) * 100)}%` }}
-                      title={`${point.date}: ${point.views} views`}
-                    />
-                  ))}
+                <div className="mt-auto pt-6">
+                  <div className="flex h-28 items-end gap-px border-b border-border/80" role="img" aria-label="Daily views and saves over the last 30 days">
+                    {trend.map((point) => (
+                      <div key={point.date} className="flex h-full min-w-0 flex-1 items-end gap-px" title={`${formatChartDate(point.date)}: ${point.views} views, ${point.saves} saves`}>
+                        <div className="flex h-full min-w-0 flex-1 items-end">
+                          <div
+                            className="w-full rounded-t-sm bg-primary/85 transition-colors hover:bg-primary"
+                            style={{ height: `${point.views > 0 ? Math.max(5, (point.views / maxDailyActivity) * 100) : 2}%` }}
+                          />
+                        </div>
+                        <div className="flex h-full min-w-0 flex-1 items-end">
+                          <div
+                            className="w-full rounded-t-sm bg-sky-500/85 transition-colors hover:bg-sky-600"
+                            style={{ height: `${point.saves > 0 ? Math.max(5, (point.saves / maxDailyActivity) * 100) : 2}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex justify-between text-[10px] font-medium text-muted">
+                    <span>{trend[0]?.date ? formatChartDate(trend[0].date) : ""}</span>
+                    <span>{trend.at(-1)?.date ? formatChartDate(trend.at(-1)!.date) : ""}</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-center gap-4 text-[10px] font-semibold text-muted">
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" aria-hidden />Views</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden />Saves</span>
+                  </div>
                 </div>
               ) : (
-                <div className="mt-7 flex flex-1 items-center justify-center rounded-xl bg-surface px-4 text-center text-sm text-muted">
+                <div className="mt-6 flex min-h-40 flex-1 items-center justify-center rounded-xl bg-surface px-4 text-center text-sm text-muted">
                   Your view activity will appear here as people discover your listings.
                 </div>
               )}
@@ -179,44 +198,20 @@ export function DashboardOverview({ lang }: { lang: string }) {
   );
 }
 
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  loading,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value?: number;
-  loading: boolean;
-}) {
-  return (
-    <div className="flex min-h-[92px] items-center gap-3 rounded-2xl border border-border bg-elevated px-4 py-4 shadow-sm sm:px-5">
-      <div className="shrink-0 rounded-xl bg-primary/10 p-2.5 text-primary">
-        <Icon className="h-[18px] w-[18px]" aria-hidden />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-xs font-semibold text-muted">{label}</p>
-        {loading ? <Skeleton className="mt-2 h-5 w-16" /> : <p className="mt-1 text-xl font-black tracking-tight text-primary">{numberFormat.format(value ?? 0)}</p>}
-      </div>
-    </div>
-  );
-}
-
 function Panel({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <article className="min-h-[270px] overflow-hidden rounded-2xl border border-border bg-elevated p-4 shadow-sm sm:p-5">
+    <article className="flex min-h-[320px] flex-col rounded-2xl border border-border bg-elevated p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
       <h2 className="mb-4 flex items-center justify-center gap-2 text-center text-base font-extrabold tracking-tight text-main">
         <Icon className="h-4 w-4 text-primary" aria-hidden /> {title}
       </h2>
-      {children}
+      <div className="flex flex-1 flex-col">{children}</div>
     </article>
   );
 }
 
 function SummaryRow({ label, value, total = false }: { label: string; value: number; total?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-3 border-b border-border/70 py-3 text-xs last:border-b-0 ${total ? "mt-1 border-t border-border pt-4 font-bold" : "font-medium"}`}>
+    <div className={`flex items-center justify-between gap-3 border-b border-border/70 py-3 text-xs last:border-b-0 ${total ? "mt-1 pt-4 font-bold" : "font-medium"}`}>
       <span className="text-main">{label}</span>
       <span className="tabular-nums text-muted">{numberFormat.format(value)}</span>
     </div>
@@ -228,5 +223,12 @@ function RowsSkeleton() {
 }
 
 function GrowthSkeleton() {
-  return <div className="space-y-4"><Skeleton className="h-12 w-36" /><Skeleton className="mt-10 h-28 w-full" /></div>;
+  return <div className="flex flex-1 flex-col space-y-4"><Skeleton className="h-12 w-36" /><Skeleton className="mt-auto h-28 w-full" /></div>;
+}
+
+function formatChartDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("en-KE", { day: "numeric", month: "short" });
 }

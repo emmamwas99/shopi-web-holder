@@ -29,6 +29,7 @@ import {
   AdvanceDraftStepDocument,
   CreateDraftDocument,
   DiscardDraftDocument,
+  GetDraftDocument,
   GetMediaAssetDocument,
   MyContactPhoneDocument,
   PublishDraftDocument,
@@ -181,6 +182,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftSetupInFlightRef = useRef(false);
   const analysisInFlightRef = useRef<string | null>(null);
+  const bulkDraftResumeRef = useRef(false);
   const locationAutofilledRef = useRef(false);
   const phoneAutofilledRef = useRef(false);
 
@@ -223,6 +225,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     setStep,
     setTitle,
     setCaption,
+    setHashtags,
     setCategory,
     setSubcategory,
     setSpecs,
@@ -635,6 +638,87 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   async function resumeAnalysisFromDraft(id: string) {
     try {
+      const { data } = await apolloClient.query({
+        query: GetDraftDocument,
+        variables: { id },
+        fetchPolicy: "network-only",
+      });
+      const draft = data?.draft;
+      if (!draft || useCreateStore.getState().draftId !== id) return;
+
+      if (draft.bulkStage === "COMPLETE") {
+        bulkDraftResumeRef.current = true;
+        setTitle(draft.title ?? "");
+        setCaption(draft.caption ?? "");
+        setHashtags(draft.hashtags ?? []);
+        setCategory(draft.categoryId ?? null);
+        setSpecs((draft.specs ?? []).map((spec) => ({ key: spec.key, value: spec.value })));
+        setVisibilityMode(
+          (draft.visibilityMode.toLowerCase() as "public" | "friends_only" | "private") ?? "public",
+        );
+        setAllowDownload(draft.allowDownload);
+        setHdEnabled(draft.hdEnabled);
+        setContactPhone(draft.contactPhone ?? null);
+        if (draft.price) {
+          setPrice(draft.price.amount, draft.price.amount === 0);
+          setNegotiable(draft.price.negotiable);
+          setPriceInput(String(draft.price.amount));
+        }
+        if (draft.location?.placeName && draft.location.placeId) {
+          setLocation({
+            placeName: draft.location.placeName,
+            formattedAddress: draft.location.formattedAddress ?? "",
+            placeId: draft.location.placeId,
+            county: draft.location.county ?? undefined,
+            subregion: draft.location.subregion ?? undefined,
+          });
+        }
+
+        const type = draft.type === "VIDEO" ? "video" : "image";
+        setContentType(type);
+        const currentIds = new Set(useCreateStore.getState().mediaItems.map((item) => item.id));
+        await Promise.all((draft.mediaAssetIds ?? []).filter((assetId) => !currentIds.has(assetId)).map(async (assetId) => {
+          try {
+            const assetResult = await apolloClient.query({
+              query: GetMediaAssetDocument,
+              variables: { id: assetId },
+              fetchPolicy: "network-only",
+            });
+            const asset = assetResult.data?.mediaAsset;
+            if (!asset || useCreateStore.getState().draftId !== id) return;
+            const preview = asset.muxMeta?.thumbnailUrl
+              ?? (asset.muxMeta?.playbackId
+                ? `https://image.mux.com/${asset.muxMeta.playbackId}/thumbnail.jpg?time=0`
+                : undefined)
+              ?? asset.r2Variants?.find((variant) => variant.variant === "original")?.url
+              ?? asset.r2Variants?.find((variant) => variant.variant === "large")?.url
+              ?? asset.r2Variants?.[0]?.url
+              ?? asset.thumbnailUrl
+              ?? "";
+            useCreateStore.getState().addMediaItem({
+              id: assetId,
+              localUri: preview,
+              type: asset.type === "VIDEO" ? "video" : asset.type === "IMAGE" ? "image" : type,
+              status: asset.status === "READY" ? "ready" : asset.status === "FAILED" ? "error" : "processing",
+              thumbnailUrl: asset.muxMeta?.thumbnailUrl ?? asset.thumbnailUrl ?? undefined,
+              r2Variants: asset.r2Variants ?? undefined,
+              muxPlaybackId: asset.muxMeta?.playbackId ?? undefined,
+              errorMessage: asset.errorMessage ?? undefined,
+            });
+          } catch {
+            // The extraction retry loop below still uses the server-side draft media.
+          }
+        }));
+
+        // Once analysis has already been saved, reopening the draft should not
+        // spend tokens on another classification pass.
+        if (draft.categoryId && (draft.specs?.length ?? 0) > 0) {
+          setHasExtracted(true);
+          setGuidedStage("insights");
+          return;
+        }
+      }
+
       const result = await extractWhenMediaReady(
         id,
         RESUME_ANALYSIS_TIMEOUT_MS,
@@ -711,14 +795,19 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     // The opening answer is broad intent, not verified listing data. Keep the
     // title empty when media analysis cannot identify the item so the seller
     // supplies an accurate one instead of publishing the opening answer.
-    const nextTitle = result.title.trim();
+    const currentDraft = bulkDraftResumeRef.current
+      ? useCreateStore.getState()
+      : null;
+    const nextTitle = currentDraft?.title.trim() || result.title.trim();
+    const nextDescription = currentDraft?.caption.trim() || result.description;
     const cleanSpecs = result.specs
       .map((spec) => ({ key: spec.key.trim(), value: spec.value.trim() }))
       .filter((spec) => spec.key && spec.value);
-    const initialPrice = result.price ?? result.suggestedPrice;
+    const nextSpecs = currentDraft?.specs.length ? currentDraft.specs : cleanSpecs;
+    const initialPrice = currentDraft?.price ?? result.price ?? result.suggestedPrice;
     const hasPreparedDetails =
-      Boolean(result.description.trim()) ||
-      cleanSpecs.length > 0 ||
+      Boolean(nextDescription.trim()) ||
+      nextSpecs.length > 0 ||
       initialPrice != null;
 
     setAnalysisError(
@@ -728,9 +817,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     );
 
     setTitle(nextTitle);
-    setCaption(result.description);
-    setSpecs(cleanSpecs);
-    if (result.categoryId) {
+    setCaption(nextDescription);
+    setSpecs(nextSpecs);
+    if (!currentDraft?.categoryId && result.categoryId) {
       setCategory(result.categoryId, result.level1, "ai");
     }
     if (initialPrice != null) {
@@ -751,9 +840,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
     await saveDraft(id, {
       title: nextTitle,
-      caption: result.description,
-      categoryId: result.categoryId ?? undefined,
-      specs: cleanSpecs,
+      caption: nextDescription,
+      categoryId: currentDraft?.categoryId ?? result.categoryId ?? undefined,
+      specs: nextSpecs,
       aiClassification:
         result.level1 || result.level2
           ? {
@@ -1279,6 +1368,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     setFormError(null);
 
     try {
+      await waitForMediaAttachment();
       await saveDraft(draftId, {
         title: title.trim(),
         caption: caption.trim(),
@@ -1306,6 +1396,24 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         allowDownload,
         hdEnabled,
       });
+
+      // Keep saved agent listings consistent with manual listings: the Drafts
+      // screen can publish directly once every required field is complete.
+      let ready = false;
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        const response = await advanceDraft({ variables: { id: draftId } });
+        if (response.error) throw new Error(response.error.message);
+        if (response.data?.advanceDraftStep.currentStep === "READY") {
+          ready = true;
+          break;
+        }
+      }
+      if (!ready) {
+        throw new Error(
+          "The draft is not ready yet. Review the required details and try again.",
+        );
+      }
+
       trackPostJourney("post_draft_saved", {
         method: "ai_agent",
         category: categoryName ?? "unknown",

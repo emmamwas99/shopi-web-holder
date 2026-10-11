@@ -158,7 +158,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-52 rounded-xl border-border bg-elevated p-1.5 text-main shadow-lg">
                 <Link
-                  href={`/${lang}/upload`}
+                  href={`/${lang}/dashboard?tab=create`}
                   className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
                 >
                   <Plus className="h-4 w-4 text-primary" aria-hidden />
@@ -166,12 +166,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                 </Link>
                 <button
                   type="button"
-                  disabled
-                  title="Bulk upload is coming soon"
-                  className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-muted opacity-60"
+                  onClick={() => router.push(`/${lang}/dashboard?tab=listings&bulk=1`)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
                 >
                   <Upload className="h-4 w-4" aria-hidden />
-                  Bulk upload
+                  Bulk upload from Excel
                 </button>
               </PopoverContent>
             </Popover>

@@ -7,6 +7,8 @@ interface UseInfiniteScrollOptions {
   loading: boolean;
   onLoadMore: () => void;
   rootMargin?: string;
+  /** Scroll container to observe against; defaults to the browser viewport. */
+  root?: Element | null;
   enabled?: boolean;
 }
 
@@ -27,6 +29,7 @@ export function useInfiniteScroll({
   loading,
   onLoadMore,
   rootMargin = "400px",
+  root = null,
   enabled = true,
 }: UseInfiniteScrollOptions): UseInfiniteScrollResult {
   const [sentinelEl, setSentinelEl] = useState<HTMLDivElement | null>(null);
@@ -59,7 +62,7 @@ export function useInfiniteScroll({
       (entries) => {
         if (entries[0].isIntersecting) maybeLoadMore();
       },
-      { rootMargin },
+      { root, rootMargin },
     );
 
     observer.observe(el);
@@ -69,7 +72,7 @@ export function useInfiniteScroll({
       // When a feed returns from display:none, re-check once. The page-append
       // recheck lives in its own effect below.
       frame = requestAnimationFrame(() => {
-        if (sentinelWithinMargin(el, rootMargin)) maybeLoadMore();
+        if (sentinelWithinMargin(el, rootMargin, root)) maybeLoadMore();
       });
     }
 
@@ -77,7 +80,7 @@ export function useInfiniteScroll({
       if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [enabled, rootMargin, sentinelEl]);
+  }, [enabled, root, rootMargin, sentinelEl]);
 
   // IntersectionObserver only fires on intersection CHANGES. If an appended
   // page is shorter than rootMargin (e.g. a grid of small tiles), the sentinel
@@ -95,16 +98,23 @@ export function useInfiniteScroll({
       const state = latest.current;
       if (document.body.classList.contains("comments-open")) return;
       if (!state.hasMore || state.loading) return;
-      if (sentinelWithinMargin(sentinelEl, rootMargin)) state.onLoadMore();
+      if (sentinelWithinMargin(sentinelEl, rootMargin, root)) state.onLoadMore();
     });
     return () => cancelAnimationFrame(frame);
-  }, [loading, enabled, rootMargin, sentinelEl]);
+  }, [loading, enabled, root, rootMargin, sentinelEl]);
 
   return { sentinelRef };
 }
 
-function sentinelWithinMargin(el: HTMLElement, rootMargin: string) {
+function sentinelWithinMargin(
+  el: HTMLElement,
+  rootMargin: string,
+  root: Element | null,
+) {
   const rect = el.getBoundingClientRect();
   const margin = Number.parseFloat(rootMargin) || 0;
-  return rect.top <= window.innerHeight + margin && rect.bottom >= -margin;
+  const bounds = root?.getBoundingClientRect();
+  const top = bounds?.top ?? 0;
+  const bottom = bounds?.bottom ?? window.innerHeight;
+  return rect.top <= bottom + margin && rect.bottom >= top - margin;
 }

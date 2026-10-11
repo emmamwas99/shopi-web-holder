@@ -331,30 +331,54 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
     }
   }
 
-  /** Save draft (autosave already keeps it current) and exit to the feed. */
+  /** Save all options and leave a complete draft ready to publish from Drafts. */
   async function handleSaveDraft() {
-    if (publishing) return;
+    if (!draftId || publishing || advancing) return;
+    setError(null);
     setAdvancing(true);
     try {
-      if (draftId) {
-        await autosave({
-          variables: {
-            id: draftId,
-            input: {
-              price: { amount: price ?? 0, currency, negotiable },
-              visibilityMode: toVisibilityMode(visibilityMode),
-              allowDownload,
-              hdEnabled,
-            },
-          },
-        }).catch(() => undefined);
+      // Do not let a prior debounced settings save overwrite this final save.
+      await awaitDraftAutosaves(draftId);
+      const saveResult = await queueAutosave({
+        price: { amount: price ?? 0, currency, negotiable },
+        visibilityMode: toVisibilityMode(visibilityMode),
+        allowDownload,
+        hdEnabled,
+      });
+      if (saveResult?.error) {
+        setError(saveResult.error.message ?? "Failed to save settings");
+        return;
       }
+
+      // Drafts only offers direct publishing for READY drafts. Advance here so
+      // selecting this saved draft later leaves Publish as the only action.
+      let ready = false;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data, error: stepError } = await advanceStep({
+          variables: { id: draftId },
+        });
+        if (stepError) {
+          setError(stepError.message ?? "Could not save draft");
+          return;
+        }
+        if (data?.advanceDraftStep?.currentStep === "READY") {
+          ready = true;
+          break;
+        }
+      }
+      if (!ready) {
+        setError("Complete the required post details before saving this draft.");
+        return;
+      }
+
       trackPostJourney("post_draft_saved", {
         method: useCreateStore.getState().creationMode ?? "unknown",
         category: categoryName ?? "unknown",
         content_type: contentType ?? "unknown",
       });
       exitAfterCreate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setAdvancing(false);
     }

@@ -54,6 +54,7 @@ export function DashboardModal({
 
   const selectTab = useCallback((tab: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("bulk");
     if (tab === "overview") nextParams.delete("tab");
     else nextParams.set("tab", tab);
     const query = nextParams.toString();
@@ -175,6 +176,8 @@ export function DashboardModal({
                   <DashboardListings
                     lang={lang}
                     onSingleUpload={() => selectTab("create")}
+                    autoOpenBulk={searchParams.get("bulk") === "1"}
+                    onBulkUploadHandled={() => selectTab("listings")}
                   />
                 ) : activeTab === "overview" ? (
                   <DashboardOverview lang={lang} />

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppBack } from "@/lib/useAppBack";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, ShieldCheck, UsersRound } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
   MyProfileVisitorsDocument,
@@ -63,7 +63,7 @@ function VisitorRow({
 
   return (
     <li
-      className="flex items-center gap-3 px-4 py-2.5"
+      className="flex items-center gap-3 px-4 py-3.5 md:px-6 md:py-4"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
       <Link
@@ -197,14 +197,17 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fetchingMore = useRef(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadMore = useCallback(() => {
     if (!hasMore || !nextCursor || fetchingMore.current) return;
     fetchingMore.current = true;
+    setLoadingMore(true);
     fetchMore({
       variables: { limit: PAGE_SIZE, after: nextCursor },
       updateQuery(prev, { fetchMoreResult }) {
         fetchingMore.current = false;
+        setLoadingMore(false);
         if (!fetchMoreResult) return prev;
         return {
           myProfileVisitors: {
@@ -218,6 +221,7 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
       },
     }).catch(() => {
       fetchingMore.current = false;
+      setLoadingMore(false);
     });
   }, [hasMore, nextCursor, fetchMore]);
 
@@ -235,6 +239,29 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
   }, [loadMore]);
 
   const initialLoading = loading && !data;
+  const visitorRows = initialLoading
+    ? Array.from({ length: 6 }).map((_, i) => <RowSkeleton key={i} />)
+    : visitors.map((visitor) => (
+        <VisitorRow
+          key={visitor.id}
+          visitor={visitor}
+          lang={lang}
+          resolvingFollowState={resolvingFollowState}
+        />
+      ));
+  const emptyState = !initialLoading && visitors.length === 0 ? (
+    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+      <div className="mb-3 rounded-2xl bg-primary/10 p-3 text-primary">
+        <Eye className="h-5 w-5" aria-hidden />
+      </div>
+      <p className="font-semibold" style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}>
+        No profile views yet
+      </p>
+      <p className="mt-1 max-w-sm" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+        When logged-in users view your profile, they&apos;ll show up here.
+      </p>
+    </div>
+  ) : null;
 
   return (
     <div
@@ -243,7 +270,7 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3"
+        className={`sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3 ${embedded ? "md:px-8 md:py-5" : ""}`}
         style={{
           backgroundColor: "rgb(var(--color-bg) / 0.94)",
           borderColor: "rgb(var(--color-border))",
@@ -267,7 +294,7 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
               color: "rgb(var(--color-text))",
             }}
           >
-            Profile views
+            {embedded ? "Profile visitors" : "Profile views"}
           </h1>
           {!initialLoading && (
             <p
@@ -277,57 +304,61 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
                 color: "rgb(var(--color-text-muted))",
               }}
             >
-              {total} {total === 1 ? "viewer" : "viewers"}
+              {total} {total === 1 ? "person has viewed your profile" : "people have viewed your profile"}
             </p>
           )}
         </div>
       </div>
 
-      {/* List */}
-      <ul
-        className="mx-auto w-full max-w-2xl divide-y"
-        style={{ borderColor: "rgb(var(--color-border))" }}
-      >
-        {initialLoading
-          ? Array.from({ length: 14 }).map((_, i) => <RowSkeleton key={i} />)
-          : visitors.map((v) => (
-              <VisitorRow
-                key={v.id}
-                visitor={v}
-                lang={lang}
-                resolvingFollowState={resolvingFollowState}
-              />
-            ))}
-      </ul>
+      {embedded ? (
+        <main className="mx-auto grid w-full max-w-[1440px] gap-5 p-4 md:p-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-elevated shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 md:px-6">
+              <div>
+                <h2 className="text-sm font-bold text-main">Recent visitors</h2>
+                <p className="mt-0.5 text-xs text-muted">People who recently opened your profile</p>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+                <UsersRound className="h-3.5 w-3.5" aria-hidden /> {total}
+              </span>
+            </div>
+            <ul className="divide-y divide-border" style={{ borderColor: "rgb(var(--color-border))" }}>
+              {visitorRows}
+            </ul>
+            {emptyState}
+          </section>
 
-      {/* Empty state */}
-      {!initialLoading && visitors.length === 0 && (
-        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-          <p
-            className="font-semibold"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            No profile views yet
-          </p>
-          <p
-            className="mt-1"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            When logged-in users view your profile, they&apos;ll show up here.
-          </p>
-        </div>
+          <aside className="flex flex-col gap-4">
+            <section className="rounded-2xl border border-border bg-elevated p-5 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted">
+                <Eye className="h-4 w-4 text-primary" aria-hidden /> Profile audience
+              </div>
+              <p className="mt-4 text-4xl font-black tracking-tight text-main">{total.toLocaleString("en-KE")}</p>
+              <p className="mt-1 text-sm font-medium text-muted">{total === 1 ? "profile visitor" : "profile visitors"}</p>
+            </section>
+            <section className="rounded-2xl border border-border bg-surface/70 p-5">
+              <div className="flex items-center gap-2 text-sm font-bold text-main">
+                <ShieldCheck className="h-4 w-4 text-primary" aria-hidden /> About profile views
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted">
+                This list shows signed-in members who have viewed your profile. Visit their profiles or follow them back from here.
+              </p>
+            </section>
+          </aside>
+        </main>
+      ) : (
+        <>
+          <ul className="mx-auto w-full max-w-2xl divide-y" style={{ borderColor: "rgb(var(--color-border))" }}>
+            {visitorRows}
+          </ul>
+          {emptyState}
+        </>
       )}
 
       {/* Infinite scroll sentinel + loader */}
       <div ref={sentinelRef} className="h-px" />
-      {hasMore && !initialLoading && (
-        <ul className="mx-auto w-full max-w-2xl">
+      {hasMore && loadingMore && (
+        <ul className={embedded ? "mx-auto w-full max-w-[1440px] px-4 md:px-8" : "mx-auto w-full max-w-2xl"}>
           {Array.from({ length: 3 }).map((_, i) => (
             <RowSkeleton key={`more-${i}`} />
           ))}
