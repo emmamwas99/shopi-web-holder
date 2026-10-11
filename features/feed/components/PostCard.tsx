@@ -24,6 +24,7 @@ import {
   Flag,
   MoreVertical,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
@@ -1258,11 +1259,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }
-    const href = contentPath(lang, post);
-    // This is a standalone PDP document route. A hard navigation also avoids
-    // retaining stale parallel-route state from the feed's former detail sheet.
     rememberScrollBeforeNavigation();
-    window.location.assign(href);
+    router.push(contentPath(lang, post), { scroll: false });
   }
 
   async function handleCopyLink() {
@@ -1531,13 +1529,19 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <button
-          type="button"
-          onClick={handleOpen}
-          className="mb-1 block w-full cursor-pointer text-left text-[15px] font-extrabold leading-snug text-main md:text-[18px]"
+        <Link
+          href={contentPath(lang, post)}
+          scroll={false}
+          onClick={() => {
+            if (shouldFire(post.id, "DETAIL_VIEWED")) {
+              trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
+            }
+            rememberScrollBeforeNavigation();
+          }}
+          className="mb-1 block w-full cursor-pointer text-left text-[15px] font-extrabold leading-snug text-main no-underline md:text-[18px]"
         >
           {post.title}
-        </button>
+        </Link>
 
         {/* Price sits with the title, above the media.
 

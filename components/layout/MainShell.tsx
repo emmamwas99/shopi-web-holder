@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { hasDesktopSideNav } from "@/components/layout/SideNav";
@@ -28,43 +28,6 @@ export function MainShell({
   // Explore (desktop's "Browse"). Not the For You feed — re-tapping its nav
   // tab already scrolls it to the top.
   const hasBackToTop = pathname.startsWith(`/${lang}/explore`);
-
-  // PDPs are standalone document routes. Bypass any stale parallel-route state
-  // when an in-app listing link is clicked so the actual page always mounts.
-  useEffect(() => {
-    function openListingDocument(event: MouseEvent) {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) return;
-
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const anchor = target.closest<HTMLAnchorElement>("a[href]");
-      if (
-        !anchor ||
-        (anchor.target && anchor.target !== "_self") ||
-        anchor.hasAttribute("download")
-      ) return;
-
-      const url = new URL(anchor.href, window.location.href);
-      if (
-        url.origin !== window.location.origin ||
-        !url.pathname.startsWith(`/${lang}/content/`)
-      ) return;
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      window.location.assign(url.href);
-    }
-
-    document.addEventListener("click", openListingDocument, true);
-    return () => document.removeEventListener("click", openListingDocument, true);
-  }, [lang]);
 
   usePreloadInbox();
 

@@ -485,7 +485,7 @@ export function ChatDetail({
                   <button
                     type="button"
                     onClick={() =>
-                      window.location.assign(`/${lang}/content/${contentSummary.id}`)
+                      router.push(`/${lang}/content/${contentSummary.id}`)
                     }
                     className="rounded-full hidden border px-3 py-1.5 text-xs font-semibold"
                     style={{ borderColor: "rgb(var(--color-border))" }}
@@ -512,7 +512,7 @@ export function ChatDetail({
             {contentSummary ? (
               <div
                 onClick={() =>
-                  window.location.assign(`/${lang}/content/${contentSummary.id}`)
+                  router.push(`/${lang}/content/${contentSummary.id}`)
                 }
                 className="mt-3 flex items-center gap-3 rounded-2xl border p-1"
                 style={{

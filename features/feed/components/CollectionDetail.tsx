@@ -3,6 +3,7 @@
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
@@ -139,9 +140,11 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
                 )}
 
                 {/* Tap to open PDP */}
-                <button
+                <Link
+                  href={contentPath(lang, item)}
+                  scroll={false}
+                  aria-label={item.title ?? "Open listing"}
                   className="absolute inset-0"
-                  onClick={() => window.location.assign(contentPath(lang, item))}
                 />
 
                 {/* Price badge */}

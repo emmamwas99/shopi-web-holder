@@ -51,8 +51,12 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop({ ssrDefault: false });
-  const { user } = useAuthSession();
-  const inboxUnreadCount = useInboxUnreadCount();
+  const { user, hydrated } = useAuthSession();
+  // The count reads the persisted (localStorage) session directly, so the
+  // server and the first client paint must both show no badge; it appears
+  // once the session has rehydrated, avoiding a hydration mismatch.
+  const liveUnreadCount = useInboxUnreadCount();
+  const inboxUnreadCount = hydrated ? liveUnreadCount : 0;
   const { logout, loading: loggingOut } = useLogout(lang);
   // The tabs return to the screen they were left on (sub-tab, search,
   // filters); RouteScrollRestoration restores the scroll to match.

@@ -216,10 +216,10 @@ function TrendingRow({
 
   return (
     <li>
-      <button
-        type="button"
-        onClick={() => window.location.assign(contentPath(lang, post))}
-        className="group flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-surface"
+      <Link
+        href={contentPath(lang, post)}
+        scroll={false}
+        className="group flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left no-underline transition-colors hover:bg-surface"
       >
         <span className="w-4 shrink-0 text-center text-sm font-black text-muted">
           {rank}
@@ -245,7 +245,7 @@ function TrendingRow({
             {detail || "Trending now"}
           </span>
         </span>
-      </button>
+      </Link>
     </li>
   );
 }
