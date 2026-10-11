@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog } from "./CreateErrorDialog";
+import { goBackOr } from "@/lib/useAppBack";
 
 interface Props {
   lang: string;
@@ -75,11 +76,7 @@ function PageShell({
     // The picker pushed us here, so plain Back reopens it (as the intercepted
     // modal) over whatever page it was opened from. Fall back to a direct
     // navigation when this page was the entry point (hard load / shared link).
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.replace(`/${lang}/upload`);
+    goBackOr(router, `/${lang}/upload`);
   }
 
   const shellBody = (

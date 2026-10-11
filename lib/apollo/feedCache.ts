@@ -47,6 +47,11 @@ export function pruneVideoFeedCache(cache: ApolloCache, keepSeed: string): void 
 
   for (const storeFieldName of Object.keys(root)) {
     if (!storeFieldName.startsWith("videoFeed")) continue;
+    // Only viewer lists carry a seed. The Watch grid's list has none, and it is
+    // the screen the viewer closes back onto: evicting it here dropped every
+    // page the user had scrolled through, so Back from a video landed in a
+    // refetched first page instead of on the tile they tapped.
+    if (!storeFieldName.includes('"seedId":"')) continue;
     if (storeFieldName.includes(keep)) continue;
     cache.evict({ id: "ROOT_QUERY", fieldName: storeFieldName });
     evicted = true;

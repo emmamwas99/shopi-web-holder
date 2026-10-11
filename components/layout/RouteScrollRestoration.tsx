@@ -8,6 +8,13 @@ import {
   scrollUrlKey,
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
+import { installAppHistory } from "@/lib/appHistory";
+
+// Back buttons ask lib/appHistory whether going back stays in the app. It has
+// to be tracking before the first navigation, so it starts with this module —
+// part of every route's first load — not with the lazily loaded screens whose
+// back buttons use it.
+installAppHistory();
 
 // Existing callers import these from here.
 export {

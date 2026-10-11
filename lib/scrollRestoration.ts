@@ -107,10 +107,16 @@ const INTENT_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const
 const FEED_PATH = /^\/[^/]+\/(?:for-you|feed)\/?$/;
 
 /**
- * Listing and video routes. From inside the app they are intercepted into the
- * @modal slot and drawn over the page that opened them.
+ * The video viewer and the seller dashboard. From inside the app they are
+ * intercepted into the @modal slot and drawn over the page that opened them.
+ *
+ * Listings (/content/) are not: they are ordinary pages that scroll the window
+ * and are restored like any other. Leaving them in here after their
+ * interception was removed meant a listing's position was never recorded and
+ * every return to one — Back from the seller, a related listing, the chat —
+ * opened it at the top.
  */
-const OVERLAY_PATH = /^\/[^/]+\/(?:content|video)\/[^/]+/;
+const OVERLAY_PATH = /^\/[^/]+\/(?:video\/[^/]+|dashboard\/?$)/;
 
 type Sample = { entry: string | null; url: string; position: ScrollPosition };
 
@@ -257,6 +263,19 @@ function readScrollY(): number {
     if (Number.isFinite(top) && top <= 0) return -top;
   }
   return window.scrollY;
+}
+
+/**
+ * A vaul drawer is on screen. On iOS vaul scrolls the window to the top while
+ * one is open, holds it there, and scrolls back when it closes — so what the
+ * window reports meanwhile is not where the page is. The page cannot scroll
+ * under a drawer anyway, so the position taken before it opened (the tap that
+ * opened it samples one) stays the true one. Sampling the forced 0 overwrote
+ * it: Back to Categories from a subcategory chosen in its drawer opened at
+ * the top on iPhones.
+ */
+function isDrawerOpen(): boolean {
+  return document.querySelector("[data-vaul-drawer]") !== null;
 }
 
 function maxScrollY(): number {
@@ -573,7 +592,7 @@ let pendingReturn: Pending | null = null;
 const knownEntries = new Set<string>();
 
 function sampleNow() {
-  if (!isBrowser() || activeRestore) return;
+  if (!isBrowser() || activeRestore || isDrawerOpen()) return;
   const { pathname } = window.location;
   // An overlay route is drawn over another page: the window belongs to that
   // page, not to the overlay's URL.
@@ -628,6 +647,18 @@ function hasOverlayMarker(): boolean {
   return document.querySelector(`[${ROUTE_OVERLAY_ATTR}]`) !== null;
 }
 
+/**
+ * For You is ranked afresh for every page load (useForYouFeed), so a position
+ * saved before the load points into a list that is no longer there. It opens
+ * at the top, like a native feed after a refresh. Watch is not re-ranked.
+ */
+function isReRankedOnLoad(): boolean {
+  return (
+    FEED_PATH.test(window.location.pathname) &&
+    new URLSearchParams(window.location.search).get("tab") !== "watch"
+  );
+}
+
 function restoreOnDocumentLoad(entry: string | null, url: string) {
   if (isOverlayPath(window.location.pathname)) return;
   // Only a reload or a back/forward into this document resumes. Opening a
@@ -635,6 +666,7 @@ function restoreOnDocumentLoad(entry: string | null, url: string) {
   // before — which is what the browser does on a static site too.
   const type = documentNavigationType();
   if (type !== "reload" && type !== "back_forward") return;
+  if (isReRankedOnLoad()) return;
   const saved = entry
     ? readPosition(ENTRY_PREFIX + entry)
     : readPosition(URL_PREFIX + url);
@@ -824,15 +856,6 @@ export function installScrollTracking(): () => void {
         : null;
   };
 
-  const onPopState = () => {
-    // Location and the current entry already point at the destination.
-    pendingTraversal = {
-      url: locationUrlKey(),
-      entry: currentEntryKey(),
-      at: performance.now(),
-    };
-  };
-
   const onHide = () => {
     if (document.visibilityState === "visible") return;
     sampleNow();
@@ -844,7 +867,6 @@ export function installScrollTracking(): () => void {
   };
 
   window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("popstate", onPopState);
   window.addEventListener("pagehide", onPageHide);
   document.addEventListener("pointerdown", onPointerDown, {
     capture: true,
@@ -857,7 +879,6 @@ export function installScrollTracking(): () => void {
     if (throttleTimer) clearTimeout(throttleTimer);
     if (idleTimer) clearTimeout(idleTimer);
     window.removeEventListener("scroll", onScroll);
-    window.removeEventListener("popstate", onPopState);
     window.removeEventListener("pagehide", onPageHide);
     document.removeEventListener("pointerdown", onPointerDown, true);
     document.removeEventListener("click", onClick, true);
@@ -866,7 +887,30 @@ export function installScrollTracking(): () => void {
   };
 }
 
+/**
+ * Marks the commit a back/forward press is about to cause as a traversal.
+ *
+ * Registered as this module loads, ahead of Next's own popstate listener (an
+ * effect in its router), and that order matters: React renders a popstate
+ * update synchronously, so Next's listener commits the destination — and
+ * handleRouteCommit runs — before any listener registered after it. Installed
+ * with the other listeners (an effect, inside a Suspense boundary that
+ * hydrates after the router), this ran too late, every Back looked like a
+ * fresh visit, and only the Navigation API's entry keys still recognised it —
+ * so on browsers without them (Safari before 26.2) Back always opened the
+ * previous screen at the top.
+ */
+function onPopState() {
+  // Location and the current entry already point at the destination.
+  pendingTraversal = {
+    url: locationUrlKey(),
+    entry: currentEntryKey(),
+    at: performance.now(),
+  };
+}
+
 if (isBrowser()) {
+  window.addEventListener("popstate", onPopState);
   // The browser's own restoration runs before any client-rendered content
   // exists and then fights this module; it must be off before the first
   // popstate or reload.

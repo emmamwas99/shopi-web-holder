@@ -114,8 +114,8 @@ function DesktopPostCard({
   );
 }
 
-function ForYouColumn({ lang, active }: { lang: string; active: boolean }) {
-  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed(active);
+function ForYouColumn({ lang }: { lang: string }) {
+  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
     loading: loading || loadingMore,
@@ -270,7 +270,7 @@ export default function DesktopFeed({
 
           <div className={tab === "for-you" ? undefined : "hidden"}>
             <StoriesBar lang={lang} variant="desktop" />
-            <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
+            <ForYouColumn lang={lang} />
           </div>
         </section>
 

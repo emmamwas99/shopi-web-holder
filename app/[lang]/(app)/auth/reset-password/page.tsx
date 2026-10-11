@@ -1,11 +1,11 @@
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 
 import { ResetPasswordForm } from "@/features/auth/components/ResetPasswordForm";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
 import { ChevronLeftIcon } from "lucide-react";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
+import { BackLink } from "@/components/layout/BackLink";
 
 export const metadata = { title: "Set a new password" };
 
@@ -27,13 +27,13 @@ export default async function ResetPasswordPage({
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden">
         <div className="flex items-center justify-between">
-          <Link
+          <BackLink
             href={`/${lang}/auth/login`}
             aria-label="Back"
             className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
           >
             <ChevronLeftIcon />
-          </Link>
+          </BackLink>
         </div>
         <div
           aria-hidden

@@ -6,6 +6,7 @@ import { ShopiLogo, Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
 import { ChevronLeftIcon } from "lucide-react";
+import { BackLink } from "@/components/layout/BackLink";
 
 export const metadata = { title: "Create account" };
 
@@ -63,13 +64,13 @@ export default async function RegisterPage({
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div className="relative mx-auto flex min-h-svh max-w-107.5 flex-col bg-app px-4 pb-6 pt-4 lg:hidden">
         <div className="flex items-center justify-between">
-          <Link
+          <BackLink
             href={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
             aria-label="Back"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-elevated text-muted shadow-sm transition-opacity active:opacity-70"
           >
             <ChevronLeftIcon className="h-5 w-5" />
-          </Link>
+          </BackLink>
         </div>
 
         <div className="flex shrink-0 flex-col items-center px-4 pb-5 pt-8 text-center">

@@ -10,6 +10,7 @@ import { useQuery, useMutation } from "@apollo/client/react";
 import Image from "next/image";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { contentPath } from "@/lib/content-url";
+import { goBackOr } from "@/lib/useAppBack";
 
 const GET_COLLECTION_CONTENT = gql`
   query CollectionDetailContent($collectionId: String!) {
@@ -64,8 +65,17 @@ function thumbUrl(item: Item): string | null {
   );
 }
 
+/** `from` is a query param: only ever one of our own paths. */
+function safeReturnPath(from: string | undefined, fallback: string): string {
+  return from && from.startsWith("/") && !from.startsWith("//") ? from : fallback;
+}
+
 export function CollectionDetail({ lang, collectionId, from }: { lang: string; collectionId: string; from?: string }) {
   const router = useRouter();
+  // Back returns to the screen the collection was opened from, as it was
+  // left. Pushing `from` instead opened a fresh copy of it at the top.
+  const goBack = () =>
+    goBackOr(router, safeReturnPath(from, `/${lang}/for-you`));
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const { data, refetch } = (useQuery as any)(GET_COLLECTION_CONTENT, {
@@ -97,7 +107,8 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background border-b border-border flex items-center gap-3 px-4 py-3">
         <button
-          onClick={() => from ? router.push(from) : router.back()}
+          onClick={goBack}
+          aria-label="Go back"
           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -123,7 +134,7 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
             const thumb = thumbUrl(item);
             const isRemoving = removingId === item.id;
             return (
-              <div key={item.id} className="relative aspect-square bg-surface overflow-hidden">
+              <div key={item.id} data-scroll-anchor={item.id} className="relative aspect-square bg-surface overflow-hidden">
                 {/* Thumbnail */}
                 {thumb ? (
                   <Image

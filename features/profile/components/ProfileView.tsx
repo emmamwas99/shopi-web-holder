@@ -26,6 +26,7 @@ import {
   type ProfileSection,
 } from "./ProfileMenu";
 import { appendUnique } from "../lib/appendUnique";
+import { previousAppUrl } from "@/lib/appHistory";
 
 // "tiktok" is not in the menu, so it is hidden from the UI, but
 // TiktokImportPanel and its render branch below are kept intact.
@@ -221,6 +222,8 @@ export function ProfileView({ lang }: Props) {
 
   // Whether back from a section can pop history to the menu, or whether the
   // section was opened straight from a link and history leads elsewhere.
+  // Only the fallback: the browser's own record of the previous entry (below)
+  // also survives this screen remounting, which a ref does not.
   const openedFromMenu = useRef(false);
 
   const tabHref = useCallback(
@@ -253,8 +256,13 @@ export function ProfileView({ lang }: Props) {
   );
 
   const backToMenu = useCallback(() => {
-    if (openedFromMenu.current) {
-      openedFromMenu.current = false;
+    const previous = previousAppUrl();
+    const menuIsBehind = previous
+      ? previous.pathname === window.location.pathname &&
+        !isTab(previous.searchParams.get("tab"))
+      : openedFromMenu.current;
+    openedFromMenu.current = false;
+    if (menuIsBehind) {
       router.back();
     } else {
       router.replace(tabHref(null));

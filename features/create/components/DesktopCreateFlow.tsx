@@ -22,6 +22,7 @@ import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackPostJourney } from "@/lib/analytics";
+import { goBackOr } from "@/lib/useAppBack";
 
 const STEPS = [
   { n: 1, label: "Choose type" },
@@ -124,11 +125,7 @@ export function DesktopCreateFlow({
       return;
     }
     if (step === "pick") setCreationMode(null);
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push(`/${lang}/for-you`);
+    goBackOr(router, `/${lang}/for-you`);
   }
 
   function handleBack() {

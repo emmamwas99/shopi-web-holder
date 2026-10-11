@@ -9,6 +9,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
+import { goBackOr } from "@/lib/useAppBack";
 
 interface Props {
   open: boolean;
@@ -34,8 +35,7 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
 
   function handleClose() {
     onOpenChange(false);
-    if (window.history.length > 1) router.back();
-    else router.push(`/${lang}/for-you`);
+    goBackOr(router, `/${lang}/for-you`);
   }
 
   const options: MediaTypeOption[] = [

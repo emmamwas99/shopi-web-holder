@@ -33,6 +33,7 @@ import {
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackPostJourney } from "@/lib/analytics";
+import { goBackOr } from "@/lib/useAppBack";
 
 /**
  * /upload - the "Upload & sell" entry point.
@@ -172,11 +173,7 @@ export function UploadPickerPage({
   }
 
   function closePicker() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push(`/${lang}/for-you`);
+    goBackOr(router, `/${lang}/for-you`);
   }
 
   const options = [

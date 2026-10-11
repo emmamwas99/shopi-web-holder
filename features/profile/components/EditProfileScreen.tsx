@@ -3,7 +3,6 @@
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Camera, Check, ChevronLeft, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { HTMLAttributes } from "react";
@@ -14,6 +13,7 @@ import { cn } from "@/lib/utils";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
 import { profileReturnHref } from "../lib/settingsReturn";
+import { BackLink } from "@/components/layout/BackLink";
 import {
   useCheckUsername,
   useMyProfile,
@@ -102,13 +102,13 @@ function EditProfileSkeleton({ lang }: { lang: string }) {
           borderColor: "rgb(var(--color-border))",
         }}
       >
-        <Link
+        <BackLink
           href={backHref}
           className="flex h-10 w-10 items-center justify-center rounded-md"
           aria-label="Back to profile"
         >
           <ChevronLeft size={38} strokeWidth={2.5} aria-hidden />
-        </Link>
+        </BackLink>
         <div
           className="h-5 w-24 rounded-md"
           style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
@@ -308,9 +308,9 @@ function EditProfileForm({
           className="h-14 w-14 rounded-md"
           style={{ color: "rgb(var(--color-text))" }}
         >
-          <Link href={backHref} aria-label="Back to profile">
+          <BackLink href={backHref} aria-label="Back to profile">
             <ChevronLeft size={38} strokeWidth={2.5} />
-          </Link>
+          </BackLink>
         </Button>}
 
         <h1

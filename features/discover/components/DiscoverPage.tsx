@@ -67,6 +67,7 @@ import {
 } from "../categories";
 import { slugifyContentTitle } from "@/lib/content-url";
 import { rememberScrollBeforeNavigation } from "@/lib/scrollRestoration";
+import { goBackOr } from "@/lib/useAppBack";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -2083,7 +2084,11 @@ export function DiscoverPage({
       // RouteScrollRestoration uses this anchored snapshot when Back returns.
       rememberScrollBeforeNavigation();
       setSubcategoryDrawerOpen(false);
-      router.push(
+      // Replace, not push: the open drawer holds its own history entry (see
+      // overlayDepth), and it is the one on top. Pushing past it left that
+      // entry behind, so Back from the subcategory showed Categories and the
+      // next Back stayed on it — popping a drawer that was no longer open.
+      router.replace(
         `/${lang}/explore/${drawerCategory.slug}/${slugifyContentTitle(name)}`,
         { scroll: false },
       );
@@ -2751,7 +2756,9 @@ export function DiscoverPage({
                 {isSubcategoryRoute ? (
                   <button
                     type="button"
-                    onClick={() => router.back()}
+                    // Opened straight from a link (Google, WhatsApp) there is
+                    // no Categories screen behind it to go back to.
+                    onClick={() => goBackOr(router, `/${lang}/explore`)}
                     className="grid h-9 w-7 shrink-0 place-items-center rounded-full text-default active:bg-surface"
                     aria-label="Back to categories"
                   >
