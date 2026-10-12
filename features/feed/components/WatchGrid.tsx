@@ -2,9 +2,13 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { Play } from "lucide-react";
-import { VideoFeedDocument } from "@/types/__generated__/graphql";
+import {
+  DiscoveryFeedDocument,
+  VideoFeedDocument,
+} from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
@@ -33,18 +37,48 @@ export function WatchGrid({
   desktopLayout?: boolean;
 }) {
   const { location } = useNearbyLocation();
+  const searchParams = useSearchParams();
+  const requestedCategoryId = searchParams.get("categoryId");
+  const categoryFiltered = desktopLayout && Boolean(requestedCategoryId);
   const pageSize = desktopLayout ? WATCH_GRID_DESKTOP_PAGE_SIZE : WATCH_GRID_PAGE_SIZE;
-  const { data, loading, fetchMore } = useQuery(VideoFeedDocument, {
+  const { data: videoData, loading: videoLoading, fetchMore: fetchMoreVideos } = useQuery(VideoFeedDocument, {
     variables: {
       limit: pageSize,
       latitude: location?.latitude,
       longitude: location?.longitude,
     },
+    skip: categoryFiltered,
     fetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
   });
-  const items = (data?.videoFeed?.items ?? []).filter(isPlayableVideo);
-  const pageInfo = data?.videoFeed?.pageInfo;
+  const {
+    data: categoryData,
+    loading: categoryLoading,
+    fetchMore: fetchMoreCategoryVideos,
+  } = useQuery(DiscoveryFeedDocument, {
+    variables: {
+      categoryId: requestedCategoryId,
+      type: "VIDEO",
+      sort: "NEWEST",
+      limit: pageSize,
+      latitude: location?.latitude,
+      longitude: location?.longitude,
+    },
+    skip: !categoryFiltered,
+    fetchPolicy: "cache-first",
+    notifyOnNetworkStatusChange: true,
+  });
+  // DiscoveryFeed selects the same media fields posterOf/isPlayableVideo use,
+  // though its generated item type is intentionally narrower than the shared
+  // card fragment.
+  const rawItems = categoryFiltered
+    ? categoryData?.discoveryFeed.items ?? []
+    : videoData?.videoFeed.items ?? [];
+  const items = (rawItems as ContentCardFieldsFragment[]).filter(isPlayableVideo);
+  const pageInfo = categoryFiltered
+    ? categoryData?.discoveryFeed.pageInfo
+    : videoData?.videoFeed.pageInfo;
+  const loading = categoryFiltered ? categoryLoading : videoLoading;
   const [loadingMore, setLoadingMore] = useState(false);
   const guard = usePaginationGuard(items.length);
 
@@ -53,11 +87,31 @@ export function WatchGrid({
     const cursor = pageInfo.endCursor;
     guard(cursor, items.length, () => {
       setLoadingMore(true);
-      return fetchMore({
-        variables: { limit: pageSize, after: cursor },
-      }).finally(() => setLoadingMore(false));
+      const request = categoryFiltered
+        ? fetchMoreCategoryVideos({
+            variables: {
+              categoryId: requestedCategoryId,
+              type: "VIDEO",
+              sort: "NEWEST",
+              limit: pageSize,
+              after: cursor,
+            },
+          })
+        : fetchMoreVideos({
+            variables: { limit: pageSize, after: cursor },
+          });
+      return request.finally(() => setLoadingMore(false));
     });
-  }, [fetchMore, guard, items.length, pageInfo, pageSize]);
+  }, [
+    categoryFiltered,
+    fetchMoreCategoryVideos,
+    fetchMoreVideos,
+    guard,
+    items.length,
+    pageInfo,
+    pageSize,
+    requestedCategoryId,
+  ]);
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
@@ -103,7 +157,12 @@ export function WatchGrid({
         }
       >
         {items.map((post) => (
-          <WatchTile key={post.id} post={post} lang={lang} />
+          <WatchTile
+            key={post.id}
+            post={post}
+            lang={lang}
+            categoryId={categoryFiltered ? requestedCategoryId : null}
+          />
         ))}
       </div>
       <div ref={sentinelRef} className="h-1" />
@@ -115,9 +174,11 @@ export function WatchGrid({
 function WatchTile({
   post,
   lang,
+  categoryId,
 }: {
   post: ContentCardFieldsFragment;
   lang: string;
+  categoryId: string | null;
 }) {
   const poster = posterOf(post);
   const creator = post.creator?.profile;
@@ -127,7 +188,7 @@ function WatchTile({
 
   return (
     <Link
-      href={`${videoPath(lang, post)}?tab=watch`}
+      href={`${videoPath(lang, post)}?tab=watch${categoryId ? `&categoryId=${encodeURIComponent(categoryId)}` : ""}`}
       scroll={false}
       onClick={() => {
         rememberWatchScrollPosition();

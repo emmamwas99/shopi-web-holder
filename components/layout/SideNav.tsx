@@ -8,8 +8,11 @@ import {
   ChevronDown,
   LogOut,
   MapPin,
+  Menu,
+  Play,
   Plus,
   Search,
+  Shapes,
   Upload,
   X,
 } from "lucide-react";
@@ -32,17 +35,31 @@ import { Logo } from "@/components/ui/Logo";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NavSearchDropdown } from "@/components/layout/NavSearchDropdown";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { DiscoveryFeedDocument } from "@/types/__generated__/graphql";
+import type { CategoryFacet } from "@/features/discover/categories";
 import { shouldUnoptimize } from "@/lib/imageUtils";
 
 /**
- * The desktop side rail (categories + filters) belongs to Browse only. Watch,
- * Stores and every other screen drop it and use the full frame width.
+ * The desktop filter rail appears once a shopper has chosen a category. The
+ * unfiltered Explore view uses the full frame width.
  */
-export function hasDesktopSideNav(pathname: string, lang: string) {
+export function hasDesktopSideNav(
+  pathname: string,
+  lang: string,
+  hasSelectedCategory = false,
+) {
+  const isExploreCategoryRoute = pathname.startsWith(`/${lang}/explore/`);
   return (
-    pathname.startsWith(`/${lang}/explore`) ||
-    pathname.startsWith(`/${lang}/search`)
+    (hasSelectedCategory || isExploreCategoryRoute) && (
+      pathname.startsWith(`/${lang}/explore`) ||
+      pathname.startsWith(`/${lang}/search`)
+    )
   );
 }
 
@@ -87,8 +104,15 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
+  const watchActive =
+    pathname.startsWith(`/${lang}/for-you`) &&
+    searchParams.get("tab") === "watch";
   const storesActive = pathname.startsWith(`/${lang}/stores`);
-  const showSideNav = hasDesktopSideNav(pathname, lang);
+  const showSideNav = hasDesktopSideNav(
+    pathname,
+    lang,
+    Boolean(searchParams.get("category")),
+  );
 
   return (
     <>
@@ -112,6 +136,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
           <div className="flex h-full min-w-0 flex-1 items-center gap-2 xl:gap-5">
             <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
+              {(browseActive || watchActive) && isDesktop ? (
+                <AllCategoriesPicker lang={lang} watchMode={watchActive} />
+              ) : null}
               <TopNavLink
                 href={browseHref}
                 navTab="explore"
@@ -260,11 +287,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         <aside className="desktop-side-nav fixed bottom-0 top-(--desktop-top-nav-height,68px) z-40 hidden w-(--side-nav-width,280px) flex-col border-r border-border bg-elevated px-5 py-6 md:flex lg:px-8">
           <div className="border-b border-border pb-4">
             <h2 className="text-base font-black tracking-normal text-main">
-              Hi {displayName}!
+              Refine your results
             </h2>
           </div>
 
-          {isDesktop ? <BrowseCategories lang={lang} /> : null}
+          {isDesktop ? <BrowseCategories /> : null}
         </aside>
       )}
     </>
@@ -397,8 +424,10 @@ function TopNavLink({
       scroll={false}
       data-nav-tab={navTab}
       className={[
-        "inline-flex h-8 min-w-20 items-center justify-center rounded-full px-4 transition-colors",
-        active ? "bg-primary text-white" : "text-main hover:bg-surface",
+        "inline-flex h-full min-w-20 items-center justify-center border-b-2 px-4 text-[13px] font-bold transition-colors",
+        active
+          ? "border-primary text-main"
+          : "border-transparent text-muted hover:text-main",
       ].join(" ")}
       aria-current={active ? "page" : undefined}
     >
@@ -407,71 +436,274 @@ function TopNavLink({
   );
 }
 
-function BrowseCategories({ lang }: { lang: string }) {
+function AllCategoriesPicker({
+  lang,
+  watchMode = false,
+}: {
+  lang: string;
+  watchMode?: boolean;
+}) {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isDiscoverRoute =
-    pathname.startsWith(`/${lang}/explore`) ||
-    pathname.startsWith(`/${lang}/search`);
-  const activeCategory = searchParams.get("category");
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const pointerWithinMenu = useRef(false);
+  const suppressHoverUntil = useRef(0);
   const { data, loading } = useQuery(DISCOVERY_CATEGORIES, {
+    variables: watchMode ? { type: "VIDEO" } : {},
     fetchPolicy: "cache-first",
     nextFetchPolicy: "cache-first",
   });
-  // Only the very first load is empty-handed — cache-first means a revisit
-  // already has `data` and just revalidates in the background, so this never
-  // re-flashes skeletons over a populated list.
-  const categoriesLoading = loading && !data;
+  const categories = (data?.discoveryFacets.categories ?? []).filter(
+    (category) => category.count > 0,
+  );
+  const pathParts = pathname.split("/").filter(Boolean);
+  const activeCategory = watchMode
+    ? searchParams.get("categoryId")
+    : searchParams.get("category") ??
+      (pathParts[1] === "explore" && pathParts.length >= 4
+        ? pathParts[2]
+        : null);
+  const selectedCategoryName =
+    categories.find((category) =>
+      watchMode
+        ? category.id === activeCategory
+        : category.slug === activeCategory,
+    )?.name ??
+    (watchMode && activeCategory
+      ? "Selected category"
+      : activeCategory
+      ? activeCategory.replaceAll("-", " ")
+      : watchMode
+        ? "All videos"
+        : "All categories");
 
-  const liveCategories = (data?.discoveryFacets.categories ?? [])
-    .filter((category) => category.count > 0)
-    .slice(0, 8)
-    .map((category) => ({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-    }));
-  const categories = liveCategories;
+  function cancelClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  }
+
+  function scheduleClose() {
+    cancelClose();
+    closeTimer.current = setTimeout(() => {
+      if (
+        !pointerWithinMenu.current &&
+        !contentRef.current?.contains(document.activeElement)
+      ) {
+        setOpen(false);
+      }
+    }, 180);
+  }
+
+  function closeForSelection() {
+    cancelClose();
+    pointerWithinMenu.current = false;
+    suppressHoverUntil.current = Date.now() + 500;
+    setOpen(false);
+  }
+
+  function openOnHover() {
+    if (Date.now() < suppressHoverUntil.current) return;
+    cancelClose();
+    pointerWithinMenu.current = true;
+    setOpen(true);
+  }
+
+  function closeIfFocusLeaves() {
+    setTimeout(() => {
+      const activeElement = document.activeElement;
+      const focusInsideMenu =
+        triggerRef.current?.contains(activeElement) ||
+        contentRef.current?.contains(activeElement);
+      if (!focusInsideMenu) {
+        pointerWithinMenu.current = false;
+        setOpen(false);
+      }
+    }, 0);
+  }
 
   return (
-    <div className="thin-scrollbar -mr-4 mt-4 min-h-0 overflow-y-auto pb-10 pr-3 lg:-mr-7 lg:pr-6">
-      <nav className="flex flex-col gap-0.5" aria-label="Browse categories">
-        {categories.map((category, index) => {
-          const href = `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
-          const active = activeCategory === category.slug;
-
-          return (
-            <Link
-              key={`${category.slug}-${index}`}
-              href={href}
-              scroll={false}
-              className={[
-                "block cursor-pointer rounded-md py-2 text-sm font-semibold tracking-normal transition-colors",
-                active
-                  ? "text-primary"
-                  : "text-muted hover:text-primary",
-              ].join(" ")}
-              aria-current={active ? "page" : undefined}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          ref={triggerRef}
+          type="button"
+          onPointerEnter={openOnHover}
+          onMouseLeave={scheduleClose}
+          onPointerLeave={() => {
+            pointerWithinMenu.current = false;
+            scheduleClose();
+          }}
+          onFocus={() => {
+            if (Date.now() >= suppressHoverUntil.current) setOpen(true);
+          }}
+          onBlur={closeIfFocusLeaves}
+          className="inline-flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-bold text-main transition-colors hover:bg-surface"
+        >
+          <Menu className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="max-w-44 truncate">{selectedCategoryName}</span>
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        ref={contentRef}
+        align="start"
+        sideOffset={8}
+        onMouseEnter={() => {
+          cancelClose();
+          pointerWithinMenu.current = true;
+        }}
+        onPointerEnter={() => {
+          cancelClose();
+          pointerWithinMenu.current = true;
+        }}
+        onMouseLeave={scheduleClose}
+        onPointerLeave={() => {
+          pointerWithinMenu.current = false;
+          scheduleClose();
+        }}
+        onBlur={closeIfFocusLeaves}
+        className="w-[min(92vw,400px)] max-w-none rounded-xl border-border bg-app p-1.5 text-main shadow-xl"
+      >
+        <div className="px-3 pb-2 pt-2">
+          <h2 className="text-sm font-black">
+            {watchMode ? "Choose a video category" : "All categories"}
+          </h2>
+        </div>
+        <div className="thin-scrollbar max-h-[min(70svh,560px)] overflow-y-auto">
+          <PopoverClose asChild>
+            <button
+              type="button"
+              onClick={() => {
+                closeForSelection();
+                if (!watchMode) {
+                  useDiscoverFiltersStore.getState().clearAll();
+                  useSearchStore.getState().setDraft("");
+                }
+                router.push(
+                  watchMode
+                    ? `/${lang}/for-you?tab=watch`
+                    : `/${lang}/explore`,
+                );
+              }}
+              className={`flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface ${!activeCategory ? "bg-primary/5 text-primary" : "text-main"}`}
             >
-              {category.name}
-            </Link>
-          );
-        })}
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface text-primary">
+                {watchMode ? (
+                  <Play className="h-4 w-4" />
+                ) : (
+                  <Shapes className="h-5 w-5" />
+                )}
+              </span>
+              <span className="min-w-0 flex-1 text-sm font-semibold">
+                {watchMode ? "All videos" : "Everything"}
+              </span>
+              {!activeCategory ? <Check className="h-4 w-4 shrink-0" /> : null}
+            </button>
+          </PopoverClose>
+          {loading && !data
+            ? Array.from({ length: 8 }).map((_, index) => (
+                <Skeleton key={index} className="min-h-14 rounded-lg" />
+              ))
+            : categories.map((category) => {
+                const selected = watchMode
+                  ? activeCategory === category.id
+                  : activeCategory === category.slug;
+                const iconValue = category.icon?.trim() ?? "";
+                const categoryImage =
+                  /^https?:\/\//i.test(iconValue) || iconValue.startsWith("/")
+                    ? iconValue
+                    : null;
+                return (
+                  <PopoverClose key={category.id} asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeForSelection();
+                        router.push(
+                          watchMode
+                            ? `/${lang}/for-you?tab=watch&categoryId=${encodeURIComponent(category.id)}`
+                            : `/${lang}/explore?category=${encodeURIComponent(category.slug)}`,
+                        );
+                      }}
+                      className={`flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface ${selected ? "bg-primary/5 text-primary" : "text-main"}`}
+                    >
+                      <CategoryThumbnail
+                        category={category}
+                        watchMode={watchMode}
+                        enabled={open}
+                        iconImage={categoryImage}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">
+                          {category.name}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-muted">
+                          {category.count.toLocaleString()} {watchMode ? "videos" : "listings"}
+                        </span>
+                      </span>
+                      {selected ? <Check className="h-4 w-4 shrink-0" /> : null}
+                    </button>
+                  </PopoverClose>
+                );
+              })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
-        {/* Show loading stand-ins while the category rail is first fetched. */}
-        {categoriesLoading
-          ? Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="py-2">
-                <Skeleton
-                  className="h-4"
-                  style={{ width: `${64 - index * 4}%` }}
-                />
-              </div>
-            ))
-          : null}
-      </nav>
+function CategoryThumbnail({
+  category,
+  watchMode,
+  enabled,
+  iconImage,
+}: {
+  category: CategoryFacet;
+  watchMode: boolean;
+  enabled: boolean;
+  iconImage: string | null;
+}) {
+  const { data, loading } = useQuery(DiscoveryFeedDocument, {
+    variables: {
+      categoryId: category.id,
+      type: watchMode ? "VIDEO" : undefined,
+      sort: "NEWEST",
+      limit: 1,
+    },
+    skip: !enabled,
+    fetchPolicy: "cache-first",
+  });
+  const media = data?.discoveryFeed.items[0]?.media?.[0];
+  const listingImage =
+    media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
 
-      {isDiscoverRoute ? <DiscoverSidebarFilters /> : null}
+  return (
+    <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface text-primary">
+      {listingImage || iconImage ? (
+        // Category art comes from listing media or catalog-managed image URLs.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={listingImage ?? iconImage ?? ""}
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      ) : loading ? (
+        <Skeleton className="h-full w-full rounded-none" />
+      ) : (
+        <Shapes className="h-6 w-6" strokeWidth={1.6} aria-hidden />
+      )}
+    </span>
+  );
+}
+
+function BrowseCategories() {
+  return (
+    <div className="thin-scrollbar -mr-4 mt-0 min-h-0 overflow-y-auto pb-10 pr-3 lg:-mr-7 lg:pr-6">
+      <DiscoverSidebarFilters />
     </div>
   );
 }

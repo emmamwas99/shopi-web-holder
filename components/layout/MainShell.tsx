@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
@@ -16,6 +16,7 @@ export function MainShell({
   lang: string;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
   // Reserve no space for the nav when it's route-hidden OR class-hidden by a
   // full-viewport screen (e.g. the create-mode chooser) — otherwise the hidden
@@ -24,7 +25,11 @@ export function MainShell({
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
-  const showSideNav = hasDesktopSideNav(pathname, lang);
+  const showSideNav = hasDesktopSideNav(
+    pathname,
+    lang,
+    Boolean(searchParams.get("category")),
+  );
   // Explore (desktop's "Browse"). Not the For You feed — re-tapping its nav
   // tab already scrolls it to the top.
   const hasBackToTop = pathname.startsWith(`/${lang}/explore`);

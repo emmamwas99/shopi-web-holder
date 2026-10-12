@@ -18,8 +18,9 @@ import {
   ChevronUp,
   MessageCircle,
 } from "lucide-react";
-import { useApolloClient } from "@apollo/client/react";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { resumeVideoElection, suspendVideoElection } from "@/lib/activeVideo";
 import { pruneVideoFeedCache } from "@/lib/apollo/feedCache";
 import { contentSlugSegment, videoPath } from "@/lib/content-url";
@@ -103,8 +104,29 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
       typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).get("tab") === "watch",
   );
+  const [returnToWatchCategoryId] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "watch" ? params.get("categoryId") : null;
+  });
+  const returnToWatchQuery = returnToWatch
+    ? `?tab=watch${returnToWatchCategoryId ? `&categoryId=${encodeURIComponent(returnToWatchCategoryId)}` : ""}`
+    : "";
+  const { data: watchCategoriesData } = useQuery(DISCOVERY_CATEGORIES, {
+    variables: { type: "VIDEO" },
+    skip: !returnToWatchCategoryId,
+    fetchPolicy: "cache-first",
+  });
+  const selectedWatchCategoryName = returnToWatchCategoryId
+    ? watchCategoriesData?.discoveryFacets.categories.find(
+        (category) => category.id === returnToWatchCategoryId,
+      )?.name ?? "this category"
+    : null;
 
-  const { items, loading, loadingMore, hasMore, loadMore } = useVideoFeed(seed);
+  const { items, loading, loadingMore, hasMore, loadMore } = useVideoFeed(
+    seed,
+    returnToWatchCategoryId,
+  );
   const [commentsOpen, setCommentsOpen] = useState(false);
   // ssrDefault:false keeps the first paint mobile-first, matching how the
   // feed page decides its own layout.
@@ -221,7 +243,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // route treats as canonical, so copying the address bar mid-swipe yields a
   // shareable, indexable link rather than an id that would only redirect.
   const nextPath = activePost
-    ? `${videoPath(lang, activePost)}${returnToWatch ? "?tab=watch" : ""}`
+    ? `${videoPath(lang, activePost)}${returnToWatchQuery}`
     : null;
   const lastWrittenPath = useRef<string | null>(null);
   useEffect(() => {
@@ -246,7 +268,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // has no app history behind it — a plain back() would do nothing at all and
   // trap the viewer open. Fall through to the feed instead.
   const closeViewer = useAppBack(
-    `/${lang}/for-you${returnToWatch ? "?tab=watch" : ""}`,
+    `/${lang}/for-you${returnToWatchQuery}`,
   );
   // Closing is a deliberate exit, so the remembered slide goes with it —
   // reopening this video later should start at the top, not mid-list.
@@ -465,7 +487,11 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
             className="flex h-full w-full items-center justify-center bg-black"
             style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
           >
-            <p className="text-sm text-white/60">No more videos</p>
+            <p className="text-sm text-white/60">
+              {selectedWatchCategoryName
+                ? `No more videos for ${selectedWatchCategoryName}`
+                : "No more videos"}
+            </p>
           </section>
         )}
       </div>
