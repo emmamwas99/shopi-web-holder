@@ -12,7 +12,6 @@ import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
-  PublishDraftDocument,
   TiktokConnectUrlDocument,
   MeDocument,
 } from "@/types/__generated__/graphql";
@@ -36,6 +35,16 @@ import { TikTokCreatePreview } from "./TikTokCreatePreview";
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktokOptions($contentId: String!) {
     postToTiktok(contentId: $contentId)
+  }
+`;
+
+const PUBLISH_DRAFT_NOW = gql`
+  mutation PublishDraftNow($id: String!) {
+    publishDraftNow(id: $id) {
+      id
+      type
+      title
+    }
   }
 `;
 
@@ -133,7 +142,10 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
 
   const [autosave] = useMutation(AutosaveDraftDocument);
   const [advanceStep] = useMutation(AdvanceDraftStepDocument);
-  const [publishDraft] = useMutation(PublishDraftDocument);
+  const [publishDraftNow] = useMutation<
+    { publishDraftNow: { id: string; type: string; title: string } | null },
+    { id: string }
+  >(PUBLISH_DRAFT_NOW);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
 
@@ -263,33 +275,17 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
         return;
       }
 
-      // 2. Advance PUBLISHING_OPTIONS → READY (required before publish)
-      const { data: stepData, error: stepError } = await advanceStep({
-        variables: { id: draftId },
-      });
-      if (stepError) {
-        setError(stepError.message ?? "Could not finalize post");
-        return;
-      }
-      const serverStep = stepData?.advanceDraftStep?.currentStep as
-        | string
-        | undefined;
-      if (serverStep !== "READY") {
-        setError("Please complete all required fields before posting.");
-        return;
-      }
-
-      // 3. Publish
-      const { data: pubData, error: publishError } = await publishDraft({
+      // The API validates any remaining draft steps and publishes in one request.
+      const { data: pubData, error: publishError } = await publishDraftNow({
         variables: { id: draftId },
       });
       if (publishError) {
         setError(publishError.message ?? "Failed to publish");
         return;
       }
-      if (!pubData?.publishDraft) return;
+      if (!pubData?.publishDraftNow) return;
 
-      const contentId = pubData.publishDraft.id as string;
+      const contentId = pubData.publishDraftNow.id;
       didPublish = true;
       setPublished(true);
       trackPostPublished("create", { category: categoryName, contentType });

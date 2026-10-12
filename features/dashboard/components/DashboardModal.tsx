@@ -80,8 +80,8 @@ export function DashboardModal({
     if (tab === "overview") nextParams.delete("tab");
     else nextParams.set("tab", tab);
     const query = nextParams.toString();
-    window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
-  }, [pathname, searchParams]);
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   const onTourStepChange = useCallback((step: DashboardTourStep | null) => {
     if (suppressTour) return;
@@ -101,9 +101,9 @@ export function DashboardModal({
       const nextParams = new URLSearchParams(searchParams.toString());
       nextParams.set("tab", "listings");
       nextParams.set("bulk", "1");
-      window.history.replaceState(null, "", `${pathname}?${nextParams.toString()}`);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
     }
-  }, [bulkRequested, deferTourForBulk, pathname, searchParams]);
+  }, [bulkRequested, deferTourForBulk, pathname, router, searchParams]);
 
   const onBulkUploadClose = useCallback(() => {
     selectTab("listings");

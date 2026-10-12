@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import { gql } from "@apollo/client";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import {
   ArrowRight,
@@ -32,7 +33,6 @@ import {
   GetDraftDocument,
   GetMediaAssetDocument,
   MyContactPhoneDocument,
-  PublishDraftDocument,
   SuggestedPostLocationDocument,
 } from "@/types/__generated__/graphql";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -88,6 +88,15 @@ import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator
 
 const MAX_IMAGES = 10;
 const ATTACH_TIMEOUT_MS = 30_000;
+const PUBLISH_DRAFT_NOW = gql`
+  mutation PublishDraftNow($id: String!) {
+    publishDraftNow(id: $id) {
+      id
+      type
+      title
+    }
+  }
+`;
 const RESUME_ANALYSIS_TIMEOUT_MS = 90_000;
 
 const STAGE_ORDER: GuidedStage[] = [
@@ -260,7 +269,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [extractFromDraft] = useMutation(GUIDED_EXTRACT_FROM_DRAFT);
   const [shopiAgentTurn] = useMutation(SHOPI_AGENT_TURN);
   const [advanceDraft] = useMutation(AdvanceDraftStepDocument);
-  const [publishDraft] = useMutation(PublishDraftDocument);
+  const [publishDraftNow] = useMutation<
+    { publishDraftNow: { id: string; type: string; title: string } | null },
+    { id: string }
+  >(PUBLISH_DRAFT_NOW);
 
   const [agentThinking, setAgentThinking] = useState(false);
   // True when the current question came from the deterministic fallback
@@ -1323,29 +1335,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         hdEnabled,
       });
 
-      let ready = false;
-      for (let attempt = 0; attempt < 4; attempt += 1) {
-        const response = await advanceDraft({ variables: { id: draftId } });
-        if (response.error) throw new Error(response.error.message);
-        if (response.data?.advanceDraftStep.currentStep === "READY") {
-          ready = true;
-          break;
-        }
-      }
-      if (!ready) {
-        throw new Error(
-          "The draft is not ready yet. Review the required details and try again.",
-        );
-      }
-
-      const response = await publishDraft({ variables: { id: draftId } });
-      if (response.error || !response.data?.publishDraft) {
+      const response = await publishDraftNow({ variables: { id: draftId } });
+      if (response.error || !response.data?.publishDraftNow) {
         throw new Error(
           response.error?.message ?? "Could not publish your post",
         );
       }
 
-      const contentId = response.data.publishDraft.id;
+      const contentId = response.data.publishDraftNow.id;
       trackPostPublished("create", { category: categoryName, contentType });
       reset();
       setPublishedContentId(contentId);

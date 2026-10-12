@@ -9,6 +9,8 @@ export const WS_EVENTS = {
   MEDIA_READY:    'media:ready',
   MEDIA_FAILED:   'media:failed',
   MEDIA_PROGRESS: 'media:progress',
+  BULK_IMPORT_PROGRESS: 'bulk:import:progress',
+  BULK_PUBLISH_PROGRESS: 'bulk:publish:progress',
   NOTIFICATION:   'notification',
   TIKTOK_IMPORT_UPDATED: 'tiktok:import:updated',
   CONTENT_PUBLISH_UPDATED: 'content:publish:updated',
@@ -66,6 +68,27 @@ export interface MediaFailedPayload {
 export interface MediaProgressPayload {
   mediaAssetId: string;
   percent: number;
+}
+
+export interface BulkImportProgressPayload {
+  importId: string;
+  total: number;
+  processed: number;
+  created: number;
+  updated: number;
+  failed: number;
+  percent: number;
+  status: 'PROCESSING' | 'COMPLETED';
+}
+
+export interface BulkPublishProgressPayload {
+  batchId: string;
+  total: number;
+  processed: number;
+  published: number;
+  failed: number;
+  percent: number;
+  status: 'PROCESSING' | 'COMPLETED';
 }
 
 export interface StoryReadyPayload {
