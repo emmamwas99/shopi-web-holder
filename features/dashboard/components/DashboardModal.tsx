@@ -54,6 +54,7 @@ export function DashboardModal({
   const isActiveRoute = pathname === `/${lang}/dashboard`;
   const activeTab = searchParams.get("tab") ?? "overview";
   const bulkRequested = searchParams.get("bulk") === "1";
+  const [bulkDialogDismissed, setBulkDialogDismissed] = useState(false);
   // Once bulk work starts, defer the tour for the rest of this dashboard visit.
   const [tourDeferred, setTourDeferred] = useState(bulkRequested);
   const push = usePushNotifications(lang);
@@ -75,13 +76,14 @@ export function DashboardModal({
 
 
   const selectTab = useCallback((tab: string) => {
+    if (activeTab === "listings" && tab !== "listings") setBulkDialogDismissed(false);
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.delete("bulk");
     if (tab === "overview") nextParams.delete("tab");
     else nextParams.set("tab", tab);
     const query = nextParams.toString();
-    window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
-  }, [pathname, searchParams]);
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [activeTab, pathname, router, searchParams]);
 
   const onTourStepChange = useCallback((step: DashboardTourStep | null) => {
     if (suppressTour) return;
@@ -101,11 +103,12 @@ export function DashboardModal({
       const nextParams = new URLSearchParams(searchParams.toString());
       nextParams.set("tab", "listings");
       nextParams.set("bulk", "1");
-      window.history.replaceState(null, "", `${pathname}?${nextParams.toString()}`);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
     }
-  }, [bulkRequested, deferTourForBulk, pathname, searchParams]);
+  }, [bulkRequested, deferTourForBulk, pathname, router, searchParams]);
 
   const onBulkUploadClose = useCallback(() => {
+    setBulkDialogDismissed(true);
     selectTab("listings");
   }, [selectTab]);
 
@@ -221,7 +224,7 @@ export function DashboardModal({
                   <DashboardListings
                     lang={lang}
                     onSingleUpload={() => selectTab("create")}
-                    autoOpenBulk={bulkRequested}
+                    autoOpenBulk={bulkRequested && !bulkDialogDismissed}
                     onBulkUploadHandled={deferTourForBulk}
                     onBulkUploadStart={onBulkUploadStart}
                     onBulkUploadClose={onBulkUploadClose}

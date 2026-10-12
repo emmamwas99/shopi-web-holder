@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { gql } from "@apollo/client";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useSocket } from "@/hooks/useSocket";
 import { useMyManagedPosts, type ManagedPost } from "@/features/profile/hooks/useManagedPosts";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { LocationPicker } from "@/features/create/components/LocationPicker";
@@ -26,7 +28,6 @@ import { SpecsEditor } from "@/features/create/components/SpecsEditor";
 import { GUIDED_EXTRACT_FROM_DRAFT } from "@/features/create/graphql/guided";
 import type { DraftLocation } from "@/stores/create";
 import {
-  AdvanceDraftStepDocument,
   AttachMediaAssetDocument,
   AutosaveDraftDocument,
   CategoriesDocument,
@@ -38,13 +39,25 @@ import {
   MyContactPhoneDocument,
   NotifyImageUploadedDocument,
   NotifyVideoUploadedDocument,
-  PublishDraftDocument,
   RequestImageUploadDocument,
   RequestVideoUploadDocument,
   type DraftFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { DashboardListingActions } from "./DashboardListingActions";
 import type { DashboardTourStepId } from "./DashboardTour";
+import { WS_EVENTS, type MediaFailedPayload, type MediaReadyPayload } from "@/lib/socket";
+import type { BulkImportProgressPayload, BulkPublishProgressPayload } from "@/lib/socket/socket-events";
+
+const PUBLISH_BULK_DRAFTS = gql`
+  mutation PublishBulkDrafts($drafts: [PublishBulkDraftInput!]!, $batchId: String!) {
+    publishBulkDrafts(drafts: $drafts, batchId: $batchId) {
+      draftId
+      success
+      contentId
+      message
+    }
+  }
+`;
 
 function formatPrice(post: ManagedPost) {
   if (post.price.amount <= 0) return "Price on request";
@@ -149,6 +162,7 @@ export function DashboardListings({
 }) {
   const { isAuthenticated } = useAuthSession();
   const apolloClient = useApolloClient();
+  const { on } = useSocket();
   const accessToken = useAuthStore((state) => state.accessToken);
   const { data, loading, error, fetchMore, refetch } = useMyManagedPosts(25, !isAuthenticated);
   const { data: pendingBulkData, loading: pendingBulkLoading, refetch: refetchPendingBulk } = useQuery(
@@ -170,20 +184,34 @@ export function DashboardListings({
   const [notifyVideoUploaded] = useMutation(NotifyVideoUploadedDocument);
   const [completeBulkImportDraft] = useMutation(CompleteBulkImportDraftDocument);
   const [autosaveDraft] = useMutation(AutosaveDraftDocument);
-  const [advanceDraftStep] = useMutation(AdvanceDraftStepDocument);
-  const [publishDraft] = useMutation(PublishDraftDocument);
   const [extractBulkDraft] = useMutation(GUIDED_EXTRACT_FROM_DRAFT);
   const [discardDraft] = useMutation(DiscardDraftDocument);
+  const [publishBulkDrafts] = useMutation<{
+    publishBulkDrafts: Array<{ draftId: string; success: boolean; contentId?: string | null; message?: string | null }>;
+  }, { drafts: Array<{ id: string; input: {
+    title: string;
+    caption: string;
+    categoryId: string;
+    specs: Array<{ key: string; value: string }>;
+    price: { amount: number; currency: string; negotiable: boolean };
+    contactPhone: string;
+  } }>; batchId: string }>(PUBLISH_BULK_DRAFTS);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [dismissPendingBulk, setDismissPendingBulk] = useState(false);
-  const [mediaUploadStates, setMediaUploadStates] = useState<Record<string, { uploading: boolean; error?: string }>>({});
+  const [mediaUploadStates, setMediaUploadStates] = useState<Record<string, { uploading: boolean; progress?: number; preparing?: boolean; processing?: boolean; error?: string }>>({});
   const [bulkAgentStates, setBulkAgentStates] = useState<Record<string, BulkDraftAgentState>>({});
   const [bulkEdits, setBulkEdits] = useState<Record<string, BulkDraftEdit>>({});
   const [bulkActionErrors, setBulkActionErrors] = useState<Record<string, string>>({});
-  const [publishingBulkId, setPublishingBulkId] = useState<string | null>(null);
+  const [bulkPublishProgress, setBulkPublishProgress] = useState<{ total: number; completed: number; succeeded: number; failed: number } | null>(null);
+  const bulkPublishInProgressRef = useRef(false);
   const startedBulkAgentRef = useRef(new Set<string>());
+  const bulkAgentSlotsRef = useRef(0);
+  const bulkAgentWaitersRef = useRef<Array<() => void>>([]);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState<"upload" | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [importRowProgress, setImportRowProgress] = useState<{ processed: number; total: number } | null>(null);
   const [message, setMessage] = useState("");
   const [bulkLocation, setBulkLocation] = useState<DraftLocation | null>(null);
   const [bulkLocationTouched, setBulkLocationTouched] = useState(false);
@@ -242,10 +270,22 @@ export function DashboardListings({
       })()
     : null;
   const selectedBulkLocation = bulkLocationTouched ? bulkLocation : defaultBulkLocation;
-  const bulkDialogOpen = !tourStep && (bulkOpen || autoOpenBulk);
+  const bulkDialogOpen = !tourStep && !dismissPendingBulk && (bulkOpen || autoOpenBulk);
   const bulkWorkflowComplete = pendingBulkDrafts.length > 0 && pendingBulkDrafts.every(
     (draft) => draft.bulkStage === "COMPLETE" && bulkAgentStates[draft.id] === "ready",
   );
+  const publishableDrafts = useMemo(() => pendingBulkDrafts.filter((draft) => {
+    if (draft.bulkStage !== "COMPLETE") return false;
+    const edit = bulkEdits[draft.id];
+    const title = edit?.title ?? draft.title ?? "";
+    const categoryId = edit?.categoryId ?? draft.categoryId;
+    const contactPhone = edit?.contactPhone ?? draft.contactPhone ?? contactData?.myContactPhone;
+    if (!title.trim() || !categoryId || !contactPhone || !draft.location?.placeName) return false;
+    const price = edit?.price ?? (draft.price?.amount ? String(draft.price.amount) : "");
+    if (price && (!Number.isFinite(Number(price)) || Number(price) < 0)) return false;
+    return true;
+  }), [bulkEdits, contactData?.myContactPhone, pendingBulkDrafts]);
+  const blockedBulkDraftCount = pendingBulkDrafts.length - publishableDrafts.length;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
@@ -289,18 +329,63 @@ export function DashboardListings({
       return;
     }
     setBusy("upload");
+    setImportProgress(0);
+    setImportProcessing(false);
+    setImportRowProgress(null);
     setMessage("");
     setImportSummary(null);
+    const importId = crypto.randomUUID();
+    const stopListening = on<BulkImportProgressPayload>(WS_EVENTS.BULK_IMPORT_PROGRESS, (progress) => {
+      if (progress.importId !== importId) return;
+      setImportProcessing(true);
+      setImportProgress(progress.percent);
+      setImportRowProgress({ processed: progress.processed, total: progress.total });
+    });
     try {
       const body = new FormData();
       body.append("file", file);
       body.append("location", JSON.stringify(selectedBulkLocation));
-      const response = await authorizedFetch(`${apiUrl}/listings/import.xlsx`, {
-        method: "POST",
-        body,
+      body.append("importId", importId);
+      const sendImportRequest = (token: string | null) => new Promise<{ ok: boolean; status: number; payload: { message?: string; updated: number; drafts: number; failed: number; rows: Array<{ row: number; action: "updated" | "draft" | "error"; message?: string }> } }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${apiUrl}/listings/import.xlsx`);
+        if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          setImportProgress(Math.floor((event.loaded / event.total) * 100));
+          if (event.loaded >= event.total) {
+            setImportProcessing(true);
+            setImportProgress(0);
+          }
+        };
+        xhr.onerror = () => reject(new Error("Network error while uploading the workbook. Please try again."));
+        xhr.onabort = () => reject(new Error("Workbook upload was interrupted. Please try again."));
+        xhr.onload = () => {
+          let payload: { message?: string; updated: number; drafts: number; failed: number; rows: Array<{ row: number; action: "updated" | "draft" | "error"; message?: string }> };
+          try {
+            payload = JSON.parse(xhr.responseText);
+          } catch {
+            reject(new Error("The server returned an unreadable import response. Please try again."));
+            return;
+          }
+          resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, payload });
+        };
+        xhr.send(body);
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message ?? "The Excel file could not be imported.");
+      let token = useAuthStore.getState().accessToken ?? accessToken;
+      let result = await sendImportRequest(token);
+      if (result.status === 401) {
+        const refreshedToken = await refreshAccessToken();
+        if (refreshedToken) {
+          token = refreshedToken;
+          result = await sendImportRequest(token);
+        }
+      }
+      setImportProcessing(true);
+      const payload = result.payload;
+      if (!result.ok) throw new Error(payload.message ?? "The Excel file could not be imported.");
+      setImportProgress(100);
+      setImportRowProgress({ processed: payload.rows.length, total: payload.rows.length });
       setImportSummary(payload);
       setMessage(payload.drafts > 0
         ? `Added ${payload.drafts} new listing${payload.drafts === 1 ? "" : "s"}. Add media below and Shopi Agent will finish each listing here. ${payload.failed} row${payload.failed === 1 ? " needs" : "s need"} attention.`
@@ -310,12 +395,14 @@ export function DashboardListings({
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Import failed. Please try again.");
     } finally {
+      stopListening();
       setBusy(null);
+      setImportProcessing(false);
     }
   }
 
   async function uploadBulkDraftMedia(draftId: string, file: File) {
-    setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: true } }));
+    setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: true, progress: 0, preparing: true } }));
     let mediaAssetId: string | null = null;
     try {
       const isVideo = file.type.startsWith("video/");
@@ -336,21 +423,35 @@ export function DashboardListings({
         uploadUrl = data.requestImageUpload.uploadUrl;
       }
       if (!mediaAssetId || !uploadUrl) throw new Error("Could not prepare the media upload.");
+      const targetUploadUrl = uploadUrl;
 
       await attachMediaAsset({ variables: { draftId, mediaAssetId, sortOrder: 0 } });
-      const response = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type || (isVideo ? "video/mp4" : "image/jpeg") },
+      setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: true, progress: 0 } }));
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", targetUploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type || (isVideo ? "video/mp4" : "image/jpeg"));
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const progress = Math.floor((event.loaded / event.total) * 100);
+          setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: true, progress } }));
+        };
+        xhr.onerror = () => reject(new Error("Network error while uploading media. Please try again."));
+        xhr.onabort = () => reject(new Error("Media upload was interrupted. Please try again."));
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Media upload failed (${xhr.status}). Please try again.`));
+        };
+        xhr.send(file);
       });
-      if (!response.ok) throw new Error(`Media upload failed (${response.status}). Please try again.`);
+      setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: true, progress: 100, processing: true } }));
 
       if (isVideo) await notifyVideoUploaded({ variables: { mediaAssetId } });
       else await notifyImageUploaded({ variables: { mediaAssetId } });
       await completeBulkImportDraft({ variables: { id: draftId, mediaType: isVideo ? "VIDEO" : "IMAGE" } });
 
       await refetchPendingBulk();
-      setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: false } }));
+      setMediaUploadStates((current) => ({ ...current, [draftId]: { uploading: false, progress: 100 } }));
     } catch (error) {
       if (mediaAssetId) {
         await detachMediaAsset({ variables: { draftId, mediaAssetId } }).catch(() => undefined);
@@ -366,27 +467,57 @@ export function DashboardListings({
     startedBulkAgentRef.current.add(draft.id);
     setBulkAgentStates((current) => ({ ...current, [draft.id]: "analyzing" }));
     setBulkActionErrors((current) => ({ ...current, [draft.id]: "" }));
+    let acquiredAgentSlot = false;
     try {
+      if (bulkAgentSlotsRef.current >= 4) {
+        await new Promise<void>((resolve) => bulkAgentWaitersRef.current.push(resolve));
+      } else {
+        bulkAgentSlotsRef.current += 1;
+      }
+      acquiredAgentSlot = true;
       if (draft.mediaAssetIds.length === 0) throw new Error("Add a photo or video before Shopi Agent can continue.");
       const deadline = Date.now() + 120_000;
       let hasReadyMedia = false;
-      while (Date.now() < deadline && !hasReadyMedia) {
-        const assets = await Promise.all(draft.mediaAssetIds.map(async (id) => {
-          const response = await apolloClient.query({
-            query: GetMediaAssetDocument,
-            variables: { id },
-            fetchPolicy: "network-only",
+      const assetIds = new Set(draft.mediaAssetIds);
+      let wakeWaiter: (() => void) | null = null;
+      const wakeForAsset = (mediaAssetId: string) => {
+        if (assetIds.has(mediaAssetId)) wakeWaiter?.();
+      };
+      const offReady = on<MediaReadyPayload>(WS_EVENTS.MEDIA_READY, ({ mediaAssetId }) => wakeForAsset(mediaAssetId));
+      const offFailed = on<MediaFailedPayload>(WS_EVENTS.MEDIA_FAILED, ({ mediaAssetId }) => wakeForAsset(mediaAssetId));
+      try {
+        while (Date.now() < deadline && !hasReadyMedia) {
+          const assets = await Promise.all(draft.mediaAssetIds.map(async (id) => {
+            const response = await apolloClient.query({
+              query: GetMediaAssetDocument,
+              variables: { id },
+              fetchPolicy: "network-only",
+            });
+            return response.data?.mediaAsset;
+          }));
+          if (assets.some((asset) => asset?.status === "READY")) {
+            hasReadyMedia = true;
+            break;
+          }
+          if (assets.length > 0 && assets.every((asset) => asset?.status === "FAILED")) {
+            throw new Error("Media processing failed. Remove it and upload another file.");
+          }
+          await new Promise<void>((resolve) => {
+            const timer = window.setTimeout(() => {
+              wakeWaiter = null;
+              resolve();
+            }, 5_000);
+            wakeWaiter = () => {
+              window.clearTimeout(timer);
+              wakeWaiter = null;
+              resolve();
+            };
           });
-          return response.data?.mediaAsset;
-        }));
-        if (assets.some((asset) => asset?.status === "READY")) {
-          hasReadyMedia = true;
-          break;
         }
-        if (assets.length > 0 && assets.every((asset) => asset?.status === "FAILED")) {
-          throw new Error("Media processing failed. Remove it and upload another file.");
-        }
-        await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+      } finally {
+        wakeWaiter = null;
+        offReady();
+        offFailed();
       }
       if (!hasReadyMedia) throw new Error("Media is still processing. Try again in a moment.");
 
@@ -440,73 +571,102 @@ export function DashboardListings({
         ...current,
         [draft.id]: error instanceof Error ? error.message : "Shopi Agent could not complete this listing.",
       }));
-    }
-  }, [apolloClient, autosaveDraft, contactData?.myContactPhone, extractBulkDraft, refetchPendingBulk]);
-
-  async function publishBulkDraft(draft: DraftFieldsFragment) {
-    if (publishingBulkId) return;
-    const edit = bulkEdits[draft.id];
-    if (!edit?.title.trim()) {
-      setBulkActionErrors((current) => ({ ...current, [draft.id]: "Add a title before publishing." }));
-      return;
-    }
-    if (!edit.categoryId) {
-      setBulkActionErrors((current) => ({ ...current, [draft.id]: "Choose a category before publishing." }));
-      return;
-    }
-    if (!edit.contactPhone) {
-      setBulkActionErrors((current) => ({ ...current, [draft.id]: "Add a contact phone number before publishing." }));
-      return;
-    }
-
-    setPublishingBulkId(draft.id);
-    setBulkActionErrors((current) => ({ ...current, [draft.id]: "" }));
-    try {
-      const priceAmount = Number(edit.price);
-      if (edit.price && (!Number.isFinite(priceAmount) || priceAmount < 0)) {
-        throw new Error("Enter a valid price, or leave it blank for price on request.");
+    } finally {
+      if (acquiredAgentSlot) {
+        const nextWaiter = bulkAgentWaitersRef.current.shift();
+        if (nextWaiter) nextWaiter();
+        else bulkAgentSlotsRef.current -= 1;
       }
-      const saved = await autosaveDraft({
+    }
+  }, [apolloClient, autosaveDraft, contactData?.myContactPhone, extractBulkDraft, on, refetchPendingBulk]);
+
+  async function publishReadyBulkDrafts() {
+    if (bulkPublishInProgressRef.current || bulkPublishProgress || publishableDrafts.length === 0) return;
+    bulkPublishInProgressRef.current = true;
+    const drafts = [...publishableDrafts];
+    const batchId = crypto.randomUUID();
+    const stopListening = on<BulkPublishProgressPayload>(WS_EVENTS.BULK_PUBLISH_PROGRESS, (progress) => {
+      if (progress.batchId !== batchId) return;
+      setBulkPublishProgress({
+        total: progress.total,
+        completed: progress.processed,
+        succeeded: progress.published,
+        failed: progress.failed,
+      });
+    });
+    setBulkActionErrors((current) => {
+      const next = { ...current };
+      for (const draft of drafts) delete next[draft.id];
+      return next;
+    });
+    setBulkPublishProgress({ total: drafts.length, completed: 0, succeeded: 0, failed: 0 });
+
+    try {
+      const response = await publishBulkDrafts({
         variables: {
-          id: draft.id,
-          input: {
-            title: edit.title.trim(),
-            caption: edit.caption.trim(),
-            ...(edit.categoryId ? { categoryId: edit.categoryId } : {}),
-            specs: edit.specs,
-            price: {
-              amount: edit.price ? priceAmount : 0,
-              currency: draft.price?.currency ?? "KES",
-              negotiable: edit.negotiable,
-            },
-            contactPhone: edit.contactPhone,
-          },
+          batchId,
+          drafts: drafts.map((draft) => {
+            const edit = bulkEdits[draft.id] ?? {
+              title: draft.title ?? "",
+              caption: draft.caption ?? "",
+              categoryId: draft.categoryId,
+              specs: draft.specs.map((spec) => ({ key: spec.key, value: spec.value })),
+              price: draft.price?.amount ? String(draft.price.amount) : "",
+              negotiable: draft.price?.negotiable ?? false,
+              contactPhone: draft.contactPhone ?? contactData?.myContactPhone ?? null,
+            };
+            return {
+              id: draft.id,
+              input: {
+                title: edit.title.trim(),
+                caption: edit.caption.trim(),
+                categoryId: edit.categoryId!,
+                specs: edit.specs,
+                price: {
+                  amount: edit.price ? Number(edit.price) : 0,
+                  currency: draft.price?.currency ?? "KES",
+                  negotiable: edit.negotiable,
+                },
+                contactPhone: edit.contactPhone!,
+              },
+            };
+          }),
         },
       });
-      if (saved.error || !saved.data?.autosaveDraft) throw new Error(saved.error?.message ?? "Could not save listing details.");
-
-      let currentStep = saved.data.autosaveDraft.currentStep;
-      while (currentStep !== "READY") {
-        const advanced = await advanceDraftStep({ variables: { id: draft.id } });
-        if (advanced.error || !advanced.data?.advanceDraftStep) {
-          throw new Error(advanced.error?.message ?? "Complete the required listing details before publishing.");
-        }
-        currentStep = advanced.data.advanceDraftStep.currentStep;
+      if (response.error || !response.data?.publishBulkDrafts) {
+        throw new Error(response.error?.message ?? "Could not publish the ready listings.");
       }
-
-      const published = await publishDraft({ variables: { id: draft.id } });
-      if (published.error || !published.data?.publishDraft) throw new Error(published.error?.message ?? "Could not publish this listing.");
-      setBulkEdits((current) => { const next = { ...current }; delete next[draft.id]; return next; });
-      setBulkAgentStates((current) => { const next = { ...current }; delete next[draft.id]; return next; });
-      setMessage("Listing submitted for review.");
-      await Promise.all([refetchPendingBulk(), refetch()]);
+      const results = response.data.publishBulkDrafts;
+      const succeeded = results.filter((result) => result.success).length;
+      const failed = results.length - succeeded;
+      setBulkActionErrors((current) => {
+        const next = { ...current };
+        for (const result of results) {
+          if (result.success) delete next[result.draftId];
+          else next[result.draftId] = result.message ?? "Could not publish this listing.";
+        }
+        return next;
+      });
+      setBulkEdits((current) => {
+        const next = { ...current };
+        for (const result of results) if (result.success) delete next[result.draftId];
+        return next;
+      });
+      setBulkAgentStates((current) => {
+        const next = { ...current };
+        for (const result of results) if (result.success) delete next[result.draftId];
+        return next;
+      });
+      setBulkPublishProgress({ total: results.length, completed: results.length, succeeded, failed });
+      setMessage(`${succeeded} of ${drafts.length} ready listing${drafts.length === 1 ? "" : "s"} submitted${failed ? `; ${failed} need attention` : ""}.`);
+      await Promise.all([refetchPendingBulk(), refetch()]).catch(() => undefined);
+      window.setTimeout(() => setBulkPublishProgress(null), 2500);
     } catch (error) {
-      setBulkActionErrors((current) => ({
-        ...current,
-        [draft.id]: error instanceof Error ? error.message : "Could not finish this listing.",
-      }));
+      setMessage(error instanceof Error ? error.message : "Could not publish the ready listings.");
+      setBulkPublishProgress(null);
     } finally {
-      setPublishingBulkId(null);
+      stopListening();
+      bulkPublishInProgressRef.current = false;
     }
   }
 
@@ -713,6 +873,9 @@ export function DashboardListings({
         location={selectedBulkLocation}
         setLocation={(location) => { setBulkLocationTouched(true); setBulkLocation(location); }}
         busy={busy === "upload"}
+        importProgress={importProgress}
+        importProcessing={importProcessing}
+        importRowProgress={importRowProgress}
         message={message}
         summary={importSummary}
         pendingDrafts={pendingBulkDrafts}
@@ -722,12 +885,14 @@ export function DashboardListings({
         edits={bulkEdits}
         actionErrors={bulkActionErrors}
         categories={categoryData?.categories ?? []}
-        publishingId={publishingBulkId}
+        publishableCount={publishableDrafts.length}
+        blockedCount={blockedBulkDraftCount}
+        publishProgress={bulkPublishProgress}
         workflowComplete={bulkWorkflowComplete}
         onUploadMedia={(draftId, selectedFile) => void uploadBulkDraftMedia(draftId, selectedFile)}
         onDeleteDraft={(draftId) => void deleteBulkDraft(draftId)}
         onRetryAgent={(draft) => void runBulkAgent(draft)}
-        onPublish={(draft) => void publishBulkDraft(draft)}
+        onPublishReady={() => void publishReadyBulkDrafts()}
         onEdit={updateBulkEdit}
         onDownloadTemplate={() => void downloadTemplate()}
         onImport={() => void importWorkbook()}
@@ -745,6 +910,9 @@ function BulkListingsDialog({
   location,
   setLocation,
   busy,
+  importProgress,
+  importProcessing,
+  importRowProgress,
   message,
   summary,
   pendingDrafts,
@@ -754,12 +922,14 @@ function BulkListingsDialog({
   edits,
   actionErrors,
   categories,
-  publishingId,
+  publishableCount,
+  blockedCount,
+  publishProgress,
   workflowComplete,
   onUploadMedia,
   onDeleteDraft,
   onRetryAgent,
-  onPublish,
+  onPublishReady,
   onEdit,
   onDownloadTemplate,
   onImport,
@@ -772,21 +942,26 @@ function BulkListingsDialog({
   location: DraftLocation | null;
   setLocation: (location: DraftLocation | null) => void;
   busy: boolean;
+  importProgress: number;
+  importProcessing: boolean;
+  importRowProgress: { processed: number; total: number } | null;
   message: string;
   summary: { updated: number; drafts: number; failed: number; rows: Array<{ row: number; action: "updated" | "draft" | "error"; message?: string }> } | null;
   pendingDrafts: DraftFieldsFragment[];
   pendingInitialLoading: boolean;
-  uploadStates: Record<string, { uploading: boolean; error?: string }>;
+  uploadStates: Record<string, { uploading: boolean; progress?: number; preparing?: boolean; processing?: boolean; error?: string }>;
   agentStates: Record<string, BulkDraftAgentState>;
   edits: Record<string, BulkDraftEdit>;
   actionErrors: Record<string, string>;
   categories: Array<{ id: string; name: string }>;
-  publishingId: string | null;
+  publishableCount: number;
+  blockedCount: number;
+  publishProgress: { total: number; completed: number; succeeded: number; failed: number } | null;
   workflowComplete: boolean;
   onUploadMedia: (draftId: string, file: File) => void;
   onDeleteDraft: (draftId: string) => void;
   onRetryAgent: (draft: DraftFieldsFragment) => void;
-  onPublish: (draft: DraftFieldsFragment) => void;
+  onPublishReady: () => void;
   onEdit: (id: string, patch: Partial<BulkDraftEdit>) => void;
   onDownloadTemplate: () => void;
   onImport: () => void;
@@ -800,7 +975,7 @@ function BulkListingsDialog({
         <div className="min-w-0 border-b border-border px-6 py-5 pr-12">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-extrabold"><FileSpreadsheet className="h-5 w-5 text-primary" /> Agent-powered bulk upload</DialogTitle>
-            <DialogDescription className="mt-1 break-words text-sm text-muted">Add listings faster with less typing. Shopi Agent fills in category and product specs, then you can review and publish every listing here.</DialogDescription>
+            <DialogDescription className="mt-1 break-words text-sm text-muted">Add listings faster with less typing. Shopi Agent fills in category and product specs, then you can review and publish ready listings together.</DialogDescription>
           </DialogHeader>
         </div>
         <div className="min-h-0 min-w-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-6 py-5">
@@ -811,7 +986,7 @@ function BulkListingsDialog({
                 <p className="mt-1 text-xs leading-5 text-muted">
                   {mediaWaiting > 0
                     ? `${mediaWaiting} listing${mediaWaiting === 1 ? " is" : "s are"} still waiting for media. Once uploaded, Shopi Agent fills in the details below. You can close this window; the checklist returns when you open Listings again.`
-                    : "Media is uploaded. Review the agent-filled details and publish each listing below."}
+                    : "Media is uploaded. Review the agent-filled details, then publish ready listings together."}
                 </p>
               </div>
               {workflowComplete ? (
@@ -833,7 +1008,6 @@ function BulkListingsDialog({
                     contactPhone: draft.contactPhone,
                   };
                   const waitingForMedia = draft.bulkStage !== "COMPLETE";
-                  const isPublishing = publishingId === draft.id;
                   const mediaInputId = `bulk-media-${draft.id}`;
                   return (
                     <article key={draft.id} className="min-w-0 rounded-xl border border-border bg-elevated p-4">
@@ -843,7 +1017,14 @@ function BulkListingsDialog({
                           <p className="mt-1 text-xs text-muted">
                             {waitingForMedia ? "Waiting for media" : agentState === "analyzing" ? "Shopi Agent is filling in the details…" : agentState === "error" ? "Agent needs another try" : "Review the details and finish this listing"}
                           </p>
-                          {uploadState?.uploading ? <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-primary"><Loader2 className="h-3 w-3 animate-spin" /> Uploading…</p> : null}
+                          {uploadState?.uploading ? (
+                            <div className="mt-2 space-y-1.5" role="status" aria-live="polite">
+                              <p className="flex items-center gap-1 text-xs font-semibold text-primary"><Loader2 className="h-3 w-3 animate-spin" /> {uploadState.preparing ? "Preparing upload…" : uploadState.processing ? "Processing media…" : `Uploading… ${uploadState.progress ?? 0}%`}</p>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-border" role="progressbar" aria-label={`Media upload progress for ${edit.title || "listing"}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadState.progress ?? 0}>
+                                <div className="h-full rounded-full bg-primary transition-[width] duration-150" style={{ width: `${uploadState.progress ?? 0}%` }} />
+                              </div>
+                            </div>
+                          ) : null}
                           {uploadState?.error ? <p role="alert" className="mt-1 text-xs font-semibold text-rose-700">{uploadState.error}</p> : null}
                         </div>
                         {waitingForMedia ? (
@@ -916,12 +1097,6 @@ function BulkListingsDialog({
                             <PhoneInput value={edit.contactPhone} onChange={(contactPhone) => onEdit(draft.id, { contactPhone })} id={`bulk-phone-${draft.id}`} />
                           </div>
                           {actionErrors[draft.id] && agentState !== "error" ? <p role="alert" className="text-xs font-semibold text-rose-700">{actionErrors[draft.id]}</p> : null}
-                          <div className="flex justify-end border-t border-border pt-3">
-                            <button type="button" disabled={isPublishing || agentState === "analyzing" || !edit.categoryId} onClick={() => onPublish(draft)} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
-                              {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                              {isPublishing ? "Finishing…" : "Publish listing"}
-                            </button>
-                          </div>
                         </div>
                       )}
                     </article>
@@ -941,7 +1116,7 @@ function BulkListingsDialog({
                   <li>Download the blank Excel template and enter one listing per row.</li>
                   <li>Enter each listing’s title, optional description, price and whether the price is negotiable.</li>
                   <li>Choose one location below to apply to all listings.</li>
-                  <li>Upload the workbook, add media, review Shopi Agent’s details and publish here.</li>
+                  <li>Upload the workbook, add media, review Shopi Agent’s details and publish ready listings together.</li>
                 </ol>
                 <p className="mt-3 text-xs">No category or specification fields are needed in Excel. Imports are limited to 500 rows. You can close the window while the workbook is being prepared.</p>
               </div>
@@ -981,9 +1156,14 @@ function BulkListingsDialog({
                 ) : null}
                 <div className="pointer-events-none relative z-[1] flex max-w-full flex-col items-center">
                   {busy ? <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden /> : file ? <CheckCircle2 className="h-6 w-6 text-emerald-600" aria-hidden /> : <Upload className="h-6 w-6 text-primary" aria-hidden />}
-                  <span className={`mt-2 max-w-full truncate text-sm font-bold ${file ? "text-emerald-800" : "text-main"}`}>{busy ? "Preparing your listings…" : file?.name ?? "Drop your Excel workbook here"}</span>
-                  <span className="mt-1 text-xs text-muted">{busy ? "New listings will appear here as they are ready." : file ? "Workbook selected" : "or choose a .xlsx file (up to 5 MB)"}</span>
+                  <span className={`mt-2 max-w-full truncate text-sm font-bold ${file ? "text-emerald-800" : "text-main"}`}>{busy ? (importProcessing ? importRowProgress ? `Importing listings… ${importRowProgress.processed}/${importRowProgress.total} (${Math.floor((importRowProgress.processed / Math.max(importRowProgress.total, 1)) * 100)}%)` : "Creating your listings…" : `Uploading workbook… ${importProgress}%`) : file?.name ?? "Drop your Excel workbook here"}</span>
+                  <span className="mt-1 text-xs text-muted">{busy ? (importProcessing ? importRowProgress ? "Waiting for every row to finish importing." : "Workbook uploaded. Starting the import…" : "Keep this window open while the workbook uploads.") : file ? "Workbook selected" : "or choose a .xlsx file (up to 5 MB)"}</span>
                 </div>
+                {busy ? (
+                  <div className="relative z-[1] mt-4 h-2 w-full max-w-sm overflow-hidden rounded-full bg-border" role="progressbar" aria-label={importProcessing ? "Workbook import progress" : "Workbook upload progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={importProcessing ? importRowProgress ? Math.floor((importRowProgress.processed / Math.max(importRowProgress.total, 1)) * 100) : undefined : importProgress}>
+                    <div className={`h-full rounded-full bg-primary transition-[width] duration-200 ${importProcessing && !importRowProgress ? "w-1/3 animate-pulse" : ""}`} style={importProcessing && !importRowProgress ? undefined : { width: `${importProcessing && importRowProgress ? (importRowProgress.processed / Math.max(importRowProgress.total, 1)) * 100 : importProgress}%` }} />
+                  </div>
+                ) : null}
                 {file && !busy ? (
                   <button
                     type="button"
@@ -1007,10 +1187,43 @@ function BulkListingsDialog({
               {summary.rows.filter((row) => row.action === "error").map((row) => <p key={row.row} className="text-rose-700">Row {row.row}: {row.message}</p>)}
             </div>
           ) : null}
-          <div className="flex justify-end gap-2 border-t border-border pt-4">
-            <button type="button" onClick={() => onOpenChange(false)} className="h-10 rounded-xl border border-border bg-elevated px-4 text-sm font-bold text-main">{workflowComplete ? "Done" : "Close"}</button>
-            {pendingDrafts.length === 0 && !pendingInitialLoading ? <button type="button" onClick={onImport} disabled={!file || busy} className="h-10 rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Preparing listings…" : "Upload workbook"}</button> : null}
-          </div>
+        </div>
+        <div className="shrink-0 space-y-2 border-t border-border bg-elevated px-6 py-3">
+          {pendingDrafts.length > 0 ? (
+            <>
+              {publishProgress ? (
+                <div className="space-y-1" role="status" aria-live="polite">
+                  <div className="h-2 overflow-hidden rounded-full bg-border" role="progressbar" aria-label="Bulk publish progress" aria-valuemin={0} aria-valuemax={publishProgress.total} aria-valuenow={publishProgress.completed}>
+                    <div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${publishProgress.total ? (publishProgress.completed / publishProgress.total) * 100 : 0}%` }} />
+                  </div>
+                  <p className="text-xs text-muted">{publishProgress.total ? Math.floor((publishProgress.completed / publishProgress.total) * 100) : 0}% · {publishProgress.completed} of {publishProgress.total} finished · {publishProgress.succeeded} published · {publishProgress.failed} need attention</p>
+                </div>
+              ) : null}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="min-w-0 flex-1 text-xs text-muted">
+                  <span className="font-bold text-main">{publishableCount} ready to publish</span>
+                  {blockedCount > 0 ? <span> · {blockedCount} still need media or details</span> : null}
+                </p>
+                <div className="flex shrink-0 gap-2">
+                  <button type="button" onClick={() => onOpenChange(false)} className="h-10 rounded-xl border border-border bg-elevated px-4 text-sm font-bold text-main">{workflowComplete ? "Done" : "Close"}</button>
+                  <button
+                    type="button"
+                    onClick={onPublishReady}
+                    disabled={publishableCount === 0 || Boolean(publishProgress)}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {publishProgress ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CheckCircle2 className="h-4 w-4" aria-hidden />}
+                    {publishProgress ? `Publishing ${publishProgress.completed}/${publishProgress.total}…` : `Publish ready (${publishableCount})`}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => onOpenChange(false)} className="h-10 rounded-xl border border-border bg-elevated px-4 text-sm font-bold text-main">Close</button>
+              {pendingDrafts.length === 0 && !pendingInitialLoading ? <button type="button" onClick={onImport} disabled={!file || busy} className="h-10 rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Preparing listings…" : "Upload workbook"}</button> : null}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
