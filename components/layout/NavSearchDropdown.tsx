@@ -217,7 +217,7 @@ export function NavSearchDropdown({
 
   if (!term.trim()) return null;
 
-  const items = data?.discoveryFeed.items ?? [];
+  const items = data?.discoveryFeed?.items ?? [];
   // Only the first render for a fresh term has nothing cached — a later
   // background refetch (e.g. revisiting a term) shouldn't flash the skeleton
   // over results already on screen.

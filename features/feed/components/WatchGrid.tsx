@@ -72,11 +72,11 @@ export function WatchGrid({
   // though its generated item type is intentionally narrower than the shared
   // card fragment.
   const rawItems = categoryFiltered
-    ? categoryData?.discoveryFeed.items ?? []
+    ? categoryData?.discoveryFeed?.items ?? []
     : videoData?.videoFeed.items ?? [];
   const items = (rawItems as ContentCardFieldsFragment[]).filter(isPlayableVideo);
   const pageInfo = categoryFiltered
-    ? categoryData?.discoveryFeed.pageInfo
+    ? categoryData?.discoveryFeed?.pageInfo
     : videoData?.videoFeed.pageInfo;
   const loading = categoryFiltered ? categoryLoading : videoLoading;
   const [loadingMore, setLoadingMore] = useState(false);
