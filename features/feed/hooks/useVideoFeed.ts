@@ -1,6 +1,6 @@
 "use client";
 
-import { gql } from "@apollo/client";
+import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { concatAST } from "graphql";
 import { startTransition, useCallback, useMemo, useState } from "react";
@@ -42,7 +42,10 @@ const CategoryVideoFeedDocument = concatAST([
     }
   `,
   ContentCardFieldsFragmentDoc,
-]);
+]) as unknown as TypedDocumentNode<
+  CategoryVideoFeedData,
+  CategoryVideoFeedVariables
+>;
 
 interface CategoryVideoFeedData {
   discoveryFeed: {
@@ -80,19 +83,16 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
     notifyOnNetworkStatusChange: true,
   });
 
-  const categoryQuery = useQuery<CategoryVideoFeedData, CategoryVideoFeedVariables>(
-    CategoryVideoFeedDocument,
-    {
-      variables: {
-        categoryId: categoryId ?? "",
-        limit: VIDEO_FEED_PAGE_SIZE,
-      },
-      skip: !isCategoryFeed,
-      fetchPolicy: "cache-first",
-      returnPartialData: false,
-      notifyOnNetworkStatusChange: true,
+  const categoryQuery = useQuery(CategoryVideoFeedDocument, {
+    variables: {
+      categoryId: categoryId ?? "",
+      limit: VIDEO_FEED_PAGE_SIZE,
     },
-  );
+    skip: !isCategoryFeed,
+    fetchPolicy: "cache-first",
+    returnPartialData: false,
+    notifyOnNetworkStatusChange: true,
+  });
 
   // The category list can be paginated and the selected card may not be on its
   // first page. Fetch its full card data so opening the viewer always starts on
@@ -107,7 +107,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
   const [loadingMore, setLoadingMore] = useState(false);
   // Apollo's result type includes DeepPartial cache snapshots even though
   // these queries disable partial results and select the complete fragment.
-  const categoryItems = (categoryQuery.data?.discoveryFeed.items ?? []) as ContentCardFieldsFragment[];
+  const categoryItems = (categoryQuery.data?.discoveryFeed?.items ?? []) as ContentCardFieldsFragment[];
   const categorySeed = seedQuery.data?.content as ContentCardFieldsFragment | null | undefined;
   const globalItems = (globalQuery.data?.videoFeed?.items ?? []) as ContentCardFieldsFragment[];
   const items = useMemo(() => {
@@ -126,7 +126,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
   }, [categoryItems, categorySeed, globalItems, isCategoryFeed, seed]);
 
   const pageInfo = isCategoryFeed
-    ? categoryQuery.data?.discoveryFeed.pageInfo
+    ? categoryQuery.data?.discoveryFeed?.pageInfo
     : globalQuery.data?.videoFeed?.pageInfo;
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);

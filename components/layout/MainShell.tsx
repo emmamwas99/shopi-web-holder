@@ -2,6 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { hasDesktopSideNav } from "@/components/layout/SideNav";
@@ -16,7 +17,6 @@ export function MainShell({
   lang: string;
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
   // Reserve no space for the nav when it's route-hidden OR class-hidden by a
   // full-viewport screen (e.g. the create-mode chooser) — otherwise the hidden
@@ -25,11 +25,6 @@ export function MainShell({
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
-  const showSideNav = hasDesktopSideNav(
-    pathname,
-    lang,
-    Boolean(searchParams.get("category")),
-  );
   // Explore (desktop's "Browse"). Not the For You feed — re-tapping its nav
   // tab already scrolls it to the top.
   const hasBackToTop = pathname.startsWith(`/${lang}/explore`);
@@ -44,9 +39,7 @@ export function MainShell({
           "mx-auto",
           isImmersiveCreate
             ? "md:mx-0 md:ml-0 md:max-w-none"
-            : showSideNav
-              ? "desktop-app-frame desktop-app-frame--with-sidebar md:pt-(--desktop-top-nav-height,68px)"
-              : "desktop-app-frame md:pt-(--desktop-top-nav-height,68px)",
+            : "desktop-app-frame md:pt-(--desktop-top-nav-height,68px)",
         ].join(" ")}
       >
         {/* The bottom padding clears the fixed BottomNav, which is md:hidden —
@@ -60,7 +53,11 @@ export function MainShell({
               : "pb-[calc(var(--nav-height,0)+var(--safe-bottom,0))] md:pb-0"
           }`}
         >
-          {children}
+          <Suspense fallback={<div>{children}</div>}>
+            <SearchAwareMainContent pathname={pathname} lang={lang}>
+              {children}
+            </SearchAwareMainContent>
+          </Suspense>
         </main>
       </div>
 
@@ -69,5 +66,28 @@ export function MainShell({
           input, full-screen flows) — the same signal that hides the nav. */}
       {hasBackToTop && <BackToTopButton hidden={bottomNavHidden} />}
     </>
+  );
+}
+
+function SearchAwareMainContent({
+  children,
+  pathname,
+  lang,
+}: {
+  children: ReactNode;
+  pathname: string;
+  lang: string;
+}) {
+  const searchParams = useSearchParams();
+  const showSideNav = hasDesktopSideNav(
+    pathname,
+    lang,
+    Boolean(searchParams.get("category")),
+  );
+
+  return (
+    <div className={showSideNav ? "desktop-app-frame--with-sidebar" : undefined}>
+      {children}
+    </div>
   );
 }

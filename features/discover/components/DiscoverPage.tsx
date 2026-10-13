@@ -1889,10 +1889,10 @@ export function DiscoverPage({
 
   const subcategories = useMemo(
     () =>
-      (subcategoryFacetsData?.discoveryFacets.subcategories ?? []).filter(
+      (subcategoryFacetsData?.discoveryFacets?.subcategories ?? []).filter(
         (subcategory) => subcategory.count > 0,
       ),
-    [subcategoryFacetsData?.discoveryFacets.subcategories],
+    [subcategoryFacetsData?.discoveryFacets?.subcategories],
   );
 
   useEffect(() => {
@@ -2191,8 +2191,8 @@ export function DiscoverPage({
     setStoreSpecFacets(specFacets);
   }, [setStoreSpecFacets, specFacets]);
 
-  const items = data?.discoveryFeed.items ?? [];
-  const pageInfo = data?.discoveryFeed.pageInfo;
+  const items = data?.discoveryFeed?.items ?? [];
+  const pageInfo = data?.discoveryFeed?.pageInfo;
   const locationFacets = locationFacetsData?.discoveryFacets;
   const isFetchingMore = networkStatus === NetworkStatus.fetchMore;
   // A full reload with nothing to show yet: the very first load, or a
@@ -2528,8 +2528,8 @@ export function DiscoverPage({
     : "Choose the most precise place for these results.";
 
   const categories = useMemo(
-    () => categoriesData?.discoveryFacets.categories ?? [],
-    [categoriesData?.discoveryFacets.categories],
+    () => categoriesData?.discoveryFacets?.categories ?? [],
+    [categoriesData?.discoveryFacets?.categories],
   );
 
   // Deep-link support: /explore?category=<slug> (e.g. from the SideNav Browse
