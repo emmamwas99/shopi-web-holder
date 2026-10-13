@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { gql } from "@apollo/client";
+import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -48,7 +48,33 @@ import type { DashboardTourStepId } from "./DashboardTour";
 import { WS_EVENTS, type MediaFailedPayload, type MediaReadyPayload } from "@/lib/socket";
 import type { BulkImportProgressPayload, BulkPublishProgressPayload } from "@/lib/socket/socket-events";
 
-const PUBLISH_BULK_DRAFTS = gql`
+type PublishBulkDraftData = {
+  publishBulkDrafts: Array<{
+    draftId: string;
+    success: boolean;
+    contentId: string | null;
+    message: string | null;
+  }>;
+};
+type PublishBulkDraftVariables = {
+  drafts: Array<{
+    id: string;
+    input: {
+      title: string;
+      caption: string;
+      categoryId: string;
+      specs: Array<{ key: string; value: string }>;
+      price: { amount: number; currency: string; negotiable: boolean };
+      contactPhone: string;
+    };
+  }>;
+  batchId: string;
+};
+
+const PUBLISH_BULK_DRAFTS: TypedDocumentNode<
+  PublishBulkDraftData,
+  PublishBulkDraftVariables
+> = gql`
   mutation PublishBulkDrafts($drafts: [PublishBulkDraftInput!]!, $batchId: String!) {
     publishBulkDrafts(drafts: $drafts, batchId: $batchId) {
       draftId
@@ -186,16 +212,7 @@ export function DashboardListings({
   const [autosaveDraft] = useMutation(AutosaveDraftDocument);
   const [extractBulkDraft] = useMutation(GUIDED_EXTRACT_FROM_DRAFT);
   const [discardDraft] = useMutation(DiscardDraftDocument);
-  const [publishBulkDrafts] = useMutation<{
-    publishBulkDrafts: Array<{ draftId: string; success: boolean; contentId?: string | null; message?: string | null }>;
-  }, { drafts: Array<{ id: string; input: {
-    title: string;
-    caption: string;
-    categoryId: string;
-    specs: Array<{ key: string; value: string }>;
-    price: { amount: number; currency: string; negotiable: boolean };
-    contactPhone: string;
-  } }>; batchId: string }>(PUBLISH_BULK_DRAFTS);
+  const [publishBulkDrafts] = useMutation(PUBLISH_BULK_DRAFTS);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [dismissPendingBulk, setDismissPendingBulk] = useState(false);
   const [mediaUploadStates, setMediaUploadStates] = useState<Record<string, { uploading: boolean; progress?: number; preparing?: boolean; processing?: boolean; error?: string }>>({});

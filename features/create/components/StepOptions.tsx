@@ -6,7 +6,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import React, { useCallback, useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { gql } from "@apollo/client";
+import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import {
@@ -38,7 +38,10 @@ const POST_TO_TIKTOK = gql`
   }
 `;
 
-const PUBLISH_DRAFT_NOW = gql`
+const PUBLISH_DRAFT_NOW: TypedDocumentNode<
+  { publishDraftNow: { id: string; type: string; title: string } | null },
+  { id: string }
+> = gql`
   mutation PublishDraftNow($id: String!) {
     publishDraftNow(id: $id) {
       id
@@ -142,10 +145,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
 
   const [autosave] = useMutation(AutosaveDraftDocument);
   const [advanceStep] = useMutation(AdvanceDraftStepDocument);
-  const [publishDraftNow] = useMutation<
-    { publishDraftNow: { id: string; type: string; title: string } | null },
-    { id: string }
-  >(PUBLISH_DRAFT_NOW);
+  const [publishDraftNow] = useMutation(PUBLISH_DRAFT_NOW);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
 

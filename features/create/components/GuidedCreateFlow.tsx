@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { gql } from "@apollo/client";
+import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import {
   ArrowRight,
@@ -88,7 +88,10 @@ import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator
 
 const MAX_IMAGES = 10;
 const ATTACH_TIMEOUT_MS = 30_000;
-const PUBLISH_DRAFT_NOW = gql`
+const PUBLISH_DRAFT_NOW: TypedDocumentNode<
+  { publishDraftNow: { id: string; type: string; title: string } | null },
+  { id: string }
+> = gql`
   mutation PublishDraftNow($id: String!) {
     publishDraftNow(id: $id) {
       id
@@ -269,10 +272,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [extractFromDraft] = useMutation(GUIDED_EXTRACT_FROM_DRAFT);
   const [shopiAgentTurn] = useMutation(SHOPI_AGENT_TURN);
   const [advanceDraft] = useMutation(AdvanceDraftStepDocument);
-  const [publishDraftNow] = useMutation<
-    { publishDraftNow: { id: string; type: string; title: string } | null },
-    { id: string }
-  >(PUBLISH_DRAFT_NOW);
+  const [publishDraftNow] = useMutation(PUBLISH_DRAFT_NOW);
 
   const [agentThinking, setAgentThinking] = useState(false);
   // True when the current question came from the deterministic fallback
