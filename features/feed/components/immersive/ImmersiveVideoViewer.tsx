@@ -23,7 +23,7 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { resumeVideoElection, suspendVideoElection } from "@/lib/activeVideo";
 import { pruneVideoFeedCache } from "@/lib/apollo/feedCache";
-import { contentSlugSegment, videoPath } from "@/lib/content-url";
+import { contentSlugSegment } from "@/lib/content-url";
 import {
   clearViewerSlide,
   rememberViewerSlide,
@@ -56,6 +56,17 @@ const CommentsDrawer = dynamic(() =>
 const NEAR_WINDOW = 1;
 /** How long after the index settles before the URL is rewritten. */
 const URL_DEBOUNCE_MS = 150;
+
+function safeContentSlugSegment(
+  content: { id?: string; slug?: string | null; title?: string | null } | null | undefined,
+) {
+  if (!content?.id) return null;
+  return contentSlugSegment({
+    id: content.id,
+    slug: content.slug,
+    title: content.title,
+  });
+}
 
 interface Props {
   /**
@@ -118,7 +129,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
     fetchPolicy: "cache-first",
   });
   const selectedWatchCategoryName = returnToWatchCategoryId
-    ? watchCategoriesData?.discoveryFacets.categories.find(
+    ? watchCategoriesData?.discoveryFacets?.categories?.find(
         (category) => category.id === returnToWatchCategoryId,
       )?.name ?? "this category"
     : null;
@@ -179,7 +190,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
 
     const wanted = viewerSlideFor(seedProp);
     const target = wanted
-      ? items.findIndex((item) => contentSlugSegment(item) === wanted)
+      ? items.findIndex((item) => safeContentSlugSegment(item) === wanted)
       : -1;
 
     // Always set the landing position, even when it is slide 0. Browsers
@@ -242,8 +253,9 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // Writes the canonical slug path, the same one the feed card pushes and the
   // route treats as canonical, so copying the address bar mid-swipe yields a
   // shareable, indexable link rather than an id that would only redirect.
-  const nextPath = activePost
-    ? `${videoPath(lang, activePost)}${returnToWatchQuery}`
+  const activePostSlug = safeContentSlugSegment(activePost);
+  const nextPath = activePostSlug
+    ? `/${lang}/video/${activePostSlug}${returnToWatchQuery}`
     : null;
   const lastWrittenPath = useRef<string | null>(null);
   useEffect(() => {
@@ -346,7 +358,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   useEffect(() => {
     const next = items[index + 1];
     if (!next) return;
-    const src = posterOf(next);
+    const src = posterOf(next as ContentCardFieldsFragment);
     if (!src) return;
     const img = new window.Image();
     img.src = src;
@@ -607,14 +619,16 @@ function SlideContainer({
   // flashes the inbox list — the same contract the feed card and the product
   // page both use.
   const openContact = useCallback(() => {
-    if (!requireAuth({ contentId: post.id })) return;
+    if (!post.id || !requireAuth({ contentId: post.id })) return;
     // Recorded here, from the slide that is actually sending the user away,
     // rather than from the viewer's active index. The index is derived from
     // scroll, and the scroller resets as the viewer tears down — that reset
     // fired one last index change and overwrote the position with a
     // neighbouring slide, which is why coming back landed near the right video
     // instead of on it.
-    rememberViewerSlide(routeSlug, contentSlugSegment(post));
+    const postSlug = safeContentSlugSegment(post);
+    if (!postSlug) return;
+    rememberViewerSlide(routeSlug, postSlug);
     router.push(contactHref);
   }, [requireAuth, router, contactHref, post, routeSlug]);
 

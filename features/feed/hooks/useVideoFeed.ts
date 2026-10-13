@@ -76,6 +76,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
     },
     skip: isCategoryFeed,
     fetchPolicy: "cache-first",
+    returnPartialData: false,
     notifyOnNetworkStatusChange: true,
   });
 
@@ -88,6 +89,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
       },
       skip: !isCategoryFeed,
       fetchPolicy: "cache-first",
+      returnPartialData: false,
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -99,13 +101,17 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
     variables: { id: seed },
     skip: !isCategoryFeed,
     fetchPolicy: "cache-first",
+    returnPartialData: false,
   });
 
   const [loadingMore, setLoadingMore] = useState(false);
-  const categoryItems = categoryQuery.data?.discoveryFeed.items ?? [];
-  const categorySeed = seedQuery.data?.content;
+  // Apollo's result type includes DeepPartial cache snapshots even though
+  // these queries disable partial results and select the complete fragment.
+  const categoryItems = (categoryQuery.data?.discoveryFeed.items ?? []) as ContentCardFieldsFragment[];
+  const categorySeed = seedQuery.data?.content as ContentCardFieldsFragment | null | undefined;
+  const globalItems = (globalQuery.data?.videoFeed?.items ?? []) as ContentCardFieldsFragment[];
   const items = useMemo(() => {
-    if (!isCategoryFeed) return globalQuery.data?.videoFeed?.items ?? [];
+    if (!isCategoryFeed) return globalItems;
 
     const foundSeed = categoryItems.find(
       (item) => item.id === seed || item.slug === seed,
@@ -117,7 +123,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
       selectedSeed,
       ...categoryItems.filter((item) => item.id !== selectedSeed.id),
     ];
-  }, [categoryItems, categorySeed, globalQuery.data?.videoFeed?.items, isCategoryFeed, seed]);
+  }, [categoryItems, categorySeed, globalItems, isCategoryFeed, seed]);
 
   const pageInfo = isCategoryFeed
     ? categoryQuery.data?.discoveryFeed.pageInfo

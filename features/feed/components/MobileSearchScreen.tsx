@@ -8,7 +8,7 @@ import { useState, type RefObject } from "react";
 import { ChevronLeft, Clock3, Play, RefreshCw, Search, X } from "lucide-react";
 import {
   DiscoveryFeedDocument,
-  type ContentCardFieldsFragment,
+  type DiscoveryFeedQuery,
 } from "@/types/__generated__/graphql";
 import { contentPath, videoPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
@@ -25,6 +25,7 @@ type SearchUser = {
   followerCount: number | null;
   profile: { firstName: string | null; lastName: string | null; avatar: string | null } | null;
 };
+type SearchContentItem = DiscoveryFeedQuery["discoveryFeed"]["items"][number];
 
 type SearchUsersData = { searchUsers: SearchUser[] };
 type SearchUsersVariables = { query: string; limit: number };
@@ -63,7 +64,7 @@ function numberLabel(value: number | null | undefined) {
   return Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-function mediaThumbnail(item: ContentCardFieldsFragment) {
+function mediaThumbnail(item: SearchContentItem) {
   const media = item.media?.[0];
   const playbackId = media?.muxMeta?.playbackId;
   return (
@@ -79,11 +80,11 @@ function mediaThumbnail(item: ContentCardFieldsFragment) {
   );
 }
 
-function contentTitle(item: ContentCardFieldsFragment) {
+function contentTitle(item: SearchContentItem) {
   return item.caption?.trim() || item.title?.trim() || "Shopi post";
 }
 
-function SearchContentCard({ item, lang }: { item: ContentCardFieldsFragment; lang: string }) {
+function SearchContentCard({ item, lang }: { item: SearchContentItem; lang: string }) {
   const href = item.type === "VIDEO" ? videoPath(lang, item) : contentPath(lang, item);
   const creatorName = item.creator?.username ||
     [item.creator?.profile?.firstName, item.creator?.profile?.lastName]
@@ -190,7 +191,7 @@ function ContentResults({
   top = false,
   onViewAllUsers,
 }: {
-  items: ContentCardFieldsFragment[];
+  items: SearchContentItem[];
   users: SearchUser[];
   lang: string;
   top?: boolean;
@@ -271,6 +272,7 @@ export function MobileSearchScreen({
     variables: { query: resultQuery || undefined, type: contentType, limit: 20 },
     skip: !resultQuery || tab === "Users",
     fetchPolicy: "cache-and-network",
+    returnPartialData: false,
   });
   const users = useQuery(SEARCH_USERS, {
     variables: { query: resultQuery, limit: tab === "Top" ? 4 : 20 },
@@ -282,7 +284,7 @@ export function MobileSearchScreen({
     skip: view !== "entry",
     fetchPolicy: "cache-first",
   });
-  const items = content.data?.discoveryFeed.items ?? [];
+  const items = (content.data?.discoveryFeed?.items ?? []) as SearchContentItem[];
   const userItems = users.data?.searchUsers ?? [];
   const suggestionTerms = suggestions.data?.searchSuggestions ?? [];
   const visibleSuggestions = suggestionTerms.length

@@ -164,7 +164,7 @@ function ExploreCategoryThumbnail({
     skip: !enabled,
     fetchPolicy: "cache-first",
   });
-  const media = data?.discoveryFeed.items[0]?.media?.[0];
+  const media = data?.discoveryFeed?.items?.[0]?.media?.[0];
   const listingImage =
     media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
   const Icon = iconForCategory(category);

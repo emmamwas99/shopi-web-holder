@@ -458,7 +458,12 @@ function AllCategoriesPicker({
     nextFetchPolicy: "cache-first",
   });
   const categories = (data?.discoveryFacets?.categories ?? []).filter(
-    (category) => category.count > 0,
+    (category): category is CategoryFacet =>
+      typeof category?.id === "string" &&
+      typeof category.name === "string" &&
+      typeof category.slug === "string" &&
+      typeof category.count === "number" &&
+      category.count > 0,
   );
   const pathParts = pathname.split("/").filter(Boolean);
   const activeCategory = watchMode
@@ -623,10 +628,12 @@ function AllCategoriesPicker({
                       type="button"
                       onClick={() => {
                         closeForSelection();
+                        const categoryValue = watchMode ? category.id : category.slug;
+                        if (!categoryValue) return;
                         router.push(
                           watchMode
-                            ? `/${lang}/for-you?tab=watch&categoryId=${encodeURIComponent(category.id)}`
-                            : `/${lang}/explore?category=${encodeURIComponent(category.slug)}`,
+                            ? `/${lang}/for-you?tab=watch&categoryId=${encodeURIComponent(categoryValue)}`
+                            : `/${lang}/explore?category=${encodeURIComponent(categoryValue)}`,
                         );
                       }}
                       className={`flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface ${selected ? "bg-primary/5 text-primary" : "text-main"}`}
@@ -677,7 +684,7 @@ function CategoryThumbnail({
     skip: !enabled,
     fetchPolicy: "cache-first",
   });
-  const media = data?.discoveryFeed.items[0]?.media?.[0];
+  const media = data?.discoveryFeed?.items?.[0]?.media?.[0];
   const listingImage =
     media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
 
