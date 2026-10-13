@@ -67,7 +67,6 @@ import {
 } from "../categories";
 import { slugifyContentTitle } from "@/lib/content-url";
 import { rememberScrollBeforeNavigation } from "@/lib/scrollRestoration";
-import { goBackOr } from "@/lib/useAppBack";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -1410,6 +1409,7 @@ function FilterPickerView({
   let options: Array<{ id: string; label: string; count?: number; active: boolean; pick: () => void }>;
   let anyActive: boolean;
   let pickAny: () => void;
+  let anyCount: number | undefined;
 
   if (picker.kind === "category") {
     title = "Category";
@@ -1426,6 +1426,10 @@ function FilterPickerView({
   } else if (picker.kind === "subcategory") {
     title = selectedCategory?.name ?? "Subcategory";
     anyLabel = selectedCategory ? `All ${selectedCategory.name}` : "All";
+    anyCount = selectedCategory
+      ? categories.find((category) => category.id === selectedCategory.id)?.count ??
+        selectedCategory.count
+      : undefined;
     anyActive = !selectedSubcategory;
     pickAny = () => onPickSubcategory(null);
     options = subcategories.map((item) => ({
@@ -1496,7 +1500,12 @@ function FilterPickerView({
           </div>
         ) : null}
         {!term ? (
-          <PickerOptionRow label={anyLabel} active={anyActive} onClick={pickAny} />
+          <PickerOptionRow
+            label={anyLabel}
+            count={anyCount}
+            active={anyActive}
+            onClick={pickAny}
+          />
         ) : null}
         {visible.map((option) => (
           <PickerOptionRow
@@ -1758,8 +1767,10 @@ export function DiscoverPage({
     return () => window.clearTimeout(handle);
   }, [query, recordSearchTerm]);
 
+  const hasCategoryResults = Boolean(selectedCategory) || isSubcategoryRoute;
+
   useEffect(() => {
-    if (!isSubcategoryRoute) {
+    if (!hasCategoryResults) {
       setSubcategoryHeaderMode("expanded");
       return;
     }
@@ -1815,13 +1826,13 @@ export function DiscoverPage({
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isSubcategoryRoute]);
+  }, [hasCategoryResults]);
 
   useEffect(() => {
-    if (isSubcategoryRoute && subcategoryChipsRef.current) {
+    if (hasCategoryResults && subcategoryChipsRef.current) {
       subcategoryChipsRef.current.scrollLeft = 0;
     }
-  }, [isSubcategoryRoute]);
+  }, [hasCategoryResults]);
 
   // Subcategory tiles follow every filter EXCEPT the subcategory itself, so
   // picking a tile narrows the grid below without the row reshuffling under the
@@ -2077,6 +2088,18 @@ export function DiscoverPage({
     [],
   );
 
+  const selectAllCategoryAndNavigate = useCallback(() => {
+    if (!drawerCategory) return;
+    rememberScrollBeforeNavigation();
+    setSelectedCategory(drawerCategory);
+    setSelectedSubcategory(null);
+    setSubcategoryDrawerOpen(false);
+    router.replace(
+      `/${lang}/explore?category=${encodeURIComponent(drawerCategory.slug)}`,
+      { scroll: false },
+    );
+  }, [drawerCategory, lang, router, setSelectedCategory, setSelectedSubcategory]);
+
   const selectSubcategoryAndNavigate = useCallback(
     (name: string) => {
       if (!drawerCategory) return;
@@ -2271,18 +2294,17 @@ export function DiscoverPage({
     setSelectedWard(null);
   }, []);
 
-  // Clear means back to defaults: every filter, the category and the sort.
-  // (The search text stays — it isn't a filter.) Same as the desktop
-  // sidebar's Clear, so both surfaces agree.
+  // Clear resets narrowing filters while preserving a scoped category or
+  // subcategory. On unscoped Explore it also clears the category selection.
   const clearAllFilters = useDiscoverFiltersStore((s) => s.clearAll);
   const clearFilters = useCallback(() => {
-    if (isSubcategoryRoute) {
+    if (hasCategoryResults) {
       clearNarrowingFilters();
       setSort("RELEVANCE");
       return;
     }
     clearAllFilters();
-  }, [clearAllFilters, clearNarrowingFilters, isSubcategoryRoute, setSort]);
+  }, [clearAllFilters, clearNarrowingFilters, hasCategoryResults, setSort]);
 
   const clearSearch = useCallback(() => {
     setSearchDraft("");
@@ -2719,8 +2741,15 @@ export function DiscoverPage({
   ]);
 
   const showSubcategorySearch =
-    !isSubcategoryRoute || subcategoryHeaderMode !== "chips";
-  const showSubcategoryChips = subcategoryHeaderMode !== "search";
+    !hasCategoryResults || subcategoryHeaderMode !== "chips";
+  const showSubcategoryChips =
+    !hasCategoryResults || subcategoryHeaderMode !== "search";
+  const showCategoryFilterChips = hasCategoryResults;
+  const backToCategories = useCallback(() => {
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    router.replace(`/${lang}/explore`, { scroll: false });
+  }, [lang, router, setSelectedCategory, setSelectedSubcategory]);
 
   return (
     <div
@@ -2732,7 +2761,8 @@ export function DiscoverPage({
             className="sticky top-0 z-30 grid border-b border-default bg-app [overflow-anchor:none] lg:hidden"
             style={{
               gridTemplateRows:
-                isSubcategoryRoute && subcategoryHeaderMode === "expanded"
+                showCategoryFilterChips &&
+                subcategoryHeaderMode === "expanded"
                   ? "68px auto"
                   : "68px",
             }}
@@ -2753,12 +2783,12 @@ export function DiscoverPage({
               )}
             >
               <div className="flex w-full min-w-0 items-center gap-1.5 px-4 lg:px-0">
-                {isSubcategoryRoute ? (
+                {showCategoryFilterChips && subcategoryHeaderMode !== "chips" ? (
                   <button
                     type="button"
                     // Opened straight from a link (Google, WhatsApp) there is
                     // no Categories screen behind it to go back to.
-                    onClick={() => goBackOr(router, `/${lang}/explore`)}
+                    onClick={backToCategories}
                     className="grid h-9 w-7 shrink-0 place-items-center rounded-full text-default active:bg-surface"
                     aria-label="Back to categories"
                   >
@@ -2811,12 +2841,14 @@ export function DiscoverPage({
               </div>
             </motion.div>
 
-            {isSubcategoryRoute ? (
+            {showCategoryFilterChips ? (
               <div
                 aria-hidden={!showSubcategoryChips}
                 style={{
                   gridArea:
-                    subcategoryHeaderMode === "expanded" ? "2 / 1" : "1 / 1",
+                    subcategoryHeaderMode === "expanded"
+                      ? "2 / 1"
+                      : "1 / 1",
                 }}
                 className={cn(
                   "flex min-w-0 overflow-hidden",
@@ -2826,20 +2858,31 @@ export function DiscoverPage({
                   !showSubcategoryChips && "pointer-events-none",
                 )}
               >
-                <div
-                  ref={subcategoryChipsRef}
-                  className="no-scroll-indicator min-w-0 flex-1 overflow-x-auto pl-4 pr-0"
-                >
-                  <motion.div
-                    initial={false}
-                    animate={showSubcategoryChips ? "visible" : "hidden"}
-                    variants={{
-                      visible: { opacity: 1, y: 0 },
-                      hidden: { opacity: 0, y: -8 },
-                    }}
-                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex w-max gap-1.5"
+                <div className="flex min-w-0 flex-1 items-center gap-1.5 px-3">
+                  {subcategoryHeaderMode === "chips" ? (
+                    <button
+                      type="button"
+                      onClick={backToCategories}
+                      className="grid h-9 w-8 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+                      aria-label="Back to categories"
+                    >
+                      <ChevronLeft size={20} strokeWidth={2.25} />
+                    </button>
+                  ) : null}
+                  <div
+                    ref={subcategoryChipsRef}
+                    className="no-scroll-indicator min-w-0 flex-1 overflow-x-auto"
                   >
+                    <motion.div
+                      initial={false}
+                      animate={showSubcategoryChips ? "visible" : "hidden"}
+                      variants={{
+                        visible: { opacity: 1, y: 0 },
+                        hidden: { opacity: 0, y: -8 },
+                      }}
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                      className="flex w-max gap-1.5"
+                    >
                     <button
                       type="button"
                       onClick={openFilterSheet}
@@ -2907,7 +2950,8 @@ export function DiscoverPage({
                         </button>
                       );
                     })}
-                  </motion.div>
+                    </motion.div>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -3511,15 +3555,11 @@ export function DiscoverPage({
           drawerView = (
             <FilterFieldList
               categoryLabel={
-                isSubcategoryRoute
+                isSubcategoryRoute || selectedCategory
                   ? null
-                  : selectedCategory?.name ?? "All categories"
+                  : "All categories"
               }
-              subcategoryLabel={
-                !isSubcategoryRoute && selectedCategory && subcategories.length > 0
-                  ? (subcategory ?? `All ${selectedCategory.name}`)
-                  : null
-              }
+              subcategoryLabel={null}
               regionLabel={locationLabel}
               sortLabel={activeSortLabel}
               sortActive={sort !== "RELEVANCE"}
@@ -3531,7 +3571,7 @@ export function DiscoverPage({
                 specFacetsLoading && specFacets.length === 0 && Boolean(selectedCategory || subcategory)
               }
               specs={specs}
-              marketplaceStyle={isSubcategoryRoute}
+              marketplaceStyle={hasCategoryResults}
               negotiableOnly={negotiableOnly}
               onNegotiableOnly={setNegotiableOnly}
               onOpenPicker={openPicker}
@@ -3548,7 +3588,7 @@ export function DiscoverPage({
               onClose={closeFilterSheet}
               onClear={clearFilters}
               canClear={
-                (isSubcategoryRoute
+                (hasCategoryResults
                   ? activeFilterCount >
                     Number(Boolean(selectedCategory)) + Number(Boolean(subcategory))
                   : activeFilterCount > 0) || sort !== "RELEVANCE"
@@ -3592,8 +3632,22 @@ export function DiscoverPage({
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5">
             {subcategoriesLoading ? (
               <DrawerLoadingIndicator className="min-h-full" />
-            ) : subcategories.length > 0 ? (
+            ) : drawerCategory ? (
               <div className="flex flex-col gap-0">
+                <button
+                  type="button"
+                  onClick={selectAllCategoryAndNavigate}
+                  className="flex h-12 min-h-12 w-full flex-none items-center justify-between border-b border-border text-left text-sm font-semibold leading-tight text-default active:opacity-65"
+                >
+                  <span>All {drawerCategory.name}</span>
+                  <span className="ml-4 flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+                    {drawerCategory.count.toLocaleString()}
+                    <ChevronRight
+                      className="h-6 w-6 text-default"
+                      strokeWidth={2.25}
+                    />
+                  </span>
+                </button>
                 {subcategories.map((subcategory) => (
                   <button
                     key={subcategory.name}
@@ -3611,11 +3665,12 @@ export function DiscoverPage({
                     </span>
                   </button>
                 ))}
+                {subcategories.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    No subcategories available.
+                  </p>
+                ) : null}
               </div>
-            ) : drawerCategory ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                No subcategories available.
-              </p>
             ) : null}
           </div>
         </DrawerContent>

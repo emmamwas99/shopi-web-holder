@@ -229,7 +229,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
     priority: true,
   };
   const {
-    props: { srcSet: heroDesktopSrcSet },
+    props: { srcSet: heroDesktopSrcSet, ...heroDesktopImageProps },
   } = getImageProps({
     ...heroImageCommon,
     src: "/assets/hero/marketplace-banner.png",
@@ -237,7 +237,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
     height: 887,
   });
   const {
-    props: { srcSet: heroMobileSrcSet, ...heroMobileImageProps },
+    props: { srcSet: heroMobileSrcSet },
   } = getImageProps({
     ...heroImageCommon,
     src: "/assets/hero/marketplace-banner-mobile.png",
@@ -264,23 +264,23 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           aria-labelledby="home-title"
           className="px-4 pb-8 md:px-8 md:pb-14"
         >
-          <div className="relative mx-auto flex min-h-[min(700px,72vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:min-h-[min(710px,72vh)] md:items-center">
+          <div className="relative mx-auto flex min-h-[min(700px,72vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-[min(710px,72vh)] md:items-center">
             <picture className="absolute inset-0">
               <source
-                media="(min-width: 768px)"
-                srcSet={heroDesktopSrcSet}
+                media="(max-width: 767px)"
+                srcSet={heroMobileSrcSet}
                 sizes={heroImageCommon.sizes}
               />
               <img
-                {...heroMobileImageProps}
+                {...heroDesktopImageProps}
                 alt={heroImageCommon.alt}
-                srcSet={heroMobileSrcSet}
-                className="absolute h-full w-full object-cover object-[55%_center] md:object-[center_45%]"
+                srcSet={heroDesktopSrcSet}
+                className="absolute h-full w-full object-cover object-[55%_center] md:object-contain"
               />
             </picture>
             {/* Darken the image beneath the text so white copy stays readable. */}
             <div
-              className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-none md:bg-black/50"
+              className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-linear-to-r md:from-black/45 md:via-black/10 md:to-transparent"
               aria-hidden
             />
             <div className="relative z-10 w-full max-w-7xl px-6 py-10 text-center text-white md:mx-auto md:px-12 md:py-16 md:text-left">
