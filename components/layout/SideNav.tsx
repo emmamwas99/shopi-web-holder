@@ -458,7 +458,12 @@ function AllCategoriesPicker({
     nextFetchPolicy: "cache-first",
   });
   const categories = (data?.discoveryFacets?.categories ?? []).filter(
-    (category) => typeof category.count === "number" && category.count > 0,
+    (category): category is CategoryFacet =>
+      typeof category?.id === "string" &&
+      typeof category.name === "string" &&
+      typeof category.slug === "string" &&
+      typeof category.count === "number" &&
+      category.count > 0,
   );
   const pathParts = pathname.split("/").filter(Boolean);
   const activeCategory = watchMode
@@ -679,7 +684,7 @@ function CategoryThumbnail({
     skip: !enabled,
     fetchPolicy: "cache-first",
   });
-  const media = data?.discoveryFeed.items[0]?.media?.[0];
+  const media = data?.discoveryFeed?.items?.[0]?.media?.[0];
   const listingImage =
     media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
 
