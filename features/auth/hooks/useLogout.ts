@@ -4,7 +4,12 @@ import { useCallback } from "react";
 import { useMutation } from "@apollo/client/react";
 import { LogoutDocument } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
+import { REMOVE_WEB_PUSH_SUBSCRIPTION } from "@/features/messaging/graphql/operations";
+import { detachBrowserPush } from "@/features/messaging/lib/browserPush";
 import { disableGoogleAutoSelect } from "../lib/googleIdentity";
+
+/** How long sign-out waits on push cleanup before going ahead regardless. */
+const PUSH_DETACH_TIMEOUT_MS = 3000;
 
 /** Revokes the refresh token, clears local auth state and returns to the feed. */
 export function useLogout(lang: string) {
@@ -13,8 +18,20 @@ export function useLogout(lang: string) {
   const [logoutMutation, { loading }] = useMutation(LogoutDocument, {
     errorPolicy: "all",
   });
+  const [removePushSubscription] = useMutation(REMOVE_WEB_PUSH_SUBSCRIPTION, {
+    errorPolicy: "all",
+  });
 
   const logout = useCallback(async () => {
+    // Detach this browser from the account's push first, while the session is
+    // still valid — on a shared computer the next person would otherwise keep
+    // seeing this account's message previews.
+    await Promise.race([
+      detachBrowserPush((endpoint) =>
+        removePushSubscription({ variables: { endpoint } }),
+      ),
+      new Promise((resolve) => setTimeout(resolve, PUSH_DETACH_TIMEOUT_MS)),
+    ]);
     if (refreshToken) {
       await logoutMutation({ variables: { refreshToken } });
     }
@@ -23,7 +40,7 @@ export function useLogout(lang: string) {
     disableGoogleAutoSelect();
     useAuthStore.getState().clearAuth();
     window.location.href = `/${lang}/for-you`;
-  }, [refreshToken, logoutMutation, lang]);
+  }, [refreshToken, logoutMutation, removePushSubscription, lang]);
 
   return { logout, loading };
 }

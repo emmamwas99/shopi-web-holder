@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/auth";
+import { detachBrowserPush } from "@/features/messaging/lib/browserPush";
 
 type PushStatusResponse = {
   data?: {
     myWebPushStatus?: {
       isAvailable?: boolean;
       isEnabled?: boolean;
+      isOptedOut?: boolean;
       publicKey?: string | null;
     };
   };
@@ -85,6 +87,7 @@ async function fetchPushStatus(
           myWebPushStatus {
             isAvailable
             isEnabled
+            isOptedOut
             publicKey
           }
         }
@@ -132,6 +135,9 @@ async function saveSubscription(
           auth,
           locale: lang,
           userAgent: navigator.userAgent,
+          // A refresh, not the user turning push on: the server will not let
+          // it override an opt-out.
+          background: true,
         },
       },
     }),
@@ -147,6 +153,19 @@ async function saveSubscription(
 
 export function GlobalPushBootstrap({ lang }: { lang: string }) {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const hadSessionRef = useRef(Boolean(accessToken));
+
+  // However the session ends — signing out, an expired or revoked session, a
+  // suspension — this browser must stop receiving the account's notifications.
+  useEffect(() => {
+    if (accessToken) {
+      hadSessionRef.current = true;
+      return;
+    }
+    if (!hadSessionRef.current) return;
+    hadSessionRef.current = false;
+    void detachBrowserPush();
+  }, [accessToken]);
 
   useEffect(() => {
     if (!accessToken || !browserSupportsPush()) return;
@@ -157,6 +176,10 @@ export function GlobalPushBootstrap({ lang }: { lang: string }) {
     const sync = async () => {
       const status = await fetchPushStatus(accessToken);
       if (cancelled || !status?.isAvailable || !status.publicKey) return;
+      // This runs on every page load and every access-token refresh. Without
+      // this check it re-subscribed the browser each time, turning push back
+      // on within minutes of the user switching it off.
+      if (status.isOptedOut) return;
 
       const registration = await getRegistration();
       let subscription = await registration.pushManager.getSubscription();

@@ -125,15 +125,24 @@ self.addEventListener("notificationclick", (event) => {
   );
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windowClients) => {
-      const client = windowClients[0];
+    (async () => {
+      // Only a window this worker controls can be navigated. An uncontrolled
+      // one (open since a hard reload, say) made navigate() throw, and the
+      // click did nothing at all.
+      const windowClients = await clients.matchAll({ type: "window" });
+      const client = windowClients.find((c) => c.focused) || windowClients[0];
       if (client) {
-        await client.navigate(url);
-        return client.focus();
+        try {
+          const navigated = await client.navigate(url);
+          await (navigated || client).focus().catch(() => {});
+          return;
+        } catch {
+          // Fall through to a new window.
+        }
       }
 
-      return clients.openWindow(url);
-    }),
+      await clients.openWindow(url);
+    })(),
   );
 });
 `;
