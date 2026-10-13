@@ -98,6 +98,7 @@ export function usePushNotifications(lang: string) {
           myWebPushStatus?: {
             isAvailable?: boolean;
             isEnabled?: boolean;
+            isOptedOut?: boolean;
             activeSubscriptionCount?: number;
             publicKey?: string | null;
           };
@@ -108,6 +109,9 @@ export function usePushNotifications(lang: string) {
   const isSupported = permission !== "unsupported";
   const isAvailable = Boolean(status?.isAvailable);
   const isEnabled = Boolean(status?.isEnabled);
+  // The user switched push off, possibly on another device. Only their own
+  // "turn on" may undo that — never the background re-sync below.
+  const isOptedOut = Boolean(status?.isOptedOut);
   const publicKey = status?.publicKey ?? null;
 
   const syncExistingSubscription = useCallback(async () => {
@@ -138,6 +142,7 @@ export function usePushNotifications(lang: string) {
           auth,
           locale: lang,
           userAgent: navigator.userAgent,
+          background: true,
         },
       },
     });
@@ -152,6 +157,7 @@ export function usePushNotifications(lang: string) {
       permission !== "granted" ||
       !isAvailable ||
       isEnabled ||
+      isOptedOut ||
       autoSyncRef.current ||
       disabledByUserRef.current
     ) {
@@ -166,6 +172,7 @@ export function usePushNotifications(lang: string) {
     isAuthenticated,
     isAvailable,
     isEnabled,
+    isOptedOut,
     isSupported,
     permission,
     syncExistingSubscription,

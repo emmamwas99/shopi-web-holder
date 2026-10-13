@@ -471,6 +471,7 @@ export const MY_WEB_PUSH_STATUS = gql`
     myWebPushStatus {
       isAvailable
       isEnabled
+      isOptedOut
       activeSubscriptionCount
       publicKey
     }
@@ -482,6 +483,7 @@ export const SAVE_WEB_PUSH_SUBSCRIPTION = gql`
     saveWebPushSubscription(input: $input) {
       isAvailable
       isEnabled
+      isOptedOut
       activeSubscriptionCount
       publicKey
     }
@@ -504,6 +506,7 @@ export const REMOVE_ALL_WEB_PUSH_SUBSCRIPTIONS = gql`
     removeAllWebPushSubscriptions {
       isAvailable
       isEnabled
+      isOptedOut
       activeSubscriptionCount
       publicKey
     }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAppBack } from "@/lib/useAppBack";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import {
   DISCOVER_GRID,
   DiscoverGridCard,
@@ -112,7 +113,10 @@ export function CreatorProfileView({
 }: Props) {
   // A profile link opened from outside has no app history to return to, so
   // back would be a dead button. Send those to the feed.
-  const goBack = useAppBack(`/${lang}/for-you`);
+  const isDesktop = useIsDesktop({ ssrDefault: false });
+  const goBack = useAppBack(
+    isDesktop ? `/${lang}/explore` : `/${lang}/for-you`,
+  );
   const [linkCopied, setLinkCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -249,9 +253,9 @@ export function CreatorProfileView({
 
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="sticky top-0 z-30 border-b border-border bg-white">
-        <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
+    <div className="min-h-screen bg-white dark:bg-app">
+      <div className="sticky top-0 z-30 border-b border-border bg-white dark:bg-app">
+        <div className="desktop-app-frame flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
           <button
             onClick={goBack}
             className="inline-flex h-10 items-center gap-1.5 text-sm font-bold text-main transition-opacity active:opacity-60"
@@ -278,7 +282,7 @@ export function CreatorProfileView({
       </div>
 
       <div className="border-b border-border">
-        <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+        <div className="desktop-app-frame w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="flex min-w-0 items-start gap-4">
               {/* Any live story rings the avatar (pink new, grey watched) and
@@ -417,7 +421,7 @@ export function CreatorProfileView({
         </div>
       </div>
 
-      <div className="w-full px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10">
+      <div className="desktop-app-frame w-full px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-black text-main">
             Storefront

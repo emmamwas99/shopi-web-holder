@@ -51,14 +51,14 @@ export function GlobalPushToastBridge() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
-                <p className="truncate text-[15px] font-semibold leading-5 text-slate-950">
+                <p className="truncate text-[15px] font-semibold leading-5 text-foreground">
                   {title}
                 </p>
-                <span className="shrink-0 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+                <span className="shrink-0 text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                   now
                 </span>
               </div>
-              <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-600">
+              <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-muted">
                 {body}
               </p>
               {url ? (
