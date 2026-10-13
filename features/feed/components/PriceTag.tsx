@@ -24,7 +24,7 @@ export function PriceTag({ amount, currency, negotiable, inverted }: Props) {
 
   if (inverted) {
     return (
-      <span className="inline-flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full">
+      <span className="inline-flex items-center gap-1 bg-black/60  text-white text-xs font-bold px-2.5 py-1 rounded-full">
         {display}
         {negotiable && <span className="text-xs opacity-75">· neg</span>}
       </span>

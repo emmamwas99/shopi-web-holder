@@ -406,7 +406,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
           type="button"
           onClick={close}
           aria-label="Back"
-          className="absolute left-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:scale-95"
+          className="absolute left-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white  active:scale-95"
           style={{
             top: "var(--immersive-top, max(env(safe-area-inset-top, 0px), 16px))",
           }}
@@ -441,7 +441,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
         type="button"
         onClick={close}
         aria-label="Back"
-        className="absolute left-4 top-[var(--immersive-top)] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:scale-95"
+        className="absolute left-4 top-[var(--immersive-top)] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white  active:scale-95"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
@@ -529,7 +529,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
             onClick={() => goTo(index - 1)}
             disabled={index === 0}
             aria-label="Previous video"
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/18 text-white shadow-[0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[background-color,transform,opacity] hover:scale-105 hover:bg-white/28 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/18 text-white shadow-[0_12px_32px_rgba(0,0,0,0.35)]  transition-[background-color,transform,opacity] hover:scale-105 hover:bg-white/28 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
           >
             <ChevronUp className="h-7 w-7" strokeWidth={2.6} />
           </button>
@@ -538,7 +538,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
             onClick={() => goTo(index + 1)}
             disabled={index >= items.length - 1}
             aria-label="Next video"
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/18 text-white shadow-[0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[background-color,transform,opacity] hover:scale-105 hover:bg-white/28 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/18 text-white shadow-[0_12px_32px_rgba(0,0,0,0.35)]  transition-[background-color,transform,opacity] hover:scale-105 hover:bg-white/28 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
           >
             <ChevronDown className="h-7 w-7" strokeWidth={2.6} />
           </button>

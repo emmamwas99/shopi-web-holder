@@ -160,7 +160,7 @@ export function StoryComposer({
 
             {willTrim && (
               <div className="mt-1 flex justify-center px-2">
-                <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+                <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white ">
                   <Scissors size={14} />
                   Only the first {MAX_STORY_VIDEO_SECONDS} seconds will be shared
                 </span>

@@ -169,7 +169,7 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
                 <button
                   onClick={(e) => { e.stopPropagation(); handleRemove(item); }}
                   disabled={isRemoving}
-                  className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all active:scale-90 disabled:opacity-50 z-10"
+                  className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60  flex items-center justify-center transition-all active:scale-90 disabled:opacity-50 z-10"
                 >
                   {isRemoving ? (
                     <InterlockingBalls size={14} />

@@ -212,7 +212,7 @@ function WatchTile({
         <div className="size-full bg-gradient-to-b from-neutral-700 to-black" />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/10" />
-      <span className="absolute left-1/2 top-1/2 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+      <span className="absolute left-1/2 top-1/2 flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white ">
         <Play className="ml-0.5 size-5 fill-current" />
       </span>
       <span className="absolute inset-x-0 bottom-0 p-3 text-white">

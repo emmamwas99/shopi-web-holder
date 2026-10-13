@@ -124,7 +124,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
           tapped, until the import page mounts and takes over. */}
       {preparingTiktok && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 "
           role="status"
           aria-live="polite"
         >

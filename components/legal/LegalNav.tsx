@@ -11,7 +11,7 @@ export function LegalNav({ lang }: { lang: string }) {
 
   return (
     <header
-      className="sticky top-0 z-40 w-full border-b border-border bg-[rgb(var(--color-bg)/0.92)] backdrop-blur-md"
+      className="sticky top-0 z-40 w-full border-b border-border bg-app "
     >
       <div
         className="mx-auto flex h-14 max-w-215 items-center justify-between px-4"

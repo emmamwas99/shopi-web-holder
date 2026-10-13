@@ -268,7 +268,7 @@ function InventoryCard({
           <div className="absolute inset-x-0 top-0 z-20 flex p-2 pr-11">
             <span
               className={cn(
-                "truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm",
+                "truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold ",
                 isHidden
                   ? "border-black/10 bg-white/85 text-slate-700"
                   : toneClasses(status.tone),
@@ -297,7 +297,7 @@ function InventoryCard({
           }}
           // 36px, up from 32: this is the only control on the tile and it sat
           // under the 44px a thumb actually needs.
-          className="absolute right-1.5 top-1.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-transform active:scale-90"
+          className="absolute right-1.5 top-1.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white  transition-transform active:scale-90"
           aria-label={`Manage ${post.title || "post"}`}
         >
           <MoreHorizontal size={18} />
@@ -305,7 +305,7 @@ function InventoryCard({
 
         {isVideo && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white ">
               <Play size={16} fill="currentColor" strokeWidth={0} className="ml-0.5" />
             </span>
           </span>

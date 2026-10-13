@@ -295,10 +295,8 @@ function EditProfileForm({
       <header
         className="sticky top-0 z-20 flex h-14 items-center justify-between border-b px-3 md:h-16 md:px-5 lg:px-6"
         style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
+          backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(14px) saturate(150%)",
-          WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
         {!embedded && <Button
@@ -354,7 +352,7 @@ function EditProfileForm({
         <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] xl:gap-8">
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div
-              className="mb-6 flex items-center gap-4 md:mb-0 md:rounded-[28px] md:border md:bg-[rgb(var(--color-bg-elevated)/0.72)] md:p-5 lg:flex-col lg:items-start lg:rounded-[32px] lg:p-6"
+              className="mb-6 flex items-center gap-4 md:mb-0 md:rounded-[28px] md:border md:bg-elevated md:p-5 lg:flex-col lg:items-start lg:rounded-[32px] lg:p-6"
               style={{ borderColor: "rgb(229 231 235)" }}
             >
               <button
@@ -466,7 +464,7 @@ function EditProfileForm({
           </aside>
 
           <section
-            className="md:rounded-[28px] md:border md:bg-[rgb(var(--color-bg-elevated)/0.72)] md:p-5 lg:rounded-[32px] lg:p-7"
+            className="md:rounded-[28px] md:border md:bg-elevated md:p-5 lg:rounded-[32px] lg:p-7"
             style={{ borderColor: "rgb(229 231 235)" }}
           >
             <div className="hidden md:block">

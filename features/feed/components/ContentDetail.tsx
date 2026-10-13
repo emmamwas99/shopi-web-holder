@@ -16,7 +16,7 @@ import {
   MapPin,
   Phone,
   Maximize2,
-  ArrowLeft,
+  ChevronLeft,
 } from "lucide-react";
 import { gql } from "@apollo/client";
 import { toast } from "sonner";
@@ -369,7 +369,7 @@ function ContentVideo({
           className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
           aria-label="Replay video"
         >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white ">
             <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
             </svg>
@@ -384,7 +384,7 @@ function ContentVideo({
         >
           <span
             className={[
-              "flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity duration-200",
+              "flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white  transition-opacity duration-200",
               showPlayOverlay ? "opacity-100" : "opacity-0",
             ].join(" ")}
           >
@@ -420,7 +420,7 @@ function ContentVideo({
             toggleMuted();
           }}
           aria-label={actualMuted ? "Unmute video" : "Mute video"}
-          className="absolute bottom-12 right-4 z-50 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+          className="absolute bottom-12 right-4 z-50 w-9 h-9 rounded-full bg-black/60  flex items-center justify-center text-white"
         >
           {actualMuted ? (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -451,7 +451,7 @@ function ContentVideo({
           }}
           aria-label="Open video fullscreen"
           className={[
-            "absolute top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-transform active:scale-95",
+            "absolute top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white  transition-transform active:scale-95",
             fullscreenSide === "left" ? "left-4" : "right-4",
           ].join(" ")}
         >
@@ -1543,7 +1543,7 @@ export function ContentDetail({
                     type="button"
                     onClick={() => setShowMediaDialog(true)}
                     aria-label="Open image fullscreen"
-                    className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-transform active:scale-95"
+                    className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white  transition-transform active:scale-95"
                   >
                     <Maximize2 className="h-5 w-5" strokeWidth={2.2} />
                   </button>
@@ -1637,7 +1637,7 @@ export function ContentDetail({
               title="Go back"
               className="mr-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-default text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <Link href={`/${lang}/for-you`} className="shrink-0 font-medium text-muted-foreground transition-colors hover:text-default">Home</Link>
             <span aria-hidden className="text-muted-foreground/50">/</span>
@@ -1709,7 +1709,7 @@ export function ContentDetail({
                       onClick={() => setImgIdx((index) => Math.max(0, index - 1))}
                       disabled={imgIdx === 0}
                       aria-label="Previous photo"
-                      className="absolute left-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-black/75 disabled:opacity-35"
+                      className="absolute left-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg  transition hover:bg-black/75 disabled:opacity-35"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" aria-hidden>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
@@ -1720,13 +1720,13 @@ export function ContentDetail({
                       onClick={() => setImgIdx((index) => Math.min(media.length - 1, index + 1))}
                       disabled={imgIdx === media.length - 1}
                       aria-label="Next photo"
-                      className="absolute right-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-black/75 disabled:opacity-35"
+                      className="absolute right-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg  transition hover:bg-black/75 disabled:opacity-35"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24" aria-hidden>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
                       </svg>
                     </button>
-                    <span className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                    <span className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white ">
                       {imgIdx + 1} / {media.length}
                     </span>
                   </>
@@ -1737,7 +1737,7 @@ export function ContentDetail({
                     type="button"
                     onClick={() => setShowMediaDialog(true)}
                     aria-label="View photo fullscreen"
-                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition hover:bg-black/75"
+                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white  transition hover:bg-black/75"
                   >
                     <Maximize2 className="h-4 w-4" aria-hidden />
                   </button>
@@ -1874,7 +1874,7 @@ export function ContentDetail({
       {isDesktop === false && (
         <div className="relative min-h-svh overflow-x-clip bg-app">
           <header
-            className="sticky top-0 z-40 flex items-center gap-2 bg-app/95 px-3 pb-2.5 backdrop-blur-md"
+            className="sticky top-0 z-40 flex items-center gap-2 bg-app px-3 pb-2.5 "
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
           >
             <button
@@ -1959,7 +1959,7 @@ export function ContentDetail({
                 type="button"
                 onClick={() => setVideoMuted(!muted)}
                 aria-label={muted ? "Unmute video" : "Mute video"}
-                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm"
+                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white "
               >
                 {muted ? (
                   <svg
@@ -1990,7 +1990,7 @@ export function ContentDetail({
             )}
 
             {!isVideo && media.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2.5 py-2 backdrop-blur-sm">
+              <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2.5 py-2 ">
                 {media.map((_, i) => (
                   <button
                     key={i}
@@ -2197,7 +2197,7 @@ export function ContentDetail({
 
           {!isOwnPost && (
             <div
-              className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app/95 px-3 pt-2.5 backdrop-blur-md"
+              className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app px-3 pt-2.5 "
               style={{
                 paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
               }}

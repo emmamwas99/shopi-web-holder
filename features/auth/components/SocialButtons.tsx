@@ -96,7 +96,7 @@ export function SocialButtons({
       >
         {!googleReady && !failedToLoad && (
           <div
-            className="absolute inset-x-0 top-1/2 mx-auto h-10 max-w-100 -translate-y-1/2 animate-pulse rounded-full border border-border bg-[rgb(var(--color-bg-subtle)/0.5)]"
+            className="absolute inset-x-0 top-1/2 mx-auto h-10 max-w-100 -translate-y-1/2 animate-pulse rounded-full border border-border bg-subtle"
             aria-hidden
           />
         )}

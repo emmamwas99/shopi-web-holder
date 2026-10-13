@@ -20,7 +20,7 @@ export type CategoryFacet = {
   id: string;
   name: string;
   slug: string;
-  icon?: string | null;
+  imageUrl?: string | null;
   count: number;
 };
 
@@ -66,7 +66,7 @@ export const DISCOVERY_CATEGORIES: TypedDocumentNode<
         id
         name
         slug
-        icon
+        imageUrl
         count
       }
     }

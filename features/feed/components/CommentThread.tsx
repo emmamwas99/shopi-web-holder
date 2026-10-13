@@ -821,42 +821,38 @@ export function useCommentThread({
     }
   }
 
+  const handleLoadMore = useCallback(() => {
+    if (!contentId || !hasMore || !endCursor || fetchingMoreRef.current) return;
+
+    fetchingMoreRef.current = true;
+    setLoadingMore(true);
+    void fetchMore({
+      variables: { contentId, limit: 20, after: endCursor },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prev;
+        const seen = new Set<string>();
+        const deduped = [
+          ...(prev.comments?.items ?? []),
+          ...(fetchMoreResult.comments?.items ?? []),
+        ].filter((c) => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        });
+        return { comments: { ...fetchMoreResult.comments, items: deduped } };
+      },
+    }).finally(() => {
+      fetchingMoreRef.current = false;
+      setLoadingMore(false);
+    });
+  }, [contentId, endCursor, fetchMore, hasMore]);
+
   function handleScroll() {
     const el = listRef.current;
-    if (
-      !el ||
-      !contentId ||
-      !hasMore ||
-      !endCursor ||
-      fetchingMoreRef.current
-    ) {
-      return;
-    }
+    if (!el) return;
 
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distanceFromBottom < 120) {
-      fetchingMoreRef.current = true;
-      setLoadingMore(true);
-      fetchMore({
-        variables: { contentId, limit: 20, after: endCursor },
-        updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return prev;
-          const seen = new Set<string>();
-          const deduped = [
-            ...(prev.comments?.items ?? []),
-            ...(fetchMoreResult.comments?.items ?? []),
-          ].filter((c) => {
-            if (seen.has(c.id)) return false;
-            seen.add(c.id);
-            return true;
-          });
-          return { comments: { ...fetchMoreResult.comments, items: deduped } };
-        },
-      }).finally(() => {
-        fetchingMoreRef.current = false;
-        setLoadingMore(false);
-      });
-    }
+    if (distanceFromBottom < 120) handleLoadMore();
   }
 
   return {
@@ -895,6 +891,8 @@ export function useCommentThread({
     handleSend,
     /** Infinite-scroll handler for the list container's onScroll. */
     handleScroll,
+    /** Explicit pagination action for layouts that scroll with the page. */
+    handleLoadMore,
   };
 }
 
@@ -923,6 +921,7 @@ function CommentList({
     handleReply,
     handleLikeComment,
     handleScroll,
+    handleLoadMore,
     handleDeleteComment,
     handleDeleteReply,
     viewerId,
@@ -964,8 +963,15 @@ function CommentList({
         />
       ))}
       {hasMore && (
-        <div className="flex justify-center py-3 text-xs text-muted-foreground">
-          {loadingMore ? "Loading more comments…" : "Scroll down to load more"}
+        <div className="flex justify-center py-2">
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="min-h-10 rounded-md px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60"
+          >
+            {loadingMore ? "Loading more…" : "Load more"}
+          </button>
         </div>
       )}
     </div>

@@ -9,7 +9,9 @@ import {
   DiscoverGridSkeleton,
 } from "@/features/discover/components/DiscoverGridCard";
 import {
-  ArrowLeft,
+  Check,
+  ChevronLeft,
+  Copy,
   ExternalLink,
   Video,
 } from "lucide-react";
@@ -26,6 +28,9 @@ import { useAuthStore } from "@/stores/auth";
 import { trackSellerEvent } from "@/lib/seller-analytics";
 import { appendUnique } from "../lib/appendUnique";
 import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAvatar";
+import { profileHref } from "@/lib/profile-url";
+import { toast } from "sonner";
+import { BackToTopButton } from "@/components/layout/BackToTopButton";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -108,6 +113,41 @@ export function CreatorProfileView({
   // A profile link opened from outside has no app history to return to, so
   // back would be a dead button. Send those to the feed.
   const goBack = useAppBack(`/${lang}/for-you`);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
+
+  async function copyProfileUrl() {
+    const url = `${window.location.origin}${profileHref(lang, user)}`;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API is unavailable in some browsers or insecure contexts.
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      textarea.remove();
+      if (!copied) {
+        toast.error("Could not copy profile link");
+        return;
+      }
+    }
+    setLinkCopied(true);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setLinkCopied(false), 1800);
+  }
 
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
@@ -209,18 +249,36 @@ export function CreatorProfileView({
 
 
   return (
-    <div className="min-h-screen bg-app">
-      <div className="border-b border-border">
-        <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-30 border-b border-border bg-white">
+        <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
           <button
             onClick={goBack}
-            className="mb-5 inline-flex items-center gap-1.5 text-sm font-bold text-main transition-opacity active:opacity-60"
+            className="inline-flex h-10 items-center gap-1.5 text-sm font-bold text-main transition-opacity active:opacity-60"
             aria-label="Go back"
           >
-            <ArrowLeft size={17} strokeWidth={2.2} />
+            <ChevronLeft size={20} strokeWidth={2.2} />
             Back
           </button>
 
+          <button
+            type="button"
+            onClick={() => void copyProfileUrl()}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-elevated px-3.5 text-sm font-semibold text-main transition-colors hover:bg-surface active:scale-95"
+            aria-label={linkCopied ? "Profile link copied" : "Copy profile link"}
+          >
+            {linkCopied ? (
+              <Check className="animate-in zoom-in-50 duration-200" size={15} strokeWidth={2.4} />
+            ) : (
+              <Copy size={15} strokeWidth={2} />
+            )}
+            {linkCopied ? "Copied" : "Copy link"}
+          </button>
+        </div>
+      </div>
+
+      <div className="border-b border-border">
+        <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="flex min-w-0 items-start gap-4">
               {/* Any live story rings the avatar (pink new, grey watched) and
@@ -411,6 +469,7 @@ export function CreatorProfileView({
           </>
         )}
       </div>
+      <BackToTopButton />
     </div>
   );
 }

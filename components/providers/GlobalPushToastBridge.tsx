@@ -44,7 +44,7 @@ export function GlobalPushToastBridge() {
             onClick={() => {
               if (url) window.location.href = url;
             }}
-            className="group flex w-full max-w-[min(92vw,380px)] items-start gap-3 rounded-3xl border border-black/10 bg-white/95 px-4 py-3 text-left shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl transition hover:bg-white"
+            className="group flex w-full max-w-[min(92vw,380px)] items-start gap-3 rounded-3xl border border-border bg-elevated px-4 py-3 text-left shadow-[0_20px_60px_rgba(15,23,42,0.18)] transition hover:bg-surface"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#E0005C] text-sm font-semibold text-white shadow-[0_10px_24px_rgba(224,0,92,0.28)]">
               S

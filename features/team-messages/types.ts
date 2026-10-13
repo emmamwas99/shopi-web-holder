@@ -16,6 +16,8 @@ export interface TeamMessage {
   body: string;
   readAt?: string | null;
   createdAt: string;
+  /** Client-only send state for messages rendered before the server responds. */
+  pendingStatus?: "sending" | "failed" | null;
 }
 
 export interface TeamMessagePage {

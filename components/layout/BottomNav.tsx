@@ -103,7 +103,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
 
   return (
     <nav
-      className={`bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-[rgb(var(--color-bg-elevated)/0.92)] backdrop-blur-[16px] backdrop-saturate-[1.8] ${
+      className={`bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-elevated   ${
         bottomNavHidden ? "hidden" : ""
       }`}
     >

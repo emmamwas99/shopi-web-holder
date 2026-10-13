@@ -285,7 +285,7 @@ function DiscoverGridCardImpl({
               aria-pressed={saved}
               aria-label={saved ? "Remove from saved" : `Save ${post.title}`}
               className={cn(
-                "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-[2px] transition active:scale-90",
+                "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full  transition active:scale-90",
                 saved ? "bg-white text-primary" : "bg-black/40 text-white",
               )}
             >
@@ -304,7 +304,7 @@ function DiscoverGridCardImpl({
               same quiet black/40 chip as Save and the photo/video count, not
               a shouty colored "Negotiable!" tag. */}
           {post.price?.negotiable && hasPrice ? (
-            <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold leading-none text-white backdrop-blur-[2px]">
+            <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold leading-none text-white ">
               Negotiable
             </span>
           ) : null}
@@ -312,7 +312,7 @@ function DiscoverGridCardImpl({
           {/* What kind of media this is — the one thing still over the photo,
               because it changes what tapping it does. */}
           {isVideo || photoCount > 1 ? (
-            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white backdrop-blur-[2px] tabular-nums">
+            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white  tabular-nums">
               {isVideo ? (
                 <>
                   <Play

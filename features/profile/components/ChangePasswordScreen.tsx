@@ -79,10 +79,8 @@ export function ChangePasswordScreen({ lang }: { lang: string }) {
       <header
         className="sticky top-0 z-20 flex h-14 items-center gap-1 border-b px-3"
         style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
+          backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(14px) saturate(150%)",
-          WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
         <BackLink

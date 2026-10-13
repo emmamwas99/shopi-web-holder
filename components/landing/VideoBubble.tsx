@@ -217,7 +217,7 @@ export function VideoBubble() {
 
             {!playing && !buffering && !ended && (
               <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/45 ">
                   <Play className="h-6 w-6 translate-x-px fill-white text-white" />
                 </span>
               </div>
@@ -262,7 +262,7 @@ export function VideoBubble() {
                 onClick={replay}
                 className="absolute inset-0 z-20 flex cursor-pointer flex-col items-center justify-center gap-2 bg-black/55 text-white"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 ">
                   <RotateCcw className="h-5 w-5" />
                 </span>
                 <span className="text-xs font-medium">Watch again</span>
@@ -319,7 +319,7 @@ function ControlButton({
         onClick();
       }}
       aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+      className="flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white  transition-colors hover:bg-black/65"
     >
       {children}
     </button>

@@ -193,8 +193,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               <div
                 className="absolute top-3 left-3 rounded-full px-3 py-1 flex items-center gap-1.5"
                 style={{
-                  backgroundColor: "rgb(0 0 0 / 0.58)",
-                  backdropFilter: "blur(8px)",
+                  backgroundColor: "rgb(0 0 0 / 0.82)",
                 }}
               >
                 <span

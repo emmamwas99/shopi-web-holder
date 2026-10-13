@@ -500,7 +500,7 @@ export function AskShopiGrid({ lang, active = true, onClose }: Props) {
 
   return (
     <div className="flex min-h-svh flex-col bg-surface">
-      <div className="border-b border-default bg-app/95">
+      <div className="border-b border-default bg-app">
         <div className="mx-auto flex w-full max-w-[920px] items-center gap-2 px-3 py-2.5 sm:px-5">
           {onClose ? (
             <button
@@ -592,7 +592,7 @@ export function AskShopiGrid({ lang, active = true, onClose }: Props) {
         </div>
       </div>
 
-      <div className="sticky bottom-[calc(var(--nav-height,60px)+var(--safe-bottom,0px))] border-t border-default bg-app/95 backdrop-blur md:bottom-0">
+      <div className="sticky bottom-[calc(var(--nav-height,60px)+var(--safe-bottom,0px))] border-t border-default bg-app  md:bottom-0">
         <div className="mx-auto flex w-full max-w-[920px] items-end gap-2 px-3 py-3 sm:px-5">
           <input
             ref={imageInputRef}

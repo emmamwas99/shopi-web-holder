@@ -236,7 +236,7 @@ export function MessageList({
 
   if (initialLoading && messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4">
+      <div className="flex-1 overflow-y-auto bg-subtle px-4 py-4">
         <div className="flex h-[60vh] items-center justify-center">
           <InterlockingBalls size={40} className="opacity-60" />
         </div>
@@ -266,7 +266,7 @@ export function MessageList({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4"
+        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-subtle px-4 py-4"
       >
         {/* Top sentinel + older-loading spinner */}
         <div ref={topSentinelRef} className="h-px" />

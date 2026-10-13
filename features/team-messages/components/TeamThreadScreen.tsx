@@ -5,7 +5,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, BadgeCheck, Send } from "lucide-react";
+import { ChevronLeft, BadgeCheck, CircleAlert, Clock3, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,7 +49,13 @@ function MessageText({ text, mine }: { text: string; mine: boolean }) {
   );
 }
 
-function TeamBubble({ message }: { message: TeamMessage }) {
+function TeamBubble({
+  message,
+  onRetry,
+}: {
+  message: TeamMessage;
+  onRetry?: (message: TeamMessage) => void;
+}) {
   const mine = message.sender === "MEMBER";
   return (
     <div className={`flex w-full ${mine ? "justify-end" : "justify-start"}`}>
@@ -61,7 +67,20 @@ function TeamBubble({ message }: { message: TeamMessage }) {
         {message.subject ? <p className="mb-1 text-sm font-semibold">{message.subject}</p> : null}
         <MessageText text={message.body} mine={mine} />
         <p className={`mt-1 text-right text-[11px] ${mine ? "text-white/75" : "text-muted"}`}>
-          {shortTime(message.createdAt)}
+          {message.pendingStatus === "failed" ? (
+            <button
+              type="button"
+              onClick={() => onRetry?.(message)}
+              className="inline-flex items-center gap-1 text-red-600 underline underline-offset-2"
+            >
+              <CircleAlert size={12} /> Tap to retry
+            </button>
+          ) : (
+            <span className="inline-flex items-center justify-end gap-1">
+              {shortTime(message.createdAt)}
+              {message.pendingStatus === "sending" ? <Clock3 size={11} /> : null}
+            </span>
+          )}
         </p>
       </div>
     </div>
@@ -74,12 +93,21 @@ function TeamBubble({ message }: { message: TeamMessage }) {
  * member asks themselves. The reply box is always there, so a member can write
  * first; the team answers in this same thread.
  */
-export function TeamThreadScreen({ lang }: { lang: string }) {
+export function TeamThreadScreen({
+  lang,
+  compact = false,
+  onClose,
+}: {
+  lang: string;
+  compact?: boolean;
+  onClose?: () => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const { on } = useSocket();
   const [draft, setDraft] = useState("");
+  const [optimisticMessages, setOptimisticMessages] = useState<TeamMessage[]>([]);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -100,12 +128,19 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
     refetchQueries: ["MyTeamThread", "MyNotificationsInbox", "MyUnreadNotificationCountInbox"],
   });
   // A first message opens the thread, which is what makes its inbox row appear.
-  const [sendReply, { loading: sending }] = useMutation(SEND_TEAM_REPLY, {
+  const [sendReply] = useMutation(SEND_TEAM_REPLY, {
     refetchQueries: ["MyTeamThread"],
   });
 
   const page = (data as { myTeamMessages?: TeamMessagePage } | undefined)?.myTeamMessages;
-  const messages = useMemo(() => page?.items ?? [], [page?.items]);
+  const messages = useMemo(() => {
+    const confirmed = page?.items ?? [];
+    const confirmedIds = new Set(confirmed.map((message) => message.id));
+    return [
+      ...confirmed,
+      ...optimisticMessages.filter((message) => !confirmedIds.has(message.id)),
+    ];
+  }, [optimisticMessages, page?.items]);
   const unreadFromTeam = messages.some((m) => m.sender === "TEAM" && !m.readAt);
 
   // Opening the thread (or a team message arriving while it's open) marks it read.
@@ -154,32 +189,75 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
     }
   }, [fetchMore, loadingOlder, page?.hasMore, page?.nextCursor]);
 
-  async function handleSend() {
-    const body = draft.trim();
-    if (!body || sending) return;
+  const sendOptimisticReply = useCallback(async (message: TeamMessage) => {
+    setOptimisticMessages((current) => [
+      ...current.filter((item) => item.id !== message.id),
+      { ...message, pendingStatus: "sending" },
+    ]);
     try {
-      await sendReply({ variables: { body } });
-      setDraft("");
+      const { data: result } = await sendReply({
+        variables: { body: message.body },
+      });
+      const sentMessage = (result as { sendTeamReply?: TeamMessage } | undefined)
+        ?.sendTeamReply;
+      if (sentMessage) {
+        setOptimisticMessages((current) =>
+          current.map((item) =>
+            item.id === message.id
+              ? { ...sentMessage, pendingStatus: null }
+              : item,
+          ),
+        );
+      }
       stickToBottom.current = true;
-      await refetch();
+      void refetch();
     } catch (err) {
+      setOptimisticMessages((current) =>
+        current.map((item) =>
+          item.id === message.id ? { ...item, pendingStatus: "failed" } : item,
+        ),
+      );
       toast.error(err instanceof Error ? err.message : "Couldn't send your message");
     }
+  }, [refetch, sendReply]);
+
+  function handleSend() {
+    const body = draft.trim();
+    if (!body) return;
+    const optimistic: TeamMessage = {
+      id: `optimistic:${crypto.randomUUID()}`,
+      sender: "MEMBER",
+      body,
+      createdAt: new Date().toISOString(),
+      pendingStatus: "sending",
+    };
+    setOptimisticMessages((current) => [...current, optimistic]);
+    setDraft("");
+    stickToBottom.current = true;
+    void sendOptimisticReply(optimistic);
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-app md:mx-auto md:h-[calc(100svh-1rem)] md:max-w-3xl md:border-x md:border-default">
+    <div
+      className={
+        compact
+          ? "flex h-full min-h-0 flex-col bg-app"
+          : "flex h-dvh flex-col bg-app md:mx-auto md:h-[calc(100svh-1rem)] md:max-w-3xl md:border-x md:border-default"
+      }
+    >
       <header
         className="flex items-center gap-3 border-b px-3 py-3 md:px-5"
         style={{ borderColor: "rgb(var(--color-border))" }}
       >
         <button
           type="button"
-          onClick={() => goBackOr(router, backHref)}
+          onClick={() =>
+            compact && onClose ? onClose() : goBackOr(router, backHref)
+          }
           className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-subtle"
-          aria-label="Back"
+          aria-label={compact ? "Close support chat" : "Back"}
         >
-          <ArrowLeft size={20} />
+          {compact ? <X size={20} /> : <ChevronLeft size={20} />}
         </button>
         <TeamAvatar size={40} />
         <div className="min-w-0">
@@ -222,7 +300,13 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
             </p>
           </div>
         ) : (
-          messages.map((message) => <TeamBubble key={message.id} message={message} />)
+          messages.map((message) => (
+            <TeamBubble
+              key={message.id}
+              message={message}
+              onRetry={message.pendingStatus === "failed" ? sendOptimisticReply : undefined}
+            />
+          ))
         )}
       </div>
 
@@ -255,14 +339,10 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
             size="icon"
             className="h-9 w-9 shrink-0 rounded-full"
             onClick={() => void handleSend()}
-            disabled={!draft.trim() || sending}
+            disabled={!draft.trim()}
             aria-label="Send message"
           >
-            {sending ? (
-              <InterlockingBalls size={18} />
-            ) : (
-              <Send className="text-white" size={18} />
-            )}
+            <Send className="text-white" size={18} />
           </Button>
         </div>
       ) : null}

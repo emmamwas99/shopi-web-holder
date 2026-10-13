@@ -261,7 +261,7 @@ export function CommentsDrawer({
         }}
         transition={{ duration: 0.22, ease: "easeOut" }}
       >
-        <div className="shrink-0 border-b border-default bg-[rgb(var(--color-bg)/0.96)] backdrop-blur-md">
+        <div className="shrink-0 border-b border-default bg-app ">
           <div className="flex items-center justify-between px-5 py-4 lg:px-6">
             <div>
               <h2 className="text-base font-bold text-default">Comments</h2>
