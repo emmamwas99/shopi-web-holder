@@ -5,14 +5,12 @@ import { useState } from "react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
-import { useAuthSession } from "@/hooks/useAuthSession";
 import { usePathname } from "next/navigation";
 import { trackHomepageButtonClick } from "@/lib/analytics";
 import { ThemeSelect } from "@/components/ui/ThemeSelect";
 
 export function LandingNav({ lang }: { lang: Locale }) {
   const [open, setOpen] = useState(false);
-  const { hydrated, isAuthenticated } = useAuthSession();
   const pathname = usePathname();
   const sw = lang === "sw";
   const trackSellClick = () => {
@@ -20,10 +18,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
       trackHomepageButtonClick("sell_item", "navigation", "/en/upload");
     }
   };
-  const accountHref = isAuthenticated ? `/${lang}/explore` : `/${lang}/auth/login`;
-  const accountLabel = isAuthenticated
-    ? (sw ? "Vinjari matangazo" : "Browse listings")
-    : (sw ? "Ingia" : "Sign in");
+  const forYouLabel = sw ? "Kwa ajili yako" : "For you";
   const links = [
     { href: "#how-it-works", label: sw ? "Jinsi inavyofanya kazi" : "How it works" },
     { href: "/en/shopi-agent", label: "Shopi Agent" },
@@ -42,7 +37,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
         </div>
         <div className="hidden items-center gap-3 md:flex">
           <ThemeSelect lang={lang} />
-          {hydrated && <Link href={accountHref} className="rounded-full border border-landing-ink px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline">{accountLabel}</Link>}
+          <Link href={`/${lang}/explore`} className="rounded-full border border-landing-ink px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
           <Link href="/en/upload" onClick={trackSellClick} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sw ? "Uza bidhaa" : "Sell an item"}<ArrowUpRight size={17} aria-hidden /></Link>
         </div>
         <button type="button" className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-landing-line md:hidden" aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -56,7 +51,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
           <ThemeSelect lang={lang} className="min-w-36" />
         </div>
         <div className="mt-5 flex gap-3">
-          {hydrated && <Link href={accountHref} onClick={() => setOpen(false)} className="flex-1 rounded-full border border-landing-ink px-4 py-3 text-center text-sm font-semibold text-landing-ink no-underline">{accountLabel}</Link>}
+          <Link href={`/${lang}/for-you`} onClick={() => setOpen(false)} className="flex-1 rounded-full border border-landing-ink px-4 py-3 text-center text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
           <Link href="/en/upload" onClick={trackSellClick} className="flex-1 rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
         </div>
       </div>}

@@ -81,7 +81,6 @@ export function LandingFooter({
               <Link href={`/${lang}`} className="inline-flex items-center gap-2 text-white no-underline"><ShopiLogo className="h-9 w-9" /><span className="text-xl font-bold">Shopi</span></Link>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">{sw ? "Gundua, nunua na uuze karibu nawe kwa msaada wa Shopi Agent." : "Discover, buy and sell locally with help from Shopi Agent."}</p>
               <Link href="/en/upload" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
-              <a href="https://x.com/shopiapp" target="_blank" rel="noopener noreferrer" className="mt-6 block w-fit text-sm text-white/75 hover:text-white">Shopi on X</a>
             </div>
             {homeLinks.map(({ heading, links }) => <div key={heading} className="min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-white">{heading}</h3>
@@ -116,19 +115,6 @@ export function LandingFooter({
               {dict?.footer.tagline ??
                 "Kenya's social marketplace. Discover it, message the seller, done."}
             </p>
-            <div className="mt-5 flex gap-3">
-              {/* Only link social profiles that actually exist — placeholder
-                  "#" links hurt trust and SEO. Add more as accounts go live. */}
-              <a
-                href="https://x.com/shopiapp"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Shopi on X"
-                className="flex h-8.5 w-8.5 items-center justify-center rounded-full border border-border bg-elevated text-xs font-bold text-muted no-underline transition-colors duration-150 hover:border-[rgb(var(--color-border-strong))] hover:text-foreground"
-              >
-                𝕏
-              </a>
-            </div>
           </div>
 
           {/* Links */}
