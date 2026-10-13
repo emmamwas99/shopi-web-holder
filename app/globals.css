@@ -73,7 +73,9 @@
   --landing-tint: #e8efef;
   --landing-ink: #172226;
   --landing-body: #465458;
-  --landing-muted: #657275;
+  /* Small helper text and table labels must remain readable on the pale
+     landing surfaces (including the bulk upload preview). */
+  --landing-muted: #566467;
   --landing-line: #dce3e2;
   --landing-line-strong: #aab7b5;
 }

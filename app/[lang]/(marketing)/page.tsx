@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image, { getImageProps } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -222,29 +222,6 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   if (!isValidLocale(lang)) notFound();
   const t = COPY[lang];
 
-  const heroImageCommon = {
-    alt: "An illustration of a local seller and buyer reviewing a listing together",
-    sizes: "(max-width: 768px) 100vw, 1500px",
-    quality: 80,
-    priority: true,
-  };
-  const {
-    props: { srcSet: heroDesktopSrcSet, ...heroDesktopImageProps },
-  } = getImageProps({
-    ...heroImageCommon,
-    src: "/assets/hero/marketplace-banner.png",
-    width: 1774,
-    height: 887,
-  });
-  const {
-    props: { srcSet: heroMobileSrcSet },
-  } = getImageProps({
-    ...heroImageCommon,
-    src: "/assets/hero/marketplace-banner-mobile.png",
-    width: 1086,
-    height: 1448,
-  });
-
   return (
     <div id="top" className="bg-landing-page text-landing-ink">
       <script
@@ -268,13 +245,16 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <picture className="absolute inset-0">
               <source
                 media="(max-width: 767px)"
-                srcSet={heroMobileSrcSet}
-                sizes={heroImageCommon.sizes}
+                type="image/webp"
+                srcSet="/assets/hero/marketplace-banner-mobile.webp"
               />
-              <img
-                {...heroDesktopImageProps}
-                alt={heroImageCommon.alt}
-                srcSet={heroDesktopSrcSet}
+              <Image
+                src="/assets/hero/marketplace-banner.webp"
+                alt="An illustration of a local seller and buyer reviewing a listing together"
+                fill
+                sizes="(max-width: 768px) 100vw, 1500px"
+                priority
+                fetchPriority="high"
                 className="absolute h-full w-full object-cover object-[55%_center] md:object-contain"
               />
             </picture>
@@ -483,7 +463,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                       <p className="text-xs text-landing-muted">Excel spreadsheet</p>
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">Preview</span>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary-strong">Preview</span>
                 </div>
                 <div className="overflow-hidden rounded-lg border border-landing-line">
                   <div className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-2 border-b border-landing-line bg-landing-surface px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-landing-muted">
@@ -503,7 +483,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   <Check className="size-3.5 text-primary" aria-hidden /> Category and specs filled by Shopi Agent
                 </p>
               </div>
-              <span className="absolute right-3 top-3 rounded-full bg-landing-card px-3 py-1 text-[10px] font-bold text-primary shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
+              <span className="absolute right-3 top-3 rounded-full bg-landing-card px-3 py-1 text-[10px] font-bold text-primary-strong shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
             </div>
             <div className="order-1 max-w-lg md:order-2">
               <p className="mb-3 hidden text-sm font-semibold text-primary md:block">{t.bulkEyebrowDesktop}</p>
