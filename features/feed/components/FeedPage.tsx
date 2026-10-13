@@ -9,7 +9,9 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useMutation } from "@apollo/client/react";
 import { FeedHeader } from "./FeedHeader";
+import { MobileSearchScreen, type MobileSearchTab } from "./MobileSearchScreen";
 import { GoogleOneTap } from "@/features/auth/components/GoogleOneTap";
 import FeedGrid from "./FeedGrid";
 import { AskShopiSkeleton, FeedSkeleton } from "./FeedSkeleton";
@@ -25,7 +27,11 @@ import {
   type ScrollPosition,
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
-import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { useUiStore } from "@/stores/ui";
+import {
+  RecordSearchTermDocument,
+  type ContentCardFieldsFragment,
+} from "@/types/__generated__/graphql";
 
 // Each sub-tab grid needs its own `loading`: that is what makes next/dynamic
 // wrap it in a Suspense boundary. Without one, the first open of a sub-tab
@@ -104,6 +110,17 @@ function mirrorTabToUrl(tab: Tab) {
 export function FeedPage({ lang, visible = true, initialItems }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobileSearchDraft, setMobileSearchDraft] = useState("");
+  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+  const [submittedSearch, setSubmittedSearch] = useState("");
+  const [searchTab, setSearchTab] = useState<MobileSearchTab>("Top");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
+  const [recordSearchTerm] = useMutation(RecordSearchTermDocument);
+  const isSearchResultPdpOpen =
+    pathname.includes("/video/") || pathname.includes("/content/");
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
   // components still execute, query, observe layout, and download all of their
   // dependencies; mounting both variants made mobile load the desktop Mux/HLS
@@ -136,6 +153,70 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   // restored on return.
   const prevTab = useRef<Tab>(initialTab);
 
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("shopi:recent-searches");
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setRecentSearches(
+            parsed.filter((term): term is string => typeof term === "string").slice(0, 10),
+          );
+        }
+      }
+    } catch {
+      // Recent searches are a convenience; ignore unavailable or invalid storage.
+    }
+  }, []);
+
+  useEffect(() => {
+    setBottomNavHidden(mobileSearchOpen && !isSearchResultPdpOpen);
+    return () => setBottomNavHidden(false);
+  }, [isSearchResultPdpOpen, mobileSearchOpen, setBottomNavHidden]);
+
+  useEffect(() => {
+    if (!mobileSearchOpen || searchResultsOpen || isSearchResultPdpOpen) return;
+    const frame = requestAnimationFrame(() => mobileSearchInputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [isSearchResultPdpOpen, mobileSearchOpen, searchResultsOpen]);
+
+  useEffect(() => {
+    if (searchResultsOpen) mobileSearchInputRef.current?.blur();
+  }, [searchResultsOpen]);
+
+  function submitMobileSearch(term: string) {
+    const normalized = term.trim();
+    if (!normalized) return;
+    const nextRecent = [
+      normalized,
+      ...recentSearches.filter(
+        (recent) => recent.toLocaleLowerCase() !== normalized.toLocaleLowerCase(),
+      ),
+    ].slice(0, 10);
+    setRecentSearches(nextRecent);
+    try {
+      window.localStorage.setItem("shopi:recent-searches", JSON.stringify(nextRecent));
+    } catch {
+      // Continue to results if browser storage is unavailable.
+    }
+    void recordSearchTerm({ variables: { input: { term: normalized } } }).catch(() => {});
+    setSubmittedSearch(normalized);
+    setMobileSearchDraft(normalized);
+    setSearchTab("Top");
+    setSearchResultsOpen(true);
+  }
+
+  function removeRecentSearch(term: string) {
+    setRecentSearches((current) => {
+      const next = current.filter((recent) => recent !== term);
+      try {
+        window.localStorage.setItem("shopi:recent-searches", JSON.stringify(next));
+      } catch {
+        // Keep the in-memory list usable when storage is unavailable.
+      }
+      return next;
+    });
+  }
 
   // Restore the incoming tab's scroll AFTER the show/hide classes apply but
   // before paint, so there's no flash at the wrong offset. Layout effects run
@@ -208,6 +289,26 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
           screen being shown (FeedPage stays mounted behind other routes). */}
       <GoogleOneTap lang={lang} active={visible} />
 
+      {mobileSearchOpen && !isSearchResultPdpOpen ? (
+        <MobileSearchScreen
+          lang={lang}
+          view={searchResultsOpen ? "results" : "entry"}
+          query={submittedSearch}
+          activeTab={searchTab}
+          onTabChange={setSearchTab}
+          recentSearches={recentSearches}
+          searchDraft={mobileSearchDraft}
+          inputRef={mobileSearchInputRef}
+          onDraftChange={setMobileSearchDraft}
+          onSubmit={submitMobileSearch}
+          onClose={() => setMobileSearchOpen(false)}
+          onBackToEntry={() => setSearchResultsOpen(false)}
+          onSelectRecent={submitMobileSearch}
+          onRemoveRecent={removeRecentSearch}
+          onViewAllUsers={() => setSearchTab("Users")}
+        />
+      ) : null}
+
       {/* ── Desktop: loaded only on a desktop viewport. Until the media query
           resolves, desktop viewports see the desktop-shaped skeleton (inside
           `hidden md:block` so it never shows on phones) instead of a blank
@@ -226,6 +327,11 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
           <FeedHeader
             activeTab={tab}
             onTabChange={handleTabChange}
+            onSearchOpen={() => {
+              setMobileSearchDraft("");
+              setSearchResultsOpen(false);
+              setMobileSearchOpen(true);
+            }}
           />
 
           {/* Once a feed has been opened it stays mounted; we only toggle
