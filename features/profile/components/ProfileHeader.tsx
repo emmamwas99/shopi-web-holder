@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, PenLine } from "lucide-react";
+import { Check, Copy, ExternalLink, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { ProfileViewsCluster } from "./ProfileViewsCluster";
+import { profileHref } from "@/lib/profile-url";
+import { toast } from "sonner";
 
 interface Props {
   user: ProfileUserFieldsFragment;
@@ -115,6 +117,8 @@ function Stat({
 }
 
 export function ProfileHeader({ user, editHref, lang }: Props) {
+  const [linkCopied, setLinkCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
   const displayName =
@@ -122,6 +126,38 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
   const avatar = user.profile?.avatar;
   const initials =
     [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "?";
+
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
+
+  async function copyProfileLink() {
+    const url = `${window.location.origin}${profileHref(lang, user)}`;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      textarea.remove();
+      if (!copied) {
+        toast.error("Could not copy profile link");
+        return;
+      }
+    }
+    setLinkCopied(true);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setLinkCopied(false), 1800);
+  }
 
   return (
     <section className="border-b border-border bg-app">
@@ -167,20 +203,37 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 ) : null}
               </div>
 
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="h-9 w-fit shrink-0 rounded-full border-border px-4 text-sm font-bold text-main hover:bg-surface"
-              >
-                <Link href={editHref}>
-                  <PenLine size={15} strokeWidth={2.2} />
-                  Edit profile
-                </Link>
-              </Button>
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-fit sm:shrink-0 sm:flex-wrap sm:items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void copyProfileLink()}
+                  className="h-9 w-full min-w-0 rounded-full border-border px-2 text-[13px] font-bold text-main hover:bg-surface sm:w-fit sm:px-4 sm:text-sm"
+                  aria-label={linkCopied ? "Profile link copied" : "Copy profile link"}
+                >
+                  {linkCopied ? (
+                    <Check className="animate-in zoom-in-50 duration-200" size={15} strokeWidth={2.4} />
+                  ) : (
+                    <Copy size={15} strokeWidth={2.2} />
+                  )}
+                  {linkCopied ? "Copied" : "Copy link"}
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-full min-w-0 rounded-full border-border px-2 text-[13px] font-bold text-main hover:bg-surface sm:w-fit sm:px-4 sm:text-sm"
+                >
+                  <Link href={editHref}>
+                    <PenLine size={15} strokeWidth={2.2} />
+                    Edit profile
+                  </Link>
+                </Button>
+              </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1">
+            <div className="mt-4 grid grid-cols-3 gap-x-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1">
               <Stat label="posts" value={formatCompact(user.postCount)} />
               <Stat
                 label="followers"

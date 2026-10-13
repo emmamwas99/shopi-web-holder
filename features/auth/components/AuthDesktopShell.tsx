@@ -27,7 +27,7 @@ export function CardStack() {
       {/* Back-right — accent */}
       <div className="absolute right-0 top-2 w-32 h-40 rounded-3xl rotate-[9deg] shadow-xl overflow-hidden bg-linear-145 from-accent to-accent/55">
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-        <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+        <div className="absolute top-3 right-3 bg-white/20  rounded-full px-2 py-0.5">
           <span className="text-white text-xs font-bold">New</span>
         </div>
         <div className="absolute bottom-4 left-3 flex items-center gap-2">
@@ -41,10 +41,10 @@ export function CardStack() {
       {/* Front center — secondary */}
       <div className="absolute left-14 top-6 w-44 h-48 rounded-3xl shadow-2xl overflow-hidden bg-linear-145 from-highlight to-highlight/65">
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-        <div className="absolute top-4 left-4 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-0.5">
+        <div className="absolute top-4 left-4 bg-black/20  rounded-full px-2.5 py-0.5">
           <span className="text-white text-xs font-bold">🔥 Trending</span>
         </div>
-        <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
+        <div className="absolute top-4 right-4 bg-white/20  rounded-full px-2 py-0.5 flex items-center gap-1">
           <span className="text-white text-xs">♥</span>
           <span className="text-white text-xs font-bold">42K</span>
         </div>

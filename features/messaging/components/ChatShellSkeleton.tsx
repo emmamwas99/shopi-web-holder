@@ -30,7 +30,7 @@ export function ChatShellSkeleton() {
       </div>
 
       {/* Message area (empty while resolving — no spinner) */}
-      <div className="flex-1 bg-[rgb(var(--color-bg-subtle)/0.35)]" />
+      <div className="flex-1 bg-subtle" />
 
       {/* Composer */}
       <div

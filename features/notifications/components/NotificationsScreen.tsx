@@ -82,7 +82,7 @@ export function NotificationsScreen({ lang }: Props) {
   return (
     <div className="min-h-svh bg-app md:px-6">
       <div className="mx-auto flex min-h-svh w-full max-w-400 flex-col">
-        <header className="sticky top-0 z-30 border-b border-border bg-app/90 backdrop-blur-md">
+        <header className="sticky top-0 z-30 border-b border-border bg-app ">
           <div className="px-4 md:px-0 md:py-4">
             <div className="grid w-full grid-cols-2 md:inline-grid md:w-auto md:min-w-80">
               {subtabs.map((sub) => (

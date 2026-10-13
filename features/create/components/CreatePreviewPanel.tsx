@@ -199,7 +199,7 @@ export function CreatePreviewPanel() {
 
           {extraCount > 0 && (
             <span
-              className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 font-semibold text-white backdrop-blur-sm"
+              className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 font-semibold text-white "
               style={{ fontSize: "var(--text-xs)" }}
             >
               1/{mediaItems.length}

@@ -1460,7 +1460,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         isDesktop ? "h-full" : "h-svh"
       }`}
     >
-      <header className="z-20 shrink-0 border-b border-border bg-elevated/95 backdrop-blur">
+      <header className="z-20 shrink-0 border-b border-border bg-elevated ">
         <div
           className={`mx-auto flex h-16 w-full max-w-4xl items-center gap-3 px-3 md:px-6 ${
             isDesktop ? "pr-12 md:pr-14" : ""
@@ -1844,7 +1844,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       ) : null}
 
       {guidedStage === "options" ? (
-        <div className="shrink-0 border-t border-border bg-elevated/95 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 backdrop-blur md:px-6">
+        <div className="shrink-0 border-t border-border bg-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3  md:px-6">
           <div className="mx-auto flex max-w-[820px] gap-3">
             <button
               type="button"

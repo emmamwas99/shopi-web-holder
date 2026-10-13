@@ -81,15 +81,6 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const watchHref = `/${lang}/for-you?tab=watch`;
   const storesHref = useNavTabHref("stores", `/${lang}/stores`);
 
-  useEffect(() => {
-    if (
-      !isDesktop ||
-      !pathname.startsWith(`/${lang}/for-you`) ||
-      searchParams.get("tab") === "watch"
-    ) return;
-    router.replace(`/${lang}/explore`);
-  }, [isDesktop, lang, pathname, router, searchParams]);
-
   if (
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok")
@@ -116,7 +107,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border bg-elevated/95 backdrop-blur md:block">
+      <header className="fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border bg-elevated  md:block">
         <div className="desktop-app-frame flex h-full items-center gap-4 px-5 lg:px-8 xl:gap-0">
           {/* Align the logo with the PDP and the sidebar's inner edge. */}
           <Link
@@ -617,11 +608,6 @@ function AllCategoriesPicker({
                 const selected = watchMode
                   ? activeCategory === category.id
                   : activeCategory === category.slug;
-                const iconValue = category.icon?.trim() ?? "";
-                const categoryImage =
-                  /^https?:\/\//i.test(iconValue) || iconValue.startsWith("/")
-                    ? iconValue
-                    : null;
                 return (
                   <PopoverClose key={category.id} asChild>
                     <button
@@ -642,7 +628,6 @@ function AllCategoriesPicker({
                         category={category}
                         watchMode={watchMode}
                         enabled={open}
-                        iconImage={categoryImage}
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">
@@ -667,12 +652,10 @@ function CategoryThumbnail({
   category,
   watchMode,
   enabled,
-  iconImage,
 }: {
   category: CategoryFacet;
   watchMode: boolean;
   enabled: boolean;
-  iconImage: string | null;
 }) {
   const { data, loading } = useQuery(DiscoveryFeedDocument, {
     variables: {
@@ -681,28 +664,27 @@ function CategoryThumbnail({
       sort: "NEWEST",
       limit: 1,
     },
-    skip: !enabled,
+    skip: !enabled || Boolean(category.imageUrl),
     fetchPolicy: "cache-first",
   });
   const media = data?.discoveryFeed?.items?.[0]?.media?.[0];
   const listingImage =
     media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
+  const categoryImage = category.imageUrl?.trim();
 
   return (
     <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface text-primary">
-      {listingImage || iconImage ? (
+      {categoryImage || listingImage ? (
         // Category art comes from listing media or catalog-managed image URLs.
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={listingImage ?? iconImage ?? ""}
+          src={categoryImage ?? listingImage ?? ""}
           alt=""
           className="h-full w-full object-cover"
         />
       ) : loading ? (
         <Skeleton className="h-full w-full rounded-none" />
-      ) : (
-        <Shapes className="h-6 w-6" strokeWidth={1.6} aria-hidden />
-      )}
+      ) : null}
     </span>
   );
 }

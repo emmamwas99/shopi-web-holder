@@ -25,9 +25,12 @@ export function MainShell({
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
-  // Explore (desktop's "Browse"). Not the For You feed — re-tapping its nav
-  // tab already scrolls it to the top.
-  const hasBackToTop = pathname.startsWith(`/${lang}/explore`);
+  // Explore and the profile root/section tabs have long pages. The For You feed
+  // already scrolls to the top when its nav tab is tapped again.
+  const hasBackToTop =
+    pathname.startsWith(`/${lang}/explore`) ||
+    pathname.replace(/\/$/, "") === `/${lang}/profile`;
+  const isProfileRoot = pathname.replace(/\/$/, "") === `/${lang}/profile`;
 
   usePreloadInbox();
 
@@ -64,7 +67,9 @@ export function MainShell({
       <BottomNav lang={lang} />
       {/* Away while a screen owns the bottom of the viewport (Ask Shopi's
           input, full-screen flows) — the same signal that hides the nav. */}
-      {hasBackToTop && <BackToTopButton hidden={bottomNavHidden} />}
+      {hasBackToTop && (
+        <BackToTopButton hidden={bottomNavHidden && !isProfileRoot} />
+      )}
     </>
   );
 }

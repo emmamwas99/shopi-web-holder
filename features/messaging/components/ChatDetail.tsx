@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, Handshake, MessageCircle, Phone } from "lucide-react";
+import { ChevronLeft, Handshake, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { absoluteContentUrl } from "@/lib/content-url";
@@ -359,7 +359,7 @@ export function ChatDetail({
                 className={embedded ? "" : "md:hidden"}
                 aria-label={embedded ? "Close chat" : "Back to inbox"}
               >
-                <ArrowLeft size={20} />
+                <ChevronLeft size={20} />
               </button>
 
               {!embedded && (
@@ -621,7 +621,7 @@ export function ChatDetail({
             scrollToBottomSignal={scrollSignal}
             emptyState={
               isEmptyConversationBody && canAttemptSellerContact ? (
-                <div className="mx-auto flex w-full max-w-sm flex-col items-center rounded-3xl border border-emerald-500/20 bg-elevated/90 px-5 py-6 text-center shadow-sm backdrop-blur">
+                <div className="mx-auto flex w-full max-w-sm flex-col items-center rounded-3xl border border-emerald-500/20 bg-elevated px-5 py-6 text-center shadow-sm ">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
                     <WhatsAppIcon className="h-6 w-6" />
                   </div>

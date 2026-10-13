@@ -169,10 +169,10 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
     }
   }, []);
 
-  useEffect(() => {
-    setBottomNavHidden(mobileSearchOpen && !isSearchResultPdpOpen);
+  useLayoutEffect(() => {
+    setBottomNavHidden(mobileSearchOpen);
     return () => setBottomNavHidden(false);
-  }, [isSearchResultPdpOpen, mobileSearchOpen, setBottomNavHidden]);
+  }, [mobileSearchOpen, setBottomNavHidden]);
 
   useEffect(() => {
     if (!mobileSearchOpen || searchResultsOpen || isSearchResultPdpOpen) return;

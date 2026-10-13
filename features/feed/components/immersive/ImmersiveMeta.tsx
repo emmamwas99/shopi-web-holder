@@ -133,7 +133,7 @@ export function ImmersiveMeta({
               </span>
             )}
             {place && (
-              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold backdrop-blur-sm">
+              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold ">
                 <MapPin className="h-3 w-3 shrink-0" />
                 {place}
               </span>

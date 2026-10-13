@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ChartColumn, ChevronLeft, Plus, UserRound } from "lucide-react";
 import {
   useMyProfile,
@@ -27,6 +27,7 @@ import {
 } from "./ProfileMenu";
 import { appendUnique } from "../lib/appendUnique";
 import { previousAppUrl } from "@/lib/appHistory";
+import { useUiStore } from "@/stores/ui";
 
 // "tiktok" is not in the menu, so it is hidden from the UI, but
 // TiktokImportPanel and its render branch below are kept intact.
@@ -219,6 +220,12 @@ export function ProfileView({ lang }: Props) {
   const requested = searchParams.get("tab");
   const tab: Tab | null = isTab(requested) ? requested : null;
   const shownTab: Tab = tab ?? "posts";
+  const setBottomNavHidden = useUiStore((state) => state.setBottomNavHidden);
+
+  useLayoutEffect(() => {
+    setBottomNavHidden(Boolean(tab));
+    return () => setBottomNavHidden(false);
+  }, [setBottomNavHidden, tab]);
 
   // Whether back from a section can pop history to the menu, or whether the
   // section was opened straight from a link and history leads elsewhere.
@@ -365,7 +372,7 @@ export function ProfileView({ lang }: Props) {
       </div>
 
       {tab && (
-        <div className="sticky top-0 z-20 grid h-12 grid-cols-[48px_1fr_48px] items-center border-b border-border bg-app/94 px-1 backdrop-blur-md md:hidden">
+        <div className="sticky top-0 z-40 grid h-12 grid-cols-[48px_1fr_48px] items-center border-b border-border bg-app px-1 md:hidden">
           <button
             type="button"
             onClick={backToMenu}

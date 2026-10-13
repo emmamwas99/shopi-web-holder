@@ -46,7 +46,7 @@ export function HowItWorksDialog({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       aria-label="How Shopi works"
       onClick={onClose}
-      className="animate-in fade-in fixed inset-0 z-200 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[6px] duration-180"
+      className="animate-in fade-in fixed inset-0 z-200 flex items-center justify-center bg-black/55 p-4  duration-180"
     >
       <div
         onClick={(e) => e.stopPropagation()}

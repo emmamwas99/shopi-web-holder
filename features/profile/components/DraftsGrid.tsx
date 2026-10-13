@@ -250,13 +250,13 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
 
                   {isVideo && cover && (
                     <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white ">
                         <Play size={15} fill="currentColor" strokeWidth={0} className="ml-0.5" />
                       </span>
                     </span>
                   )}
 
-                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white ">
                     Draft
                   </span>
                 </button>

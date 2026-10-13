@@ -442,7 +442,7 @@ export function ImmersiveSlide({
 
         {active && !buffering && !playing && !ended && (
           <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white ">
               <Play className="ml-1 h-7 w-7" fill="currentColor" />
             </span>
           </div>
@@ -458,7 +458,7 @@ export function ImmersiveSlide({
             className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
             aria-label="Replay video"
           >
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white ">
               <RotateCcw className="h-7 w-7" />
             </span>
           </button>
@@ -471,7 +471,7 @@ export function ImmersiveSlide({
               event.stopPropagation();
               toggleMuted();
             }}
-            className="absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm"
+            className="absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white "
             style={{ top: "calc(var(--immersive-top, 16px) + 3.5rem)" }}
           >
             Tap for sound

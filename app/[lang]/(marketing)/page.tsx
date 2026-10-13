@@ -15,6 +15,7 @@ import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { siteConfig } from "@/config/site";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
 import {
   organizationSchema,
@@ -287,7 +288,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   href={`/${lang}/explore`}
                   buttonId="browse_listings"
                   placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline backdrop-blur-sm hover:bg-landing-card/20"
+                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline  hover:bg-landing-card/20"
                 >
                   {t.browse}
                   <ArrowUpRight size={18} aria-hidden />
@@ -606,6 +607,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
       </main>
       <LandingFooter lang={lang} homeOnly />
+      <HomepageSupportChat lang={lang} />
     </div>
   );
 }

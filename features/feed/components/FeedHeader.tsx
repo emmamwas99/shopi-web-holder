@@ -30,7 +30,7 @@ export function FeedHeader({
       className={
         immersive
           ? "absolute inset-x-0 z-40 border-0 bg-transparent px-4 pt-2 text-white"
-          : "sticky top-0 z-30 border-b border-default bg-app/80 py-4 backdrop-blur-md"
+          : "sticky top-0 z-30 border-b border-default bg-app py-4 "
       }
       style={
         immersive

@@ -2,49 +2,11 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import {
-  Car,
-  Factory,
-  Flower2,
-  HardHat,
-  Laptop,
-  Refrigerator,
-  Shirt,
-  Smartphone,
-  Shapes,
-  Sofa,
-  Sprout,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DiscoveryFeedDocument } from "@/types/__generated__/graphql";
 import type { CategoryFacet } from "../categories";
 
 const PAGE_SIZE = 8;
-
-function iconForCategory(category: CategoryFacet): LucideIcon {
-  const label = `${category.slug} ${category.name}`.toLowerCase();
-  if (/phone|tablet|mobile/.test(label)) return Smartphone;
-  if (/computer|laptop|electronic|accessor/.test(label)) return Laptop;
-  if (/furniture|sofa|home/.test(label)) return Sofa;
-  if (/fashion|clothing|dress|shoe/.test(label)) return Shirt;
-  if (/beauty|personal|cosmetic/.test(label)) return Flower2;
-  if (/service|repair|tool|plumb|electric/.test(label)) return Wrench;
-  if (/construction|building|hardware/.test(label)) return HardHat;
-  if (/commercial|equipment|machine/.test(label)) return Factory;
-  if (/car|vehicle|motor/.test(label)) return Car;
-  if (/appliance|fridge|kitchen/.test(label)) return Refrigerator;
-  if (/farm|garden|produce/.test(label)) return Sprout;
-  return Shapes;
-}
-
-function imageIcon(value?: string | null) {
-  const icon = value?.trim();
-  return icon && (/^https?:\/\//i.test(icon) || icon.startsWith("/"))
-    ? icon
-    : null;
-}
 
 export function ExploreCategoryGrid({
   categories,
@@ -104,7 +66,6 @@ export function ExploreCategoryGrid({
               className="grid w-full shrink-0 snap-start grid-cols-4 grid-rows-2 gap-x-2 gap-y-4 md:gap-x-4 md:gap-y-5"
             >
               {page.map((category) => {
-                const image = imageIcon(category.icon);
                 return (
                   <button
                     key={category.id}
@@ -116,7 +77,6 @@ export function ExploreCategoryGrid({
                   >
                     <ExploreCategoryThumbnail
                       category={category}
-                      iconImage={image}
                       enabled={pageIndex === activePage}
                     />
                     <span className="line-clamp-2 min-h-8 text-[11px] font-medium leading-[1.15]">
@@ -152,37 +112,33 @@ export function ExploreCategoryGrid({
 
 function ExploreCategoryThumbnail({
   category,
-  iconImage,
   enabled,
 }: {
   category: CategoryFacet;
-  iconImage: string | null;
   enabled: boolean;
 }) {
   const { data, loading } = useQuery(DiscoveryFeedDocument, {
     variables: { categoryId: category.id, sort: "NEWEST", limit: 1 },
-    skip: !enabled,
+    skip: !enabled || Boolean(category.imageUrl),
     fetchPolicy: "cache-first",
   });
   const media = data?.discoveryFeed?.items?.[0]?.media?.[0];
   const listingImage =
     media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
-  const Icon = iconForCategory(category);
+  const categoryImage = category.imageUrl?.trim();
 
   return (
     <span className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-3xl bg-surface text-primary">
-      {listingImage || iconImage ? (
+      {categoryImage || listingImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={listingImage ?? iconImage ?? ""}
+          src={categoryImage ?? listingImage ?? ""}
           alt=""
           className="h-full w-full object-cover"
         />
       ) : loading ? (
         <Skeleton className="h-full w-full rounded-none" />
-      ) : (
-        <Icon className="h-9 w-9" strokeWidth={1.55} aria-hidden />
-      )}
+      ) : null}
     </span>
   );
 }

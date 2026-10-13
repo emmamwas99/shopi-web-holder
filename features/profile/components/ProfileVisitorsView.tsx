@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppBack } from "@/lib/useAppBack";
-import { ArrowLeft, Eye, ShieldCheck, UsersRound } from "lucide-react";
+import { ChevronLeft, Eye, ShieldCheck, UsersRound } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
   MyProfileVisitorsDocument,
@@ -273,9 +273,8 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
       <div
         className={`sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3 ${embedded ? "md:px-8 md:py-5" : ""}`}
         style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
+          backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(8px)",
         }}
       >
         {!embedded && <button
@@ -285,7 +284,7 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
           style={{ color: "rgb(var(--color-text))" }}
           aria-label="Back"
         >
-          <ArrowLeft size={20} strokeWidth={2.2} />
+          <ChevronLeft size={20} strokeWidth={2.2} />
         </button>}
         <div className="min-w-0">
           <h1

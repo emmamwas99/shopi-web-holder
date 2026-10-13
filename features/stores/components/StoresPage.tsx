@@ -469,7 +469,7 @@ export function StoresPage({
 
       {/* Sticky below the desktop top nav, at the viewport edge on mobile —
           the same offset the feed and profile headers use. */}
-      <div className="sticky top-0 z-20 border-y border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,68px)">
+      <div className="sticky top-0 z-20 border-y border-border bg-app  md:top-(--desktop-top-nav-height,68px)">
         {/* Phone: search on top, every other filter one swipeable row of chips
             under it. Two short rows instead of three tall ones, so the sticky
             bar leaves the screen to the stores. */}

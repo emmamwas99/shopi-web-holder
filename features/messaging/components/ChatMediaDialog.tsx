@@ -98,7 +98,7 @@ export function ChatMediaDialog(props: Props) {
         type="button"
         onClick={handleClose}
         aria-label="Close"
-        className="absolute right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+        className="absolute right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white  transition-colors hover:bg-white/25"
         style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
         <X size={22} />
@@ -204,7 +204,7 @@ function VideoViewer({
         type="button"
         onClick={toggleMute}
         aria-label={muted ? "Unmute" : "Mute"}
-        className="absolute left-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+        className="absolute left-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white  transition-colors hover:bg-white/25"
         style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}
       >
         {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}

@@ -242,7 +242,7 @@ export default function DesktopFeed({
           scroll). At 1280px the feed is still ~540px — wider than Instagram's. */}
       <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
         <section className="min-w-0">
-          <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
+          <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app px-2 py-3 ">
             {/* Equal-width Home subtabs across the whole column. */}
             <div
               className={[

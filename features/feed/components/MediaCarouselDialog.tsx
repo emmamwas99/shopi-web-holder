@@ -152,7 +152,7 @@ export function MediaCarouselDialog({
           type="button"
           onClick={() => closeRef.current()}
           aria-label="Close"
-          className="absolute right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:scale-95"
+          className="absolute right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white  active:scale-95"
           style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
         >
           <X className="h-6 w-6" />
@@ -161,7 +161,7 @@ export function MediaCarouselDialog({
         {/* Counter — only when there's more than one image */}
         {media.length > 1 && (
           <div
-            className="absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+            className="absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white "
             style={{ top: "max(env(safe-area-inset-top, 0px), 18px)" }}
           >
             {idx + 1} / {media.length}
@@ -366,7 +366,7 @@ function FullscreenVideo({
         </div>
       ) : !playing ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white ">
             <Play className="ml-1 h-7 w-7" fill="currentColor" />
           </span>
         </div>
@@ -388,7 +388,7 @@ function FullscreenVideo({
           toggleMuted();
         }}
         aria-label={actualMuted ? "Unmute video" : "Mute video"}
-        className="absolute left-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm"
+        className="absolute left-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white "
         style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
       >
         {actualMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}

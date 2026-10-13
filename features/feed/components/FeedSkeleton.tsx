@@ -242,7 +242,7 @@ function LoadingFeedTabs({
   return (
     <nav
       aria-label="Home feed"
-      className={`sticky top-0 z-30 grid ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"} border-b border-border bg-app/95 px-2 py-3 backdrop-blur md:top-(--desktop-top-nav-height,68px) ${className}`}
+      className={`sticky top-0 z-30 grid ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"} border-b border-border bg-app px-2 py-3  md:top-(--desktop-top-nav-height,68px) ${className}`}
     >
       {tabs.map((tab) => (
         <Link

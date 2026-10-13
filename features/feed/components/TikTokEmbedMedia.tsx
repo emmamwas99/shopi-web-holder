@@ -79,7 +79,7 @@ export function TikTokEmbedMedia({
               className="object-cover"
             />
           )}
-          <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm">
+          <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-black/55 ">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
               <path d="M8 5v14l11-7z" />
             </svg>

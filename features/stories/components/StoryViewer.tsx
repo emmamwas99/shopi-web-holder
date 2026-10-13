@@ -642,7 +642,7 @@ export function StoryViewer({
             <button
               type="button"
               onClick={() => setSheet("viewers")}
-              className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm"
+              className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white "
             >
               <Eye size={16} />
               {viewCount > 0 ? `Seen by ${viewCount}` : "No views yet"}

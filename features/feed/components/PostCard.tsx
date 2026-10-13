@@ -630,7 +630,7 @@ function VideoMedia({
           className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
           aria-label="Replay video"
         >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white ">
             <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
             </svg>
@@ -665,7 +665,7 @@ function VideoMedia({
             e.stopPropagation();
             toggleMuted();
           }}
-          className="absolute bottom-5 left-2 z-50 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
+          className="absolute bottom-5 left-2 z-50 bg-black/60  rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
           aria-label={actualMuted ? "Unmute" : "Mute"}
         >
           {actualMuted ? (
@@ -1094,7 +1094,7 @@ function ImageMedia({
                 />
               )}
               {isLast && (
-                <div className="absolute inset-0 bg-black/55 flex items-center justify-center backdrop-blur-[1px]">
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center ">
                   <span className="text-white text-2xl font-bold">
                     +{overflow}
                   </span>
@@ -1646,7 +1646,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-3 lg:cursor-pointer top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
+              className="absolute right-3 lg:cursor-pointer top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white "
             >
               <TikTokIcon size={14} className="h-3.5 w-3.5" />
               View on TikTok

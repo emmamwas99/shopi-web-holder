@@ -143,7 +143,7 @@ export default async function WelcomePage({
               className="absolute right-0 top-2 h-32 w-32 rounded-2xl rotate-[9deg] shadow-lg overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-accent)),rgb(var(--brand-accent)/0.55))]"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-              <div className="absolute top-2.5 right-2.5 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+              <div className="absolute top-2.5 right-2.5 bg-white/20  rounded-full px-2 py-0.5">
                 <span className="text-white text-xs font-bold">New</span>
               </div>
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
@@ -160,12 +160,12 @@ export default async function WelcomePage({
               className="absolute left-1/2 -translate-x-1/2 top-2 h-40 w-44 rounded-2xl shadow-xl overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-highlight)),rgb(var(--brand-highlight)/0.65))]"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-              <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">
+              <div className="absolute top-3 left-3 bg-black/20  rounded-full px-2.5 py-1">
                 <span className="text-white text-xs font-bold">
                   🔥 Trending
                 </span>
               </div>
-              <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+              <div className="absolute top-3 right-3 bg-white/20  rounded-full px-2 py-1 flex items-center gap-1">
                 <span className="text-white text-xs">♥</span>
                 <span className="text-white text-xs font-bold">42K</span>
               </div>

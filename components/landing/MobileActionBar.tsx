@@ -51,7 +51,7 @@ export function MobileActionBar({
       {/* Room at the end of the page so the bar never covers the footer. */}
       <div aria-hidden className="h-[calc(4.5rem+env(safe-area-inset-bottom))] md:hidden" />
       <div
-        className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-[rgb(var(--color-bg)/0.94)] px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md transition-transform duration-300 ease-out motion-reduce:transition-none md:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-app px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] transition-transform duration-300 ease-out motion-reduce:transition-none md:hidden ${
           visible ? "translate-y-0" : "pointer-events-none translate-y-full"
         }`}
         aria-hidden={!visible}

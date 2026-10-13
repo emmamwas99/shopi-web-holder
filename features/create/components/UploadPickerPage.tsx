@@ -205,7 +205,7 @@ export function UploadPickerPage({
           message={createError}
           onClose={() => setCreateError(null)}
         />
-        <header className="shrink-0 border-b border-border bg-app/95 backdrop-blur-md">
+        <header className="shrink-0 border-b border-border bg-app ">
           <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
             <button
               onClick={() => setView("pick")}
@@ -236,7 +236,7 @@ export function UploadPickerPage({
         message={createError}
         onClose={() => setCreateError(null)}
       />
-      <header className="shrink-0 border-b border-border bg-app/95 backdrop-blur-md">
+      <header className="shrink-0 border-b border-border bg-app ">
         <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
           <button
             onClick={closePicker}

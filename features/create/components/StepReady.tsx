@@ -312,7 +312,7 @@ export function StepReady({ lang }: StepReadyProps) {
                   unoptimized
                 />
               )}
-              <span className="absolute right-3 top-3 z-10 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              <span className="absolute right-3 top-3 z-10 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white ">
                 TikTok
               </span>
             </>
@@ -364,7 +364,7 @@ export function StepReady({ lang }: StepReadyProps) {
               className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
               onTransitionEnd={() => setShowPauseIcon(false)}
             >
-              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-black/50 backdrop-blur-[8px]">
+              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-black/50 ">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
                   <rect x="6" y="4" width="4" height="16" rx="1" />
                   <rect x="14" y="4" width="4" height="16" rx="1" />
@@ -381,7 +381,7 @@ export function StepReady({ lang }: StepReadyProps) {
           <button
             onClickCapture={handleMuteClick}
             aria-label={muted ? "Unmute" : "Mute"}
-            className="absolute top-[calc(44px+env(safe-area-inset-top))] right-4 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-black/50 text-white backdrop-blur-[8px]"
+            className="absolute top-[calc(44px+env(safe-area-inset-top))] right-4 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-black/50 text-white "
           >
             {muted ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -506,7 +506,7 @@ export function StepReady({ lang }: StepReadyProps) {
             <button
               onClick={handleSaveDraft}
               disabled={saving || publishing}
-              className="flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 text-base font-semibold text-white backdrop-blur-[12px]"
+              className="flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 text-base font-semibold text-white "
             >
               <SaveIcon /> Save draft
             </button>
@@ -548,7 +548,7 @@ export function StepReady({ lang }: StepReadyProps) {
 
   // ── IMAGES — card layout ───────────────────────────────────────────────────
   return (
-    <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
+    <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:">
       <div className="create-flow-card flex flex-col md:flex-row bg-app w-full md:rounded-2xl md:shadow-2xl md:overflow-hidden">
         {/* Desktop left — image preview */}
         <div
@@ -734,7 +734,7 @@ export function StepReady({ lang }: StepReadyProps) {
 function CountBadge({ count }: { count: number }) {
   return (
     <div
-      className="absolute top-3 right-3 rounded-full bg-black/55 px-2.5 py-1 backdrop-blur-[8px]"
+      className="absolute top-3 right-3 rounded-full bg-black/55 px-2.5 py-1 "
     >
       <span className="text-xs font-semibold text-white">1/{count}</span>
     </div>

@@ -3038,7 +3038,16 @@ export function DiscoverPage({
 
                 <div ref={sentinelRef} className="h-2" />
 
-                {isFetchingMore ? <FeedLoader /> : null}
+                {isFetchingMore ? (
+                  <>
+                    <div className="pb-6 pt-3 md:hidden">
+                      <DiscoverGridSkeleton rows={1} showSeller={false} />
+                    </div>
+                    <div className="hidden md:block">
+                      <FeedLoader />
+                    </div>
+                  </>
+                ) : null}
 
                 {!pageInfo?.hasNextPage ? (
                   <p className="py-6 text-center text-xs text-muted-foreground">

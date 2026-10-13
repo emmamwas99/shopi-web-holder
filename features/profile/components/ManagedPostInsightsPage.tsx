@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, BarChart3, Bookmark, Eye, MessageCircle, Share2 } from "lucide-react";
+import { ChevronLeft, BarChart3, Bookmark, Eye, MessageCircle, Share2 } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MuxVideo } from "@/components/ui/MuxVideo";
@@ -164,7 +164,7 @@ export function ManagedPostInsightsPage({
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border px-3 text-[12px] font-medium transition-colors hover:bg-surface sm:h-11 sm:gap-2 sm:rounded-xl sm:px-3.5 sm:text-sm sm:font-semibold"
             style={{ borderColor: "rgb(var(--color-border))" }}
           >
-            <ArrowLeft size={14} />
+            <ChevronLeft size={16} />
             Back
           </BackLink>
 

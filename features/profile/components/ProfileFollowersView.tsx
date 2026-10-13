@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAppBack } from "@/lib/useAppBack";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
   MyFollowersDocument,
@@ -262,9 +262,8 @@ export function ProfileFollowersView({ lang, embedded = false }: Props) {
       <div
         className="sticky top-0 z-20 border-b"
         style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
+          backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(8px)",
         }}
       >
         {/* Inner content matches the list's responsive width so the title lines
@@ -277,7 +276,7 @@ export function ProfileFollowersView({ lang, embedded = false }: Props) {
             style={{ color: "rgb(var(--color-text))" }}
             aria-label="Back"
           >
-            <ArrowLeft size={20} strokeWidth={2.2} />
+            <ChevronLeft size={20} strokeWidth={2.2} />
           </button>}
           <div className="min-w-0">
             <h1
