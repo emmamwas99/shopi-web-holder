@@ -457,7 +457,7 @@ function AllCategoriesPicker({
     fetchPolicy: "cache-first",
     nextFetchPolicy: "cache-first",
   });
-  const categories = (data?.discoveryFacets.categories ?? []).filter(
+  const categories = (data?.discoveryFacets?.categories ?? []).filter(
     (category) => category.count > 0,
   );
   const pathParts = pathname.split("/").filter(Boolean);

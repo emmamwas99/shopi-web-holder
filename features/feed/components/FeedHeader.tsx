@@ -1,18 +1,21 @@
 "use client";
 
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
+import { Search } from "lucide-react";
 
 type Tab = "for-you" | "watch" | "ask-shopi";
 
 interface Props {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  onSearchOpen?: () => void;
   variant?: "default" | "immersive";
 }
 
 export function FeedHeader({
   activeTab,
   onTabChange,
+  onSearchOpen,
   variant = "default",
 }: Props) {
   const immersive = variant === "immersive";
@@ -45,7 +48,7 @@ export function FeedHeader({
       )}
       {/* Tabs */}
       <div
-        className={`relative flex gap-0 ${immersive ? "mx-auto h-12 max-w-sm" : "-mb-4 px-4"}`}
+        className={`relative flex gap-0 ${immersive ? "mx-auto h-12 max-w-sm" : "-mb-4 items-center px-4"}`}
       >
         {tabs.map((tab) => (
           <button
@@ -65,6 +68,16 @@ export function FeedHeader({
             {tab.label}
           </button>
         ))}
+        {!immersive && onSearchOpen ? (
+          <button
+            type="button"
+            onClick={onSearchOpen}
+            aria-label="Search Shopi"
+            className="ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+          >
+            <Search size={18} strokeWidth={2} />
+          </button>
+        ) : null}
       </div>
     </header>
   );
