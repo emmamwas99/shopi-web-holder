@@ -54,7 +54,7 @@ export function ExploreCategoryGrid({
           <div className="grid w-full shrink-0 grid-cols-4 grid-rows-2 gap-x-2 gap-y-4">
             {Array.from({ length: PAGE_SIZE }).map((_, index) => (
               <div key={index} className="flex flex-col items-center gap-2">
-                <Skeleton className="h-14 w-14 rounded-full" />
+                <Skeleton className="h-[60px] w-[60px] rounded-full" />
                 <Skeleton className="h-4 w-4/5 rounded-md" />
               </div>
             ))}
@@ -128,7 +128,7 @@ function ExploreCategoryThumbnail({
   const categoryImage = category.imageUrl?.trim();
 
   return (
-    <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 p-1 text-primary">
+    <span className="flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 p-1 text-primary">
       {categoryImage || listingImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
