@@ -19,6 +19,9 @@ export default function robots(): MetadataRoute.Robots {
         "/*/profile/posts",
       ],
     },
-    sitemap: `${siteConfig.url}/sitemap.xml`,
+    sitemap: [
+      `${siteConfig.url}/sitemap.xml`,
+      `${siteConfig.url}/sellers/sitemap.xml`,
+    ],
   };
 }

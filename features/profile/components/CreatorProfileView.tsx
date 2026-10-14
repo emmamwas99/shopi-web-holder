@@ -14,14 +14,24 @@ import {
   ChevronLeft,
   Copy,
   ExternalLink,
+  Search,
+  SlidersHorizontal,
+  X,
   Video,
 } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import {
   GetUserPostsDocument,
   RecordProfileVisitDocument,
   type ContentCardFieldsFragment,
+  type DiscoverySort,
   type ProfileUserFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
@@ -118,6 +128,12 @@ export function CreatorProfileView({
     isDesktop ? `/${lang}/explore` : `/${lang}/for-you`,
   );
   const [linkCopied, setLinkCopied] = useState(false);
+  const [storefrontControlsVisible, setStorefrontControlsVisible] = useState(false);
+  const storefrontControlsVisibleRef = useRef(false);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
+  const [sortOpen, setSortOpen] = useState(false);
+  const storefrontRef = useRef<HTMLDivElement>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -202,13 +218,34 @@ export function CreatorProfileView({
     loading: postsLoading,
     fetchMore,
   } = useQuery(GetUserPostsDocument, {
-    variables: { userId: user.id, limit: 18 },
+    variables: { userId: user.id, limit: 18, sort },
     notifyOnNetworkStatusChange: true,
   });
 
   const posts = data?.userPosts.posts ?? initialPosts ?? [];
   const hasMore = data?.userPosts.hasMore ?? false;
   const nextCursor = data?.userPosts.nextCursor ?? undefined;
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      const top = storefrontRef.current?.getBoundingClientRect().top;
+      const nextVisible =
+        top !== undefined && top <= (storefrontControlsVisibleRef.current ? 130 : 56);
+      if (nextVisible !== storefrontControlsVisibleRef.current) {
+        storefrontControlsVisibleRef.current = nextVisible;
+        setStorefrontControlsVisible(nextVisible);
+      }
+    };
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility);
+    return () => {
+      window.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+    };
+  }, []);
+
+  const visiblePosts = filterStorefrontPosts(posts, search);
 
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -227,7 +264,7 @@ export function CreatorProfileView({
         ) {
           fetchingMore.current = true;
           fetchMore({
-            variables: { userId: user.id, limit: 18, afterId: nextCursor },
+            variables: { userId: user.id, limit: 18, afterId: nextCursor, sort },
             updateQuery(prev, { fetchMoreResult }) {
               fetchingMore.current = false;
               if (!fetchMoreResult) return prev;
@@ -248,7 +285,7 @@ export function CreatorProfileView({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, postsLoading, nextCursor, fetchMore, user.id]);
+  }, [hasMore, postsLoading, nextCursor, fetchMore, user.id, sort]);
 
 
 
@@ -278,6 +315,48 @@ export function CreatorProfileView({
             )}
             {linkCopied ? "Copied" : "Copy link"}
           </button>
+        </div>
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-200 ${storefrontControlsVisible ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+          aria-hidden={!storefrontControlsVisible}
+        >
+          <div className="overflow-hidden">
+            <div className="desktop-app-frame flex w-full items-center gap-2 px-4 pb-3 sm:px-6 lg:px-8 xl:px-10">
+              <label className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-border bg-elevated px-3.5 text-muted focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15">
+                <Search size={17} strokeWidth={2} aria-hidden="true" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search this shop"
+                  aria-label="Search this shop"
+                  tabIndex={storefrontControlsVisible ? 0 : -1}
+                  className="min-w-0 flex-1 bg-transparent text-sm text-main outline-none placeholder:text-muted"
+                />
+                {search ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    tabIndex={storefrontControlsVisible ? 0 : -1}
+                    className="rounded-full p-1 text-muted transition-colors hover:bg-surface hover:text-main"
+                  >
+                    <X size={15} />
+                  </button>
+                ) : null}
+              </label>
+              <button
+                type="button"
+                onClick={() => setSortOpen(true)}
+                aria-label={`Sort listings: ${storefrontSortLabel(sort)}`}
+                tabIndex={storefrontControlsVisible ? 0 : -1}
+                className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${sort === "RELEVANCE" ? "border-border bg-elevated text-main" : "border-primary/30 bg-primary/10 text-primary"}`}
+              >
+                <SlidersHorizontal size={17} strokeWidth={2} />
+                <span className="sr-only">Sort listings</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -396,38 +475,71 @@ export function CreatorProfileView({
               column wrapped a multi-line bio into a thin ribbon next to
               empty space under the avatar. */}
           {(user.profile?.bio || user.profile?.website) && (
-            <div className="mt-4 flex max-w-2xl flex-col gap-2">
-              {user.profile?.bio ? <ExpandableBio text={user.profile.bio} /> : null}
+            <div className="mt-4 flex max-w-2xl flex-col gap-4">
+              <nav aria-label={`${displayName}'s shop sections`} className="flex flex-wrap gap-2">
+                {user.profile?.bio ? (
+                  <a href="#about" className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-main hover:bg-surface">
+                    About
+                  </a>
+                ) : null}
+                {user.profile?.website ? (
+                  <a href="#contact" className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-main hover:bg-surface">
+                    Contact
+                  </a>
+                ) : null}
+                <a href="#shop" className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-main hover:bg-surface">
+                  Shop
+                </a>
+              </nav>
+
+              {user.profile?.bio ? (
+                <section id="about" aria-labelledby="about-heading" className="scroll-mt-28">
+                  <h2 id="about-heading" className="mb-1 text-sm font-bold text-main">
+                    About {displayName}
+                  </h2>
+                  <ExpandableBio text={user.profile.bio} />
+                </section>
+              ) : null}
 
               {user.profile?.website ? (
-                <a
-                  href={
-                    user.profile.website.startsWith("http")
-                      ? user.profile.website
-                      : `https://${user.profile.website}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex w-fit max-w-full items-center gap-1.5 text-sm font-bold text-primary"
-                >
-                  <ExternalLink size={14} strokeWidth={2.2} />
-                  <span className="truncate">
-                    {user.profile.website.replace(/^https?:\/\//, "")}
-                  </span>
-                </a>
+                <section id="contact" aria-labelledby="contact-heading" className="scroll-mt-28">
+                  <h2 id="contact-heading" className="mb-1 text-sm font-bold text-main">
+                    Contact
+                  </h2>
+                  <a
+                    href={
+                      user.profile.website.startsWith("http")
+                        ? user.profile.website
+                        : `https://${user.profile.website}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-fit max-w-full items-center gap-1.5 text-sm font-bold text-primary"
+                  >
+                    <ExternalLink size={14} strokeWidth={2.2} />
+                    <span className="truncate">
+                      {user.profile.website.replace(/^https?:\/\//, "")}
+                    </span>
+                  </a>
+                </section>
               ) : null}
             </div>
           )}
         </div>
       </div>
 
-      <div className="desktop-app-frame w-full px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10">
+      <section
+        id="shop"
+        ref={storefrontRef}
+        aria-labelledby="shop-heading"
+        className="desktop-app-frame w-full scroll-mt-28 px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-black text-main">
-            Storefront
+          <h2 id="shop-heading" className="text-base font-black text-main">
+            Shop listings
           </h2>
           <span className="text-sm font-medium text-muted">
-            {posts.length} shown
+            {visiblePosts.length} {visiblePosts.length === 1 ? "listing" : "listings"}
           </span>
         </div>
 
@@ -442,12 +554,28 @@ export function CreatorProfileView({
               This storefront will show items once they are published.
             </p>
           </div>
+        ) : visiblePosts.length === 0 ? (
+          <div className="flex min-h-56 flex-col items-center justify-center py-12 text-center">
+            <p className="text-base font-black text-main">No matching listings</p>
+            <p className="mt-1 max-w-sm text-sm leading-6 text-muted">
+              {hasMore ? "Looking through more listings…" : "Try a different search."}
+            </p>
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="mt-3 text-sm font-bold text-primary"
+              >
+                Clear search
+              </button>
+            ) : null}
+          </div>
         ) : (
           <>
             {/* The same tile as /explore and the Saved tab, so a listing looks
                 identical wherever it is browsed. */}
             <div className={DISCOVER_GRID}>
-              {posts.map((post, index) => (
+              {visiblePosts.map((post, index) => (
                 <DiscoverGridCard
                   key={post.id}
                   post={post}
@@ -461,19 +589,78 @@ export function CreatorProfileView({
               ))}
             </div>
 
-            {/* Infinite scroll sentinel — triggers next page fetch */}
-            <div ref={sentinelRef} className="h-1" />
-
-            {/* Skeleton tiles while fetching the next page */}
-            {/* Only for a real next-page fetch — not while the client's first
-                query refreshes the server-rendered page. */}
-            {postsLoading && Boolean(data) && posts.length > 0 && (
-              <DiscoverGridSkeleton rows={1} showSeller={false} className="mt-5" />
-            )}
           </>
         )}
-      </div>
+        {/* Keep the sentinel mounted when a search has no current matches so
+            scrolling can continue through the seller's remaining listings. */}
+        <div ref={sentinelRef} className="h-1" />
+
+        {/* Only show more skeleton tiles for a real next-page fetch. */}
+        {postsLoading && Boolean(data) && posts.length > 0 && hasMore && (
+          <DiscoverGridSkeleton rows={1} showSeller={false} className="mt-5" />
+        )}
+      </section>
+      <Drawer open={sortOpen} onOpenChange={setSortOpen}>
+        <DrawerContent className="mx-auto max-w-107.5 bg-app">
+          <DrawerHeader className="pb-2 text-left">
+            <DrawerTitle className="text-base">Sort listings</DrawerTitle>
+          </DrawerHeader>
+          <div className="space-y-1 px-4 pb-5">
+            {STOREFRONT_SORT_OPTIONS.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                onClick={() => {
+                  setSort(option.value);
+                  setSortOpen(false);
+                }}
+                className="flex min-h-14 w-full items-center justify-between rounded-xl px-3 text-left transition-colors hover:bg-elevated"
+                aria-pressed={sort === option.value}
+              >
+                <span className="text-sm font-semibold text-main">{option.label}</span>
+                {sort === option.value ? <Check size={18} className="text-primary" /> : null}
+              </button>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
       <BackToTopButton />
     </div>
   );
+}
+
+const STOREFRONT_SORT_OPTIONS: Array<{ value: DiscoverySort; label: string }> = [
+  { value: "RELEVANCE", label: "Relevance" },
+  { value: "NEWEST", label: "Most recent" },
+  { value: "PRICE_LOW_TO_HIGH", label: "Lowest price" },
+  { value: "PRICE_HIGH_TO_LOW", label: "Highest price" },
+];
+
+function storefrontSortLabel(sort: DiscoverySort) {
+  return STOREFRONT_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "Relevance";
+}
+
+function filterStorefrontPosts(
+  posts: ContentCardFieldsFragment[],
+  query: string,
+) {
+  const normalized = query.trim().toLocaleLowerCase();
+  const filtered = normalized
+    ? posts.filter((post) => {
+        const searchable = [
+          post.title,
+          post.caption,
+          ...post.hashtags,
+          post.location?.county,
+          post.location?.subregion,
+          post.location?.placeName,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLocaleLowerCase();
+        return searchable.includes(normalized);
+      })
+    : posts;
+
+  return filtered;
 }
