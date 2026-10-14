@@ -90,7 +90,7 @@ const getInitialPosts = cache(
     try {
       const { data } = await query({
         query: GetUserPostsDocument,
-        variables: { userId, limit: INITIAL_POSTS },
+        variables: { userId, limit: INITIAL_POSTS, sort: "RELEVANCE" },
       });
       return (data?.userPosts?.posts ?? []) as ContentCardFieldsFragment[];
     } catch {
