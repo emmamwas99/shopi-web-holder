@@ -131,6 +131,7 @@ export function CreatorProfileView({
   const [storefrontControlsVisible, setStorefrontControlsVisible] = useState(false);
   const storefrontControlsVisibleRef = useRef(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
   const [sortOpen, setSortOpen] = useState(false);
   const storefrontRef = useRef<HTMLDivElement>(null);
@@ -142,6 +143,11 @@ export function CreatorProfileView({
     },
     [],
   );
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   async function copyProfileUrl() {
     const url = `${window.location.origin}${profileHref(lang, user)}`;
@@ -218,11 +224,16 @@ export function CreatorProfileView({
     loading: postsLoading,
     fetchMore,
   } = useQuery(GetUserPostsDocument, {
-    variables: { userId: user.id, limit: 18, sort },
+    variables: {
+      userId: user.id,
+      limit: 18,
+      sort,
+      search: debouncedSearch || undefined,
+    },
     notifyOnNetworkStatusChange: true,
   });
 
-  const posts = data?.userPosts.posts ?? initialPosts ?? [];
+  const posts = data?.userPosts.posts ?? (!debouncedSearch ? initialPosts : []) ?? [];
   const hasMore = data?.userPosts.hasMore ?? false;
   const nextCursor = data?.userPosts.nextCursor ?? undefined;
 
@@ -245,8 +256,6 @@ export function CreatorProfileView({
     };
   }, []);
 
-  const visiblePosts = filterStorefrontPosts(posts, search);
-
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fetchingMore = useRef(false);
@@ -263,10 +272,15 @@ export function CreatorProfileView({
           !fetchingMore.current
         ) {
           fetchingMore.current = true;
-          fetchMore({
-            variables: { userId: user.id, limit: 18, afterId: nextCursor, sort },
+          void fetchMore({
+            variables: {
+              userId: user.id,
+              limit: 18,
+              afterId: nextCursor,
+              sort,
+              search: debouncedSearch || undefined,
+            },
             updateQuery(prev, { fetchMoreResult }) {
-              fetchingMore.current = false;
               if (!fetchMoreResult) return prev;
               return {
                 userPosts: {
@@ -278,14 +292,20 @@ export function CreatorProfileView({
                 },
               };
             },
-          });
+          })
+            .catch(() => {})
+            .finally(() => {
+              fetchingMore.current = false;
+            });
         }
       },
       { rootMargin: "200px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, postsLoading, nextCursor, fetchMore, user.id, sort]);
+  }, [hasMore, postsLoading, nextCursor, fetchMore, user.id, sort, debouncedSearch]);
+
+  const visiblePosts = posts;
 
 
 
@@ -597,7 +617,12 @@ export function CreatorProfileView({
 
         {/* Only show more skeleton tiles for a real next-page fetch. */}
         {postsLoading && Boolean(data) && posts.length > 0 && hasMore && (
-          <DiscoverGridSkeleton rows={1} showSeller={false} className="mt-5" />
+          <DiscoverGridSkeleton
+            rows={4}
+            count={18}
+            showSeller={false}
+            className="mt-5"
+          />
         )}
       </section>
       <Drawer open={sortOpen} onOpenChange={setSortOpen}>
@@ -638,29 +663,4 @@ const STOREFRONT_SORT_OPTIONS: Array<{ value: DiscoverySort; label: string }> = 
 
 function storefrontSortLabel(sort: DiscoverySort) {
   return STOREFRONT_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "Relevance";
-}
-
-function filterStorefrontPosts(
-  posts: ContentCardFieldsFragment[],
-  query: string,
-) {
-  const normalized = query.trim().toLocaleLowerCase();
-  const filtered = normalized
-    ? posts.filter((post) => {
-        const searchable = [
-          post.title,
-          post.caption,
-          ...post.hashtags,
-          post.location?.county,
-          post.location?.subregion,
-          post.location?.placeName,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLocaleLowerCase();
-        return searchable.includes(normalized);
-      })
-    : posts;
-
-  return filtered;
 }

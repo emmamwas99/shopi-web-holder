@@ -412,16 +412,18 @@ function fullRowsClass(index: number, rows: number) {
 /** A whole DISCOVER_GRID of skeleton tiles that fills its rows at every width. */
 export function DiscoverGridSkeleton({
   rows = 4,
+  count = rows * 5,
   showSeller = true,
   className,
 }: {
   rows?: number;
+  count?: number;
   showSeller?: boolean;
   className?: string;
 }) {
   return (
     <div className={cn(DISCOVER_GRID, className)} role="status" aria-label="Loading listings">
-      {Array.from({ length: rows * 5 }).map((_, index) => (
+      {Array.from({ length: count }).map((_, index) => (
         <DiscoverGridCardSkeleton
           key={index}
           showSeller={showSeller}
