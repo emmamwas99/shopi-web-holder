@@ -14,15 +14,13 @@ import {
 import type { CSSProperties } from "react";
 import {
   Download,
-  MapPin,
   Bookmark,
+  Forward,
   Heart,
   MessageCircle,
-  MessageSquare,
-  Send,
   Link2,
   Flag,
-  MoreVertical,
+  MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -107,16 +105,8 @@ type FeedSocialUser = {
     avatar?: string | null;
   } | null;
 };
-type FeedPreviewComment = {
-  id: string;
-  text: string;
-  creatorId: string;
-  createdAt?: unknown;
-  author?: FeedSocialUser | null;
-};
 type FeedPostSocialPreview = ContentCardFieldsFragment & {
   recentSavers?: FeedSocialUser[] | null;
-  latestComment?: FeedPreviewComment | null;
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -163,6 +153,25 @@ function locationTrail(loc: {
   return parts.length ? parts.join(" › ") : null;
 }
 
+/**
+ * The header's place, short enough to share a line with the time: the most
+ * specific human place plus the county ("Nyahururu, Nyandarua"). The full
+ * trail lives on the listing page.
+ */
+function shortLocation(loc: {
+  county?: string | null;
+  placeName?: string | null;
+  formattedAddress?: string | null;
+}): string | null {
+  const town = stripPlusCode(loc.formattedAddress?.split(",")[0]?.trim() || "");
+  const place = stripPlusCode(loc.placeName?.trim() || "");
+  const county = stripPlusCode(loc.county?.trim() || "");
+  const local = town || place;
+  const parts = [local, county].filter(Boolean);
+  const unique = parts.filter((p, i) => parts.findIndex((q) => q.toLowerCase() === p.toLowerCase()) === i);
+  return unique.length ? unique.join(", ") : null;
+}
+
 function userDisplayName(user?: FeedSocialUser | null): string {
   if (!user) return "";
   const profileName = [user.profile?.firstName, user.profile?.lastName]
@@ -185,15 +194,19 @@ function saveSummaryText(
   saveCount: number,
 ): string | null {
   if (saveCount <= 0) return null;
-  const leadName = savers.map(userDisplayName).filter(Boolean)[0];
+  // First name only: the line shares its row with the comment count, and a
+  // full name pushes "and N others" into an ellipsis on small phones.
+  const leadName = savers
+    .map((user) => user.profile?.firstName?.trim() || userDisplayName(user))
+    .filter(Boolean)[0];
   if (!leadName) {
     return `${fmt(saveCount)} save${saveCount === 1 ? "" : "s"}`;
   }
 
-  if (saveCount === 1) return leadName;
+  if (saveCount === 1) return `Saved by ${leadName}`;
 
   const remaining = Math.max(saveCount - 1, 0);
-  return `${leadName} + ${fmt(remaining)}`;
+  return `Saved by ${leadName} and ${fmt(remaining)} other${remaining === 1 ? "" : "s"}`;
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -203,19 +216,19 @@ interface AvatarProps {
   avatarUrl?: string | null;
   firstName?: string | null;
   lastName?: string | null;
-  isVerified?: boolean | null;
 }
 
-/** Blue verified check — same mark shown on the creator's profile page. */
-function VerifiedBadge() {
+/** Blue verified check, inline after the seller's name. */
+function VerifiedMark() {
   return (
     <svg
-      width="16"
-      height="16"
+      width="15"
+      height="15"
       viewBox="0 0 20 20"
       fill="none"
-      className="absolute -bottom-0.5 -right-0.5 rounded-full ring-2 ring-[rgb(var(--color-bg-elevated))]"
-      aria-label="Verified"
+      className="shrink-0"
+      role="img"
+      aria-label="Verified seller"
     >
       <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
       <path
@@ -326,13 +339,7 @@ function SaveBurst({ burstKey }: { burstKey: number }) {
   );
 }
 
-function Avatar({
-  creatorId,
-  avatarUrl,
-  firstName,
-  lastName,
-  isVerified,
-}: AvatarProps) {
+function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
   const label = firstName
     ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase()
     : initials(creatorId);
@@ -351,15 +358,13 @@ function Avatar({
             blurDataURL={SHIMMER_AVATAR}
           />
         </div>
-        {isVerified ? <VerifiedBadge /> : null}
       </div>
     );
   }
 
   return (
-    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-border bg-main">
-      <span className="text-xs font-black text-elevated">{label}</span>
-      {isVerified ? <VerifiedBadge /> : null}
+    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface">
+      <span className="text-[13px] font-semibold text-muted">{label}</span>
     </div>
   );
 }
@@ -1198,22 +1203,22 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     lang,
   });
 
-  // The action bar is an even grid at every width so the cells stay the same
-  // size as each other. Contact drops out on your own posts, so the column
-  // count follows what's shown.
-  const actionGridCols = isOwnPost ? "grid-cols-3" : "grid-cols-4";
+  // Three actions — Save, Contact, Share — split evenly. Contact drops out on
+  // your own posts, so the grid follows what's shown.
+  const actionGridCols = isOwnPost ? "grid-cols-2" : "grid-cols-3";
 
   const caption = post.caption ?? "";
+  // Sellers often open the caption with the title; repeating it under the
+  // title is noise, so only show a caption that says something more.
+  const showCaption =
+    caption.trim().length > 0 &&
+    caption.trim().toLowerCase() !== (post.title ?? "").trim().toLowerCase();
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
   const saveSummary = saveSummaryText(recentSavers, saveCount);
   const commentCount = post.stats?.comments ?? 0;
-  const shareCount = post.stats?.shares ?? 0;
-  const hasEngagement =
-    Boolean(saveSummary) || commentCount > 0 || shareCount > 0;
-  const latestComment = socialPost.latestComment?.text
-    ? socialPost.latestComment
-    : null;
-  const latestCommentAuthor = userDisplayName(latestComment?.author);
+  const hasEngagement = Boolean(saveSummary) || commentCount > 0;
+  const place = post.location ? shortLocation(post.location) : null;
+  const hasPrice = Boolean(post.price && post.price.amount > 0);
 
   function handleSavePress() {
     if (!requireAuth({ contentId: post.id, action: "save" })) return;
@@ -1347,6 +1352,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     }
   }
 
+  const actionClass =
+    "relative flex h-11 min-w-0 items-center justify-center gap-2 rounded-[10px] text-[14px] font-semibold transition-colors active:scale-[0.97] lg:cursor-pointer";
+
   return (
     // data-scroll-anchor: a return to the feed puts this card back exactly
     // where it was on screen (lib/scrollRestoration.ts).
@@ -1355,8 +1363,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       data-scroll-anchor={post.id}
       className="bg-elevated overflow-hidden"
     >
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5 max-[360px]:gap-2 max-[360px]:px-3">
+      {/* ── Header ───────────────────────────────────────────────────────
+          Who, where, when — one name line and one quiet meta line, the
+          pattern every social feed has trained people to read. Follow is a
+          word beside the name rather than a pill, so the seller is the
+          header's subject, not the button. */}
+      <div className="flex items-center gap-3 px-4 pt-3 pb-3 max-[360px]:gap-2.5 max-[360px]:px-3">
         {/* Unwatched story → pink ring, and the tap opens it (Facebook /
             TikTok). Otherwise the tap goes to the profile, as before. */}
         <CreatorStoryAvatar
@@ -1374,80 +1386,70 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             avatarUrl={creator?.profile?.avatar}
             firstName={creator?.profile?.firstName}
             lastName={creator?.profile?.lastName}
-            isVerified={creator?.isVerified}
           />
         </CreatorStoryAvatar>
 
-        {/* Name / location / time stack */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           {creatorName ? (
-            <button
-              onClick={openCreatorProfile}
-              className="block max-w-full truncate text-left text-[15px] font-bold leading-tight hover:underline max-[360px]:text-[14px]"
-            >
-              {creatorName}
-            </button>
+            <div className="flex min-w-0 items-center gap-1 text-[15px] leading-5 max-[360px]:text-[14px]">
+              <button
+                type="button"
+                onClick={openCreatorProfile}
+                className="min-w-0 truncate text-left font-semibold text-main hover:underline lg:cursor-pointer"
+              >
+                {creatorName}
+              </button>
+              {creator?.isVerified && <VerifiedMark />}
+              {!isOwnPost && (
+                <>
+                  <span aria-hidden="true" className="shrink-0 text-muted">
+                    ·
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleFollow}
+                    className={cn(
+                      "shrink-0 font-semibold transition-colors lg:cursor-pointer",
+                      following
+                        ? "text-muted hover:text-main"
+                        : "text-primary-strong hover:text-primary dark:text-primary",
+                    )}
+                  >
+                    {following ? "Following" : "Follow"}
+                  </button>
+                </>
+              )}
+            </div>
           ) : (
-            <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
+            <div className="h-4 w-28 rounded-full bg-surface animate-pulse" />
           )}
-          {post.location && locationTrail(post.location) && (
-            <p className="mt-0.5 flex min-w-0 items-center gap-0.5 text-[11px] leading-tight text-muted-foreground max-[360px]:text-[10.5px]">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">{locationTrail(post.location)}</span>
-            </p>
-          )}
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground max-[360px]:text-[10.5px]">
+          <p
+            className="mt-0.5 truncate text-[13px] leading-4 text-muted max-[360px]:text-[12px]"
+            title={post.location ? (locationTrail(post.location) ?? undefined) : undefined}
+          >
+            {place ? `${place} · ` : ""}
             {timeAgo(post.createdAt)}
           </p>
         </div>
 
-        {/* Follow button — hidden on own posts, optimistic (no disabled/spinner) */}
-        {!isOwnPost && (
-          <button
-            onClick={handleFollow}
-            className={[
-              "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-all active:scale-95 max-[360px]:px-2.5 max-[360px]:text-[12px] lg:cursor-pointer",
-              following
-                ? "text-muted-foreground bg-surface"
-                : "text-primary-strong dark:text-primary bg-primary-soft hover:bg-primary/20",
-            ].join(" ")}
-          >
-            {following ? (
-              "Following"
-            ) : (
-              <>
-                <svg
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-                </svg>
-                Follow
-              </>
-            )}
-          </button>
-        )}
-
-        {/* More options */}
         <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface/80 text-muted-foreground transition-colors hover:bg-surface hover:text-default active:bg-muted max-[360px]:h-9 max-[360px]:w-9 lg:cursor-pointer",
-                menuOpen && "bg-surface text-default",
+                "-mr-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-main lg:cursor-pointer",
+                menuOpen && "bg-surface text-main",
               )}
               aria-label="Post options"
             >
-              <MoreVertical className="h-5 w-5" strokeWidth={2.6} />
+              <MoreHorizontal className="h-5 w-5" strokeWidth={2} />
             </button>
           </PopoverTrigger>
           <PopoverContent
             align="end"
-            sideOffset={8}
-            className="w-52 p-1.5 rounded-2xl border border-border bg-elevated shadow-lg"
+            sideOffset={6}
+            className="w-52 rounded-[14px] border border-border bg-elevated p-1 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1456,20 +1458,18 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                 e.stopPropagation();
                 void handleCopyLink();
               }}
-              className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+              className="flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-main transition-colors hover:bg-surface lg:cursor-pointer"
             >
-              <Link2
-                className="w-4 h-4 shrink-0 text-muted-foreground"
-                strokeWidth={2.2}
-              />
+              <Link2 className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
               Copy link
             </button>
 
             {post.allowDownload && (
               <button
+                type="button"
                 onClick={handleDownload}
                 disabled={isDownloading || videoDownload.isDownloading}
-                className="flex text-sm lg:cursor-pointer w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+                className="flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-main transition-colors hover:bg-surface disabled:opacity-70 lg:cursor-pointer"
               >
                 {isDownloading || videoDownload.isDownloading ? (
                   <>
@@ -1485,25 +1485,14 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4" strokeWidth={1.8} />
+                    <Download className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
                     <span>Download</span>
                   </>
                 )}
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen(false);
-                handleShare();
-              }}
-              className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
-            >
-              <Send className="w-4 h-4 shrink-0 text-muted-foreground" />
-              Share content
-            </button>
+            <div className="mx-2 my-1 h-px bg-border" />
 
             <button
               type="button"
@@ -1515,108 +1504,18 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                   toast.success("Report submitted"),
                 );
               }}
-              className="flex lg:cursor-pointer text-sm w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+              className="flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-main transition-colors hover:bg-surface lg:cursor-pointer"
             >
-              <Flag
-                className="w-4 h-4 shrink-0 text-muted-foreground"
-                strokeWidth={2.2}
-              />
+              <Flag className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
               Report listing
             </button>
           </PopoverContent>
         </Popover>
       </div>
 
-      {/* ── Text content ───────────────────────────────────────────────── */}
-      <div className="px-4 pb-2.5">
-        <Link
-          href={contentPath(lang, post)}
-          scroll={false}
-          onClick={() => {
-            if (shouldFire(post.id, "DETAIL_VIEWED")) {
-              trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
-            }
-            rememberScrollBeforeNavigation();
-          }}
-          className="mb-1 block w-full cursor-pointer text-left text-[15px] font-extrabold leading-snug text-main no-underline md:text-[18px]"
-        >
-          {post.title}
-        </Link>
-
-        {/* Price sits with the title, above the media.
-
-            It used to live in the stats row below the media. A card runs about
-            1005px on a 390px phone against an 844px viewport, so by the time
-            the photo filled the screen the price had scrolled off the bottom —
-            the buyer saw the product and not what it costs. On a marketplace
-            that is the one number the card exists to deliver, so it belongs in
-            the first block, next to what it is buying. */}
-        <div className="mb-2.5 mt-2 flex items-baseline gap-2">
-          <span
-            // 800 is a real Manrope weight (see AppDocument), not a synthesised
-            // one, so it thickens cleanly instead of smearing.
-            className="text-[19px] font-extrabold leading-none tracking-[-0.01em]"
-            style={{ color: "rgb(var(--color-text-main))" }}
-          >
-            {post.price && post.price.amount > 0
-              ? `${post.price.currency} ${post.price.amount.toLocaleString()}`
-              : "Ask price"}
-          </span>
-          {post.price?.negotiable && post.price.amount > 0 && (
-            <span className="text-xs font-medium text-muted-foreground">
-              Negotiable
-            </span>
-          )}
-        </div>
-        {caption && (
-          <div className="text-sm font-semibold leading-5 text-main md:text-[16px] md:leading-6">
-            <p
-              ref={captionRef}
-              role="link"
-              tabIndex={0}
-              onClick={handleOpen}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleOpen();
-                }
-              }}
-              className={cn("cursor-pointer", !expanded && "line-clamp-2")}
-            >
-              {caption}
-            </p>
-            {(captionOverflows || expanded) && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setExpanded((v) => !v);
-                }}
-                className="mt-0.5 text-sm font-bold text-muted-foreground transition-colors hover:text-default"
-              >
-                {expanded ? "See less" : "more"}
-              </button>
-            )}
-          </div>
-        )}
-        {/* Hashtags */}
-        {post.hashtags && post.hashtags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {post.hashtags.slice(0, 5).map((tag) => (
-              <span
-                key={tag}
-                className="text-muted-foreground text-sm font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Media ──────────────────────────────────────────────────────── */}
-      {/* No PDP navigation: videos open the immersive viewer; images (single
-          or multiple) open the in-place full-screen carousel dialog on tap. */}
+      {/* ── Media ────────────────────────────────────────────────────────
+          The photo or video is what stops the scroll, so it leads. Videos open
+          the immersive viewer; images open the full-screen carousel. */}
       <div className="relative">
         {/* TikTok posts render native once the background re-host has populated
             `media` (the post is then live). Until then we fall back to the live
@@ -1646,7 +1545,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-3 lg:cursor-pointer top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white "
+              className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm lg:cursor-pointer"
             >
               <TikTokIcon size={14} className="h-3.5 w-3.5" />
               View on TikTok
@@ -1654,18 +1553,86 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           )}
       </div>
 
-      {/* ── Engagement summary ─────────────────────────────────────────
-          Social-feed convention: who engaged on the left, the counts on the
-          right, one divider, then the actions. It replaces three stacked rows
-          (shares, save proof, actions) with two, so the eye has two places to
-          look instead of four, and the counts stop competing with the buttons
-          for the same horizontal space.
+      {/* ── Listing ──────────────────────────────────────────────────────
+          Price, then what it is, directly under the picture — marketplace
+          reading order. Media is capped at 60–70% of the viewport, so the
+          price is on screen whenever the photo is: the reason it once moved
+          above the media (it used to sit below the stats and actions) no
+          longer applies. */}
+      <div className="px-4 pt-3">
+        <div className="flex items-baseline gap-2">
+          {hasPrice ? (
+            <span className="text-[20px] font-bold leading-6 tracking-[-0.015em] text-main tabular-nums">
+              {`${post.price!.currency} ${post.price!.amount.toLocaleString()}`}
+            </span>
+          ) : (
+            // No price is information too, but it shouldn't shout like one.
+            <span className="text-[15px] font-semibold leading-6 text-muted">
+              Price on request
+            </span>
+          )}
+          {post.price?.negotiable && hasPrice && (
+            <span className="rounded-full bg-surface px-2 py-0.5 text-[12px] font-medium text-muted">
+              Negotiable
+            </span>
+          )}
+        </div>
 
-          Raw view counts stay out of it deliberately — they read as "· 15
-          views" on a young listing, which discourages more than it persuades.
-          Saves, comments and shares are the signals worth showing. */}
+        <Link
+          href={contentPath(lang, post)}
+          scroll={false}
+          onClick={() => {
+            if (shouldFire(post.id, "DETAIL_VIEWED")) {
+              trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
+            }
+            rememberScrollBeforeNavigation();
+          }}
+          className="mt-1 line-clamp-2 text-[15px] font-medium leading-5 text-main no-underline hover:underline md:text-[16px] md:leading-6"
+        >
+          {post.title}
+        </Link>
+
+        {showCaption && (
+          <div className="mt-1 text-[14px] leading-5 text-muted">
+            <p
+              ref={captionRef}
+              role="link"
+              tabIndex={0}
+              onClick={handleOpen}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleOpen();
+                }
+              }}
+              className={cn("cursor-pointer whitespace-pre-line", !expanded && "line-clamp-2")}
+            >
+              {caption}
+            </p>
+            {(captionOverflows || expanded) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((v) => !v);
+                }}
+                className="font-semibold text-main hover:underline lg:cursor-pointer"
+              >
+                {expanded ? "Show less" : "More"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Social proof ─────────────────────────────────────────────────
+          Who saved it on the left, the comment count on the right. Share
+          counts stay out: they mean little to a buyer and crowd this line.
+          Raw views stay out — "15 views" on a young listing discourages more
+          than it persuades. Comments open from here; the action row keeps to
+          the three moves that sell: Save, Contact, Share. */}
       {hasEngagement && (
-        <div className="flex items-center justify-between gap-3 px-4 pt-2.5 pb-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between gap-3 px-4 pt-2.5 text-[13px] text-muted">
           {saveSummary ? (
             <button
               type="button"
@@ -1679,14 +1646,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                   ))}
                 </span>
               ) : (
-                // No saver profiles resolved yet — a filled badge still reads
-                // as "people saved this" the way a reaction pill does.
-                <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-primary">
-                  <Bookmark
-                    className="h-2.5 w-2.5 text-white"
-                    fill="white"
-                    strokeWidth={2}
-                  />
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
+                  <Bookmark className="h-2.5 w-2.5 text-white" fill="white" strokeWidth={2} />
                 </span>
               )}
               <span className="min-w-0 truncate">{saveSummary}</span>
@@ -1696,64 +1657,42 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <span aria-hidden="true" />
           )}
 
-          <div className="flex shrink-0 items-center gap-3">
-            {commentCount > 0 && (
-              <button
-                type="button"
-                onClick={openComments}
-                aria-label={`Open ${commentCount} comments`}
-                className="hover:underline lg:cursor-pointer"
-              >
-                {fmt(commentCount)} comment{commentCount === 1 ? "" : "s"}
-              </button>
-            )}
-            {shareCount > 0 && (
-              <span>
-                {fmt(shareCount)} share{shareCount === 1 ? "" : "s"}
-              </span>
-            )}
-          </div>
+          {commentCount > 0 && (
+            <button
+              type="button"
+              onClick={openComments}
+              aria-label={`Open ${commentCount} comments`}
+              className="shrink-0 hover:underline lg:cursor-pointer"
+            >
+              {fmt(commentCount)} comment{commentCount === 1 ? "" : "s"}
+            </button>
+          )}
         </div>
       )}
 
-      {/* No divider above the actions — the row reads as part of the card on
-          its own. The spacing still has to be reserved though: on a post with
-          no engagement the summary row above is absent, and without this the
-          buttons sit flush against the media. */}
-      {!hasEngagement && <div className="mt-2.5" />}
-
-      {/* ── Action bar ──────────────────────────────────────────────────
-          Compact, evenly-split actions with no divider above them. The actions
-          share one visual weight; only Save changes colour when active. */}
-      <div
-        className={cn(
-          "grid items-stretch gap-1 px-3 py-1",
-          actionGridCols,
-        )}
-      >
-        {/* Save — active state fills the icon and tints the label */}
+      {/* ── Actions ──────────────────────────────────────────────────────
+          One hairline, then three equal actions with the label beside the
+          icon. Contact carries the brand colour: it is the move that turns a
+          view into a sale. Save fills when active. */}
+      <div className="mx-4 mt-3 border-t border-border" />
+      <div className={cn("grid gap-1 px-2 py-1", actionGridCols)}>
         <button
           type="button"
           onClick={handleSavePress}
+          aria-pressed={saved}
           className={cn(
-            "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold transition-colors active:scale-95 lg:cursor-pointer",
-            "hover:bg-surface active:bg-surface",
-            saved ? "text-primary" : "text-muted-foreground",
+            actionClass,
+            "hover:bg-surface",
+            saved ? "text-primary" : "text-muted hover:text-main",
           )}
         >
           <SaveBurst key={saveBurstKey} burstKey={saveBurstKey} />
           <Bookmark
-            className={cn(
-              "h-4.5 w-4.5 shrink-0 transition-transform duration-300",
-              saved && "scale-110",
-            )}
+            className={cn("h-5 w-5 shrink-0 transition-transform duration-300", saved && "scale-110")}
             fill={saved ? "rgb(var(--brand-primary))" : "none"}
-            strokeWidth={1.8}
+            strokeWidth={1.9}
           />
-          {/* Always the word, never the count — the count is in the summary
-              row directly above, and showing it twice read as two different
-              numbers at a glance. */}
-          <span className="truncate">Save</span>
+          <span className="truncate">{saved ? "Saved" : "Save"}</span>
         </button>
 
         {!isOwnPost && (
@@ -1782,9 +1721,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 active:bg-surface lg:cursor-pointer"
+            className={cn(
+              actionClass,
+              "text-primary-strong hover:bg-primary-soft dark:text-primary",
+            )}
           >
-            <MessageCircle className="h-4.5 w-4.5 shrink-0" strokeWidth={1.8} />
+            <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.9} />
             <span className="truncate">Contact</span>
           </button>
         )}
@@ -1793,57 +1735,15 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           type="button"
           onClick={(event) => {
             event.stopPropagation();
-            openComments();
-          }}
-          aria-label="Open comments"
-          className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 active:bg-surface lg:cursor-pointer"
-        >
-          <MessageSquare className="h-4.5 w-4.5 shrink-0" strokeWidth={1.8} />
-          <span className="truncate">Comment</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
             handleShare();
           }}
           aria-label="Share listing"
-          className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 active:bg-surface lg:cursor-pointer"
+          className={cn(actionClass, "text-muted hover:bg-surface hover:text-main")}
         >
-          <Send className="h-4.5 w-4.5 shrink-0" />
+          <Forward className="h-5 w-5 shrink-0" strokeWidth={1.9} />
           <span className="truncate">Share</span>
         </button>
       </div>
-
-      {latestComment && (
-        <button
-          type="button"
-          onClick={openComments}
-          aria-label="Open comments"
-          className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-start gap-2.5 rounded-3xl bg-surface px-3 py-2.5 text-left transition-transform active:scale-[0.99]"
-        >
-          {latestComment.author ? (
-            <MiniAvatar user={latestComment.author} index={0} />
-          ) : (
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-              S
-            </span>
-          )}
-          <span className="min-w-0 flex-1">
-            <span className="mb-0.5 block truncate text-xs font-bold text-default">
-              {latestCommentAuthor ||
-                `User ${latestComment.creatorId.slice(-6)}`}
-            </span>
-            <span className="line-clamp-2 text-sm leading-5 text-default">
-              {latestComment.text}
-            </span>
-          </span>
-        </button>
-      )}
-
-      {/* ── Full-screen media viewer — images swipe as a carousel and Mux
-          videos retain the same dialog/back-button behaviour. ── */}
 
       <CommentsDrawer
         contentId={post.id}

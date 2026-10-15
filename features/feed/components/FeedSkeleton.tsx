@@ -16,23 +16,17 @@ import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
  * no hardcoded grays.
  */
 export function PostCardSkeleton() {
+  // Mirrors PostCard's layout — header, media, listing, actions — so a card
+  // swaps in without anything moving.
   return (
-    <div className="bg-elevated border-b border-default">
+    <div className="bg-elevated">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+      <div className="flex items-center gap-3 px-4 pt-3 pb-3">
         <Skeleton className="w-10 h-10 rounded-full shrink-0" />
-        <div className="flex-1 flex flex-col gap-2">
-          <Skeleton className="h-3.5 w-32 rounded-full" />
-          <Skeleton className="h-2.5 w-20 rounded-full" />
+        <div className="flex-1 flex flex-col gap-1.5">
+          <Skeleton className="h-3.5 w-36 rounded-full" />
+          <Skeleton className="h-3 w-24 rounded-full" />
         </div>
-        <Skeleton className="h-7 w-20 rounded-full" />
-      </div>
-
-      {/* Title + caption */}
-      <div className="px-4 pb-3 flex flex-col gap-2">
-        <Skeleton className="h-4 w-3/4 rounded-full" />
-        <Skeleton className="h-3 w-full rounded-full" />
-        <Skeleton className="h-3 w-2/3 rounded-full" />
       </div>
 
       {/* Media — same height budget as PostCard portrait media (the dominant
@@ -42,24 +36,21 @@ export function PostCardSkeleton() {
         style={{ height: "min(177.78vw, 70svh)" }}
       />
 
-      {/* Stats row */}
-      <div className="flex items-center justify-between px-4 py-2.5">
-        <Skeleton className="h-3 w-28 rounded-full" />
-        <Skeleton className="h-4 w-20 rounded-full" />
+      {/* Price, title, caption */}
+      <div className="px-4 pt-3 flex flex-col gap-2">
+        <Skeleton className="h-5 w-28 rounded-full" />
+        <Skeleton className="h-3.5 w-3/4 rounded-full" />
+        <Skeleton className="h-3 w-1/2 rounded-full" />
       </div>
 
-      {/* Divider */}
-      <div className="h-px mx-4 bg-border" />
+      <div className="mx-4 mt-3 h-px bg-border" />
 
-      {/* Action bar */}
-      <div className="flex items-center px-2 py-1 gap-1">
-        {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 flex flex-col items-center gap-1.5 py-2.5"
-          >
+      {/* Save · Contact · Share */}
+      <div className="grid grid-cols-3 gap-1 px-2 py-1">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="flex h-11 items-center justify-center gap-2">
             <Skeleton className="w-5 h-5 rounded-full" />
-            <Skeleton className="h-2.5 w-8 rounded-full" />
+            <Skeleton className="h-3 w-12 rounded-full" />
           </div>
         ))}
       </div>
