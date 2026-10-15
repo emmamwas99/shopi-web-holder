@@ -346,7 +346,7 @@ function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
 
   if (avatarUrl) {
     return (
-      <div className="w-10 h-10 rounded-full relative shrink-0 bg-surface">
+      <div className="relative h-9 w-9 shrink-0 rounded-full bg-surface md:h-10 md:w-10">
         <div className="w-full h-full rounded-full overflow-hidden">
           <Image
             src={avatarUrl}
@@ -363,8 +363,8 @@ function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
   }
 
   return (
-    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface">
-      <span className="text-[13px] font-semibold text-muted">{label}</span>
+    <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface md:h-10 md:w-10">
+      <span className="text-[12px] font-semibold text-muted md:text-[13px]">{label}</span>
     </div>
   );
 }
@@ -1353,7 +1353,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   }
 
   const actionClass =
-    "relative flex h-11 min-w-0 items-center justify-center gap-2 rounded-[10px] text-[14px] font-semibold transition-colors active:scale-[0.97] lg:cursor-pointer";
+    "relative flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-[10px] text-[13px] font-semibold transition-colors active:scale-[0.97] md:h-11 md:gap-2 md:text-[14px] lg:cursor-pointer";
 
   return (
     // data-scroll-anchor: a return to the feed puts this card back exactly
@@ -1368,7 +1368,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           pattern every social feed has trained people to read. Follow is a
           word beside the name rather than a pill, so the seller is the
           header's subject, not the button. */}
-      <div className="flex items-center gap-3 px-4 pt-3 pb-3 max-[360px]:gap-2.5 max-[360px]:px-3">
+      <div className="flex items-center gap-2.5 px-4 py-2.5 max-[360px]:px-3 md:gap-3 md:py-3">
         {/* Unwatched story → pink ring, and the tap opens it (Facebook /
             TikTok). Otherwise the tap goes to the profile, as before. */}
         <CreatorStoryAvatar
@@ -1391,7 +1391,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
         <div className="min-w-0 flex-1">
           {creatorName ? (
-            <div className="flex min-w-0 items-center gap-1 text-[15px] leading-5 max-[360px]:text-[14px]">
+            <div className="flex min-w-0 items-center gap-1 text-[14px] leading-5 md:text-[15px]">
               <button
                 type="button"
                 onClick={openCreatorProfile}
@@ -1424,7 +1424,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <div className="h-4 w-28 rounded-full bg-surface animate-pulse" />
           )}
           <p
-            className="mt-0.5 truncate text-[13px] leading-4 text-muted max-[360px]:text-[12px]"
+            className="mt-0.5 truncate text-[12px] leading-4 text-muted md:text-[13px]"
             title={post.location ? (locationTrail(post.location) ?? undefined) : undefined}
           >
             {place ? `${place} · ` : ""}
@@ -1559,20 +1559,20 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           price is on screen whenever the photo is: the reason it once moved
           above the media (it used to sit below the stats and actions) no
           longer applies. */}
-      <div className="px-4 pt-3">
+      <div className="px-4 pt-2.5 md:pt-3">
         <div className="flex items-baseline gap-2">
           {hasPrice ? (
-            <span className="text-[20px] font-bold leading-6 tracking-[-0.015em] text-main tabular-nums">
+            <span className="text-[18px] font-bold leading-6 tracking-[-0.015em] text-main tabular-nums md:text-[20px]">
               {`${post.price!.currency} ${post.price!.amount.toLocaleString()}`}
             </span>
           ) : (
             // No price is information too, but it shouldn't shout like one.
-            <span className="text-[15px] font-semibold leading-6 text-muted">
+            <span className="text-[14px] font-semibold leading-6 text-muted md:text-[15px]">
               Price on request
             </span>
           )}
           {post.price?.negotiable && hasPrice && (
-            <span className="rounded-full bg-surface px-2 py-0.5 text-[12px] font-medium text-muted">
+            <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-muted md:text-[12px]">
               Negotiable
             </span>
           )}
@@ -1587,13 +1587,13 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             }
             rememberScrollBeforeNavigation();
           }}
-          className="mt-1 line-clamp-2 text-[15px] font-medium leading-5 text-main no-underline hover:underline md:text-[16px] md:leading-6"
+          className="mt-0.5 line-clamp-2 text-[14px] font-medium leading-5 text-main no-underline hover:underline md:mt-1 md:text-[16px] md:leading-6"
         >
           {post.title}
         </Link>
 
         {showCaption && (
-          <div className="mt-1 text-[14px] leading-5 text-muted">
+          <div className="mt-1 text-[13px] leading-[18px] text-muted md:text-[14px] md:leading-5">
             <p
               ref={captionRef}
               role="link"
@@ -1632,7 +1632,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           than it persuades. Comments open from here; the action row keeps to
           the three moves that sell: Save, Contact, Share. */}
       {hasEngagement && (
-        <div className="flex items-center justify-between gap-3 px-4 pt-2.5 text-[13px] text-muted">
+        <div className="flex items-center justify-between gap-3 px-4 pt-2 text-[12px] text-muted md:pt-2.5 md:text-[13px]">
           {saveSummary ? (
             <button
               type="button"
@@ -1674,7 +1674,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           One hairline, then three equal actions with the label beside the
           icon. Contact carries the brand colour: it is the move that turns a
           view into a sale. Save fills when active. */}
-      <div className="mx-4 mt-3 border-t border-border" />
+      <div className="mx-4 mt-2.5 border-t border-border md:mt-3" />
       <div className={cn("grid gap-1 px-2 py-1", actionGridCols)}>
         <button
           type="button"
@@ -1688,7 +1688,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         >
           <SaveBurst key={saveBurstKey} burstKey={saveBurstKey} />
           <Bookmark
-            className={cn("h-5 w-5 shrink-0 transition-transform duration-300", saved && "scale-110")}
+            className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300 md:h-5 md:w-5", saved && "scale-110")}
             fill={saved ? "rgb(var(--brand-primary))" : "none"}
             strokeWidth={1.9}
           />
@@ -1726,7 +1726,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               "text-primary-strong hover:bg-primary-soft dark:text-primary",
             )}
           >
-            <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={1.9} />
+            <MessageCircle className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
             <span className="truncate">Contact</span>
           </button>
         )}
@@ -1740,7 +1740,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           aria-label="Share listing"
           className={cn(actionClass, "text-muted hover:bg-surface hover:text-main")}
         >
-          <Forward className="h-5 w-5 shrink-0" strokeWidth={1.9} />
+          <Forward className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
           <span className="truncate">Share</span>
         </button>
       </div>
