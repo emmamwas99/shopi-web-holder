@@ -21,8 +21,8 @@ export function PostCardSkeleton() {
   return (
     <div className="bg-elevated">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-3 pb-3">
-        <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+      <div className="flex items-center gap-2.5 px-4 py-2.5 md:gap-3 md:py-3">
+        <Skeleton className="h-9 w-9 rounded-full shrink-0 md:h-10 md:w-10" />
         <div className="flex-1 flex flex-col gap-1.5">
           <Skeleton className="h-3.5 w-36 rounded-full" />
           <Skeleton className="h-3 w-24 rounded-full" />
@@ -37,18 +37,18 @@ export function PostCardSkeleton() {
       />
 
       {/* Price, title, caption */}
-      <div className="px-4 pt-3 flex flex-col gap-2">
+      <div className="px-4 pt-2.5 flex flex-col gap-2 md:pt-3">
         <Skeleton className="h-5 w-28 rounded-full" />
         <Skeleton className="h-3.5 w-3/4 rounded-full" />
         <Skeleton className="h-3 w-1/2 rounded-full" />
       </div>
 
-      <div className="mx-4 mt-3 h-px bg-border" />
+      <div className="mx-4 mt-2.5 h-px bg-border md:mt-3" />
 
       {/* Save · Contact · Share */}
       <div className="grid grid-cols-3 gap-1 px-2 py-1">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex h-11 items-center justify-center gap-2">
+          <div key={i} className="flex h-10 items-center justify-center gap-2 md:h-11">
             <Skeleton className="w-5 h-5 rounded-full" />
             <Skeleton className="h-3 w-12 rounded-full" />
           </div>
