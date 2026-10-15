@@ -105,22 +105,6 @@ fragment ContentCardFields on Content {
       avatar
     }
   }
-  latestComment {
-    id
-    text
-    creatorId
-    createdAt
-    author {
-      id
-      username
-      isVerified
-      profile {
-        firstName
-        lastName
-        avatar
-      }
-    }
-  }
 }
 
 query ForYouFeed($limit: Int, $after: String, $latitude: Float, $longitude: Float, $seed: String) {
