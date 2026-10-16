@@ -393,14 +393,14 @@ export function ManagedPostsGrid({
         <h2 className="hidden text-[15px] font-bold leading-tight text-main md:block">
           My posts
         </h2>
-        <p className="text-[13px] text-muted md:mt-1">
+        <p className="hidden text-[13px] text-muted md:mt-1 md:block">
           {posts.length === 1 ? "1 post" : `${posts.length} posts`}
           {posts.length > 0 && ` · ${liveCount} live`}
         </p>
       </div>
       <Link
         href={`/${lang}/upload`}
-        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-primary px-3.5 text-sm font-medium text-white transition-opacity active:opacity-80"
+        className="hidden h-9 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-primary px-3.5 text-sm font-medium text-white transition-opacity active:opacity-80 md:inline-flex"
       >
         <Plus className="size-4" />
         New post
@@ -461,7 +461,7 @@ export function ManagedPostsGrid({
           </p>
           <Link
             href={`/${lang}/upload`}
-            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-[15px] font-semibold text-white transition-transform active:scale-[0.98]"
+            className="mt-5 hidden h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-[15px] font-semibold text-white transition-transform active:scale-[0.98] md:inline-flex"
           >
             <Plus size={17} />
             New post
@@ -562,13 +562,13 @@ export function ManagedPostsGrid({
           // Price first: it is the field sellers open this sheet to change,
           // and putting it above the fold means the common edit needs no
           // scrolling at all.
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 md:gap-5">
             <FieldBlock label="Price" hint={editState.currency}>
               <Input
                 inputMode="decimal"
                 value={editState.amount}
                 placeholder="Leave empty for “price on request”"
-                className="h-12 rounded-xl"
+                className="h-11 rounded-xl text-[14px] placeholder:text-[13px] md:h-12 md:text-base"
                 onChange={(event) =>
                   setEditState((current) =>
                     current ? { ...current, amount: event.target.value } : current,
@@ -609,7 +609,7 @@ export function ManagedPostsGrid({
               <Input
                 value={editState.title}
                 maxLength={140}
-                className="h-12 rounded-xl"
+                className="h-11 rounded-xl text-[14px] md:h-12 md:text-base"
                 aria-invalid={Boolean(editTried && editTextProblems.title)}
                 onChange={(event) =>
                   setEditState((current) =>
@@ -629,7 +629,7 @@ export function ManagedPostsGrid({
                 value={editState.caption}
                 maxLength={2000}
                 rows={5}
-                className="min-h-32 resize-none rounded-xl leading-relaxed"
+                className="min-h-28 resize-none rounded-xl text-[14px] leading-5 md:min-h-32 md:text-base md:leading-relaxed"
                 aria-invalid={Boolean(editTried && editTextProblems.description)}
                 onChange={(event) =>
                   setEditState((current) =>
@@ -644,17 +644,21 @@ export function ManagedPostsGrid({
               ) : null}
             </FieldBlock>
 
-            <FieldBlock label="Category">
-              <CategoryPickerDrawer
-                value={editState.categoryId}
-                fallbackLabel={editState.categoryLabel}
-                onChange={(id, name) =>
-                  setEditState((current) =>
-                    current ? { ...current, categoryId: id, categoryLabel: name } : current,
-                  )
-                }
-              />
-            </FieldBlock>
+            {isDesktop ? (
+              <FieldBlock label="Category">
+                <CategoryPickerDrawer
+                  value={editState.categoryId}
+                  fallbackLabel={editState.categoryLabel}
+                  onChange={(id, name) =>
+                    setEditState((current) =>
+                      current
+                        ? { ...current, categoryId: id, categoryLabel: name }
+                        : current,
+                    )
+                  }
+                />
+              </FieldBlock>
+            ) : null}
 
             <p className="text-[12px] leading-relaxed text-muted">
               Photos and location stay as published, so buyers always see the same item
@@ -814,10 +818,10 @@ function EditSurface({
         {/* A fixed-height sheet with its own scroller, so the keyboard can't
             push Save out of reach. It opens over the post sheet, a little
             shorter, so the post stays visible behind it. */}
-        <DrawerContent className="mx-auto flex h-[88svh] w-full max-w-[480px] flex-col rounded-t-[24px] border-default bg-app">
-          <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-default px-4 py-3 text-left">
+        <DrawerContent className="mx-auto flex h-[84svh] w-full max-w-[480px] flex-col rounded-t-[20px] border-default bg-app">
+          <DrawerHeader className="flex shrink-0 flex-row items-center justify-between gap-3 border-b border-default px-4 py-2.5 text-left">
             <div className="min-w-0">
-              <DrawerTitle className="text-[17px] font-bold">{title}</DrawerTitle>
+              <DrawerTitle className="text-[15px] font-semibold">{title}</DrawerTitle>
               <DrawerDescription className="sr-only">
                 Update the price, title, description and category of this post
               </DrawerDescription>
@@ -832,16 +836,16 @@ function EditSurface({
             </button>
           </DrawerHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-5 pt-3">
             {children}
           </div>
 
           <div
-            className="shrink-0 border-t border-default px-4 pt-3"
-            style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}
+            className="shrink-0 border-t border-default px-4 pt-2.5"
+            style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.625rem)" }}
           >
             <Button
-              className="h-12 w-full rounded-full text-[15px] font-bold text-white"
+              className="h-11 w-full rounded-full text-[14px] font-semibold text-white"
               onClick={onSubmit}
               disabled={busy || !dirty}
             >

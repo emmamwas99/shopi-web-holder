@@ -1,5 +1,6 @@
 "use client";
 
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import Image from "next/image";
 import Link from "next/link";
 import { gql, type TypedDocumentNode } from "@apollo/client";
@@ -67,15 +68,21 @@ function numberLabel(value: number | null | undefined) {
 function mediaThumbnail(item: SearchContentItem) {
   const media = item.media?.[0];
   const playbackId = media?.muxMeta?.playbackId;
+  const muxThumbnail = playbackId
+    ? `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`
+    : null;
+
+  if (item.type === "VIDEO") {
+    return muxThumbnail ?? media?.muxMeta?.thumbnailUrl ?? media?.thumbnailUrl ?? media?.url ?? null;
+  }
+
   return (
-    media?.muxMeta?.thumbnailUrl ??
-    media?.thumbnailUrl ??
+    media?.r2Variants?.find((variant) => variant.variant === "large")?.url ??
+    media?.r2Variants?.find((variant) => variant.variant === "original")?.url ??
     media?.r2Variants?.find((variant) => variant.variant === "medium")?.url ??
-    media?.r2Variants?.[0]?.url ??
     media?.imageUrl ??
-    (playbackId
-      ? `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=540&fit_mode=smartcrop`
-      : media?.url) ??
+    media?.url ??
+    media?.thumbnailUrl ??
     null
   );
 }
@@ -98,7 +105,7 @@ function SearchContentCard({ item, lang }: { item: SearchContentItem; lang: stri
       <Link href={href} scroll={false} className="block">
         <div className="relative aspect-[3/4] overflow-hidden bg-surface">
           {thumb ? (
-            <Image src={thumb} alt="" fill sizes="50vw" className="object-cover" />
+            <Image src={thumb} alt="" fill sizes="50vw" quality={82} className="object-cover" />
           ) : (
             <div className="h-full w-full bg-surface" />
           )}
@@ -162,8 +169,9 @@ function SearchUserRow({ user, lang }: { user: SearchUser; lang: string }) {
           </span>
         )}
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-default">
-            {label}{user.isVerified ? " ✓" : ""}
+          <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-default">
+            <span className="truncate">{label}</span>
+            {user.isVerified ? <VerifiedTick size={14} label="Verified shop" /> : null}
           </span>
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
             @{user.username || "shopi"} · {numberLabel(user.followerCount)} followers
@@ -466,15 +474,15 @@ export function MobileSearchScreen({
                   key={item}
                   type="button"
                   onClick={() => onTabChange(item)}
-                  className={`min-w-[72px] border-b-2 px-3 py-2.5 text-[13px] font-semibold ${
-                    tab === item ? "border-default text-default" : "border-transparent text-muted-foreground"
+                  className={`min-w-[72px] flex-1 border-b-2 px-3 py-2.5 text-center text-[13px] font-semibold ${
+                    tab === item ? "border-primary text-primary" : "border-transparent text-muted-foreground"
                   }`}
                 >
                   {item}
                 </button>
               ))}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pb-8">
+            <div className="min-h-0 flex-1 overflow-y-auto pb-8 pt-2">
               {tab === "Users" ? (
                 userItems.length ? (
                   <div className="divide-y divide-border/60">

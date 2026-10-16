@@ -266,7 +266,7 @@ export function MessageList({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-subtle px-4 py-4"
+        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-subtle px-4 py-5 md:py-4"
       >
         {/* Top sentinel + older-loading spinner */}
         <div ref={topSentinelRef} className="h-px" />
@@ -282,7 +282,7 @@ export function MessageList({
           </div>
         ) : null}
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {items.map((item) =>
             item.type === "sep" ? (
               <div key={item.key} data-day-label={item.label}>

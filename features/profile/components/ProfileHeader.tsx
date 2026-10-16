@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Copy, ExternalLink, PenLine } from "lucide-react";
+import { BadgeCheck, Check, Copy, ExternalLink, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { ProfileViewsCluster } from "./ProfileViewsCluster";
 import { profileHref } from "@/lib/profile-url";
 import { toast } from "sonner";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import {
+  useMyShopVerification,
+  verificationStage,
+} from "@/features/verification/hooks/useShopVerification";
+import { settingsSubPageHref } from "../lib/settingsReturn";
 
 interface Props {
   user: ProfileUserFieldsFragment;
@@ -28,25 +34,53 @@ function getWebsiteHref(website: string) {
   return website.startsWith("http") ? website : `https://${website}`;
 }
 
-function VerifiedBadge() {
+/**
+ * The seller's own verification, in two places: the tick beside their name
+ * once verified (tapping it shows their verification), otherwise a quiet pill
+ * on the @handle line — never beside the name, where it would push a long
+ * name into truncation on a phone.
+ */
+function useOwnVerification(lang: string, isVerified: boolean) {
+  const { verification } = useMyShopVerification();
+  const stage = verificationStage(verification);
+  return {
+    verified: isVerified || stage === "verified",
+    loaded: Boolean(verification),
+    stage,
+    href: settingsSubPageHref(lang, "/profile/verification"),
+  };
+}
+
+function OwnVerifiedTick({ lang, isVerified }: { lang: string; isVerified: boolean }) {
+  const { verified, href } = useOwnVerification(lang, isVerified);
+  if (!verified) return null;
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 20 20"
-      fill="none"
-      className="shrink-0"
-      aria-label="Verified"
+    <Link href={href} aria-label="Verified shop — see your verification" className="shrink-0">
+      <VerifiedTick size={18} label={null} />
+    </Link>
+  );
+}
+
+function OwnVerificationPill({ lang, isVerified }: { lang: string; isVerified: boolean }) {
+  const { verified, loaded, stage, href } = useOwnVerification(lang, isVerified);
+  // Until the query lands, show nothing rather than an invitation that may be wrong.
+  if (verified || !loaded) return null;
+
+  const chip =
+    stage === "pending"
+      ? { text: "In review", className: "bg-subtle text-muted" }
+      : stage === "changes"
+        ? { text: "Fix verification", className: "bg-rose-500/10 text-rose-600 dark:text-rose-400" }
+        : { text: "Get verified", className: "bg-[#1D9BF0]/10 text-[#0F6FB8] dark:text-[#6CC3FF]" };
+
+  return (
+    <Link
+      href={href}
+      className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2 text-[12px] font-semibold transition-opacity hover:opacity-80 ${chip.className}`}
     >
-      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-      <path
-        d="M6 10.5l2.5 2.5 5.5-5.5"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      <BadgeCheck size={13} strokeWidth={2.2} aria-hidden />
+      {chip.text}
+    </Link>
   );
 }
 
@@ -194,13 +228,16 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                   <h1 className="truncate text-xl font-black leading-tight text-main lg:text-2xl">
                     {displayName}
                   </h1>
-                  {user.isVerified ? <VerifiedBadge /> : null}
+                  <OwnVerifiedTick lang={lang} isVerified={Boolean(user.isVerified)} />
                 </div>
-                {user.username ? (
-                  <p className="mt-0.5 truncate text-sm font-medium text-muted">
-                    @{user.username}
-                  </p>
-                ) : null}
+                <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                  {user.username ? (
+                    <p className="min-w-0 truncate text-sm font-medium text-muted">
+                      @{user.username}
+                    </p>
+                  ) : null}
+                  <OwnVerificationPill lang={lang} isVerified={Boolean(user.isVerified)} />
+                </div>
               </div>
 
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-fit sm:shrink-0 sm:flex-wrap sm:items-center">

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import { VerifiedButton, VerifiedSellerNote } from "@/components/verification/VerifiedExplainer";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import {
-  BadgeCheck,
   Download,
   Bookmark,
   Send,
@@ -1111,13 +1112,7 @@ export function ContentDetail({
              about a six-figure item. */
           <p className="flex items-center gap-1 font-semibold text-sm text-default">
             <span className="truncate">{creatorName}</span>
-            {postCreator?.isVerified && (
-              <BadgeCheck
-                size={15}
-                className="shrink-0 text-primary"
-                aria-label="Verified seller"
-              />
-            )}
+            {postCreator?.isVerified && <VerifiedTick size={15} label="Verified shop" />}
           </p>
         ) : (
           <div className="h-3.5 w-28 rounded-full bg-surface animate-pulse" />
@@ -1236,6 +1231,9 @@ export function ContentDetail({
             <span className="text-xs text-muted-foreground font-normal ml-2">
               · Negotiable
             </span>
+          )}
+          {postCreator?.isVerified && (
+            <VerifiedButton lang={lang} sellerName={creatorName} variant="badge" className="ml-2 align-middle" />
           )}
         </div>
       )}
@@ -1827,6 +1825,9 @@ export function ContentDetail({
                       {post.price.negotiable && (
                         <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Negotiable</span>
                       )}
+                      {postCreator?.isVerified && (
+                        <VerifiedButton lang={lang} sellerName={creatorName} variant="badge" />
+                      )}
                     </div>
                   )}
                   <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-default xl:text-3xl">{post.title}</h1>
@@ -2088,6 +2089,9 @@ export function ContentDetail({
                     Negotiable
                   </span>
                 )}
+                {postCreator?.isVerified && (
+                  <VerifiedButton lang={lang} sellerName={creatorName} variant="badge" className="self-center" />
+                )}
               </div>
               <h1 className="mt-1 text-[18px] font-semibold leading-6 text-main">{post.title}</h1>
               <p className="mt-2 flex min-w-0 items-center gap-1 text-[13px] leading-5 text-muted">
@@ -2152,9 +2156,7 @@ export function ContentDetail({
                     {creatorName ? (
                       <p className="flex items-center gap-1 text-[15px] font-semibold leading-5 text-main">
                         <span className="truncate">{creatorName}</span>
-                        {postCreator?.isVerified && (
-                          <BadgeCheck size={16} className="shrink-0 text-[#1D9BF0]" aria-label="Verified seller" />
-                        )}
+                        {postCreator?.isVerified && <VerifiedTick size={16} label="Verified shop" />}
                       </p>
                     ) : (
                       <div className="h-4 w-28 animate-pulse rounded-full bg-surface" />
@@ -2186,6 +2188,9 @@ export function ContentDetail({
                   </button>
                 )}
               </div>
+              {postCreator?.isVerified && (
+                <VerifiedSellerNote lang={lang} sellerName={creatorName} className="mt-3" />
+              )}
               <Link
                 href={shopHref}
                 className="mt-3 flex h-10 items-center justify-center rounded-[10px] border border-default text-[14px] font-semibold text-main no-underline active:bg-surface"

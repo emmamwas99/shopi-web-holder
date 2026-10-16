@@ -1,13 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { X } from "lucide-react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { ChevronLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -18,7 +13,7 @@ import {
 /**
  * The frame for one of the seller's own records — a post or a draft — opened
  * from a list, built like the admin's record panel: a title and one line of
- * context over a divider, then the body. A tall bottom sheet on a phone, a
+ * context over a divider, then the body. A full-screen page on a phone, a
  * side panel on desktop. The caller owns Back handling (useBackDismiss) and
  * passes its `requestClose`, so the X, swipe-down and an overlay tap all close
  * the way Back does.
@@ -61,38 +56,40 @@ export function DetailSheet({
   }
 
   return (
-    <Drawer open={open} onOpenChange={(next) => !next && onRequestClose()}>
-      {/* A fixed height with its own scroller, so the actions near the top
-          never move as the body changes length. 92svh leaves the list
-          peeking above, which keeps it reading as a sheet, not a new page. */}
-      <DrawerContent className="mx-auto flex h-[92svh] w-full max-w-[480px] flex-col rounded-t-[20px] border-default bg-app outline-none">
-        <div className="flex shrink-0 items-center gap-3 border-b border-default px-4 pb-3 pt-2">
-          <div className="min-w-0 flex-1">
-            <DrawerTitle className="truncate text-left text-base font-semibold leading-snug text-main">
-              {title}
-            </DrawerTitle>
-            <DrawerDescription className="mt-0.5 truncate text-left text-[13px] text-muted">
-              {subtitle || "Details"}
-            </DrawerDescription>
-          </div>
+    <Dialog open={open} onOpenChange={(next) => !next && onRequestClose()}>
+      <DialogContent
+        overlayClassName="z-[70] bg-black/50"
+        className="!fixed !inset-0 !left-0 !top-0 !z-[80] !flex !h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !rounded-none !border-0 !bg-app !p-0 !shadow-none [&>button:last-child]:hidden"
+      >
+        <div
+          className="grid min-h-14 shrink-0 grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2 border-b border-default px-3 py-2"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 0.5rem)" }}
+        >
           <button
             type="button"
             onClick={onRequestClose}
-            aria-label="Close"
-            className="-mr-1.5 flex size-9 shrink-0 items-center justify-center rounded-[8px] text-muted transition-colors active:bg-surface"
+            aria-label="Back to list"
+            className="flex size-10 items-center justify-center rounded-full text-main transition-colors active:bg-surface"
           >
-            <X size={20} />
+            <ChevronLeft size={23} strokeWidth={2.2} />
           </button>
+          <div className="min-w-0 text-center">
+            <DialogTitle className="truncate text-[15px] font-semibold leading-snug text-main">
+              {title}
+            </DialogTitle>
+            <DialogDescription className="mt-0.5 truncate text-xs text-muted">
+              {subtitle || "Details"}
+            </DialogDescription>
+          </div>
+          <span aria-hidden="true" />
         </div>
-        {/* overscroll-contain: a flick at the end of the details must not
-            drag the list behind the sheet. */}
         <div
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.5rem)" }}
         >
           {children}
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -29,6 +29,10 @@ const ARTICLE_LISTINGS = gql`
         slug
         title
         createdAt
+        creator {
+          id
+          isVerified
+        }
         price {
           amount
           currency

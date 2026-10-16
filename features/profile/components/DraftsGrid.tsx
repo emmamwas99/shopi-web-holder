@@ -347,7 +347,7 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
         <div className="mb-4">
           {/* On a phone the screen's own top bar already says "Drafts". */}
           <h2 className="hidden text-[15px] font-bold leading-tight text-main md:block">Drafts</h2>
-          <p className="text-[13px] text-muted md:mt-1">
+          <p className="hidden text-[13px] text-muted md:mt-1 md:block">
             {drafts.length === 1 ? "1 draft" : `${drafts.length} drafts`}
             {readyCount > 0 && ` · ${readyCount} ready to post`}
           </p>

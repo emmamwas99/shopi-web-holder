@@ -3,6 +3,7 @@
 import { useState, type ComponentType } from "react";
 import Link from "next/link";
 import {
+  BadgeCheck,
   Bell,
   Bookmark,
   ChartColumn,
@@ -45,6 +46,11 @@ import { cn } from "@/lib/utils";
 import { ReferralPausedBanner } from "@/features/referrals/components/ReferralPausedBanner";
 import { useTeamThread } from "@/features/team-messages/hooks/useTeamThread";
 import { TEAM_THREAD_PATH } from "@/features/team-messages/types";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import {
+  useMyShopVerification,
+  verificationStage,
+} from "@/features/verification/hooks/useShopVerification";
 
 /**
  * The profile's menu: one grouped list holding everything the profile offers,
@@ -111,6 +117,7 @@ function MenuRow({
   icon: RowIcon,
   label,
   meta,
+  metaClassName,
   badge,
   active,
   danger,
@@ -123,6 +130,7 @@ function MenuRow({
   label: string;
   /** Small muted value before the chevron, like a count. */
   meta?: string;
+  metaClassName?: string;
   /** A short highlighted tag before the chevron, e.g. "New". */
   badge?: string;
   /**
@@ -163,7 +171,12 @@ function MenuRow({
         {label}
       </span>
       {meta ? (
-        <span className="shrink-0 text-[13px] tabular-nums text-muted md:text-sm">
+        <span
+          className={cn(
+            "shrink-0 text-[13px] tabular-nums text-muted md:text-sm",
+            metaClassName,
+          )}
+        >
           {meta}
         </span>
       ) : null}
@@ -223,17 +236,64 @@ function MenuRow({
   );
 }
 
+/** The verified tick in place of a row icon, once the shop is verified. */
+function VerifiedRowIcon({ className }: { className?: string; strokeWidth?: number }) {
+  return <VerifiedTick size={20} className={className} label={null} />;
+}
+
+/**
+ * Shop verification's way in. The label follows the seller's stage — an
+ * invitation until they start, then where it stands — so the row doubles as
+ * the status, and "Free" earns the tap before they've begun.
+ */
+function VerificationMenuRow({ lang }: { lang: string }) {
+  const { verification } = useMyShopVerification();
+  const stage = verificationStage(verification);
+  const href = settingsSubPageHref(lang, "/profile/verification");
+
+  if (stage === "verified") {
+    return <MenuRow icon={VerifiedRowIcon} label="Verified shop" meta="Verified" href={href} />;
+  }
+  if (stage === "pending") {
+    return <MenuRow icon={BadgeCheck} label="Shop verification" meta="In review" href={href} />;
+  }
+  if (stage === "changes") {
+    return (
+      <MenuRow
+        icon={BadgeCheck}
+        label="Shop verification"
+        meta="Needs changes"
+        metaClassName="text-rose-600 dark:text-rose-400"
+        href={href}
+      />
+    );
+  }
+  return (
+    <MenuRow
+      icon={BadgeCheck}
+      label="Verify your shop"
+      meta={stage === "draft" ? "Continue" : undefined}
+      badge={stage === "none" ? "Free" : undefined}
+      href={href}
+    />
+  );
+}
+
 export function ProfileMenu({
   lang,
   user,
   active,
   onSelect,
+  draftCount,
+  savedCount,
 }: {
   lang: string;
   user: ProfileUserFieldsFragment;
   /** Highlighted section; only shown on desktop, where the menu is a sidebar. */
   active: ProfileSection | null;
   onSelect: (section: ProfileSection) => void;
+  draftCount?: number | null;
+  savedCount?: number | null;
 }) {
   const push = usePushNotifications(lang);
   // Unanswered team replies show on the support row, so an answer isn't missed.
@@ -252,11 +312,13 @@ export function ProfileMenu({
     icon: Icon,
     meta?: string,
     badge?: string,
+    metaClassName?: string,
   ) => (
     <MenuRow
       icon={icon}
       label={PROFILE_SECTION_LABELS[key]}
       meta={meta}
+      metaClassName={metaClassName}
       badge={badge}
       active={active === key}
       onClick={() => onSelect(key)}
@@ -275,8 +337,20 @@ export function ProfileMenu({
 
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}
-        {section("drafts", FileEdit)}
-        {section("saved", Bookmark)}
+        {section(
+          "drafts",
+          FileEdit,
+          formatCount(draftCount),
+          undefined,
+          "md:hidden",
+        )}
+        {section(
+          "saved",
+          Bookmark,
+          formatCount(savedCount),
+          undefined,
+          "md:hidden",
+        )}
       </MenuGroup>
 
       <MenuGroup title="Audience">
@@ -295,6 +369,7 @@ export function ProfileMenu({
       </MenuGroup>
 
       <MenuGroup title="Account">
+        <VerificationMenuRow lang={lang} />
         <MenuRow
           icon={UserPen}
           label="Edit profile"

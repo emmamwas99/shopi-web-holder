@@ -5,6 +5,7 @@ import { useQuery } from "@apollo/client/react";
 import { MyPendingBulkUploadDraftsDocument } from "@/types/__generated__/graphql";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  BadgeCheck,
   Bell,
   Bookmark,
   ChartColumn,
@@ -39,6 +40,13 @@ import { DesktopCreateFlow } from "@/features/create/components/DesktopCreateFlo
 import { useAuthStore } from "@/stores/auth";
 import { DashboardTour, type DashboardTourStep } from "./DashboardTour";
 import { goBackOr } from "@/lib/useAppBack";
+import { VerificationScreen } from "@/features/verification/components/VerificationScreen";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import {
+  useMyShopVerification,
+  verificationStage,
+  type VerificationStage,
+} from "@/features/verification/hooks/useShopVerification";
 
 export function DashboardModal({
   lang,
@@ -61,6 +69,8 @@ export function DashboardModal({
   const unreadMessages = useUnreadMessageCount();
   const unreadNotifications = useUnreadNotificationCount();
   const tourUserId = useAuthStore((state) => state.user?.id ?? null);
+  const { verification } = useMyShopVerification();
+  const shopVerificationStage = verificationStage(verification);
   const [tourStepId, setTourStepId] = useState<DashboardTourStep["id"] | null>(null);
   // Resolve unfinished bulk work before starting a tour on Listings. Apollo
   // shares this request/cache with DashboardListings, which owns polling.
@@ -183,6 +193,14 @@ export function DashboardModal({
                 <p className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
                   Your account
                 </p>
+                <DashboardNavLink
+                  onClick={() => selectTab("verification")}
+                  active={activeTab === "verification"}
+                  icon={BadgeCheck}
+                  trailing={<VerificationNavStatus stage={shopVerificationStage} active={activeTab === "verification"} />}
+                >
+                  Verification
+                </DashboardNavLink>
                 <DashboardNavLink onClick={() => selectTab("messages")} active={activeTab === "messages"} icon={MessageCircle} badge={unreadMessages}>
                   Messages
                 </DashboardNavLink>
@@ -231,7 +249,9 @@ export function DashboardModal({
                     tourStep={suppressTour ? null : tourStepId}
                   />
                 ) : activeTab === "overview" ? (
-                  <DashboardOverview lang={lang} />
+                  <DashboardOverview lang={lang} onOpenVerification={() => selectTab("verification")} />
+                ) : activeTab === "verification" ? (
+                  <VerificationScreen lang={lang} embedded />
                 ) : activeTab === "messages" || activeTab === "notifications" ? (
                   <DashboardInboxTab
                     section={activeTab}
@@ -276,12 +296,37 @@ function DashboardPreferenceRow({
   );
 }
 
+/** Where the seller stands on verification, in the space a count would take. */
+function VerificationNavStatus({ stage, active }: { stage: VerificationStage; active: boolean }) {
+  if (stage === "verified") {
+    return <VerifiedTick size={15} label="Verified" className={active ? "rounded-full bg-white" : undefined} />;
+  }
+  const text = stage === "pending" ? "In review" : stage === "changes" ? "Fix" : stage === "none" ? "Free" : null;
+  if (!text) return null;
+  return (
+    <span
+      className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold leading-none ${
+        active
+          ? "bg-white/20 text-white"
+          : stage === "changes"
+            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+            : stage === "pending"
+              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+              : "bg-primary text-white"
+      }`}
+    >
+      {text}
+    </span>
+  );
+}
+
 function DashboardNavLink({
   onClick,
   icon: Icon,
   active = false,
   badge,
   tourId,
+  trailing,
   children,
 }: {
   onClick: () => void;
@@ -289,6 +334,8 @@ function DashboardNavLink({
   active?: boolean;
   badge?: number;
   tourId?: string;
+  /** A status shown at the row's end, e.g. verification's stage. */
+  trailing?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -310,6 +357,8 @@ function DashboardNavLink({
         <span className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-extrabold tabular-nums ${active ? "bg-white/20 text-white" : "bg-primary text-white"}`}>
           {badge > 99 ? "99+" : badge}
         </span>
+      ) : trailing ? (
+        <span className="ml-auto inline-flex items-center">{trailing}</span>
       ) : null}
     </button>
   );

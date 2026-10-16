@@ -15,6 +15,7 @@ import {
   Copy,
   ExternalLink,
   Search,
+  ShieldCheck,
   SlidersHorizontal,
   X,
   Video,
@@ -42,6 +43,7 @@ import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAv
 import { profileHref } from "@/lib/profile-url";
 import { toast } from "sonner";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
+import { VerifiedButton } from "@/components/verification/VerifiedExplainer";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -422,28 +424,20 @@ export function CreatorProfileView({
                     {displayName}
                   </h1>
                   {user.isVerified ? (
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      className="shrink-0"
-                      aria-label="Verified"
-                    >
-                      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-                      <path
-                        d="M6 10.5l2.5 2.5 5.5-5.5"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <VerifiedButton lang={lang} sellerName={displayName} tickSize={18} />
                   ) : null}
                 </div>
                 {user.username ? (
                   <p className="mt-1 text-sm font-medium text-muted">
                     @{user.username}
+                  </p>
+                ) : null}
+                {/* The shop page is where a buyer decides whether to trust a
+                    stranger, so the tick says what it stands for here. */}
+                {user.isVerified ? (
+                  <p className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[#0F6FB8] dark:text-[#6CC3FF]">
+                    <ShieldCheck size={13} strokeWidth={2.2} aria-hidden />
+                    Verified shop · permit, shop and location checked
                   </p>
                 ) : null}
 
