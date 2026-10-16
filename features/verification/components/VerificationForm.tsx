@@ -101,7 +101,7 @@ function StepCard({
     <section
       aria-labelledby={`step-${requirement}`}
       className={cn(
-        "rounded-2xl border bg-elevated p-4 md:p-5",
+        "rounded-xl border bg-elevated p-3.5 md:p-4",
         flagged ? "border-rose-300 dark:border-rose-500/50" : "border-border",
       )}
     >
@@ -538,7 +538,7 @@ export function VerificationForm({
   const placeRegion = [location?.subregion, location?.county].filter((part) => part && part !== placeTitle).join(", ");
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
       <div ref={topRef} className="scroll-mt-20" />
 
       {status === "REJECTED" ? (
@@ -623,7 +623,7 @@ export function VerificationForm({
             }
           }}
           placeholder="e.g. Wanjiku Fashions"
-          className="h-12 w-full rounded-xl border border-border bg-app px-3.5 text-main outline-none transition-colors placeholder:text-[15px] focus:border-[#1D9BF0]"
+          className="h-11 w-full rounded-lg border border-border bg-app px-3 text-[14px] text-main outline-none transition-colors placeholder:text-[14px] focus:border-[#1D9BF0]"
         />
       </StepCard>
 
@@ -727,14 +727,14 @@ export function VerificationForm({
             autoComplete="street-address"
             onChange={(event) => handleAddressChange(event.target.value)}
             placeholder="e.g. Bazaar Plaza, 2nd floor, shop B12"
-            className="mt-1.5 h-12 w-full rounded-xl border border-border bg-app px-3.5 text-main outline-none transition-colors placeholder:text-[15px] focus:border-[#1D9BF0]"
+            className="mt-1.5 h-11 w-full rounded-lg border border-border bg-app px-3 text-[14px] text-main outline-none transition-colors placeholder:text-[14px] focus:border-[#1D9BF0]"
           />
         </div>
 
         <LocationPickerDrawer open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handlePicked} />
       </StepCard>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-elevated p-4">
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-elevated p-3">
         <input
           type="checkbox"
           checked={confirmed}
@@ -758,7 +758,7 @@ export function VerificationForm({
         <button
           type="submit"
           disabled={!complete || !confirmed || submitting}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[15px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-45 md:h-11 md:w-auto md:self-start md:px-8"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-45 md:w-auto md:self-start md:px-7"
         >
           {submitting ? <InterlockingBalls size={16} /> : null}
           {submitting ? "Submitting…" : status === "REJECTED" || status === "REVOKED" ? "Resubmit for review" : "Submit for review"}

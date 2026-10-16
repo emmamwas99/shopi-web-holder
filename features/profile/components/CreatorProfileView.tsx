@@ -15,7 +15,6 @@ import {
   Copy,
   ExternalLink,
   Search,
-  ShieldCheck,
   SlidersHorizontal,
   X,
   Video,
@@ -44,6 +43,7 @@ import { profileHref } from "@/lib/profile-url";
 import { toast } from "sonner";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { VerifiedButton } from "@/components/verification/VerifiedExplainer";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -424,7 +424,10 @@ export function CreatorProfileView({
                     {displayName}
                   </h1>
                   {user.isVerified ? (
-                    <VerifiedButton lang={lang} sellerName={displayName} tickSize={18} />
+                    <>
+                      <VerifiedButton lang={lang} sellerName={displayName} tickSize={18} />
+                      <VerifiedIdBadge />
+                    </>
                   ) : null}
                 </div>
                 {user.username ? (
@@ -432,15 +435,6 @@ export function CreatorProfileView({
                     @{user.username}
                   </p>
                 ) : null}
-                {/* The shop page is where a buyer decides whether to trust a
-                    stranger, so the tick says what it stands for here. */}
-                {user.isVerified ? (
-                  <p className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[#0F6FB8] dark:text-[#6CC3FF]">
-                    <ShieldCheck size={13} strokeWidth={2.2} aria-hidden />
-                    Verified shop · permit, shop and location checked
-                  </p>
-                ) : null}
-
                 <div className="mt-4 flex items-center gap-6">
                   <ProfileStat
                     label="Followers"

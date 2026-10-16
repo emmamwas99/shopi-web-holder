@@ -65,7 +65,7 @@ export function VerificationScreen({ lang, embedded = false }: { lang: string; e
 
       <div
         className={cn(
-          "mx-auto w-full max-w-[640px] px-4 pt-5 md:px-6 md:pt-8",
+          "mx-auto w-full max-w-lg px-4 pt-4 md:px-6 md:pt-6",
           embedded ? "pb-10" : "pb-[calc(var(--safe-bottom,0px)+2.5rem)]",
         )}
       >

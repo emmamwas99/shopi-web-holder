@@ -100,21 +100,21 @@ export function VerificationPending({ verification }: { verification: MyShopVeri
   return (
     <div className="flex flex-col">
       <div className="flex flex-col items-center text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
-          <Hourglass size={28} strokeWidth={1.8} aria-hidden />
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+          <Hourglass size={23} strokeWidth={1.8} aria-hidden />
         </span>
-        <h2 className="mt-4 text-[20px] font-bold leading-7 tracking-[-0.01em] text-main">
+        <h2 className="mt-3 text-[18px] font-bold leading-6 tracking-[-0.01em] text-main">
           We&rsquo;re reviewing your shop
         </h2>
-        <p className="mt-1.5 max-w-[24rem] text-[14px] leading-5 text-muted">
+        <p className="mt-1 max-w-[24rem] text-[13px] leading-[1.35rem] text-muted">
           We check every permit, shop photo and location by hand. You&rsquo;ll get a notification as soon as
           we&rsquo;re done.
         </p>
       </div>
 
-      <ol className="mt-7 rounded-2xl border border-border bg-elevated px-4 py-1">
+      <ol className="mt-5 rounded-xl border border-border bg-elevated px-3 py-0.5">
         {steps.map((step) => (
-          <li key={step.label} className="flex items-center gap-3 border-b border-border py-3 last:border-b-0">
+          <li key={step.label} className="flex items-center gap-2.5 border-b border-border py-2.5 last:border-b-0">
             <span
               className={cn(
                 "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
@@ -127,7 +127,7 @@ export function VerificationPending({ verification }: { verification: MyShopVeri
               {step.state === "done" ? <Check size={13} strokeWidth={3} /> : null}
               {step.state === "current" ? <span className="h-2 w-2 rounded-full bg-amber-500" /> : null}
             </span>
-            <span className={cn("min-w-0 flex-1 text-[14px] leading-5", step.state === "next" ? "text-muted" : "text-main")}>
+            <span className={cn("min-w-0 flex-1 text-[13px] leading-5", step.state === "next" ? "text-muted" : "text-main")}>
               {step.label}
             </span>
             <span className="shrink-0 text-[12px] text-muted">{step.meta}</span>
@@ -135,11 +135,11 @@ export function VerificationPending({ verification }: { verification: MyShopVeri
         ))}
       </ol>
 
-      <section className="mt-6" aria-labelledby="sent-details">
-        <h3 id="sent-details" className="text-[15px] font-semibold text-main">
+      <section className="mt-5" aria-labelledby="sent-details">
+        <h3 id="sent-details" className="text-[14px] font-semibold text-main">
           What you sent
         </h3>
-        <dl className="mt-2 rounded-2xl border border-border bg-elevated px-4">
+        <dl className="mt-2 rounded-xl border border-border bg-elevated px-3">
           <SummaryRow label="Business name">{application.businessName}</SummaryRow>
           <SummaryRow label="Shop location">
             {placeText(application.location)}
@@ -157,7 +157,7 @@ export function VerificationPending({ verification }: { verification: MyShopVeri
       <button
         type="button"
         onClick={() => setConfirmOpen(true)}
-        className="mt-5 self-center text-[14px] font-semibold text-main underline-offset-4 hover:underline"
+        className="mt-4 self-center text-[13px] font-semibold text-main underline-offset-4 hover:underline"
       >
         Need to change something?
       </button>
@@ -215,21 +215,21 @@ export function VerificationApproved({ lang, verification }: { lang: string; ver
   return (
     <div className="flex flex-col">
       <div className="flex flex-col items-center text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1D9BF0]/10">
-          <VerifiedTick size={36} label={null} />
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1D9BF0]/10">
+          <VerifiedTick size={28} label={null} />
         </span>
-        <h2 className="mt-4 text-[20px] font-bold leading-7 tracking-[-0.01em] text-main">Your shop is verified</h2>
-        <p className="mt-1.5 text-[14px] leading-5 text-muted">
+        <h2 className="mt-3 text-[18px] font-bold leading-6 tracking-[-0.01em] text-main">Your shop is verified</h2>
+        <p className="mt-1 text-[13px] leading-[1.35rem] text-muted">
           {since ? `Verified since ${since}` : "Buyers see your blue tick across Shopi."}
         </p>
       </div>
 
-      <section className="mt-7" aria-labelledby="buyers-see">
-        <h3 id="buyers-see" className="text-[15px] font-semibold text-main">
+      <section className="mt-5" aria-labelledby="buyers-see">
+        <h3 id="buyers-see" className="text-[14px] font-semibold text-main">
           What buyers see
         </h3>
         {/* A miniature of a real feed card, built from the seller's own profile. */}
-        <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-elevated" aria-hidden>
+        <div className="mt-2 overflow-hidden rounded-xl border border-border bg-elevated" aria-hidden>
           <div className="flex items-center gap-2.5 px-4 py-3">
             <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-subtle">
               {avatar ? (
@@ -259,28 +259,28 @@ export function VerificationApproved({ lang, verification }: { lang: string; ver
         </div>
       </section>
 
-      <section className="mt-6" aria-labelledby="your-benefits">
-        <h3 id="your-benefits" className="text-[15px] font-semibold text-main">
+      <section className="mt-5" aria-labelledby="your-benefits">
+        <h3 id="your-benefits" className="text-[14px] font-semibold text-main">
           Your benefits
         </h3>
-        <ul className="mt-2 rounded-2xl border border-border bg-elevated px-4 py-1">
+        <ul className="mt-2 rounded-xl border border-border bg-elevated px-3 py-0.5">
           {BENEFITS.map(({ title }) => (
-            <li key={title} className="flex items-center gap-3 border-b border-border py-3 last:border-b-0">
+            <li key={title} className="flex items-center gap-2.5 border-b border-border py-2.5 last:border-b-0">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1D9BF0] text-white" aria-hidden>
                 <Check size={12} strokeWidth={3} />
               </span>
-              <span className="text-[14px] leading-5 text-main">{title}</span>
+              <span className="text-[13px] leading-5 text-main">{title}</span>
             </li>
           ))}
         </ul>
       </section>
 
       {application?.businessName || application?.location ? (
-        <section className="mt-6" aria-labelledby="verified-details">
-          <h3 id="verified-details" className="text-[15px] font-semibold text-main">
+        <section className="mt-5" aria-labelledby="verified-details">
+          <h3 id="verified-details" className="text-[14px] font-semibold text-main">
             Verified details
           </h3>
-          <dl className="mt-2 rounded-2xl border border-border bg-elevated px-4">
+          <dl className="mt-2 rounded-xl border border-border bg-elevated px-3">
             {application?.businessName ? <SummaryRow label="Business name">{application.businessName}</SummaryRow> : null}
             {application?.location ? (
               <SummaryRow label="Shop location">
@@ -301,7 +301,7 @@ export function VerificationApproved({ lang, verification }: { lang: string; ver
 
       <Link
         href={`/${lang}${TEAM_THREAD_PATH}`}
-        className="mt-6 flex items-center gap-3 rounded-2xl bg-subtle px-4 py-3.5 text-[13px] leading-5 text-main transition-opacity active:opacity-70"
+        className="mt-5 flex items-center gap-2.5 rounded-xl bg-subtle px-3 py-3 text-[12px] leading-[1.1rem] text-main transition-opacity active:opacity-70"
       >
         <MessageCircleQuestionMark size={18} strokeWidth={1.9} className="shrink-0" aria-hidden />
         <span>

@@ -9,7 +9,6 @@ import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { contentPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
 import { cn } from "@/lib/utils";
-import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
@@ -120,10 +119,6 @@ function getThumb(post: ContentCardFieldsFragment): string | null {
 }
 
 /** The blue tick the feed card and profiles use, sized for a 12px line. */
-function VerifiedMark() {
-  return <VerifiedTick size={12} label="Verified shop" />;
-}
-
 function DiscoverGridCardImpl({
   post,
   lang,
@@ -288,16 +283,16 @@ function DiscoverGridCardImpl({
             </span>
           ) : null}
 
-          {/* Every listing from a verified shop carries Verified ID. The
-              bottom-left corner is the one the tile leaves free. */}
+          {/* Every listing from a verified shop carries Verified ID in the
+              bottom-right corner of its media. */}
           {post.creator?.isVerified ? (
-            <VerifiedIdBadge variant="overlay" className="pointer-events-none absolute bottom-2 left-2" />
+            <VerifiedIdBadge variant="overlay" className="pointer-events-none absolute bottom-2 right-2" />
           ) : null}
 
           {/* What kind of media this is, because it changes what tapping the
               tile opens. */}
           {isVideo || photoCount > 1 ? (
-            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white tabular-nums">
+            <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white tabular-nums">
               {isVideo ? (
                 <>
                   <Play
@@ -374,7 +369,6 @@ function DiscoverGridCardImpl({
             <span className="sr-only">Sold by </span>
             {seller}
           </span>
-          {creator.isVerified ? <VerifiedMark /> : null}
         </Link>
       ) : null}
     </div>
