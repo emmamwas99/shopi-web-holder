@@ -14,6 +14,7 @@ import {
 } from "@/types/__generated__/graphql";
 import { useCreateStore } from "@/stores/create";
 import { trackPostPublished } from "@/lib/analytics";
+import { CreateErrorDialog, createErrorMessage } from "@/features/create/components/CreateErrorDialog";
 
 interface Props {
   lang: string;
@@ -48,6 +49,7 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
   const [discardDraft] = useMutation(DiscardDraftDocument);
 
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const drafts = (data?.myDrafts ?? []) as DraftFieldsFragment[];
 
@@ -81,7 +83,7 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
       toast.success("Posted! It’ll show on the feed once it’s approved.");
       await refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not publish");
+      setPublishError(createErrorMessage(err));
     } finally {
       setBusyId(null);
     }
@@ -331,6 +333,11 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
           })}
         </div>
       </div>
+      <CreateErrorDialog
+        message={publishError}
+        title="Couldn’t publish your draft"
+        onClose={() => setPublishError(null)}
+      />
     </section>
   );
 }
