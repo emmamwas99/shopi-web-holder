@@ -65,6 +65,23 @@ const feedFieldPolicy = {
   },
 };
 
+/**
+ * Query context for looking up ONE listing (its page, video viewer and share
+ * image): an hour, not the daily default.
+ *
+ * New posts wait for admin review (the API's NEW_POSTS_REQUIRE_REVIEW), and
+ * until approved the lookup answers NOT_FOUND. That answer is cached like any
+ * other, so a link opened before approval — the seller sharing it on WhatsApp,
+ * whose preview bot fetches it at once — keeps answering 404 after approval
+ * until the cache expires. An hour bounds that; the daily default would leave
+ * a freshly approved listing unreachable for up to a day.
+ *
+ *   query({ query: Doc, variables, context: SINGLE_LISTING_CACHE })
+ */
+export const SINGLE_LISTING_CACHE = {
+  fetchOptions: { next: { revalidate: 3600 } },
+};
+
 // Used by Server Components via getClient() / query() / PreloadQuery
 // Each request gets a fresh client instance (registerApolloClient handles this)
 export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
@@ -87,14 +104,16 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
     link: new HttpLink({
       uri: GRAPHQL_URL,
       fetchOptions: {
-        // Default: hourly, matching the `revalidate` the ISR pages declare.
+        // Default: daily, matching the `revalidate` the ISR pages declare.
         // The shortest fetch revalidate in a route sets how often the WHOLE
-        // route regenerates, so this default used to be the real interval:
-        // at 30s, every "hourly" listing, profile and SEO landing page was
-        // rebuilt every 30 seconds, burning Vercel ISR writes and function
-        // invocations for no visible gain. Pages needing fresher data opt in:
+        // route regenerates, so this default is the real interval: at 30s,
+        // every listing, profile and SEO landing page was rebuilt every 30
+        // seconds, burning Vercel ISR writes and function invocations for no
+        // visible gain. Listings are posted a few dozen times a day, so daily
+        // is fresh enough for lists and landing pages. Pages needing fresher
+        // data opt in, e.g. SINGLE_LISTING_CACHE below, or:
         // query(MY_QUERY, { context: { fetchOptions: { next: { revalidate: 30 } } } })
-        next: { revalidate: 3600 },
+        next: { revalidate: 86400 },
       },
     }),
   });

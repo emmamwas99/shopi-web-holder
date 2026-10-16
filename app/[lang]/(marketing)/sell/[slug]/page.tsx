@@ -26,7 +26,7 @@ import { searchIntentPath } from "@/lib/seo/search-intent-pages";
 type Props = { params: Promise<{ lang: string; slug: string }> };
 type SellCarPageData = NonNullable<ReturnType<typeof getSellCarPage>>;
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export function generateStaticParams() {
   return locales.flatMap((lang) =>

@@ -2,11 +2,15 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
+import { fetchBrowseCards } from "@/features/discover/queries/browse.server";
 import { publicPageMetadata } from "@/lib/metadata";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DiscoverGridSkeleton } from "@/features/discover/components/DiscoverGridCard";
 
-type Props = { params: Promise<{ lang: string }> };
+type Props = {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
@@ -18,15 +22,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default async function ExplorePage({ params }: Props) {
-  const { lang } = await params;
+export default async function ExplorePage({ params, searchParams }: Props) {
+  const [{ lang }, query] = await Promise.all([params, searchParams]);
+  // The unfiltered view — the canonical /explore — gets its first page of
+  // cards from the server, so its HTML links to real listings instead of
+  // shipping a skeleton. Filtered deep links (?q=, ?category=) keep the
+  // skeleton: unfiltered cards under a filtered heading would be wrong.
+  const initialPosts =
+    Object.keys(query).length === 0 ? await fetchBrowseCards() : undefined;
   // Suspense boundary: DiscoverPage reads useSearchParams() (?category= deep
   // links), which requires one during prerender. Keep the fallback shaped like
   // the interactive Explore UI so users don't see the crawl hub flash before
   // hydration replaces it.
   return (
     <Suspense fallback={<ExploreSkeleton />}>
-      <DiscoverPage lang={lang} />
+      <DiscoverPage lang={lang} initialPosts={initialPosts} />
     </Suspense>
   );
 }

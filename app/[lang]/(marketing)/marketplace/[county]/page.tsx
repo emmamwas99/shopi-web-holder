@@ -9,6 +9,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale, locales } from "@/i18n/config";
 import { COUNTIES, getCounty } from "@/lib/counties";
 import { contentPath } from "@/lib/content-url";
+import { listingPriceText } from "@/lib/format";
 import { publicPageMetadata } from "@/lib/metadata";
 import { fetchRecentListings } from "@/features/discover/queries/recentListings";
 import {
@@ -22,8 +23,8 @@ import {
 type Props = { params: Promise<{ lang: string; county: string }> };
 
 // Counties gain and lose listings continuously, but the page's value is its
-// copy and links, not live inventory — revalidate hourly rather than per hit.
-export const revalidate = 3600;
+// copy and links, not live inventory — revalidate daily rather than per hit.
+export const revalidate = 86400;
 
 export function generateStaticParams() {
   return locales.flatMap((lang) =>
@@ -151,11 +152,7 @@ export default async function CountyPage({ params }: Props) {
               </h2>
               <ul className="flex flex-col gap-2">
                 {listings.map((listing) => {
-                  const price = listing.price
-                    ? listing.price.amount === 0
-                      ? "Free"
-                      : `${listing.price.currency} ${listing.price.amount.toLocaleString()}`
-                    : null;
+                  const price = listingPriceText(listing.price);
                   const place = listing.location?.placeName;
                   const detail = [price, place].filter(Boolean).join(" · ");
                   return (

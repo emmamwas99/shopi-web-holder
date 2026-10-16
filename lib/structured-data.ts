@@ -317,9 +317,13 @@ export function productSchema(input: {
   category?: string | null;
   specs?: { key?: string | null; value?: string | null }[];
 }) {
-  // A free item is still an offer — the previous `> 0` test dropped the Offer
-  // entirely for them, leaving a Product with no price signal at all.
-  const hasPrice = typeof input.price === "number" && input.price >= 0;
+  // Only a stated price is an offer. An amount of 0 means the seller left the
+  // price blank, not that the item is free (see listingPriceText in
+  // lib/format.ts), and `price: 0` told engines every such listing — used
+  // phones, paid services — was being given away. Without an Offer, Search
+  // Console lists these few listings as ineligible for product snippets; that
+  // is the honest outcome, so don't "fix" it by putting a price back.
+  const hasPrice = typeof input.price === "number" && input.price > 0;
 
   const normalizedSpecs = new Map(
     (input.specs ?? [])
@@ -500,6 +504,8 @@ export function videoObjectSchema(input: {
   description: string;
   thumbnailUrl: string;
   uploadDate: string;
+  /** The video file itself (the Mux HLS stream), for engines to fetch. */
+  contentUrl?: string | null;
   durationSeconds?: number | null;
   creatorName?: string | null;
   creatorUrl?: string | null;
@@ -519,7 +525,10 @@ export function videoObjectSchema(input: {
     description: input.description,
     thumbnailUrl: [input.thumbnailUrl],
     uploadDate: input.uploadDate,
-    embedUrl: input.url,
+    // contentUrl, not embedUrl: embedUrl means a bare player (an iframe src),
+    // and pointing it at the listing page itself described the watch page as
+    // its own player. The stream is the file engines can actually fetch.
+    ...(input.contentUrl ? { contentUrl: input.contentUrl } : {}),
     mainEntityOfPage: { "@id": `${input.url}#webpage` },
     about: { "@id": `${input.url}#product` },
     publisher: { "@id": `${url}/#organization` },

@@ -37,7 +37,7 @@ export default async function sellerSitemap(): Promise<MetadataRoute.Sitemap> {
           `,
           variables: { input: { limit: PAGE_SIZE, sort: "RECENT", after } },
         }),
-        next: { revalidate: 3600 },
+        next: { revalidate: 86400 },
       });
       if (!res.ok) break;
 

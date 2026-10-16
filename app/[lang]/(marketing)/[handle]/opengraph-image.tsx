@@ -7,7 +7,7 @@ import { ogImageDataUri, ogJpegResponse } from "@/lib/og-image";
 
 // Node runtime so we can reuse the Apollo `query` helper to fetch the profile.
 export const runtime = "nodejs";
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const alt = "Shopi seller profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/jpeg";

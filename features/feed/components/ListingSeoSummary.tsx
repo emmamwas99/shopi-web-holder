@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { profileHref } from "@/lib/profile-url";
+import { listingPriceText } from "@/lib/format";
+import { slugifyContentTitle } from "@/lib/content-url";
 
 type SummaryPost = ContentCardFieldsFragment & {
   slug?: string | null;
@@ -31,16 +33,17 @@ type SummaryPost = ContentCardFieldsFragment & {
 export function ListingSeoSummary({
   post,
   lang,
+  categoryTrail = [],
 }: {
   post: SummaryPost;
   lang: string;
+  /** Taxonomy path, top level first — linked like the desktop breadcrumb. */
+  categoryTrail?: Array<{ name: string; slug: string }>;
 }) {
-  const price =
-    post.price && post.price.amount > 0
-      ? `${post.price.currency} ${post.price.amount.toLocaleString()}`
-      : post.price
-        ? "Free"
-        : null;
+  // Matches the interactive layouts: an amount of 0 is an unstated price.
+  const price = post.price
+    ? (listingPriceText(post.price) ?? "Price on request")
+    : null;
 
   const location =
     [post.location?.placeName, post.location?.county]
@@ -115,8 +118,32 @@ export function ListingSeoSummary({
           >
             Listing details
           </h2>
-          {category && (
-            <p className="mt-2 text-sm text-muted">Category: {category}</p>
+          {/* Linked when the taxonomy trail is known: these are the crawl
+              paths into the category pages, and the desktop breadcrumb that
+              carries the same links only renders after hydration. */}
+          {categoryTrail.length > 0 ? (
+            <p className="mt-2 text-sm text-muted">
+              Category:{" "}
+              {categoryTrail.map((item, index) => (
+                <span key={`${item.slug}-${index}`}>
+                  {index > 0 && " › "}
+                  <Link
+                    href={
+                      index === 0
+                        ? `/${lang}/explore?category=${encodeURIComponent(item.slug)}`
+                        : `/${lang}/explore/${categoryTrail[0].slug}/${slugifyContentTitle(item.name)}`
+                    }
+                    className="font-semibold text-primary"
+                  >
+                    {item.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          ) : (
+            category && (
+              <p className="mt-2 text-sm text-muted">Category: {category}</p>
+            )
           )}
           {specs.length > 0 && (
             <dl className="mt-3 grid grid-cols-2 gap-2">

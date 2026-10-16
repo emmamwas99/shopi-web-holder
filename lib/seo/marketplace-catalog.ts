@@ -134,7 +134,10 @@ function catalogItem(item: ApiListing): MarketplaceCatalogItem | null {
     title: item.title.trim(),
     description: item.caption?.trim() || null,
     category,
-    price: item.price ?? null,
+    // An amount of 0 is an unstated price, not a free item (see
+    // listingPriceText in lib/format.ts) — `{ amount: 0 }` reads as free to
+    // any agent consuming this feed.
+    price: item.price && item.price.amount > 0 ? item.price : null,
     location:
       [
         item.location?.placeName,

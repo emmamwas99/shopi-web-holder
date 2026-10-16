@@ -53,7 +53,7 @@ import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
 import { CommentThread, CommentList, useCommentThread } from "./CommentThread";
-import { fmtCompact as fmt } from "@/lib/format";
+import { fmtCompact as fmt, listingPriceText } from "@/lib/format";
 import { avatarGradient as avatarColors } from "@/lib/avatar";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { VideoProgressBar } from "./VideoProgressBar";
@@ -1230,9 +1230,7 @@ export function ContentDetail({
             className="text-xl font-bold"
             style={{ color: "rgb(var(--brand-primary))" }}
           >
-            {post.price.amount === 0
-              ? "Free"
-              : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+            {listingPriceText(post.price) ?? "Price on request"}
           </span>
           {post.price.negotiable && (
             <span className="text-xs text-muted-foreground font-normal ml-2">
@@ -1466,7 +1464,11 @@ export function ContentDetail({
           resolves. */}
       {isDesktop === null && initialPost && (
         <>
-          <ListingSeoSummary post={post} lang={lang} />
+          <ListingSeoSummary
+            post={post}
+            lang={lang}
+            categoryTrail={categoryTrail}
+          />
           {related}
         </>
       )}
@@ -1820,7 +1822,7 @@ export function ContentDetail({
                   {post.price && (
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <span className="font-display text-3xl font-extrabold tracking-tight text-primary">
-                        {post.price.amount === 0 ? "Free" : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                        {listingPriceText(post.price) ?? "Price on request"}
                       </span>
                       {post.price.negotiable && (
                         <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Negotiable</span>

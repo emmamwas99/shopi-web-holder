@@ -11,6 +11,7 @@ import { siteConfig } from "@/config/site";
 import { fetchRecentListings } from "@/features/discover/queries/recentListings";
 import { isValidLocale, locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
+import { listingPriceText } from "@/lib/format";
 import { publicPageMetadata } from "@/lib/metadata";
 import {
   breadcrumbSchema,
@@ -32,7 +33,7 @@ type SearchIntentPageData = NonNullable<
   ReturnType<typeof getSearchIntentPage>
 >;
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export function generateStaticParams() {
   return locales.flatMap((lang) =>
@@ -64,9 +65,7 @@ function pageDescription(page: SearchIntentPageData) {
 function priceLabel(listing: {
   price?: { amount: number; currency: string } | null;
 }) {
-  if (!listing.price) return null;
-  if (listing.price.amount === 0) return "Free";
-  return `${listing.price.currency} ${listing.price.amount.toLocaleString()}`;
+  return listingPriceText(listing.price);
 }
 
 function placeLabel(listing: {

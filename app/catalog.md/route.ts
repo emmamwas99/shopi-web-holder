@@ -27,7 +27,7 @@ export async function GET(): Promise<Response> {
   if (featuredSellers.length > 0) {
     lines.push("## Featured sellers", "");
     lines.push(
-      "Sellers featured on the Shopi homepage by the Shopi team. Counts are live public listings at generation time.",
+      "Sellers selected by the Shopi team. Counts are live public listings at generation time.",
       "",
     );
     for (const seller of featuredSellers) {
@@ -56,7 +56,7 @@ export async function GET(): Promise<Response> {
     lines.push(`## [${oneLine(item.title)}](${item.url})`, "");
     if (item.price) {
       lines.push(
-        `- Price: ${item.price.amount === 0 ? "Free" : `${item.price.currency} ${item.price.amount.toLocaleString("en-KE")}`}${item.price.negotiable ? " (negotiable)" : ""}`,
+        `- Price: ${item.price.currency} ${item.price.amount.toLocaleString("en-KE")}${item.price.negotiable ? " (negotiable)" : ""}`,
       );
     }
     if (item.location) lines.push(`- Location: ${oneLine(item.location)}`);

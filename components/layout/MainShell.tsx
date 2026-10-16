@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
-import { Suspense } from "react";
+import { Suspense, useLayoutEffect, useState } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { hasDesktopSideNav } from "@/components/layout/SideNav";
@@ -31,6 +31,16 @@ export function MainShell({
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.replace(/\/$/, "") === `/${lang}/profile`;
   const isProfileRoot = pathname.replace(/\/$/, "") === `/${lang}/profile`;
+  // Only the desktop sidebar's padding depends on the query string (a
+  // `?category=` filter on Explore/Search). Reading it takes useSearchParams,
+  // which needs a Suspense boundary on the statically prerendered routes, so
+  // the reader sits in a boundary of its own and reports up. Wrapping the page
+  // itself in that boundary — with the page as the fallback, so prerendered
+  // HTML kept its content — made React stream every app page twice: once as
+  // the fallback and once in a hidden segment, i.e. two H1s and two copies of
+  // every JSON-LD block in the HTML crawlers read.
+  const [hasCategoryParam, setHasCategoryParam] = useState(false);
+  const showSideNav = hasDesktopSideNav(pathname, lang, hasCategoryParam);
 
   usePreloadInbox();
 
@@ -56,11 +66,12 @@ export function MainShell({
               : "pb-[calc(var(--nav-height,0)+var(--safe-bottom,0))] md:pb-0"
           }`}
         >
-          <Suspense fallback={<div>{children}</div>}>
-            <SearchAwareMainContent pathname={pathname} lang={lang}>
-              {children}
-            </SearchAwareMainContent>
+          <Suspense fallback={null}>
+            <CategoryParamWatcher onChange={setHasCategoryParam} />
           </Suspense>
+          <div className={showSideNav ? "desktop-app-frame--with-sidebar" : undefined}>
+            {children}
+          </div>
         </main>
       </div>
 
@@ -74,25 +85,17 @@ export function MainShell({
   );
 }
 
-function SearchAwareMainContent({
-  children,
-  pathname,
-  lang,
+// Layout effect so the padding lands in the same frame as a client-side
+// category change. A direct load of /explore?category=… gets it at hydration,
+// together with the desktop SideNav itself, which also renders client-side.
+function CategoryParamWatcher({
+  onChange,
 }: {
-  children: ReactNode;
-  pathname: string;
-  lang: string;
+  onChange: (hasCategory: boolean) => void;
 }) {
-  const searchParams = useSearchParams();
-  const showSideNav = hasDesktopSideNav(
-    pathname,
-    lang,
-    Boolean(searchParams.get("category")),
-  );
-
-  return (
-    <div className={showSideNav ? "desktop-app-frame--with-sidebar" : undefined}>
-      {children}
-    </div>
-  );
+  const hasCategory = Boolean(useSearchParams().get("category"));
+  useLayoutEffect(() => {
+    onChange(hasCategory);
+  }, [hasCategory, onChange]);
+  return null;
 }

@@ -52,9 +52,10 @@ interface Props {
   params: Promise<{ lang: string; handle: string }>;
 }
 
-// Profiles change (new posts, follower counts) — revalidate hourly so shared
-// links and crawled metadata stay reasonably fresh.
-export const revalidate = 3600;
+// Profiles change (new posts, follower counts), but slowly — a few dozen
+// listings a day across the site — so daily keeps shared links and crawled
+// metadata fresh enough without hourly rebuilds.
+export const revalidate = 86400;
 
 type Profile = ProfileUserFieldsFragment;
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { ImmersiveVideoViewer } from "@/features/feed/components/immersive/ImmersiveVideoViewer";
-import { query } from "@/lib/apollo/ApolloClient";
+import { SINGLE_LISTING_CACHE, query } from "@/lib/apollo/ApolloClient";
 import {
   GetContentDocument,
   type ContentCardFieldsFragment,
@@ -37,6 +37,7 @@ async function getPost(
     const { data } = await query({
       query: GetContentDocument,
       variables: { id: idOrSlug },
+      context: SINGLE_LISTING_CACHE,
     });
     return (data?.content as ContentCardFieldsFragment | undefined) ?? null;
   } catch {

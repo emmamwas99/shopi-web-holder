@@ -7,6 +7,7 @@ import {
 } from "@/features/discover/queries/recentListings";
 import { siteConfig } from "@/config/site";
 import { COUNTIES } from "@/lib/counties";
+import { listingPriceText } from "@/lib/format";
 import { listingItemListSchema, jsonLd } from "@/lib/structured-data";
 import {
   searchIntentPath,
@@ -27,9 +28,7 @@ import {
  * and users get meaningful content for the frame before hydration.
  */
 function priceLabel(listing: RecentListing): string | null {
-  if (!listing.price) return null;
-  if (listing.price.amount === 0) return "Free";
-  return `${listing.price.currency} ${listing.price.amount.toLocaleString()}`;
+  return listingPriceText(listing.price);
 }
 
 function placeLabel(listing: RecentListing): string | null {
