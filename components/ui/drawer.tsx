@@ -28,7 +28,7 @@ const DrawerOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-[70] bg-black/80", className)}
+    className={cn("fixed inset-0 z-[70] bg-black/50", className)}
     {...props}
   />
 ));
@@ -43,12 +43,14 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-[80] mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-[80] mt-24 flex h-auto flex-col rounded-t-[16px] border bg-background",
         className,
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      {/* The platform grabber: small and light. It was a 100×8 bar in body-
+          text grey, the heaviest thing on most sheets. */}
+      <div className="mx-auto mt-2.5 h-[5px] w-9 shrink-0 rounded-full bg-black/15 dark:bg-white/25" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

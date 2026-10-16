@@ -19,16 +19,23 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  Plus,
   Search,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
@@ -545,24 +552,43 @@ function formatResultCount(count: number): string {
 const SORT_OPTIONS: Array<{
   value: DiscoverySort;
   label: string;
-  hint: string;
 }> = [
-  {
-    value: "RELEVANCE",
-    label: "Best match",
-    hint: "Top posts for what you want",
-  },
-  { value: "NEWEST", label: "Newest first", hint: "Fresh listings first" },
-  { value: "PRICE_LOW_TO_HIGH", label: "Lowest price", hint: "Cheapest first" },
-  {
-    value: "PRICE_HIGH_TO_LOW",
-    label: "Highest price",
-    hint: "Premium picks first",
-  },
+  { value: "RELEVANCE", label: "Best match" },
+  { value: "NEWEST", label: "Newest first" },
+  { value: "PRICE_LOW_TO_HIGH", label: "Lowest price" },
+  { value: "PRICE_HIGH_TO_LOW", label: "Highest price" },
 ];
 
 function isDiscoverySort(value: string | null): value is DiscoverySort {
   return SORT_OPTIONS.some((option) => option.value === value);
+}
+
+/**
+ * The default order is "Best match" only when there is a search to match;
+ * without one it is our pick, and calling it a match reads as a bug.
+ */
+function sortLabel(sort: DiscoverySort, hasQuery: boolean): string {
+  if (sort === "RELEVANCE") return hasQuery ? "Best match" : "Recommended";
+  return (
+    SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "Recommended"
+  );
+}
+
+/** The price chip says what it is set to: "KSh 5K–20K", "KSh 5K+", "Under KSh 20K". */
+function priceChipLabel(minPrice: string, maxPrice: string): string {
+  const format = (value: number) =>
+    new Intl.NumberFormat("en-KE", {
+      notation: value >= 10_000 ? "compact" : "standard",
+      maximumFractionDigits: 1,
+    }).format(value);
+  const min = minPrice.trim() ? Number(minPrice) : NaN;
+  const max = maxPrice.trim() ? Number(maxPrice) : NaN;
+  const hasMin = Number.isFinite(min);
+  const hasMax = Number.isFinite(max);
+  if (hasMin && hasMax) return `KSh ${format(min)}–${format(max)}`;
+  if (hasMin) return `KSh ${format(min)}+`;
+  if (hasMax) return `Under KSh ${format(max)}`;
+  return "Price";
 }
 
 function isDiscoverContentType(
@@ -573,28 +599,149 @@ function isDiscoverContentType(
 
 function DiscoverFeedSkeleton() {
   return (
-    <div className="px-4 pb-8 pt-3 lg:px-0">
-      <div className="mb-4 border-t border-border/60" />
+    <div className="px-4 pb-8 lg:px-0">
       <DiscoverGridSkeleton />
     </div>
   );
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function EmptyState({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: { label: string; onClick: () => void };
+}) {
   return (
-    <div className="px-6 py-16 text-center">
-      <div
-        className="mx-auto flex h-14 w-14 items-center justify-center rounded-full"
-        style={{
-          backgroundColor: "rgb(var(--brand-primary) / 0.12)",
-          color: "rgb(var(--brand-primary))",
-        }}
-      >
-        <Search size={22} />
+    <div className="px-8 pb-16 pt-12 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-subtle text-muted">
+        <Search size={22} aria-hidden />
       </div>
-      <h2 className="mt-4 text-base font-semibold text-default">{title}</h2>
-      <p className="app-subcopy mx-auto mt-2 max-w-sm">{body}</p>
+      <h2 className="mt-4 text-[16px] font-semibold leading-6 text-main">
+        {title}
+      </h2>
+      <p className="mx-auto mt-1 max-w-xs text-[13px] leading-5 text-muted">
+        {body}
+      </p>
+      {action ? (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="mt-5 inline-flex h-10 items-center rounded-full border border-default px-5 text-[14px] font-semibold text-main transition-colors active:bg-subtle"
+        >
+          {action.label}
+        </button>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * The line between the controls and the grid: what is being shown, how many
+ * there are once something narrows it, and how they are ordered.
+ *
+ * A category page never said which category it was — the search box above it
+ * reads the same everywhere — so this is also the page's title.
+ */
+function ResultsHeader({
+  title,
+  subtitle,
+  subtitleLoading,
+  sortControl,
+}: {
+  title: string;
+  subtitle: string | null;
+  /** Hold the subtitle's line while the count loads, so the grid doesn't jump. */
+  subtitleLoading: boolean;
+  sortControl: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-4 lg:px-0 lg:pt-2">
+      <div className="min-w-0">
+        <h1 className="truncate text-[15px] font-semibold leading-5 text-main md:text-[17px] md:leading-6">
+          {title}
+        </h1>
+        {subtitle ? (
+          <p className="truncate text-[12px] leading-4 text-muted tabular-nums md:text-[13px] md:leading-5">
+            {subtitle}
+          </p>
+        ) : subtitleLoading ? (
+          <div className="flex h-4 items-center md:h-5" aria-hidden>
+            <span className="h-2.5 w-16 animate-pulse rounded-full bg-subtle" />
+          </div>
+        ) : null}
+      </div>
+      {sortControl}
+    </div>
+  );
+}
+
+const SORT_TRIGGER_CLASS =
+  "-mr-2 flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2 text-[13px] font-medium transition-colors active:bg-subtle hover:bg-subtle";
+
+/** The quick filters under the search bar on a category page. */
+const FILTER_CHIP_CLASS =
+  "flex h-8 flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] font-medium transition-colors";
+const FILTER_CHIP_OFF = "border-default bg-app text-main active:bg-subtle";
+const FILTER_CHIP_ON = "border-primary bg-primary/5 text-primary";
+
+/** Sort on desktop: a menu under the button rather than a sheet from below. */
+function SortMenu({
+  sort,
+  hasQuery,
+  onSelect,
+}: {
+  sort: DiscoverySort;
+  hasQuery: boolean;
+  onSelect: (sort: DiscoverySort) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            SORT_TRIGGER_CLASS,
+            sort !== "RELEVANCE" ? "text-primary" : "text-main",
+          )}
+        >
+          <ArrowUpDown size={14} aria-hidden />
+          {sortLabel(sort, hasQuery)}
+          <ChevronDown size={14} className="text-muted" aria-hidden />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-56 rounded-xl border-default bg-elevated p-1.5 text-main shadow-lg"
+      >
+        <div role="radiogroup" aria-label="Sort by">
+          {SORT_OPTIONS.map((option) => {
+            const active = sort === option.value;
+            return (
+              <PopoverClose asChild key={option.value}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => onSelect(option.value)}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-[14px] transition-colors hover:bg-subtle",
+                    active ? "font-semibold text-primary" : "text-main",
+                  )}
+                >
+                  {option.value === "RELEVANCE"
+                    ? sortLabel("RELEVANCE", hasQuery)
+                    : option.label}
+                  {active ? <Check size={16} aria-hidden /> : null}
+                </button>
+              </PopoverClose>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -882,31 +1029,36 @@ function LocationStepFooter({
   );
 }
 
-function SortOption({
+/** A row in the category sheet: the name, how many listings, a chevron. */
+function CategoryDrawerRow({
   label,
-  hint,
-  active,
+  count,
   onClick,
+  emphasis = false,
 }: {
   label: string;
-  hint: string;
-  active: boolean;
+  count: number;
   onClick: () => void;
+  emphasis?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-        active ? "border-primary bg-primary/5" : "border-default bg-app",
-      )}
+      className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors active:bg-subtle"
     >
-      <div>
-        <p className="text-sm font-medium text-default">{label}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
-      </div>
-      {active ? <Check size={18} className="text-primary" /> : null}
+      <span
+        className={cn(
+          "min-w-0 truncate text-[14px] leading-5 text-main",
+          emphasis && "font-semibold",
+        )}
+      >
+        {label}
+      </span>
+      <span className="flex shrink-0 items-center gap-1 text-[12px] text-muted tabular-nums">
+        {count.toLocaleString()}
+        <ChevronRight size={16} strokeWidth={2} aria-hidden />
+      </span>
     </button>
   );
 }
@@ -1001,6 +1153,36 @@ function FilterDrawerHeader({
   );
 }
 
+/**
+ * The top bar of a sheet opened from the page: close on the left, then the
+ * title. Filters and Sort share it, so the two sheets read as one family.
+ */
+function SheetTitleBar({
+  title,
+  closeLabel,
+  onClose,
+}: {
+  title: string;
+  closeLabel: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-2 border-b border-border bg-app px-4 py-2 text-default">
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={closeLabel}
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+      >
+        <X size={21} />
+      </button>
+      <DrawerTitle className="text-[16px] font-semibold text-default">
+        {title}
+      </DrawerTitle>
+    </div>
+  );
+}
+
 /** One field in the filter list: its name, and what it is set to. */
 function FilterFieldRow({
   label,
@@ -1008,78 +1190,54 @@ function FilterFieldRow({
   active,
   onClick,
   onClear,
-  marketplaceStyle = false,
 }: {
   label: string;
   value: string;
   active?: boolean;
   onClick: () => void;
   onClear?: () => void;
-  marketplaceStyle?: boolean;
 }) {
-  if (marketplaceStyle) {
-    return (
-      <div className="flex min-h-[62px] items-center border-b border-border px-4">
+  return (
+    <div className="flex min-h-[62px] items-center border-b border-border px-4">
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 py-2.5 text-left active:opacity-60"
+      >
+        <span className="min-w-0">
+          <span className="block text-[13px] font-medium text-default">{label}</span>
+          {value ? (
+            <span
+              className={cn(
+                "mt-0.5 block truncate text-[13px] text-primary",
+                active && "font-medium",
+              )}
+            >
+              {value}
+            </span>
+          ) : null}
+        </span>
+      </button>
+      {active && onClear ? (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label={`Clear ${label} filter`}
+          className="ml-2 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary active:bg-primary/15"
+        >
+          <X size={19} />
+        </button>
+      ) : (
         <button
           type="button"
           onClick={onClick}
-          className="flex min-w-0 flex-1 items-center justify-between gap-3 py-2.5 text-left active:opacity-60"
+          aria-label={`Open ${label} filter`}
+          className="-mr-2 ml-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted active:bg-surface"
         >
-          <span className="min-w-0">
-            <span className="block text-[13px] font-medium text-default">{label}</span>
-            {value ? (
-              <span
-                className={cn(
-                  "mt-0.5 block truncate text-[13px]",
-                  active
-                    ? "font-medium text-primary"
-                    : marketplaceStyle
-                      ? "text-primary"
-                      : "text-muted-foreground",
-                )}
-              >
-                {value}
-              </span>
-            ) : null}
-          </span>
+          <ChevronRight size={18} strokeWidth={2} />
         </button>
-        {active && onClear ? (
-          <button
-            type="button"
-            onClick={onClear}
-            aria-label={`Clear ${label} filter`}
-            className="ml-2 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary active:bg-primary/15"
-          >
-            <X size={19} />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onClick}
-            aria-label={`Open ${label} filter`}
-            className="ml-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-default active:bg-surface"
-          >
-            <Plus size={20} strokeWidth={1.7} />
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="block w-full border-b border-border py-3.5 text-left active:opacity-60"
-    >
-      <span className="block text-xs text-muted">{label}</span>
-      <span className="mt-1 flex items-center justify-between gap-3">
-        <span className={cn("truncate text-[15px] text-main", active && "font-semibold")}>
-          {value}
-        </span>
-        <ChevronDown size={18} className="shrink-0 text-muted" aria-hidden />
-      </span>
-    </button>
+      )}
+    </div>
   );
 }
 
@@ -1102,7 +1260,6 @@ function FilterFieldList({
   specFacets,
   specFacetsLoading,
   specs,
-  marketplaceStyle,
   negotiableOnly,
   onNegotiableOnly,
   onOpenPicker,
@@ -1130,7 +1287,6 @@ function FilterFieldList({
   specFacets: SpecFacet[];
   specFacetsLoading: boolean;
   specs: SpecFilter[];
-  marketplaceStyle: boolean;
   negotiableOnly: boolean;
   onNegotiableOnly: (value: boolean) => void;
   onOpenPicker: (picker: FilterPicker) => void;
@@ -1150,30 +1306,13 @@ function FilterFieldList({
 
   return (
     <>
-      {marketplaceStyle ? (
-        <div className="flex shrink-0 items-center gap-2 border-b border-border bg-app px-4 py-2 text-default">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close filters"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-default active:bg-surface"
-          >
-            <X size={21} />
-          </button>
-          <DrawerTitle className="text-[16px] font-semibold text-default">
-            Filter results
-          </DrawerTitle>
-        </div>
-      ) : (
-        <FilterDrawerHeader title="Filter results" onClose={onClose} />
-      )}
+      <SheetTitleBar
+        title="Filter results"
+        closeLabel="Close filters"
+        onClose={onClose}
+      />
 
-      <div
-        className={cn(
-          "min-h-0 flex-1 overflow-y-auto overscroll-contain",
-          marketplaceStyle ? "px-0" : "px-4",
-        )}
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {categoryLabel ? (
           <FilterFieldRow
             label="Category"
@@ -1195,72 +1334,50 @@ function FilterFieldList({
           value={regionLabel}
           active={regionLabel !== "All Kenya"}
           onClick={onOpenRegion}
-          onClear={marketplaceStyle ? onClearLocation : undefined}
-          marketplaceStyle={marketplaceStyle}
+          onClear={onClearLocation}
         />
 
-        {marketplaceStyle ? (
-          <FilterFieldRow
-            label="Sort by"
-            value={sortLabel}
-            active={sortActive}
-            onClick={onOpenSort}
-            onClear={sortActive ? onClearSort : undefined}
-            marketplaceStyle
-          />
-        ) : null}
+        <FilterFieldRow
+          label="Sort by"
+          value={sortLabel}
+          active={sortActive}
+          onClick={onOpenSort}
+          onClear={sortActive ? onClearSort : undefined}
+        />
 
         <FilterFieldRow
-          label={marketplaceStyle ? "Period" : "Posted"}
+          label="Period"
           value={postedLabel}
           active={postedLabel !== "Any time"}
           onClick={() => onOpenPicker({ kind: "posted" })}
-          onClear={marketplaceStyle ? onClearPosted : undefined}
-          marketplaceStyle={marketplaceStyle}
+          onClear={onClearPosted}
         />
 
-        {marketplaceStyle ? (
-          <div className="border-b border-border px-4 py-3">
-            <span className="mb-1.5 block text-[13px] font-medium text-default">
-              Distance
-            </span>
-            <DistanceFilter compact />
-          </div>
-        ) : null}
+        <div className="border-b border-border px-4 py-3">
+          <span className="mb-1.5 block text-[13px] font-medium text-default">
+            Distance
+          </span>
+          <DistanceFilter compact />
+        </div>
 
-        {!marketplaceStyle ? (
-          <div className="border-b border-border py-3.5">
-            <span className="mb-2 block text-xs text-muted">Distance</span>
-            <DistanceFilter />
-          </div>
-        ) : null}
+        <div className="h-2 bg-elevated" aria-hidden />
 
-        {marketplaceStyle ? <div className="h-2 bg-elevated" aria-hidden /> : null}
+        <FilterFieldRow
+          label="Price, KSh"
+          value={
+            minPrice.trim() || maxPrice.trim()
+              ? `${minPrice.trim() || "Any"} – ${maxPrice.trim() || "Any"}`
+              : "Any price"
+          }
+          active={Boolean(minPrice.trim() || maxPrice.trim())}
+          onClick={() => onOpenPicker({ kind: "price" })}
+          onClear={onClearPrice}
+        />
 
-        {marketplaceStyle ? (
-          <FilterFieldRow
-            label="Price, KSh"
-            value={
-              minPrice.trim() || maxPrice.trim()
-                ? `${minPrice.trim() || "Any"} – ${maxPrice.trim() || "Any"}`
-                : "Any price"
-            }
-            active={Boolean(minPrice.trim() || maxPrice.trim())}
-            onClick={() => onOpenPicker({ kind: "price" })}
-            onClear={onClearPrice}
-            marketplaceStyle
-          />
-        ) : (
-          <div className="border-b border-border py-3.5">
-            <span className="mb-2 block text-xs text-muted">Price, KSh</span>
-            <PriceRangeFields />
-          </div>
-        )}
-
-        {marketplaceStyle && (specFacets.length > 0 || specFacetsLoading) ? (
+        {specFacets.length > 0 || specFacetsLoading ? (
           <>
             <div className="h-2 bg-elevated" aria-hidden />
-            <div className="px-4 pb-1 pt-3 text-[12px] font-semibold text-muted-foreground">
+            <div className="px-4 pb-1 pt-3 text-[12px] font-semibold text-muted">
               Popular filters
             </div>
           </>
@@ -1274,40 +1391,22 @@ function FilterFieldList({
                 <FilterFieldRow
                   key={facet.key}
                   label={facet.label}
-                  value={value ?? (marketplaceStyle ? "" : "Any")}
+                  value={value ?? ""}
                   active={Boolean(value)}
                   onClick={() => onOpenPicker({ kind: "spec", key: facet.key })}
-                  onClear={marketplaceStyle ? () => onClearSpec(facet.key) : undefined}
-                  marketplaceStyle={marketplaceStyle}
+                  onClear={() => onClearSpec(facet.key)}
                 />
               );
             })}
 
-        <div
-          className={cn(
-            "border-b border-border py-3.5",
-            marketplaceStyle && "px-4",
-          )}
-        >
-          <span className="mb-2 block text-xs text-muted">Content type</span>
+        <div className="border-b border-border px-4 py-3.5">
+          <span className="mb-2 block text-[13px] font-medium text-default">
+            Content type
+          </span>
           <ContentTypeSegments />
         </div>
 
-        {!marketplaceStyle ? (
-          <FilterFieldRow
-            label="Posted"
-            value={postedLabel}
-            active={postedLabel !== "Any time"}
-            onClick={() => onOpenPicker({ kind: "posted" })}
-          />
-        ) : null}
-
-        <div
-          className={cn(
-            "flex items-center justify-between gap-4 border-b border-border py-3.5",
-            marketplaceStyle && "px-4",
-          )}
-        >
+        <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3.5">
           <div className="min-w-0">
             <span className="block text-[13px] text-main">Negotiable only</span>
             <span className="mt-0.5 block text-[11px] text-muted">
@@ -1322,30 +1421,27 @@ function FilterFieldList({
         </div>
 
         {categoryLabel === "All categories" ? (
-          <p className="py-4 text-xs leading-relaxed text-muted">
+          <p className="px-4 py-4 text-xs leading-relaxed text-muted">
             Pick a category to filter by make, model, size and more.
           </p>
         ) : null}
       </div>
 
-      <div className="flex shrink-0 gap-2 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2">
+      {/* Thumb-sized: these two close the sheet, so they get the 44px a
+          primary action needs rather than the 36px they had. */}
+      <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2">
         <button
           type="button"
           onClick={onClear}
           disabled={!canClear}
-          className={cn(
-            "h-9 shrink-0 rounded-lg border px-4 text-[12px] font-semibold transition-opacity active:opacity-70 disabled:opacity-40",
-            marketplaceStyle
-              ? "border-transparent text-primary"
-              : "border-border text-main",
-          )}
+          className="h-11 shrink-0 rounded-full px-4 text-[14px] font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-40"
         >
-          {marketplaceStyle ? "Reset" : "Clear"}
+          Reset
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="h-9 flex-1 rounded-lg bg-primary text-[12px] font-semibold text-white transition-opacity active:opacity-80"
+          className="h-11 flex-1 rounded-full bg-primary text-[14px] font-semibold text-white transition-opacity active:opacity-80"
         >
           {resultLabel}
         </button>
@@ -1367,6 +1463,7 @@ function FilterPickerView({
   specFacets,
   specs,
   sort,
+  relevanceLabel,
   postedWithinDays,
   onBack,
   onPickCategory,
@@ -1383,6 +1480,8 @@ function FilterPickerView({
   specFacets: SpecFacet[];
   specs: SpecFilter[];
   sort: DiscoverySort;
+  /** What the default order is called here — see sortLabel. */
+  relevanceLabel: string;
   postedWithinDays: number | null;
   onBack: () => void;
   onPickPosted: (days: number | null) => void;
@@ -1452,7 +1551,7 @@ function FilterPickerView({
     }));
   } else if (picker.kind === "sort") {
     title = "Sort by";
-    anyLabel = "Recommended";
+    anyLabel = relevanceLabel;
     anyActive = sort === "RELEVANCE";
     pickAny = () => onPickSort("RELEVANCE");
     options = SORT_OPTIONS.filter((option) => option.value !== "RELEVANCE").map(
@@ -1540,9 +1639,9 @@ function PickerOptionRow({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="flex w-full items-center gap-3 border-b border-border py-3.5 text-left active:opacity-60"
+      className="flex w-full items-center gap-3 border-b border-border py-3 text-left active:opacity-60"
     >
-      <span className={cn("min-w-0 flex-1 truncate text-[15px] text-main", active && "font-semibold")}>
+      <span className={cn("min-w-0 flex-1 truncate text-[14px] text-main", active && "font-semibold")}>
         {label}
       </span>
       {count != null ? <span className="shrink-0 text-xs tabular-nums text-muted">{count}</span> : null}
@@ -2119,26 +2218,34 @@ export function DiscoverPage({
     [drawerCategory, lang, router],
   );
 
+  // Anything set in the facet variables narrows the results — a search, a
+  // category, a filter. They are all left undefined when nothing does.
+  const isNarrowed = Object.values(facetVariables).some(
+    (value) => value !== undefined,
+  );
+  // The filter sheet's button and, once something narrows the results, the
+  // results header both say how many posts match.
   const { data: resultCountData, loading: resultCountLoading } = useQuery(
     DISCOVERY_RESULT_COUNT,
     {
       variables: facetVariables,
-      skip: !filterOpen,
+      // A deep-linked subcategory resolves first, or the header would flash
+      // the whole category's count before settling on the subcategory's.
+      skip: !subcategoryRouteReady || (!filterOpen && !isNarrowed),
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
   );
 
-  // Spec fields only exist inside a category. The subcategory page keeps them
-  // loaded for its quick filter chips; other mobile pages load them on demand.
+  // Spec fields (Brand, Model, Year…) only exist inside a category, and load
+  // as soon as one is chosen: they are the quick-filter chips under the search
+  // bar. Phones used to wait for the filter sheet to open, so a category page
+  // showed no chips until someone had already gone looking for them.
   const { data: specFacetsData, loading: specFacetsLoading } = useQuery(
     DISCOVERY_SPEC_FACETS,
     {
       variables: facetVariables,
-      skip:
-        !subcategoryRouteReady ||
-        (!selectedCategory && !subcategory) ||
-        (!isDesktop && !filterOpen && !isSubcategoryRoute),
+      skip: !subcategoryRouteReady || (!selectedCategory && !subcategory),
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
@@ -2263,10 +2370,7 @@ export function DiscoverPage({
     activeFilterCount - Number(Boolean(selectedCategory)) - Number(Boolean(subcategory)),
   );
   const matchingResultCount = resultCountData?.discoveryResultCount;
-  const activeSortLabel =
-    sort === "RELEVANCE"
-      ? "Recommended"
-      : SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "Recommended";
+  const activeSortLabel = sortLabel(sort, Boolean(query));
   const resultButtonLabel =
     resultCountLoading && matchingResultCount == null
       ? "Show … results"
@@ -2740,6 +2844,48 @@ export function DiscoverPage({
     urlSyncTick,
   ]);
 
+  // Whether Clear has anything to clear: on a category page the category
+  // itself stays, so only what narrows it further counts.
+  const canClearFilters =
+    (hasCategoryResults
+      ? activeFilterCount >
+        Number(Boolean(selectedCategory)) + Number(Boolean(subcategory))
+      : activeFilterCount > 0) || sort !== "RELEVANCE";
+
+  // The results header: what this page is, and — once anything narrows it —
+  // how many posts match and, where the title doesn't say it, where from.
+  const resultsTitle = query
+    ? `Results for “${query}”`
+    : (subcategory ?? selectedCategory?.name ?? "All listings");
+  const resultsCountText =
+    matchingResultCount == null
+      ? null
+      : `${formatResultCount(matchingResultCount)} ${
+          query
+            ? matchingResultCount === 1
+              ? "result"
+              : "results"
+            : matchingResultCount === 1
+              ? "listing"
+              : "listings"
+        }`;
+  const resultsScope = query
+    ? isSubcategoryRoute && subcategory
+      ? `in ${subcategory}`
+      : null
+    : subcategory && selectedCategory
+      ? `in ${selectedCategory.name}`
+      : null;
+  const resultsSubtitle =
+    isNarrowed && resultsCountText
+      ? [resultsCountText, resultsScope].filter(Boolean).join(" ")
+      : null;
+
+  // Not while a deep-linked subcategory is still resolving: its feed query
+  // waits for that, so it is neither loading nor holding anything yet.
+  const showEmptyState =
+    !isReloading && !loading && items.length === 0 && !error;
+
   const showSubcategorySearch =
     !hasCategoryResults || subcategoryHeaderMode !== "chips";
   const showSubcategoryChips =
@@ -2763,8 +2909,8 @@ export function DiscoverPage({
               gridTemplateRows:
                 showCategoryFilterChips &&
                 subcategoryHeaderMode === "expanded"
-                  ? "68px auto"
-                  : "68px",
+                  ? "56px auto"
+                  : "56px",
             }}
           >
             <motion.div
@@ -2778,64 +2924,86 @@ export function DiscoverPage({
               aria-hidden={!showSubcategorySearch}
               style={{ gridArea: "1 / 1" }}
               className={cn(
-                "flex items-center overflow-hidden py-3",
+                "flex items-center overflow-hidden",
                 !showSubcategorySearch && "pointer-events-none",
               )}
             >
-              <div className="flex w-full min-w-0 items-center gap-1.5 px-4 lg:px-0">
+              <div className="flex w-full min-w-0 items-center gap-2 px-4 lg:px-0">
                 {showCategoryFilterChips && subcategoryHeaderMode !== "chips" ? (
                   <button
                     type="button"
                     // Opened straight from a link (Google, WhatsApp) there is
                     // no Categories screen behind it to go back to.
                     onClick={backToCategories}
-                    className="grid h-9 w-7 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+                    className="-ml-2 -mr-1 grid h-10 w-9 shrink-0 place-items-center rounded-full text-main active:bg-subtle"
                     aria-label="Back to categories"
                   >
-                    <ChevronLeft size={20} strokeWidth={2.25} />
+                    <ChevronLeft size={22} strokeWidth={2.25} />
                   </button>
                 ) : null}
-                <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-default bg-surface px-3 transition-colors focus-within:border-primary">
-                  <Search
-                    size={17}
-                    className="shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
+                {/* A filled field, no outline, like the platform's own search
+                    bars. 16px text is not a style choice: iOS zooms the page
+                    into any focused field set smaller (see globals.css). */}
+                <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-transparent bg-subtle pl-3.5 pr-2 transition-colors focus-within:border-primary focus-within:bg-app">
+                  <Search size={16} className="shrink-0 text-muted" aria-hidden />
                   <input
+                    type="search"
+                    enterKeyHint="search"
                     value={searchDraft}
                     onChange={(event) => setSearchDraft(event.target.value)}
+                    // Results already follow the typing; the keyboard's Search
+                    // key just puts the keyboard away so they can be seen.
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                    }}
+                    // Only a subcategory page searches within itself — anywhere
+                    // else a search spans every category (see the debounce).
                     placeholder={
                       isSubcategoryRoute && subcategory
                         ? `Search ${subcategory}`
-                        : "Search cars, dresses, fresh produce..."
+                        : "Search anything on Shopi"
                     }
-                    className="h-full min-w-0 flex-1 bg-transparent text-[14px] leading-5 text-default outline-none placeholder:!text-[12px] placeholder:text-muted-foreground"
+                    aria-label="Search listings"
+                    className="h-full min-w-0 flex-1 appearance-none bg-transparent text-[16px] leading-5 text-main outline-none text-ellipsis placeholder:!text-[15px] placeholder:text-[rgb(var(--color-text-placeholder))] [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
                   />
                   {searchDraft ? (
                     <button
                       type="button"
                       onClick={clearSearch}
-                      className="shrink-0 text-muted-foreground"
+                      className="grid h-7 w-7 shrink-0 place-items-center"
                       aria-label="Clear search"
                     >
-                      <X size={16} />
+                      <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-muted/50 text-white dark:text-black">
+                        <X size={12} strokeWidth={3} aria-hidden />
+                      </span>
                     </button>
                   ) : null}
                 </div>
 
-                {!isSubcategoryRoute ? (
+                {/* Category pages carry their filters as chips just below;
+                    everywhere else this is the way in to them (sort included). */}
+                {!showCategoryFilterChips ? (
                   <button
                     type="button"
-                    onClick={openSortSheet}
+                    onClick={openFilterSheet}
                     className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors lg:hidden",
-                      sort !== "RELEVANCE"
+                      "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors active:opacity-70",
+                      activeFilterCount > 0
                         ? "bg-primary/10 text-primary"
-                        : "bg-surface text-default",
+                        : "bg-subtle text-main",
                     )}
-                    aria-label="Sort"
+                    aria-label={
+                      activeFilterCount > 0
+                        ? `Filters, ${activeFilterCount} on`
+                        : "Filters"
+                    }
                   >
-                    <ArrowUpDown size={18} />
+                    <SlidersHorizontal size={18} strokeWidth={2} aria-hidden />
+                    {activeFilterCount > 0 ? (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white ring-2 ring-[rgb(var(--color-bg))] tabular-nums">
+                        {activeFilterCount}
+                      </span>
+                    ) : null}
                   </button>
                 ) : null}
               </div>
@@ -2853,25 +3021,30 @@ export function DiscoverPage({
                 className={cn(
                   "flex min-w-0 overflow-hidden",
                   subcategoryHeaderMode === "expanded"
-                    ? "items-start pt-2 pb-2.5"
+                    ? "items-start pb-2.5"
                     : "h-full items-center",
                   !showSubcategoryChips && "pointer-events-none",
                 )}
               >
-                <div className="flex min-w-0 flex-1 items-center gap-1.5 px-3">
+                <div className="flex min-w-0 flex-1 items-center">
                   {subcategoryHeaderMode === "chips" ? (
                     <button
                       type="button"
                       onClick={backToCategories}
-                      className="grid h-9 w-8 shrink-0 place-items-center rounded-full text-default active:bg-surface"
+                      className="ml-2 grid h-10 w-9 shrink-0 place-items-center rounded-full text-main active:bg-subtle"
                       aria-label="Back to categories"
                     >
-                      <ChevronLeft size={20} strokeWidth={2.25} />
+                      <ChevronLeft size={22} strokeWidth={2.25} />
                     </button>
                   ) : null}
+                  {/* Full-bleed: the chips scroll out to the screen edge
+                      instead of being clipped 12px short of it. */}
                   <div
                     ref={subcategoryChipsRef}
-                    className="no-scroll-indicator min-w-0 flex-1 overflow-x-auto"
+                    className={cn(
+                      "no-scroll-indicator min-w-0 flex-1 overflow-x-auto pr-4",
+                      subcategoryHeaderMode === "chips" ? "pl-1" : "pl-4",
+                    )}
                   >
                     <motion.div
                       initial={false}
@@ -2881,49 +3054,49 @@ export function DiscoverPage({
                         hidden: { opacity: 0, y: -8 },
                       }}
                       transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                      className="flex w-max gap-1.5"
+                      className="flex w-max gap-2"
                     >
                     <button
                       type="button"
                       onClick={openFilterSheet}
                       className={cn(
-                        "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
+                        FILTER_CHIP_CLASS,
                         subcategoryNarrowingFilterCount > 0
-                          ? "border-primary/20 bg-primary/10 text-primary"
-                          : "border-default bg-surface text-default",
+                          ? FILTER_CHIP_ON
+                          : FILTER_CHIP_OFF,
                       )}
                     >
-                      All filters
-                      {subcategoryNarrowingFilterCount > 0
-                        ? ` (${subcategoryNarrowingFilterCount})`
-                        : ""}
-                      <ChevronDown size={15} aria-hidden />
+                      <SlidersHorizontal size={14} strokeWidth={2.25} aria-hidden />
+                      Filters
+                      {subcategoryNarrowingFilterCount > 0 ? (
+                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white tabular-nums">
+                          {subcategoryNarrowingFilterCount}
+                        </span>
+                      ) : null}
                     </button>
                     <button
                       type="button"
                       onClick={openCountySheet}
                       className={cn(
-                        "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
-                        hasLocation
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-default bg-surface text-default",
+                        FILTER_CHIP_CLASS,
+                        hasLocation ? FILTER_CHIP_ON : FILTER_CHIP_OFF,
                       )}
                     >
                       {hasLocation ? locationLabel : "Region"}
-                      <ChevronDown size={15} aria-hidden />
+                      <ChevronDown size={14} aria-hidden />
                     </button>
                     <button
                       type="button"
                       onClick={() => openQuickFilterPicker({ kind: "price" })}
                       className={cn(
-                        "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
+                        FILTER_CHIP_CLASS,
                         minPrice.trim() || maxPrice.trim()
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-default bg-surface text-default",
+                          ? FILTER_CHIP_ON
+                          : FILTER_CHIP_OFF,
                       )}
                     >
-                      Price, KSh
-                      <ChevronDown size={15} aria-hidden />
+                      {priceChipLabel(minPrice, maxPrice)}
+                      <ChevronDown size={14} aria-hidden />
                     </button>
                     {specFacets.map((facet) => {
                       const selectedValue = specs.find(
@@ -2937,16 +3110,14 @@ export function DiscoverPage({
                             openQuickFilterPicker({ kind: "spec", key: facet.key })
                           }
                           className={cn(
-                            "flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 text-[13px] font-medium active:bg-elevated",
-                            selectedValue
-                              ? "border-primary bg-primary/5 text-primary"
-                              : "border-default bg-surface text-default",
+                            FILTER_CHIP_CLASS,
+                            selectedValue ? FILTER_CHIP_ON : FILTER_CHIP_OFF,
                           )}
                         >
                           {selectedValue
                             ? `${facet.label}: ${selectedValue}`
                             : facet.label}
-                          <ChevronDown size={15} aria-hidden />
+                          <ChevronDown size={14} aria-hidden />
                         </button>
                       );
                     })}
@@ -2967,64 +3138,90 @@ export function DiscoverPage({
               />
             ) : null}
 
-            {/* Category shortcuts are shown on the unfiltered view. */}
-
             {error && items.length === 0 ? (
-              <div className="px-4 py-12 lg:px-0">
-                <div className="rounded-[22px] border border-default bg-app p-6 text-center">
-                  <p className="text-base font-semibold text-default">
-                    Couldn&apos;t load Discover
-                  </p>
-                  <p className="app-subcopy mt-2">
-                    Check the connection to the API, then try again.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void refetch()}
-                    className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-white"
-                  >
-                    Try again
-                  </button>
-                </div>
+              <div className="px-8 pb-16 pt-12 text-center">
+                <p className="text-[16px] font-semibold leading-6 text-main">
+                  Couldn&apos;t load listings
+                </p>
+                <p className="mx-auto mt-1 max-w-xs text-[13px] leading-5 text-muted">
+                  Check your connection and try again.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void refetch()}
+                  className="mt-5 inline-flex h-10 items-center rounded-full bg-primary px-5 text-[14px] font-semibold text-white active:opacity-80"
+                >
+                  Try again
+                </button>
               </div>
-            ) : null}
+            ) : showEmptyState && query ? null : (
+              // Empty, the header keeps only the page's name: "0 listings" and
+              // a sort for nothing would repeat what the empty state says.
+              <ResultsHeader
+                title={resultsTitle}
+                subtitle={showEmptyState ? null : resultsSubtitle}
+                subtitleLoading={
+                  !showEmptyState &&
+                  isNarrowed &&
+                  resultsSubtitle === null &&
+                  resultCountLoading
+                }
+                sortControl={
+                  showEmptyState ? null : isDesktop ? (
+                    // On a category page the desktop sidebar has its own sort.
+                    hasCategoryResults ? null : (
+                      <SortMenu
+                        sort={sort}
+                        hasQuery={Boolean(query)}
+                        onSelect={setSort}
+                      />
+                    )
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={openSortSheet}
+                      aria-haspopup="dialog"
+                      className={cn(
+                        SORT_TRIGGER_CLASS,
+                        sort !== "RELEVANCE" ? "text-primary" : "text-main",
+                      )}
+                    >
+                      <ArrowUpDown size={14} aria-hidden />
+                      {activeSortLabel}
+                    </button>
+                  )
+                }
+              />
+            )}
 
             {/* A full reload (filter/search/sort change) — NOT pagination — is in
               flight. Show only the skeleton; the stale results grid below is
               hidden so we never stack old items under a loader. */}
             {isReloading && <DiscoverFeedSkeleton />}
 
-            {!loading && items.length === 0 && !error ? (
-              <EmptyState
-                title="No posts match this search"
-                body="Try a broader keyword or clear the search to see more posts."
-              />
+            {showEmptyState ? (
+              query ? (
+                <EmptyState
+                  title={`No results for “${query}”`}
+                  body="Check the spelling, or try a shorter or more general word."
+                  action={{ label: "Clear search", onClick: clearSearch }}
+                />
+              ) : canClearFilters ? (
+                <EmptyState
+                  title="Nothing matches these filters"
+                  body="Try removing a filter or widening the area."
+                  action={{ label: "Clear filters", onClick: clearFilters }}
+                />
+              ) : (
+                <EmptyState
+                  title="No listings here yet"
+                  body="New listings are posted every day. Check back soon."
+                />
+              )
             ) : null}
 
             {!isReloading && items.length > 0 ? (
-              <div className="px-4 pb-6 pt-3 lg:px-0">
-                {/* Only a search gets a heading now. The old one labelled the
-                  default state "Listings picked for discovery" over "Across
-                  Kenya", which restated what the page already is and what the
-                  location control already shows — two lines of chrome above
-                  every visit. A hairline does the separating instead. */}
-                {query ? (
-                  <p className="mb-3 text-sm font-semibold text-default">
-                    Results for “{query}”
-                  </p>
-                ) : isSubcategoryRoute && subcategory ? (
-                  <p className="mb-3 text-sm font-semibold text-default">
-                    {subcategory}
-                  </p>
-                ) : (
-                  // `border-border`, not `border-default`: the latter is a
-                  // hand-written class in globals.css rather than a theme token,
-                  // so Tailwind cannot apply an opacity modifier to it — the
-                  // `/60` was dropped and the border fell back to currentColor,
-                  // which painted a near-black line instead of a hairline.
-                  <div className="mb-4 border-t border-border/60" />
-                )}
-
+              <div className="px-4 pb-6 lg:px-0">
                 <div className={DISCOVER_GRID}>
                   {items.map((post, index) => (
                     <DiscoverGridCard
@@ -3041,7 +3238,7 @@ export function DiscoverPage({
                 {isFetchingMore ? (
                   <>
                     <div className="pb-6 pt-3 md:hidden">
-                      <DiscoverGridSkeleton rows={1} showSeller={false} />
+                      <DiscoverGridSkeleton rows={1} />
                     </div>
                     <div className="hidden md:block">
                       <FeedLoader />
@@ -3050,8 +3247,8 @@ export function DiscoverPage({
                 ) : null}
 
                 {!pageInfo?.hasNextPage ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">
-                    You&apos;ve seen the latest matches.
+                  <p className="py-8 text-center text-[12px] text-muted">
+                    You&apos;ve reached the end
                   </p>
                 ) : null}
               </div>
@@ -3536,6 +3733,7 @@ export function DiscoverPage({
               specFacets={specFacets}
               specs={specs}
               sort={sort}
+              relevanceLabel={sortLabel("RELEVANCE", Boolean(query))}
               postedWithinDays={postedWithinDays}
               onBack={closePicker}
               onPickPosted={(days) => {
@@ -3563,8 +3761,12 @@ export function DiscoverPage({
         } else {
           drawerView = (
             <FilterFieldList
+              // On Explore the round category shortcuts above the listings
+              // are where a category is picked, so the sheet doesn't repeat
+              // them. Search results hide those shortcuts; there the field is
+              // the only way to narrow a search to one category.
               categoryLabel={
-                isSubcategoryRoute || selectedCategory
+                isSubcategoryRoute || selectedCategory || !query
                   ? null
                   : "All categories"
               }
@@ -3580,7 +3782,6 @@ export function DiscoverPage({
                 specFacetsLoading && specFacets.length === 0 && Boolean(selectedCategory || subcategory)
               }
               specs={specs}
-              marketplaceStyle={hasCategoryResults}
               negotiableOnly={negotiableOnly}
               onNegotiableOnly={setNegotiableOnly}
               onOpenPicker={openPicker}
@@ -3596,12 +3797,7 @@ export function DiscoverPage({
               onClearSpec={(key) => setSpec(key, null)}
               onClose={closeFilterSheet}
               onClear={clearFilters}
-              canClear={
-                (hasCategoryResults
-                  ? activeFilterCount >
-                    Number(Boolean(selectedCategory)) + Number(Boolean(subcategory))
-                  : activeFilterCount > 0) || sort !== "RELEVANCE"
-              }
+              canClear={canClearFilters}
               resultLabel={resultButtonLabel}
             />
           );
@@ -3631,54 +3827,40 @@ export function DiscoverPage({
           else closeCategoryDrawer();
         }}
       >
-        <DrawerContent className="mx-auto flex h-[min(85svh,680px)] w-full max-w-107.5 flex-col bg-app">
-          <DrawerHeader className="shrink-0 px-5 pb-3 pt-4 text-center">
-            <DrawerTitle className="text-base font-bold text-default">
-              Browse categories
+        {/* Sized to its rows: three subcategories used to sit at the top of
+            a sheet fixed at 85% of the screen, the rest of it blank. */}
+        <DrawerContent className="mx-auto flex max-h-[85svh] w-full max-w-107.5 flex-col bg-app">
+          <DrawerHeader className="shrink-0 px-5 pb-2 pt-3 text-left sm:text-left">
+            <DrawerTitle className="truncate text-[16px] font-semibold leading-6 text-main">
+              {drawerCategory?.name ?? "Categories"}
             </DrawerTitle>
+            <DrawerDescription className="text-[12px] leading-4 text-muted">
+              Pick a subcategory, or see everything
+            </DrawerDescription>
           </DrawerHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-[calc(env(safe-area-inset-bottom)+12px)]">
             {subcategoriesLoading ? (
-              <DrawerLoadingIndicator className="min-h-full" />
+              <DrawerLoadingIndicator className="min-h-48" />
             ) : drawerCategory ? (
-              <div className="flex flex-col gap-0">
-                <button
-                  type="button"
+              <div className="flex flex-col">
+                <CategoryDrawerRow
+                  label={`All ${drawerCategory.name}`}
+                  count={drawerCategory.count}
                   onClick={selectAllCategoryAndNavigate}
-                  className="flex h-12 min-h-12 w-full flex-none items-center justify-between border-b border-border text-left text-sm font-semibold leading-tight text-default active:opacity-65"
-                >
-                  <span>All {drawerCategory.name}</span>
-                  <span className="ml-4 flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-                    {drawerCategory.count.toLocaleString()}
-                    <ChevronRight
-                      className="h-6 w-6 text-default"
-                      strokeWidth={2.25}
-                    />
-                  </span>
-                </button>
-                {subcategories.map((subcategory) => (
-                  <button
-                    key={subcategory.name}
-                    type="button"
-                    onClick={() => selectSubcategoryAndNavigate(subcategory.name)}
-                    className="flex h-12 min-h-12 w-full flex-none items-center justify-between text-left text-sm font-semibold leading-tight text-default active:opacity-65"
-                  >
-                    <span>{subcategory.name}</span>
-                    <span className="ml-4 flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-                      {subcategory.count.toLocaleString()}
-                      <ChevronRight
-                        className="h-6 w-6 text-default"
-                        strokeWidth={2.25}
-                      />
-                    </span>
-                  </button>
-                ))}
-                {subcategories.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">
-                    No subcategories available.
-                  </p>
+                  emphasis
+                />
+                {subcategories.length > 0 ? (
+                  <div className="mx-3 my-1 border-t border-border" aria-hidden />
                 ) : null}
+                {subcategories.map((subcategory) => (
+                  <CategoryDrawerRow
+                    key={subcategory.name}
+                    label={subcategory.name}
+                    count={subcategory.count}
+                    onClick={() => selectSubcategoryAndNavigate(subcategory.name)}
+                  />
+                ))}
               </div>
             ) : null}
           </div>
@@ -3695,16 +3877,23 @@ export function DiscoverPage({
           if (sortOpen) closeSortSheet();
         }}
       >
-        <DrawerContent className="mx-auto max-w-107.5">
-          <DrawerHeader className="pb-2 text-left">
-            <DrawerTitle className="text-base">Sort results</DrawerTitle>
-          </DrawerHeader>
-          <div className="space-y-2 px-4 pb-5">
+        {/* The same bar and rows as Sort by inside Filters, so sorting looks
+            the same whichever way it was opened. */}
+        <DrawerContent className="mx-auto max-w-107.5 bg-app">
+          <SheetTitleBar
+            title="Sort by"
+            closeLabel="Close sort"
+            onClose={closeSortSheet}
+          />
+          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+12px)]">
             {SORT_OPTIONS.map((option) => (
-              <SortOption
+              <PickerOptionRow
                 key={option.value}
-                label={option.label}
-                hint={option.hint}
+                label={
+                  option.value === "RELEVANCE"
+                    ? sortLabel("RELEVANCE", Boolean(query))
+                    : option.label
+                }
                 active={sort === option.value}
                 onClick={() => {
                   setSort(option.value);

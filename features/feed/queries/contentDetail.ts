@@ -46,6 +46,7 @@ export const ContentDetailDocument = gql`
         isVerified
         isFollowedByMe
         followerCount
+        createdAt
         profile {
           firstName
           lastName

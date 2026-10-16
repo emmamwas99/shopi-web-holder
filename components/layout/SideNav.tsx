@@ -6,13 +6,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
+  LayoutGrid,
   LogOut,
   MapPin,
   Menu,
   Play,
   Plus,
   Search,
-  Shapes,
   Upload,
   X,
 } from "lucide-react";
@@ -41,8 +41,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { DiscoveryFeedDocument } from "@/types/__generated__/graphql";
 import type { CategoryFacet } from "@/features/discover/categories";
+import { CategoryGlyph } from "@/features/discover/components/CategoryGlyph";
 import { shouldUnoptimize } from "@/lib/imageUtils";
 
 /**
@@ -587,11 +587,11 @@ function AllCategoriesPicker({
               }}
               className={`flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface ${!activeCategory ? "bg-primary/5 text-primary" : "text-main"}`}
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface text-primary">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-subtle text-main">
                 {watchMode ? (
                   <Play className="h-4 w-4" />
                 ) : (
-                  <Shapes className="h-5 w-5" />
+                  <LayoutGrid className="h-5 w-5" strokeWidth={1.75} />
                 )}
               </span>
               <span className="min-w-0 flex-1 text-sm font-semibold">
@@ -624,11 +624,13 @@ function AllCategoriesPicker({
                       }}
                       className={`flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface ${selected ? "bg-primary/5 text-primary" : "text-main"}`}
                     >
-                      <CategoryThumbnail
-                        category={category}
-                        watchMode={watchMode}
-                        enabled={open}
-                      />
+                      {/* The same icons as the shortcuts on Explore. This
+                          used to show the category's cover, or — fetched
+                          per category each time the menu opened — the
+                          newest listing's photo. */}
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-subtle text-main">
+                        <CategoryGlyph slug={category.slug} className="h-5 w-5" />
+                      </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">
                           {category.name}
@@ -645,47 +647,6 @@ function AllCategoriesPicker({
         </div>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function CategoryThumbnail({
-  category,
-  watchMode,
-  enabled,
-}: {
-  category: CategoryFacet;
-  watchMode: boolean;
-  enabled: boolean;
-}) {
-  const { data, loading } = useQuery(DiscoveryFeedDocument, {
-    variables: {
-      categoryId: category.id,
-      type: watchMode ? "VIDEO" : undefined,
-      sort: "NEWEST",
-      limit: 1,
-    },
-    skip: !enabled || Boolean(category.imageUrl),
-    fetchPolicy: "cache-first",
-  });
-  const media = data?.discoveryFeed?.items?.[0]?.media?.[0];
-  const listingImage =
-    media?.thumbnailUrl ?? media?.imageUrl ?? media?.muxMeta?.thumbnailUrl;
-  const categoryImage = category.imageUrl?.trim();
-
-  return (
-    <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-surface text-primary">
-      {categoryImage || listingImage ? (
-        // Category art comes from listing media or catalog-managed image URLs.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={categoryImage ?? listingImage ?? ""}
-          alt=""
-          className="h-full w-full object-cover"
-        />
-      ) : loading ? (
-        <Skeleton className="h-full w-full rounded-none" />
-      ) : null}
-    </span>
   );
 }
 
