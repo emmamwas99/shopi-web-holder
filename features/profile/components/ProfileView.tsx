@@ -363,6 +363,7 @@ export function ProfileView({ lang }: Props) {
           variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
           fetchPolicy: "network-only",
         });
+        if (!data) throw new Error("Draft count query returned no data");
         const drafts = data.myDrafts;
         count += drafts.length;
 
@@ -383,6 +384,7 @@ export function ProfileView({ lang }: Props) {
           variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
           fetchPolicy: "network-only",
         });
+        if (!data) throw new Error("Saved content count query returned no data");
         const result = data.mySavedContent;
         count += result.items.length;
 
