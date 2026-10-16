@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CategoryPickerDrawer } from "@/features/create/components/CategoryPickerDrawer";
 import { useManagedPostMutations, type ManagedPost } from "@/features/profile/hooks/useManagedPosts";
 import { contentPath } from "@/lib/content-url";
+import { changedListingTextProblems } from "@/lib/listingText";
 
 type EditState = {
   title: string;
@@ -39,10 +40,15 @@ export function DashboardListingActions({
   const [editState, setEditState] = useState<EditState | null>(null);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // Title/description problems show once Save has been tried, then follow the
+  // typing (see lib/listingText — only text the seller changed is checked).
+  const [editTried, setEditTried] = useState(false);
   const { updatePost, setHidden, deletePost, loading } = useManagedPostMutations();
+  const editTextProblems = editState ? changedListingTextProblems(post, editState) : null;
 
   function openEdit() {
     setMenuOpen(false);
+    setEditTried(false);
     setEditState({
       title: post.title ?? "",
       caption: post.caption ?? "",
@@ -67,6 +73,9 @@ export function DashboardListingActions({
 
   async function saveEdit() {
     if (!editState) return;
+    setEditTried(true);
+    const textProblems = changedListingTextProblems(post, editState);
+    if (textProblems.title || textProblems.description) return;
     const amount = Number(editState.amount);
     if (!Number.isFinite(amount) || amount < 0) {
       toast.error("Enter a valid price");
@@ -158,10 +167,12 @@ export function DashboardListingActions({
                 <Switch checked={editState.negotiable} onCheckedChange={(checked) => setEditState((current) => current ? { ...current, negotiable: checked } : current)} onClick={(event) => event.stopPropagation()} />
               </button>
               <Field label={`Title (${editState.title.length}/140)`}>
-                <Input maxLength={140} value={editState.title} onChange={(event) => setEditState((current) => current ? { ...current, title: event.target.value } : current)} />
+                <Input maxLength={140} value={editState.title} aria-invalid={Boolean(editTried && editTextProblems?.title)} onChange={(event) => setEditState((current) => current ? { ...current, title: event.target.value } : current)} />
+                {editTried && editTextProblems?.title ? <span className="block text-[11px] font-medium text-error">{editTextProblems.title}</span> : null}
               </Field>
               <Field label={`Description (${editState.caption.length}/2000)`}>
-                <Textarea maxLength={2000} rows={4} value={editState.caption} onChange={(event) => setEditState((current) => current ? { ...current, caption: event.target.value } : current)} />
+                <Textarea maxLength={2000} rows={4} value={editState.caption} aria-invalid={Boolean(editTried && editTextProblems?.description)} onChange={(event) => setEditState((current) => current ? { ...current, caption: event.target.value } : current)} />
+                {editTried && editTextProblems?.description ? <span className="block text-[11px] font-medium text-error">{editTextProblems.description}</span> : null}
               </Field>
               <Field label="Category">
                 <CategoryPickerDrawer value={editState.categoryId} fallbackLabel={editState.categoryLabel} onChange={(id, name) => setEditState((current) => current ? { ...current, categoryId: id, categoryLabel: name } : current)} />

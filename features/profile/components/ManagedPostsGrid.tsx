@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/select";
 import { CategoryPickerDrawer } from "@/features/create/components/CategoryPickerDrawer";
 import { contentPath } from "@/lib/content-url";
+import { changedListingTextProblems } from "@/lib/listingText";
 import {
   useManagedPostMutations,
   type ManagedPost,
@@ -490,6 +491,9 @@ export function ManagedPostsGrid({
   const [editingPost, setEditingPost] = useState<ManagedPost | null>(null);
   const [deletePost, setDeletePost] = useState<ManagedPost | null>(null);
   const [editState, setEditState] = useState<EditFormState | null>(null);
+  // Title/description problems show once Save has been tried, then follow the
+  // typing (see lib/listingText — only text the seller changed is checked).
+  const [editTried, setEditTried] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const {
     updatePost,
@@ -512,6 +516,7 @@ export function ManagedPostsGrid({
 
   const openEdit = (post: ManagedPost) => {
     setActionsPost(null);
+    setEditTried(false);
     setEditingPost(post);
     setEditState({
       title: post.title ?? "",
@@ -559,6 +564,9 @@ export function ManagedPostsGrid({
 
   async function handleSaveEdit() {
     if (!editingPost || !editState) return;
+    setEditTried(true);
+    const textProblems = changedListingTextProblems(editingPost, editState);
+    if (textProblems.title || textProblems.description) return;
     const parsedAmount = Number(editState.amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
       toast.error("Enter a valid price");
@@ -630,6 +638,11 @@ export function ManagedPostsGrid({
       ),
     [posts, statusFilter],
   );
+
+  const editTextProblems =
+    editingPost && editState
+      ? changedListingTextProblems(editingPost, editState)
+      : { title: null, description: null };
 
   // Save stays disabled until something actually differs from what is stored,
   // and the discard prompt only fires when there is something to lose.
@@ -901,6 +914,7 @@ export function ManagedPostsGrid({
                 value={editState.title}
                 maxLength={140}
                 className="h-12 rounded-xl"
+                aria-invalid={Boolean(editTried && editTextProblems.title)}
                 onChange={(event) =>
                   setEditState((current) =>
                     current
@@ -909,6 +923,11 @@ export function ManagedPostsGrid({
                   )
                 }
               />
+              {editTried && editTextProblems.title ? (
+                <span className="block text-xs font-medium text-error">
+                  {editTextProblems.title}
+                </span>
+              ) : null}
             </FieldBlock>
 
             <FieldBlock
@@ -920,6 +939,7 @@ export function ManagedPostsGrid({
                 maxLength={2000}
                 rows={5}
                 className="min-h-32 resize-none rounded-xl leading-relaxed"
+                aria-invalid={Boolean(editTried && editTextProblems.description)}
                 onChange={(event) =>
                   setEditState((current) =>
                     current
@@ -928,6 +948,11 @@ export function ManagedPostsGrid({
                   )
                 }
               />
+              {editTried && editTextProblems.description ? (
+                <span className="block text-xs font-medium text-error">
+                  {editTextProblems.description}
+                </span>
+              ) : null}
             </FieldBlock>
 
             <FieldBlock label="Category">

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { CheckCircle2, Download, Eye, FileSpreadsheet, Loader2, Package, Plus, Trash2, Upload, WandSparkles, X } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { refreshAccessToken } from "@/lib/auth/refresh-token";
+import { listingDescriptionProblem, listingTitleProblem } from "@/lib/listingText";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
@@ -295,9 +296,13 @@ export function DashboardListings({
     if (draft.bulkStage !== "COMPLETE") return false;
     const edit = bulkEdits[draft.id];
     const title = edit?.title ?? draft.title ?? "";
+    const caption = edit?.caption ?? draft.caption ?? "";
     const categoryId = edit?.categoryId ?? draft.categoryId;
     const contactPhone = edit?.contactPhone ?? draft.contactPhone ?? contactData?.myContactPhone;
-    if (!title.trim() || !categoryId || !contactPhone || !draft.location?.placeName) return false;
+    // The same title/description floor the API holds at publish (lib/listingText),
+    // so a listing that would be bounced isn't counted as ready.
+    if (listingTitleProblem(title) || listingDescriptionProblem(caption)) return false;
+    if (!categoryId || !contactPhone || !draft.location?.placeName) return false;
     const price = edit?.price ?? (draft.price?.amount ? String(draft.price.amount) : "");
     if (price && (!Number.isFinite(Number(price)) || Number(price) < 0)) return false;
     return true;
@@ -1083,11 +1088,13 @@ function BulkListingsDialog({
                           ) : null}
                           <label className="block space-y-1 text-xs font-semibold text-muted">
                             Title
-                            <input value={edit.title} maxLength={120} onChange={(event) => onEdit(draft.id, { title: event.target.value })} className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm font-normal text-main outline-none focus:border-primary" />
+                            <input value={edit.title} maxLength={120} onChange={(event) => onEdit(draft.id, { title: event.target.value })} aria-invalid={Boolean(listingTitleProblem(edit.title))} className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm font-normal text-main outline-none focus:border-primary" />
+                            {listingTitleProblem(edit.title) ? <span className="block text-[11px] font-medium text-error">{listingTitleProblem(edit.title)}</span> : null}
                           </label>
                           <label className="block space-y-1 text-xs font-semibold text-muted">
                             Description
-                            <textarea value={edit.caption} maxLength={2000} onChange={(event) => onEdit(draft.id, { caption: event.target.value })} rows={3} className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm font-normal text-main outline-none focus:border-primary" />
+                            <textarea value={edit.caption} maxLength={2000} onChange={(event) => onEdit(draft.id, { caption: event.target.value })} rows={3} aria-invalid={Boolean(listingDescriptionProblem(edit.caption))} className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm font-normal text-main outline-none focus:border-primary" />
+                            {listingDescriptionProblem(edit.caption) ? <span className="block text-[11px] font-medium text-error">{listingDescriptionProblem(edit.caption)}</span> : null}
                           </label>
                           <div className="space-y-1 text-xs font-semibold text-muted">
                             Category

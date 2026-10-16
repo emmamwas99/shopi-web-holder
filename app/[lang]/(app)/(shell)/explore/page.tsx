@@ -31,38 +31,41 @@ export default async function ExplorePage({ params }: Props) {
   );
 }
 
-// Mirrors DiscoverPage's frame: the phone-only search bar and category
-// shortcuts, then the listing grid. The desktop filters live in the shared
-// side nav, so nothing is reserved for them here.
+// Mirrors DiscoverPage's frame: the phone-only search bar and the two
+// sideways-scrolling rows of category shortcuts, the results header, then the
+// listing grid. The desktop filters live in the shared side nav, so nothing
+// is reserved for them here.
 function ExploreSkeleton() {
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
           <div className="sticky top-0 z-30 border-b border-default bg-app lg:hidden">
-            <div className="flex items-center gap-1.5 px-4 py-3">
-              <Skeleton className="h-11 min-w-0 flex-1 rounded-full" />
+            <div className="flex h-14 items-center gap-2 px-4">
+              <Skeleton className="h-10 min-w-0 flex-1 rounded-full" />
               <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
             </div>
           </div>
 
-          <div className="px-4 pb-3 pt-4 lg:hidden">
-            <div className="grid grid-cols-4 grid-rows-2 gap-x-2 gap-y-4 md:gap-x-4 md:gap-y-5">
+          <div className="pb-1 pt-3 lg:hidden">
+            <div className="mx-3 grid auto-cols-[calc((100%-12px)/4)] grid-flow-col grid-rows-2 gap-x-1 gap-y-3 overflow-hidden sm:auto-cols-[calc((100%-20px)/6)] md:auto-cols-[88px] md:justify-center">
               {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="flex flex-col items-center gap-1.5">
-                  <Skeleton className="aspect-square w-full rounded-3xl" />
-                  <Skeleton className="h-3 w-4/5" />
+                <div key={index} className="flex flex-col items-center gap-1.5 pt-px">
+                  <Skeleton className="h-13 w-13 rounded-full" />
+                  <div className="flex h-7 items-start pt-0.5">
+                    <Skeleton className="h-2.5 w-14 rounded-full" />
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="mt-2 flex justify-center gap-1.5" aria-hidden>
-              <Skeleton className="h-1.5 w-4 rounded-full" />
-              <Skeleton className="h-1.5 w-1.5 rounded-full" />
-            </div>
+            <div className="mt-3 h-[3px]" aria-hidden />
           </div>
 
-          <div className="px-4 pb-6 pt-3 lg:px-0">
-            <div className="mb-4 border-t border-border/60" />
+          <div className="flex h-[60px] items-center justify-between px-4 pt-1 lg:h-auto lg:px-0 lg:pb-3 lg:pt-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="px-4 pb-6 lg:px-0">
             <DiscoverGridSkeleton />
           </div>
         </main>

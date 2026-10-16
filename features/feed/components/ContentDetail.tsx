@@ -17,6 +17,10 @@ import {
   Phone,
   Maximize2,
   ChevronLeft,
+  Forward,
+  ShieldCheck,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { gql } from "@apollo/client";
 import { toast } from "sonner";
@@ -61,6 +65,13 @@ import { ContentDetailDocument } from "../queries/contentDetail";
 import { ListingSeoSummary } from "./ListingSeoSummary";
 import { profileHref } from "@/lib/profile-url";
 import { trackSellerEvent } from "@/lib/seller-analytics";
+import {
+  BuyingSteps,
+  DetailRows,
+  ListingSection,
+  OverlayButton,
+  SectionGap,
+} from "./ListingParts";
 
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
@@ -208,6 +219,7 @@ function ContentVideo({
   fullscreenOpen = false,
   resumeTime = 0,
   fullscreenSide = "right",
+  controlsAt = "top",
   onFullscreen,
   onVideoCompleted,
   onVideoReplayed,
@@ -222,6 +234,12 @@ function ContentVideo({
   fullscreenOpen?: boolean;
   resumeTime?: number;
   fullscreenSide?: "left" | "right";
+  /**
+   * "bottom" groups mute and full screen at the bottom-right, just above the
+   * progress bar — for the phone layout, whose top edge carries back, save
+   * and share.
+   */
+  controlsAt?: "top" | "bottom";
   onFullscreen?: (time: number) => void;
   onVideoCompleted?: (completionRate: number, watchDuration: number) => void;
   onVideoReplayed?: () => void;
@@ -413,6 +431,38 @@ function ContentVideo({
 
       <VideoProgressBar videoRef={videoRef} active={playing} showTime={!fill} />
 
+      {controlsAt === "bottom" ? (
+        // Above the progress bar's touch strip, never on it.
+        <div className="absolute bottom-7 right-3 z-50 flex items-center gap-2">
+          {showMuteButton && setMuted && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMuted();
+              }}
+              aria-label={actualMuted ? "Unmute video" : "Mute video"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition-transform active:scale-95"
+            >
+              {actualMuted ? <VolumeX className="h-[18px] w-[18px]" /> : <Volume2 className="h-[18px] w-[18px]" />}
+            </button>
+          )}
+          {onFullscreen && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onFullscreen(videoRef.current?.currentTime ?? 0);
+              }}
+              aria-label="Open video full screen"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition-transform active:scale-95"
+            >
+              <Maximize2 className="h-4 w-4" strokeWidth={2.2} />
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
       {showMuteButton && setMuted && (
         <button
           onClick={(e) => {
@@ -457,6 +507,8 @@ function ContentVideo({
         >
           <Maximize2 className="h-5 w-5" strokeWidth={2.2} />
         </button>
+      )}
+        </>
       )}
     </div>
   );
@@ -828,6 +880,23 @@ export function ContentDetail({
     }
   }
 
+  // ── Phone layout: compact header once the media has scrolled away ─────────
+  // The media carries floating back/save/share; when it leaves the screen a
+  // slim header takes over with the title and price, so the buyer never loses
+  // what they're looking at. Observed, not scroll-listened, to stay cheap.
+  const mediaRef = useRef<HTMLElement | null>(null);
+  const [mediaInView, setMediaInView] = useState(true);
+  useEffect(() => {
+    const el = mediaRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setMediaInView(entry.isIntersecting),
+      { rootMargin: "-56px 0px 0px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [post?.id, isDesktop]);
+
   // ── Follow — must be called unconditionally before any early returns ───────
   // Creator includes follow state when the detail query resolves.
   const postCreatorForFollow = data?.content?.creator;
@@ -915,82 +984,60 @@ export function ContentDetail({
           </div>
         </div>
         <div className="relative min-h-svh overflow-x-clip bg-app md:hidden">
-          {/* Header — back + title + share */}
-          <div
-            className="sticky top-0 z-10 flex items-center gap-2 bg-app px-3 pb-2.5"
-            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
-          >
-            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
-            <Skeleton className="h-4 min-w-0 flex-1 rounded-full bg-foreground/10" />
-            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
-          </div>
-
-          {/* Media */}
-          <div className="h-[56svh] min-h-85 max-h-155 bg-surface">
+          {/* Mirrors the phone layout: media with floating controls, the
+              summary, then sections separated by soft bands. */}
+          <div className="relative h-[58svh] min-h-80 max-h-160 bg-surface">
             <Skeleton className="h-full w-full rounded-none bg-foreground/10" />
+            <div
+              className="absolute inset-x-0 top-0 flex justify-between px-3"
+              style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 12px)" }}
+            >
+              <div className="h-10 w-10 rounded-full bg-black/20" />
+              <div className="flex gap-2">
+                <div className="h-10 w-10 rounded-full bg-black/20" />
+                <div className="h-10 w-10 rounded-full bg-black/20" />
+              </div>
+            </div>
           </div>
 
-          {/* Title + price + caption (PostInfo) */}
-          <div className="space-y-2.5 border-b border-default px-4 py-4">
-            <Skeleton className="h-7 w-28 rounded-full bg-foreground/10" />
+          <div className="space-y-2.5 px-4 py-4">
+            <Skeleton className="h-7 w-32 rounded-full bg-foreground/10" />
             <Skeleton className="h-5 w-4/5 rounded-full bg-foreground/10" />
-            <Skeleton className="h-4 w-full rounded-full bg-foreground/10" />
-            <Skeleton className="h-4 w-3/4 rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 w-1/2 rounded-full bg-foreground/10" />
           </div>
+          <div className="h-2 bg-surface" />
 
-          {/* Stats grid — Views / Saves / Comments */}
-          <div className="px-4 pt-4">
-            <div className="grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center gap-1.5 px-2 py-3"
-                >
-                  <Skeleton className="h-4 w-10 rounded-full bg-foreground/10" />
-                  <Skeleton className="h-2.5 w-12 rounded-full bg-foreground/10" />
-                </div>
-              ))}
+          <div className="space-y-3 px-4 py-4">
+            <Skeleton className="h-5 w-16 rounded-full bg-foreground/10" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-full bg-foreground/10" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-32 rounded-full bg-foreground/10" />
+                <Skeleton className="h-3 w-40 rounded-full bg-foreground/10" />
+              </div>
             </div>
-            {/* Message | Call 2-grid */}
-            <div className="mt-4 grid grid-cols-2 gap-2.5 pb-4">
-              <Skeleton className="h-11 rounded-full bg-foreground/10" />
-              <Skeleton className="h-11 rounded-full bg-foreground/10" />
-            </div>
+            <Skeleton className="h-10 w-full rounded-[10px] bg-foreground/10" />
           </div>
+          <div className="h-2 bg-surface" />
 
-          {/* Creator row */}
-          <div className="flex items-center gap-3 border-b border-default px-4 py-3">
-            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-3.5 w-28 rounded-full bg-foreground/10" />
-              <Skeleton className="h-3 w-20 rounded-full bg-foreground/10" />
-            </div>
-            <Skeleton className="h-8 w-20 rounded-full bg-foreground/10" />
-          </div>
-
-          {/* Comments */}
-          <div className="space-y-4 px-4 pb-28 pt-4">
-            <Skeleton className="h-4 w-24 rounded-full bg-foreground/10" />
+          <div className="space-y-3 px-4 py-4">
+            <Skeleton className="h-5 w-20 rounded-full bg-foreground/10" />
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-foreground/10" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3 w-24 rounded-full bg-foreground/10" />
-                  <Skeleton className="h-3.5 w-full rounded-full bg-foreground/10" />
-                  <Skeleton className="h-3.5 w-2/3 rounded-full bg-foreground/10" />
-                </div>
+              <div key={i} className="flex justify-between">
+                <Skeleton className="h-4 w-20 rounded-full bg-foreground/10" />
+                <Skeleton className="h-4 w-28 rounded-full bg-foreground/10" />
               </div>
             ))}
           </div>
 
-          {/* Bottom bar — comment composer (input pill only) */}
           <div
             className="fixed inset-x-0 bottom-0 border-t border-default bg-app px-3 pt-2.5"
-            style={{
-              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-            }}
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
           >
-            <Skeleton className="h-11 w-full rounded-full bg-foreground/10" />
+            <div className="grid grid-cols-[auto_1fr] gap-2">
+              <Skeleton className="h-12 w-24 rounded-[12px] bg-foreground/10" />
+              <Skeleton className="h-12 rounded-[12px] bg-foreground/10" />
+            </div>
           </div>
         </div>
       </>
@@ -1871,42 +1918,63 @@ export function ContentDetail({
           `overflow-x-clip`, not hidden: hidden would make this the scroll
           container and the sticky header would stop sticking.
       ════════════════════════════════════════════════════════ */}
-      {isDesktop === false && (
+      {isDesktop === false && (() => {
+        const hasPrice = Boolean(post.price && post.price.amount > 0);
+        const priceText = hasPrice
+          ? `${post.price!.currency} ${post.price!.amount.toLocaleString()}`
+          : "Price on request";
+        // Area + county for the summary line; the full address is in Details.
+        const place = [
+          post.location?.subregion || post.location?.placeName,
+          post.location?.county,
+        ]
+          .filter((part, i, all): part is string => Boolean(part) && all.indexOf(part) === i)
+          .join(", ");
+        const memberSince = (postCreator as { createdAt?: string | null } | null | undefined)?.createdAt;
+        const followerCount = postCreator?.followerCount ?? 0;
+        const detailRows = [
+          ...(categoryLabel ? [{ label: "Category", value: categoryLabel }] : []),
+          ...specs.map((spec) => ({ label: spec.key, value: spec.value })),
+          ...(fullLocation ? [{ label: "Location", value: fullLocation }] : []),
+        ];
+        const shopHref = profileHref(lang, { username: postCreator?.username, id: post.creatorId });
+        const startMessage = () => {
+          if (!resolvedContentId) return;
+          trackMessageIntent();
+          if (!requireAuth({ contentId: resolvedContentId })) return;
+          openMessageRoute();
+        };
+
+        return (
         <div className="relative min-h-svh overflow-x-clip bg-app">
+          {/* ── Compact header: slides in once the media has scrolled away ── */}
           <header
-            className="sticky top-0 z-40 flex items-center gap-2 bg-app px-3 pb-2.5 "
-            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
+            aria-hidden={mediaInView}
+            className={[
+              "fixed inset-x-0 top-0 z-40 flex items-center gap-1 border-b border-default bg-app px-2 pb-2 transition-all duration-200",
+              mediaInView ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100",
+            ].join(" ")}
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 8px)" }}
           >
             <button
               type="button"
               onClick={goBack}
               aria-label="Go back"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
+              tabIndex={mediaInView ? -1 : 0}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-main active:bg-surface"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
+              <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
             </button>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-default">
-                {post.title}
-              </p>
+              <p className="truncate text-[14px] font-semibold leading-5 text-main">{post.title}</p>
+              <p className="truncate text-[12px] leading-4 text-muted">{priceText}</p>
             </div>
             <button
               type="button"
               onClick={() => handleSave()}
               aria-label={resolvedSaved ? "Remove saved listing" : "Save listing"}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
+              tabIndex={mediaInView ? -1 : 0}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-main active:bg-surface"
             >
               <Bookmark
                 className="h-5 w-5"
@@ -1918,14 +1986,22 @@ export function ContentDetail({
             <button
               type="button"
               onClick={handleShare}
-              aria-label="Share post"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
+              aria-label="Share listing"
+              tabIndex={mediaInView ? -1 : 0}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-main active:bg-surface"
             >
-              <Send className="h-5 w-5" />
+              <Forward className="h-5 w-5" strokeWidth={2} />
             </button>
           </header>
 
-          <section className="relative h-[52svh] min-h-80 max-h-140 bg-surface">
+          {/* ── Media: full width, nothing overlaps it ───────────────────────
+              The details used to be pulled up over the media's bottom edge
+              (-mt-4 + rounded corners), which hid the video's progress bar and
+              the image dots. The media now ends cleanly where the page begins. */}
+          <section
+            ref={mediaRef}
+            className={["relative h-[58svh] min-h-80 max-h-160", isVideo ? "bg-black" : "bg-surface"].join(" ")}
+          >
             {isVideo && hlsUrl ? (
               <ContentVideo
                 hlsUrl={hlsUrl}
@@ -1934,9 +2010,10 @@ export function ContentDetail({
                 setMuted={setVideoMuted}
                 fill
                 showSpinner
+                showMuteButton
+                controlsAt="bottom"
                 fullscreenOpen={showMediaDialog}
                 resumeTime={fullscreenVideoTime}
-                fullscreenSide="left"
                 onFullscreen={(time) => {
                   setFullscreenVideoTime(time);
                   setShowMediaDialog(true);
@@ -1954,188 +2031,235 @@ export function ContentDetail({
               />
             )}
 
-            {isVideo && (
-              <button
-                type="button"
-                onClick={() => setVideoMuted(!muted)}
-                aria-label={muted ? "Unmute video" : "Mute video"}
-                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white "
-              >
-                {muted ? (
-                  <svg
-                    className="w-6 h-6"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-6 h-6"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </button>
-            )}
+            {/* Floating controls over the media, clear of the status bar. */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 z-50 flex items-center justify-between px-3"
+              style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 12px)" }}
+            >
+              <div className="pointer-events-auto">
+                <OverlayButton label="Go back" onClick={goBack}>
+                  <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
+                </OverlayButton>
+              </div>
+              <div className="pointer-events-auto flex items-center gap-2">
+                <OverlayButton
+                  label={resolvedSaved ? "Remove saved listing" : "Save listing"}
+                  pressed={resolvedSaved}
+                  onClick={() => void handleSave()}
+                >
+                  <Bookmark
+                    className="h-5 w-5"
+                    fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
+                    stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "currentColor"}
+                    strokeWidth={2}
+                  />
+                </OverlayButton>
+                <OverlayButton label="Share listing" onClick={handleShare}>
+                  <Forward className="h-5 w-5" strokeWidth={2} />
+                </OverlayButton>
+              </div>
+            </div>
 
             {!isVideo && media.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2.5 py-2 ">
-                {media.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setImgIdx(i)}
-                    aria-label={`Show media ${i + 1}`}
-                    className={[
-                      "rounded-full transition-all",
-                      i === imgIdx
-                        ? "h-1.5 w-4 bg-white"
-                        : "h-1.5 w-1.5 bg-white/50",
-                    ].join(" ")}
-                  />
-                ))}
-              </div>
+              <span className="pointer-events-none absolute bottom-3 right-3 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[12px] font-semibold tabular-nums text-white backdrop-blur-md">
+                {imgIdx + 1} / {media.length}
+              </span>
             )}
-
           </section>
 
           <main
-            className={`relative z-10 -mt-4 rounded-t-3xl bg-app ${isOwnPost ? "pb-6" : "pb-28"}`}
+            className={isOwnPost ? "pb-8" : ""}
+            style={isOwnPost ? undefined : { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)" }}
           >
-            <section className="rounded-t-3xl border-b border-default px-4 pb-5 pt-5">
-              {post.price && (
-                <div className="mb-2.5 flex flex-wrap items-center gap-2">
-                  <span
-                    className="text-2xl font-extrabold tracking-tight"
-                    style={{ color: "rgb(var(--brand-primary))" }}
-                  >
-                    {post.price.amount === 0
-                      ? "Free"
-                      : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+            {/* ── What it is ───────────────────────────────────────────── */}
+            <section className="px-4 pb-4 pt-4">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                {hasPrice ? (
+                  <span className="text-[24px] font-bold leading-7 tracking-[-0.02em] text-main tabular-nums">
+                    {priceText}
                   </span>
-                  {post.price.negotiable && (
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                      Negotiable
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <h1 className="text-xl font-bold leading-snug tracking-tight text-default">
-                {post.title}
-              </h1>
-
-              {fullLocation && (
-                <div className="mt-3 flex flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                ) : (
+                  <span className="text-[18px] font-semibold leading-7 text-muted">{priceText}</span>
+                )}
+                {hasPrice && post.price?.negotiable && (
+                  <span className="rounded-full bg-surface px-2 py-0.5 text-[12px] font-medium text-muted">
+                    Negotiable
+                  </span>
+                )}
+              </div>
+              <h1 className="mt-1 text-[18px] font-semibold leading-6 text-main">{post.title}</h1>
+              <p className="mt-2 flex min-w-0 items-center gap-1 text-[13px] leading-5 text-muted">
+                {place && (
+                  <>
                     <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    {fullLocation}
-                  </span>
-                </div>
-              )}
-
-              {caption && (
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  {displayCaption}
-                  {isLongCaption && (
-                    <button
-                      type="button"
-                      onClick={() => setCaptionExpanded((v) => !v)}
-                      className="ml-1 font-semibold text-primary"
-                    >
-                      {captionExpanded ? "less" : "more"}
-                    </button>
-                  )}
-                </p>
-              )}
-
-              {post.hashtags && post.hashtags.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {post.hashtags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs font-semibold text-muted-foreground"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Interest in this listing, as one quiet line.
-
-                  This was a bordered three-up panel sitting directly above the
-                  Message button — roughly 60px of chrome whose most prominent
-                  cell, on a listing nobody has commented on yet, read "0
-                  Comments". A buyer deciding whether to contact a stranger about
-                  a six-figure laptop is not helped by being told nobody else has
-                  spoken up. Zeros are dropped rather than displayed, and the
-                  comment count is left to the Comments heading further down,
-                  which already carries it.
-
-                  Views are shown to the seller only. On a young marketplace the
-                  true number is usually small, and "3 views" tells a buyer the
-                  listing is being ignored — a signal that discourages the
-                  contact we want, about a figure that says nothing about the
-                  product. The seller still needs it, so it stays on their own
-                  listings and in their analytics; it is hidden from everyone
-                  else, not removed. */}
-              {((isOwnPost && post.stats.views > 0) ||
-                resolvedSaveCount > 0) && (
-                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                    <span className="truncate">{place}</span>
+                    <span aria-hidden="true">·</span>
+                  </>
+                )}
+                <span className="shrink-0">Listed {timeAgo(post.createdAt)}</span>
+              </p>
+              {/* Interest as one quiet line. Views are the seller's figure: a
+                  low count tells a buyer the listing is being ignored, which
+                  discourages the contact we want. Zeros are never shown. */}
+              {((isOwnPost && post.stats.views > 0) || resolvedSaveCount > 0) && (
+                <p className="mt-1 text-[13px] leading-5 text-muted">
                   {[
-                    isOwnPost && post.stats.views > 0
-                      ? `${fmt(post.stats.views)} views`
-                      : null,
+                    isOwnPost && post.stats.views > 0 ? `${fmt(post.stats.views)} views` : null,
                     resolvedSaveCount > 0
-                      ? `${fmt(resolvedSaveCount)} saved`
+                      ? `${fmt(resolvedSaveCount)} ${resolvedSaveCount === 1 ? "person" : "people"} saved this`
                       : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
               )}
-
             </section>
 
-            <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-default bg-elevated">
-              {CreatorRow}
-            </section>
-            {DetailMeta && (
-              <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-default bg-elevated">
-                {DetailMeta}
-              </section>
+            <SectionGap />
+
+            {/* ── Who sells it ─────────────────────────────────────────── */}
+            <ListingSection title="Seller">
+              <div className="flex items-center gap-3">
+                <Link
+                  href={shopHref}
+                  className="flex min-w-0 flex-1 items-center gap-3 no-underline"
+                  aria-label={creatorName ? `View ${creatorName}'s shop` : "View seller's shop"}
+                >
+                  <div
+                    className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full ${avatarUrl ? "bg-surface" : `bg-linear-to-br ${avatarColors(post.creatorId)}`}`}
+                  >
+                    {avatarUrl ? (
+                      <Image
+                        // Decorative: the name sits beside it, and a failed
+                        // load would otherwise print the name in the circle.
+                        src={avatarUrl}
+                        alt=""
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                        placeholder="blur"
+                        blurDataURL={SHIMMER_AVATAR}
+                      />
+                    ) : (
+                      <span className="text-[13px] font-bold text-white">
+                        {post.creatorId.slice(-2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {creatorName ? (
+                      <p className="flex items-center gap-1 text-[15px] font-semibold leading-5 text-main">
+                        <span className="truncate">{creatorName}</span>
+                        {postCreator?.isVerified && (
+                          <BadgeCheck size={16} className="shrink-0 text-[#1D9BF0]" aria-label="Verified seller" />
+                        )}
+                      </p>
+                    ) : (
+                      <div className="h-4 w-28 animate-pulse rounded-full bg-surface" />
+                    )}
+                    <p className="mt-0.5 truncate text-[13px] leading-5 text-muted">
+                      {[
+                        memberSince
+                          ? `On Shopi since ${new Date(memberSince).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`
+                          : null,
+                        followerCount > 0 ? `${fmt(followerCount)} follower${followerCount === 1 ? "" : "s"}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "View shop"}
+                    </p>
+                  </div>
+                </Link>
+                {!isOwnPost && (
+                  <button
+                    type="button"
+                    onClick={handleFollow}
+                    className={[
+                      "h-8 shrink-0 rounded-full px-3.5 text-[13px] font-semibold transition-colors active:scale-95",
+                      following
+                        ? "bg-surface text-muted"
+                        : "bg-primary-soft text-primary-strong dark:text-primary",
+                    ].join(" ")}
+                  >
+                    {following ? "Following" : "Follow"}
+                  </button>
+                )}
+              </div>
+              <Link
+                href={shopHref}
+                className="mt-3 flex h-10 items-center justify-center rounded-[10px] border border-default text-[14px] font-semibold text-main no-underline active:bg-surface"
+              >
+                Visit shop
+              </Link>
+            </ListingSection>
+
+            {detailRows.length > 0 && (
+              <>
+                <SectionGap />
+                <ListingSection title="Details">
+                  <DetailRows rows={detailRows} />
+                </ListingSection>
+              </>
             )}
-            <section
-              ref={commentsRef}
-              className="mx-3 mt-3 rounded-2xl border border-default bg-elevated px-4 py-4"
+
+            {caption && (
+              <>
+                <SectionGap />
+                <ListingSection title="Description">
+                  <p className="whitespace-pre-line text-[14px] leading-6 text-main">
+                    {displayCaption}
+                  </p>
+                  {isLongCaption && (
+                    <button
+                      type="button"
+                      onClick={() => setCaptionExpanded((v) => !v)}
+                      className="mt-1 text-[14px] font-semibold text-main underline-offset-2 hover:underline"
+                    >
+                      {captionExpanded ? "Show less" : "Read more"}
+                    </button>
+                  )}
+                  {post.hashtags && post.hashtags.length > 0 && (
+                    <p className="mt-2 text-[13px] leading-5 text-muted">
+                      {post.hashtags.map((tag) => `#${tag}`).join("  ")}
+                    </p>
+                  )}
+                </ListingSection>
+              </>
+            )}
+
+            {!isOwnPost && (
+              <>
+                <SectionGap />
+                <ListingSection title="Buying on Shopi">
+                  <BuyingSteps />
+                  <p className="mt-4 flex items-start gap-2 rounded-[10px] bg-surface px-3 py-2.5 text-[13px] leading-5 text-muted">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                    <span>
+                      Shopi will never ask you to pay through a link. Don&apos;t share M-Pesa PINs or
+                      codes with anyone.
+                    </span>
+                  </p>
+                </ListingSection>
+              </>
+            )}
+
+            <SectionGap />
+
+            {/* ── Questions & comments ─────────────────────────────────── */}
+            <ListingSection
+              sectionRef={commentsRef}
+              title="Questions & comments"
+              aside={
+                resolvedCommentCount > 0 ? (
+                  <span className="text-[13px] text-muted">{fmt(resolvedCommentCount)}</span>
+                ) : undefined
+              }
             >
-              <h2 className="pb-3 text-sm font-bold text-default">
-                {resolvedCommentCount > 0
-                  ? `${fmt(resolvedCommentCount)} Comments`
-                  : "Comments"}
-              </h2>
-              <CommentList
-                thread={mobileThread}
-                contentCreatorId={post.creatorId}
-                className=""
-              />
+              <CommentList thread={mobileThread} contentCreatorId={post.creatorId} className="" />
               {mobileReplyingTo && (
-                <div className="mt-3 flex items-center justify-between rounded-xl bg-surface px-3 py-2 text-xs text-muted-foreground">
+                <div className="mt-3 flex items-center justify-between rounded-[10px] bg-surface px-3 py-2 text-[13px] text-muted">
                   <span>
                     Replying to{" "}
-                    <span className="font-medium text-default">
+                    <span className="font-medium text-main">
                       {mobileReplyingTo.author?.profile?.firstName ??
                         `User ${mobileReplyingTo.creatorId.slice(-6)}`}
                     </span>
@@ -2143,10 +2267,10 @@ export function ContentDetail({
                   <button
                     type="button"
                     onClick={() => setMobileReplyingTo(null)}
-                    className="ml-2 text-muted-foreground hover:text-default"
+                    className="ml-2 flex h-6 w-6 items-center justify-center rounded-full text-muted hover:text-main"
                     aria-label="Cancel reply"
                   >
-                    ✕
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               )}
@@ -2165,57 +2289,77 @@ export function ContentDetail({
                   onFocus={() => {
                     if (
                       !resolvedContentId ||
-                      !requireAuth({
-                        contentId: resolvedContentId,
-                        action: "comment",
-                      })
+                      !requireAuth({ contentId: resolvedContentId, action: "comment" })
                     )
                       mobileCommentInputRef.current?.blur();
                   }}
-                  placeholder={mobileReplyingTo ? "Write a reply…" : "Add a comment…"}
+                  placeholder={mobileReplyingTo ? "Write a reply…" : "Ask the seller a question…"}
                   maxLength={500}
-                  className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-sm placeholder:text-muted-foreground focus:border-primary"
+                  className="h-11 min-w-0 flex-1 rounded-full border border-default bg-surface px-4 text-[14px] text-main outline-none transition-colors placeholder:text-muted focus:border-primary"
                 />
                 {mobileCommentText.trim() && (
                   <button
                     type="button"
                     onClick={handleMobileSend}
                     aria-label="Send comment"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-highlight, var(--brand-primary))))",
-                    }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-transform active:scale-95"
                   >
                     <Send className="h-4 w-4" strokeWidth={2.2} />
                   </button>
                 )}
               </div>
-            </section>
-            {related && <div className="border-t border-default">{related}</div>}
-          </main>
+            </ListingSection>
 
-          {!isOwnPost && (
-            <div
-              className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app px-3 pt-2.5 "
-              style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-              }}
-            >
-              <div className="mx-auto grid w-full max-w-xl grid-cols-[1fr_auto] gap-2">
+            {related && (
+              <>
+                <SectionGap />
+                <div>{related}</div>
+              </>
+            )}
+
+            {/* ── Housekeeping, out of the way ─────────────────────────── */}
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-default px-4 py-5 text-[13px] text-muted">
+              <button type="button" onClick={() => void handleCopyLink()} className="flex items-center gap-1.5 active:text-main">
+                <Link2 className="h-4 w-4" /> Copy link
+              </button>
+              {post.allowDownload && (
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={isDownloading || videoDownload.isDownloading}
+                  className="flex items-center gap-1.5 active:text-main disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" />
+                  {videoDownload.isPreparing
+                    ? "Preparing…"
+                    : isDownloading || videoDownload.isDownloading
+                      ? "Downloading…"
+                      : "Download"}
+                </button>
+              )}
+              {!isOwnPost && (
                 <button
                   type="button"
                   onClick={() => {
                     if (!resolvedContentId) return;
-                    trackMessageIntent();
                     if (!requireAuth({ contentId: resolvedContentId })) return;
-                    openMessageRoute();
+                    void handleReport().then(() => toast.success("Thanks — we'll review this listing"));
                   }}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                  className="flex items-center gap-1.5 active:text-main"
                 >
-                  <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
-                  Message seller
+                  <Flag className="h-4 w-4" /> Report listing
                 </button>
+              )}
+            </div>
+          </main>
+
+          {/* ── Contact bar ─────────────────────────────────────────────── */}
+          {!isOwnPost && (
+            <div
+              className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app px-3 pt-2.5"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
+            >
+              <div className="mx-auto grid w-full max-w-xl grid-cols-[auto_1fr] gap-2">
                 <button
                   type="button"
                   disabled={sellerPhoneLoading}
@@ -2230,9 +2374,9 @@ export function ContentDetail({
                     if (!revealed) toast("This seller hasn't added a phone number");
                   }}
                   aria-label={sellerPhone ? "Call seller" : "Show seller phone number"}
-                  className="flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-xl border border-default bg-elevated px-3 text-sm font-semibold text-default transition-colors active:bg-surface disabled:opacity-60"
+                  className="flex h-12 min-w-24 items-center justify-center gap-2 rounded-[12px] border border-default bg-elevated px-4 text-[15px] font-semibold text-main transition-colors active:bg-surface disabled:opacity-60"
                 >
-                  <Phone className="h-4 w-4 shrink-0" strokeWidth={2.2} />
+                  <Phone className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
                   <span className="max-w-32 truncate">
                     {sellerPhoneLoading
                       ? "Loading…"
@@ -2243,11 +2387,20 @@ export function ContentDetail({
                           : "Call"}
                   </span>
                 </button>
+                <button
+                  type="button"
+                  onClick={startMessage}
+                  className="flex h-12 items-center justify-center gap-2 rounded-[12px] bg-primary px-4 text-[15px] font-semibold text-white transition-transform active:scale-[0.98]"
+                >
+                  <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                  Message seller
+                </button>
               </div>
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {showMediaDialog && media.length > 0 && (
         <MediaCarouselDialog

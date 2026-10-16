@@ -4,11 +4,10 @@ import { memo, useCallback, useState } from "react";
 import type { MouseEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bookmark, ImageIcon, Images, Play } from "lucide-react";
+import { Bookmark, ImageIcon, Images, MapPin, Play } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { contentPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
-import { idInitials } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
@@ -23,29 +22,24 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
  * The post tile. One component for phone and desktop — only the column count
  * changes, never the anatomy.
  *
- * Three bands, in the order a buyer actually uses them:
+ * Top to bottom it answers a buyer's questions in the order they ask them:
  *
- *   1. WHO — avatar and seller, above the photo. On a marketplace the seller is
- *      half the decision, and putting them above the photo rather than on it
- *      means the photo is never covered and the row is its own tap target to
- *      the profile.
- *   2. WHAT — the photo, edge to edge, no card border or panel. Chrome around
- *      forty small tiles reads as a spreadsheet, not a feed. The only things
- *      over it are Save and, for video, a duration chip.
- *   3. THE DECISION — price first, so prices align down the column and compare
- *      at a glance; then the title; then where it is.
- *
- * Location moved off the photo and into that third band. As a glass pill it was
- * competing with the product for the same pixels, and it is not a reason to tap
- * so much as something you check once you are interested.
- *
- * The "Popular"/"New" chip is gone. It was the one piece of pure decoration
- * here: derived from save counts and age rather than from anything the seller
- * did, floating over the product, and on a full grid it turned into wallpaper.
+ *   1. WHAT — the photo, edge to edge, no card border or panel. Chrome around
+ *      forty small tiles reads as a spreadsheet, not a feed. Over it: Save,
+ *      Negotiable, and what tapping opens (a video's length, a photo count).
+ *   2. HOW MUCH — the price, first and boldest, on a line of its own. Prices
+ *      line up across a row and compare at a glance however long the titles
+ *      under them run.
+ *   3. WHICH ONE — the title, in the seller's own casing at reading weight. It
+ *      used to be bold uppercase, which made every title shout and left the
+ *      price nothing to stand out against.
+ *   4. WHERE — county, then area, behind a pin.
+ *   5. WHO — the seller, small and last. As a row above the photo at title
+ *      size it made the grid read as a list of people rather than of things.
+ *      It is still one tap to the shop.
  *
  * Cover ratio is a uniform 3:4 at every width, so rows align and infinite
- * scroll never reflows under the thumb. It used to widen to 4:5 at md+, which
- * meant the same tile had two different shapes depending on the viewport.
+ * scroll never reflows under the thumb.
  */
 
 /**
@@ -63,7 +57,7 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 export const DISCOVER_GRID =
   "grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 md:gap-x-5 md:gap-y-8 xl:grid-cols-4 xl:gap-x-6 xl:gap-y-10 min-[90rem]:grid-cols-5";
 
-/** "KSh 12,500" — grouped thousands, no decimals. */
+/** "KES 12,500" — grouped thousands, no decimals. */
 function formatPrice(amount: number, currency: string) {
   return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
 }
@@ -123,6 +117,30 @@ function getThumb(post: ContentCardFieldsFragment): string | null {
   );
 }
 
+/** The blue tick the feed card and profiles use, sized for a 12px line. */
+function VerifiedMark() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 20 20"
+      fill="none"
+      className="shrink-0"
+      role="img"
+      aria-label="Verified seller"
+    >
+      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
+      <path
+        d="M6 10.5l2.5 2.5 5.5-5.5"
+        stroke="white"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function DiscoverGridCardImpl({
   post,
   lang,
@@ -142,12 +160,12 @@ function DiscoverGridCardImpl({
    */
   showSave?: boolean;
   /**
-   * Whether to draw the seller row.
+   * Whether to draw the seller line.
    *
    * A profile grid turns it off — every tile there belongs to the same seller,
    * so repeating them down the page is noise. It also self-disables when the
    * query behind the tile did not select `creator`, so a narrower query
-   * degrades to the old layout rather than to an empty row.
+   * degrades to a tile without it rather than to an empty line.
    */
   showSeller?: boolean;
 }) {
@@ -171,7 +189,8 @@ function DiscoverGridCardImpl({
   const hasPrice = !!post.price && post.price.amount > 0;
   const priceText = hasPrice
     ? formatPrice(post.price.amount, post.price.currency)
-    : "Ask price";
+    : "Price on request";
+  const negotiable = hasPrice && Boolean(post.price?.negotiable);
   const place = post.location ? locationLabel(post.location) : null;
   const creator = post.creator;
   const seller = showSeller && creator ? sellerName(creator) : null;
@@ -185,7 +204,14 @@ function DiscoverGridCardImpl({
 
   // Screen readers get the whole decision in one label — the visual hierarchy
   // doesn't survive being read tile by tile.
-  const ariaLabel = [post.title, priceText, place].filter(Boolean).join(", ");
+  const ariaLabel = [
+    post.title,
+    priceText,
+    negotiable ? "negotiable" : null,
+    place,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const onSaveTap = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -199,50 +225,21 @@ function DiscoverGridCardImpl({
   );
 
   return (
-    // Not one big Link: the seller row links to the profile and the rest links
-    // to the post, and an <a> inside an <a> is invalid and un-clickable.
+    // Two links rather than one around everything: the seller line goes to
+    // the shop and the rest to the post, and an <a> inside an <a> is invalid
+    // and un-clickable.
     // data-scroll-anchor: what a return to this grid lines back up with.
-    <div data-scroll-anchor={post.id} className="group/tile flex flex-col">
-      {/* ---- 1. Who --------------------------------------------------- */}
-      {seller && creator ? (
-        <Link
-          href={profileHref(lang, creator)}
-          scroll={false}
-          className="mb-2.5 flex min-w-0 items-center gap-2 outline-none"
-        >
-          {creator.profile?.avatar && !avatarFailed ? (
-            <Image
-              src={creator.profile.avatar}
-              alt=""
-              width={24}
-              height={24}
-              className="h-6 w-6 shrink-0 rounded-full object-cover"
-              onError={() => setAvatarFailed(true)}
-            />
-          ) : (
-            <span
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-main text-[9px] font-black text-elevated"
-              aria-hidden
-            >
-              {idInitials(creator.id)}
-            </span>
-          )}
-          <span className="truncate text-[13px] font-semibold leading-[18.5px] text-main group-hover/tile:underline">
-            {seller}
-          </span>
-        </Link>
-      ) : null}
-
+    <div data-scroll-anchor={post.id} className="flex min-w-0 flex-col">
       <Link
         href={contentPath(lang, post)}
         scroll={false}
-        className="block outline-none"
+        className="group/post block outline-none"
         aria-label={ariaLabel}
         {...bind}
       >
-        {/* ---- 2. What ------------------------------------------------ */}
+        {/* ---- What ------------------------------------------------------ */}
         <div
-          className="group/cover relative aspect-3/4 w-full overflow-hidden rounded-xl transition-transform duration-200 group-focus-visible/tile:ring-2 group-focus-visible/tile:ring-primary active:scale-[0.98]"
+          className="group/cover relative aspect-3/4 w-full overflow-hidden rounded-xl transition-transform duration-200 active:scale-[0.98] group-focus-visible/post:ring-2 group-focus-visible/post:ring-primary group-focus-visible/post:ring-offset-2"
           style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
         >
           {thumb && !imageFailed ? (
@@ -256,7 +253,8 @@ function DiscoverGridCardImpl({
               alt=""
               fill
               className="object-cover transition-transform duration-300 group-hover/cover:scale-[1.04]"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+              // Matches DISCOVER_GRID's columns: 2 → 3 at md → 4 at xl → 5.
+              sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, (max-width: 1439px) 25vw, 20vw"
               priority={priority}
               loading={priority ? "eager" : "lazy"}
               placeholder="blur"
@@ -285,7 +283,7 @@ function DiscoverGridCardImpl({
               aria-pressed={saved}
               aria-label={saved ? "Remove from saved" : `Save ${post.title}`}
               className={cn(
-                "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full  transition active:scale-90",
+                "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition active:scale-90",
                 saved ? "bg-white text-primary" : "bg-black/40 text-white",
               )}
             >
@@ -298,21 +296,18 @@ function DiscoverGridCardImpl({
             </button>
           )}
 
-          {/* Was inline text next to the price ("KES 14,500,000 Negotiable"),
-              which had nowhere to go on a 2-up mobile grid and ran into the
-              next tile. A small badge in the empty top-left corner instead —
-              same quiet black/40 chip as Save and the photo/video count, not
-              a shouty colored "Negotiable!" tag. */}
-          {post.price?.negotiable && hasPrice ? (
-            <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold leading-none text-white ">
+          {/* A quiet chip in the empty corner rather than words beside the
+              price, where a 2-up phone grid has no room for them. */}
+          {negotiable ? (
+            <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold leading-none text-white backdrop-blur-md">
               Negotiable
             </span>
           ) : null}
 
-          {/* What kind of media this is — the one thing still over the photo,
-              because it changes what tapping it does. */}
+          {/* What kind of media this is, because it changes what tapping the
+              tile opens. */}
           {isVideo || photoCount > 1 ? (
-            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white  tabular-nums">
+            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white tabular-nums">
               {isVideo ? (
                 <>
                   <Play
@@ -333,30 +328,65 @@ function DiscoverGridCardImpl({
           ) : null}
         </div>
 
-        {/* ---- 3. The decision ---------------------------------------- */}
-        <div className="pt-3">
-          {post.title && (
-            // Smaller on mobile: at 15px/leading-5 this ran two bold uppercase
-            // lines that dwarfed the price/location beneath it — heavy for a
-            // 2-up grid, where 96% of traffic actually sees this tile.
-            <p className="line-clamp-2 text-[13px] font-black uppercase leading-4 tracking-normal text-main md:text-[15px] md:leading-5">
+        {/* ---- How much, which one, where ---------------------------------- */}
+        <div className="pt-2">
+          <p
+            className={cn(
+              "truncate leading-5 tabular-nums md:leading-6",
+              hasPrice
+                ? "text-[15px] font-bold tracking-[-0.01em] text-main md:text-base"
+                : "text-[13px] font-medium text-muted md:text-[14px]",
+            )}
+          >
+            {priceText}
+          </p>
+
+          {post.title ? (
+            <p className="mt-0.5 line-clamp-2 text-[13px] leading-[18px] text-main md:text-[14px] md:leading-5 md:group-hover/post:underline">
               {post.title}
             </p>
-          )}
+          ) : null}
 
-          <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] font-medium leading-[18.5px] text-muted">
-            <span className="shrink-0 font-bold text-main">
-              {hasPrice ? priceText : "Ask"}
-            </span>
-            {place ? (
-              <>
-                <span className="shrink-0 text-muted">•</span>
-                <span className="truncate">{place}</span>
-              </>
-            ) : null}
-          </p>
+          {place ? (
+            <p className="mt-1 flex min-w-0 items-center gap-1 text-[12px] leading-4 text-muted">
+              <MapPin size={12} strokeWidth={2} className="shrink-0" aria-hidden />
+              <span className="truncate">{place}</span>
+            </p>
+          ) : null}
         </div>
       </Link>
+
+      {/* ---- Who ----------------------------------------------------------- */}
+      {seller && creator ? (
+        <Link
+          href={profileHref(lang, creator)}
+          scroll={false}
+          className="mt-1 flex min-w-0 max-w-full items-center gap-1.5 self-start py-1 outline-none hover:underline focus-visible:underline"
+        >
+          {creator.profile?.avatar && !avatarFailed ? (
+            <Image
+              src={creator.profile.avatar}
+              alt=""
+              width={16}
+              height={16}
+              className="h-4 w-4 shrink-0 rounded-full object-cover"
+              onError={() => setAvatarFailed(true)}
+            />
+          ) : (
+            <span
+              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-subtle text-[9px] font-semibold uppercase leading-none text-muted"
+              aria-hidden
+            >
+              {seller.charAt(0)}
+            </span>
+          )}
+          <span className="truncate text-[12px] leading-4 text-muted">
+            <span className="sr-only">Sold by </span>
+            {seller}
+          </span>
+          {creator.isVerified ? <VerifiedMark /> : null}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -367,8 +397,8 @@ function DiscoverGridCardImpl({
 export const DiscoverGridCard = memo(DiscoverGridCardImpl);
 
 /**
- * Loading stand-in with the tile's exact anatomy — seller row, 3:4 cover,
- * two-line title, price • place — so nothing shifts when real tiles land.
+ * Loading stand-in with the tile's exact anatomy — 3:4 cover, price, two-line
+ * title, place, seller — so nothing shifts when real tiles land.
  */
 export function DiscoverGridCardSkeleton({
   showSeller = true,
@@ -379,21 +409,21 @@ export function DiscoverGridCardSkeleton({
 }) {
   return (
     <div className={cn("flex flex-col", className)} aria-hidden>
+      <Skeleton className="aspect-3/4 w-full rounded-xl" />
+      <div className="pt-2">
+        <div className="flex h-5 items-center md:h-6">
+          <Skeleton className="h-3.5 w-20 md:h-4" />
+        </div>
+        <Skeleton className="mt-1.5 h-3 w-11/12" />
+        <Skeleton className="mt-1.5 h-3 w-2/3" />
+        <Skeleton className="mt-2.5 h-2.5 w-1/2" />
+      </div>
       {showSeller ? (
-        <div className="mb-2.5 flex items-center gap-2">
-          <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
-          <Skeleton className="h-3.5 w-24" />
+        <div className="mt-1 flex items-center gap-1.5 py-1">
+          <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
+          <Skeleton className="h-2.5 w-16" />
         </div>
       ) : null}
-      <Skeleton className="aspect-3/4 w-full rounded-xl" />
-      <div className="pt-3">
-        <Skeleton className="h-3.5 w-11/12 md:h-4" />
-        <Skeleton className="mt-1.5 h-3.5 w-2/3 md:h-4" />
-        <div className="mt-2 flex items-center gap-1.5">
-          <Skeleton className="h-3.5 w-16" />
-          <Skeleton className="h-3.5 w-20" />
-        </div>
-      </div>
     </div>
   );
 }
