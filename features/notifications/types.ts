@@ -15,7 +15,8 @@ export interface NotificationItem {
     | "POST_BOOSTED"
     | "NEW_POST"
     | "TEAM_MESSAGE"
-    | "REFERRAL";
+    | "REFERRAL"
+    | "SHOP_VERIFICATION";
   title: string;
   body: string;
   actorCount: number;

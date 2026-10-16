@@ -1,11 +1,11 @@
 "use client";
 
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import { memo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
 import {
-  BadgeCheck,
   Clock3,
   Eye,
   Link2,
@@ -282,12 +282,7 @@ function MobileStoreCard({
             <span className="truncate text-[15px] font-bold text-main">
               {store.displayName}
             </span>
-            {store.isVerified ? (
-              <BadgeCheck
-                className="h-4 w-4 shrink-0 text-primary"
-                aria-label="Verified seller"
-              />
-            ) : null}
+            {store.isVerified ? <VerifiedTick size={16} label="Verified shop" /> : null}
           </div>
           {/* The handle is who they are, the place only where: when the line
               runs short, the place gives way first. */}
@@ -496,12 +491,7 @@ function StoreTileComponent({
                 <span className="truncate text-sm font-bold text-main group-hover:underline">
                   {store.displayName}
                 </span>
-                {store.isVerified ? (
-                  <BadgeCheck
-                    className="h-4 w-4 shrink-0 text-primary"
-                    aria-label="Verified seller"
-                  />
-                ) : null}
+                {store.isVerified ? <VerifiedTick size={16} label="Verified shop" /> : null}
               </div>
               {/* How long they've been trading belongs next to who they are, not
                   in the metric strip — and keeping it out of there is what lets

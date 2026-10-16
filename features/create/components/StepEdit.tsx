@@ -557,7 +557,7 @@ export function StepEdit({
         rows={1}
         data-title-input
         aria-invalid={!!titleError}
-        className={`w-full overflow-hidden bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug text-md caret-primary ${
+        className={`w-full overflow-hidden bg-transparent outline-none resize-none placeholder:text-[14px] md:placeholder:text-base font-semibold leading-snug text-md caret-primary ${
           titleError ? "text-error" : "text-foreground"
         }`}
       />
@@ -600,7 +600,7 @@ export function StepEdit({
         rows={4}
         aria-invalid={!!descriptionError}
         aria-describedby="listing-description-hint"
-        className={`w-full resize-none rounded-xl border bg-surface px-3 py-2.5 text-base text-foreground caret-primary outline-none transition-all ${
+        className={`w-full resize-none rounded-xl border bg-surface px-3 py-2.5 text-base text-foreground caret-primary outline-none transition-all placeholder:text-[14px] md:placeholder:text-base ${
           descriptionError
             ? "border-[rgb(var(--color-error))]"
             : "border-border focus:border-primary"
@@ -662,7 +662,7 @@ export function StepEdit({
           placeholder={
             tags.length === 0 ? "fashion, style… (Enter to add)" : ""
           }
-          className="min-w-30 flex-1 bg-transparent text-base text-foreground caret-primary outline-none"
+          className="min-w-30 flex-1 bg-transparent text-base text-foreground caret-primary outline-none placeholder:text-[14px] md:placeholder:text-base"
         />
       </div>
       <p className="mt-1 text-xs text-muted">
@@ -726,7 +726,7 @@ export function StepEdit({
             placeholder="0"
             value={priceInput}
             onChange={(e) => setPriceInput(e.target.value)}
-            className="flex-1 bg-transparent text-md text-foreground outline-none"
+            className="flex-1 bg-transparent text-md text-foreground outline-none placeholder:text-[14px] md:placeholder:text-base"
           />
         </div>
         <button

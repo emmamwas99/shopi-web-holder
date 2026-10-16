@@ -9,6 +9,7 @@ import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { contentPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
 import { cn } from "@/lib/utils";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
 import { useSaveToggle } from "@/features/feed/hooks/useSaveToggle";
@@ -118,29 +119,6 @@ function getThumb(post: ContentCardFieldsFragment): string | null {
 }
 
 /** The blue tick the feed card and profiles use, sized for a 12px line. */
-function VerifiedMark() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 20 20"
-      fill="none"
-      className="shrink-0"
-      role="img"
-      aria-label="Verified seller"
-    >
-      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-      <path
-        d="M6 10.5l2.5 2.5 5.5-5.5"
-        stroke="white"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function DiscoverGridCardImpl({
   post,
   lang,
@@ -209,6 +187,7 @@ function DiscoverGridCardImpl({
     priceText,
     negotiable ? "negotiable" : null,
     place,
+    post.creator?.isVerified ? "Verified ID" : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -304,10 +283,16 @@ function DiscoverGridCardImpl({
             </span>
           ) : null}
 
+          {/* Every listing from a verified shop carries Verified ID in the
+              bottom-right corner of its media. */}
+          {post.creator?.isVerified ? (
+            <VerifiedIdBadge variant="overlay" className="pointer-events-none absolute bottom-2 right-2" />
+          ) : null}
+
           {/* What kind of media this is, because it changes what tapping the
               tile opens. */}
           {isVideo || photoCount > 1 ? (
-            <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white tabular-nums">
+            <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[11px] font-semibold leading-none text-white tabular-nums">
               {isVideo ? (
                 <>
                   <Play
@@ -384,7 +369,6 @@ function DiscoverGridCardImpl({
             <span className="sr-only">Sold by </span>
             {seller}
           </span>
-          {creator.isVerified ? <VerifiedMark /> : null}
         </Link>
       ) : null}
     </div>

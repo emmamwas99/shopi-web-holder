@@ -32,6 +32,7 @@ export async function ListingRelated({
     creator?: {
       id?: string | null;
       username?: string | null;
+      isVerified?: boolean | null;
       profile?: { firstName?: string | null; lastName?: string | null } | null;
     } | null;
     location?: { county?: string | null } | null;
@@ -72,6 +73,7 @@ export async function ListingRelated({
           title={`More from ${sellerName}`}
           listings={fromSeller}
           lang={lang}
+          verified={Boolean(post.creator?.isVerified)}
           more={
             post.creator?.username
               ? { href: profileHref(lang, post.creator), label: "See all" }
@@ -116,11 +118,14 @@ function RelatedGrid({
   listings,
   lang,
   more,
+  verified,
 }: {
   title: string;
   listings: SocialProofListing[];
   lang: string;
   more?: { href: string; label: string };
+  /** Every listing here is from one seller whose verification is known. */
+  verified?: boolean;
 }) {
   return (
     <section>
@@ -143,6 +148,7 @@ function RelatedGrid({
             <ListingPhotoCard
               listing={listing}
               lang={lang}
+              verified={verified}
               locale={cultureCode(lang)}
               sizes="(max-width: 640px) 46vw, (max-width: 1024px) 30vw, (max-width: 1280px) 24vw, 230px"
             />

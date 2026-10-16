@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Bookmark } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Bookmark, ChevronRight, ImageIcon, MapPin, Play } from "lucide-react";
 import {
   DISCOVER_GRID,
   DiscoverGridCard,
   DiscoverGridSkeleton,
 } from "@/features/discover/components/DiscoverGridCard";
+import { contentPath } from "@/lib/content-url";
+import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { cn } from "@/lib/utils";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 /**
@@ -33,6 +38,89 @@ interface Props {
   loading: boolean;
   lang: string;
   hideHeading?: boolean;
+  /** Use compact saved rows on phones, keeping the discovery grid on desktop. */
+  mobileList?: boolean;
+}
+
+function SavedPostRow({
+  post,
+  lang,
+  priority,
+}: {
+  post: ContentCardFieldsFragment;
+  lang: string;
+  priority: boolean;
+}) {
+  const media = post.media.find((item) => item.mediaType === "IMAGE") ?? post.media[0];
+  const thumbnail =
+    media?.muxMeta?.thumbnailUrl ??
+    media?.thumbnailUrl ??
+    media?.r2Variants?.find((variant) => variant.variant === "medium")?.url ??
+    media?.r2Variants?.[0]?.url ??
+    media?.url ??
+    media?.imageUrl ??
+    null;
+  const location = [post.location?.county, post.location?.placeName ?? post.location?.subregion]
+    .filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index)
+    .join(", ");
+  const price =
+    post.price.amount > 0
+      ? `${post.price.currency} ${Math.round(post.price.amount).toLocaleString("en-KE")}`
+      : "Price on request";
+
+  return (
+    <li data-scroll-anchor={post.id}>
+      <Link
+        href={contentPath(lang, post)}
+        scroll={false}
+        className="flex w-full items-center gap-3 py-3 text-left transition-colors active:bg-surface"
+        aria-label={`${post.title}, ${price}${location ? `, ${location}` : ""}`}
+      >
+        <span className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-default bg-surface">
+          {thumbnail ? (
+            <Image
+              src={thumbnail}
+              alt=""
+              fill
+              sizes="64px"
+              priority={priority}
+              loading={priority ? "eager" : "lazy"}
+              className="object-cover"
+              placeholder="blur"
+              blurDataURL={SHIMMER_PORTRAIT}
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center text-muted">
+              <ImageIcon size={18} aria-hidden />
+            </span>
+          )}
+          {post.type === "VIDEO" && (
+            <span className="absolute bottom-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white">
+              <Play size={9} fill="currentColor" strokeWidth={0} aria-hidden />
+            </span>
+          )}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-main">
+            {post.title || "Untitled post"}
+          </span>
+          <span className="mt-0.5 block truncate text-sm font-semibold text-main">
+            {price}
+            {post.price.negotiable && post.price.amount > 0 ? " · Negotiable" : ""}
+          </span>
+          {location ? (
+            <span className="mt-1 flex min-w-0 items-center gap-1 text-xs text-muted">
+              <MapPin size={12} className="shrink-0" aria-hidden />
+              <span className="truncate">{location}</span>
+            </span>
+          ) : null}
+        </span>
+
+        <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
+      </Link>
+    </li>
+  );
 }
 
 export function PostsGrid({
@@ -42,6 +130,7 @@ export function PostsGrid({
   loading,
   lang,
   hideHeading = false,
+  mobileList = false,
 }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   // Keep the latest onLoadMore without re-subscribing the observer each render.
@@ -72,7 +161,20 @@ export function PostsGrid({
   if (posts.length === 0 && loading) {
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
-        <DiscoverGridSkeleton />
+        {mobileList ? (
+          <ul className="divide-y divide-border md:hidden" aria-label="Loading saved posts">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <li key={index} className="flex items-center gap-3 py-3">
+                <div className="size-16 shrink-0 animate-pulse rounded-lg bg-surface" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-3/4 animate-pulse rounded bg-surface" />
+                  <div className="h-3.5 w-1/2 animate-pulse rounded bg-surface" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <DiscoverGridSkeleton className={mobileList ? "hidden md:grid" : undefined} />
       </section>
     );
   }
@@ -115,7 +217,7 @@ export function PostsGrid({
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      {!hideHeading && <div className="mb-4">
+      {!hideHeading && <div className={cn("mb-4", mobileList && "hidden md:block")}>
         <h2
           className="font-bold leading-tight"
           style={{
@@ -136,7 +238,15 @@ export function PostsGrid({
         </p>
       </div>}
 
-      <div className={DISCOVER_GRID}>
+      {mobileList ? (
+        <ul className="divide-y divide-border md:hidden">
+          {posts.map((post, index) => (
+            <SavedPostRow key={post.id} post={post} lang={lang} priority={index < 4} />
+          ))}
+        </ul>
+      ) : null}
+
+      <div className={cn(DISCOVER_GRID, mobileList && "hidden md:grid")}>
         {posts.map((post, index) => (
           <DiscoverGridCard
             key={post.id}

@@ -1,10 +1,11 @@
 "use client";
 
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import Image from "next/image";
 import Link from "next/link";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import { BadgeCheck, MapPin, Store } from "lucide-react";
+import { MapPin, Store } from "lucide-react";
 import { avatarGradient, idInitials } from "@/lib/avatar";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { profileHref } from "@/lib/profile-url";
@@ -147,13 +148,7 @@ export function FeaturedSellerCard({
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1 truncate text-[15px] font-semibold text-default">
             <span className="truncate">{name}</span>
-            {seller.isVerified && (
-              <BadgeCheck
-                size={15}
-                className="shrink-0 text-primary"
-                aria-label="Verified"
-              />
-            )}
+            {seller.isVerified && <VerifiedTick size={15} label="Verified shop" />}
           </p>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {metaLine(seller)}

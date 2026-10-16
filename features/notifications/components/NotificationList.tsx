@@ -4,7 +4,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useState } from "react";
 import Image from "next/image";
-import { AlertCircle, Bell, Bookmark, CheckCheck, Gift, Megaphone, MessageSquareText, PlayCircle, Store, UserPlus } from "lucide-react";
+import { AlertCircle, BadgeCheck, Bell, Bookmark, CheckCheck, Gift, Megaphone, MessageSquareText, PlayCircle, Store, UserPlus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -17,6 +17,7 @@ import {
 import { listTimestamp } from "@/features/messaging/lib/helpers";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { TeamAvatar } from "@/features/team-messages/components/TeamAvatar";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import type { NotificationItem } from "../types";
 
 interface Props {
@@ -151,6 +152,11 @@ export function NotificationList({
                   <div className="relative h-10 w-10 shrink-0">
                     {notification.type === "TEAM_MESSAGE" ? (
                       <TeamAvatar size={40} />
+                    ) : notification.type === "SHOP_VERIFICATION" ? (
+                      // A decision from the team, not a person: the tick is the news.
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1D9BF0]/10">
+                        <VerifiedTick size={22} label={null} />
+                      </div>
                     ) : notification.type === "REFERRAL" && !actor ? (
                       // Rewards have no person behind them — the gift is the news.
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] text-white">
@@ -184,6 +190,8 @@ export function NotificationList({
                         <MessageSquareText size={11} />
                       ) : notification.type === "REFERRAL" ? (
                         <Gift size={11} />
+                      ) : notification.type === "SHOP_VERIFICATION" ? (
+                        <BadgeCheck size={11} />
                       ) : (
                         <UserPlus size={11} />
                       )}

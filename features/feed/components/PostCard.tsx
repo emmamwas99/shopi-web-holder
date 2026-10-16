@@ -60,6 +60,8 @@ import {
 import { setImmersiveHandoff } from "../lib/immersiveHandoff";
 import { hlsUrlOf, posterOf } from "../lib/videoSource";
 import toBase64, { cn } from "@/lib/utils";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import { timeAgo } from "@/lib/time";
 import {
   Popover,
@@ -218,28 +220,9 @@ interface AvatarProps {
   lastName?: string | null;
 }
 
-/** Blue verified check, inline after the seller's name. */
+/** The blue tick, inline after the seller's name. */
 function VerifiedMark() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 20 20"
-      fill="none"
-      className="shrink-0"
-      role="img"
-      aria-label="Verified seller"
-    >
-      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-      <path
-        d="M6 10.5l2.5 2.5 5.5-5.5"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <VerifiedTick size={15} label="Verified shop" />;
 }
 
 function MiniAvatar({ user, index }: { user: FeedSocialUser; index: number }) {
@@ -1576,6 +1559,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               Negotiable
             </span>
           )}
+          {/* Every listing from a verified shop carries it, at the row's end
+              where it never competes with the price. */}
+          {creator?.isVerified && <VerifiedIdBadge className="ml-auto self-center" />}
         </div>
 
         <Link

@@ -511,13 +511,13 @@ export function ChatDetail({
             {contentSummary ? (
               <Link
                 href={`/${lang}/content/${contentSummary.id}`}
-                className="mt-3 flex items-center gap-3 rounded-2xl border p-1 text-default no-underline"
+                className="mt-3 flex items-center gap-3 rounded-2xl border p-2 text-default no-underline shadow-sm transition-colors hover:border-primary/30"
                 style={{
-                  backgroundColor: "rgb(var(--color-bg-subtle))",
+                  backgroundColor: "rgb(var(--color-bg-elevated))",
                   borderColor: "rgb(var(--color-border))",
                 }}
               >
-                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-white">
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-subtle">
                   {conversationThumb(selectedConversation) ? (
                     <Image
                       src={conversationThumb(selectedConversation)!}

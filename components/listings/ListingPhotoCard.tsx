@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 import { contentPath } from "@/lib/content-url";
 import { shouldUnoptimize } from "@/lib/imageUtils";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import {
   listingCover,
   type SocialProofListing,
@@ -35,6 +36,7 @@ export function ListingPhotoCard({
   locale,
   sizes = "(max-width: 640px) 46vw, (max-width: 1280px) 30vw, 240px",
   showCta = false,
+  verified,
 }: {
   listing: ListingCardData;
   lang: string;
@@ -42,7 +44,10 @@ export function ListingPhotoCard({
   sizes?: string;
   /** Adds a "View listing" line under the details. */
   showCta?: boolean;
+  /** The seller is a verified shop. Defaults to what the listing's own query says. */
+  verified?: boolean | null;
 }) {
+  const showVerified = verified ?? listing.creator?.isVerified ?? false;
   const cover = listingCover(listing);
   const price = listingPriceLabel(listing, locale);
   const place = listingPlaceLabel(
@@ -76,6 +81,9 @@ export function ListingPhotoCard({
             {price}
           </span>
         )}
+        {showVerified ? (
+          <VerifiedIdBadge variant="overlay" className="pointer-events-none absolute right-2 top-2" />
+        ) : null}
       </div>
       <div className="flex flex-1 flex-col p-3">
         <p className="line-clamp-2 text-sm font-semibold leading-snug text-default">

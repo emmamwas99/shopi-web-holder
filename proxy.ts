@@ -23,6 +23,7 @@ const PRIVATE_PROFILE_PATHS = [
   // signed-out visitor reaches them instead of the sign-in screen.
   "/profile/change-password",
   "/profile/rate",
+  "/profile/verification",
 ];
 
 // Routes a logged-in user shouldn't see — the auth flows. They're redirected

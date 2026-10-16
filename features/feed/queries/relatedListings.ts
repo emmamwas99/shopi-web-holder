@@ -23,6 +23,10 @@ const SIMILAR_LISTINGS = gql`
         slug
         title
         creatorId
+        creator {
+          id
+          isVerified
+        }
         price {
           amount
           currency

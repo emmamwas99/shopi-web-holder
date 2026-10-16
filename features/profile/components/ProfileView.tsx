@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { gql } from "@apollo/client";
+import { useApolloClient } from "@apollo/client/react";
 import { ChartColumn, ChevronLeft, Plus, UserRound } from "lucide-react";
 import {
   useMyProfile,
@@ -36,6 +38,28 @@ type Tab = ProfileSection | "tiktok";
 interface Props {
   lang: string;
 }
+
+const MOBILE_DRAFT_COUNT = gql`
+  query MobileProfileDraftCount($limit: Int!, $afterId: String) {
+    myDrafts(limit: $limit, afterId: $afterId) {
+      id
+    }
+  }
+`;
+
+const MOBILE_SAVED_COUNT = gql`
+  query MobileProfileSavedCount($limit: Int!, $afterId: String) {
+    mySavedContent(limit: $limit, afterId: $afterId) {
+      items {
+        id
+      }
+      hasMore
+      nextCursor
+    }
+  }
+`;
+
+const PROFILE_COUNT_PAGE_SIZE = 100;
 
 function ProfileSkeleton() {
   return (
@@ -210,6 +234,7 @@ export function ProfileView({ lang }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop();
+  const apolloClient = useApolloClient();
 
   // The open section lives in `?tab=`, read live so the browser's back button
   // moves between the menu and a section. No tab means the menu on a phone and
@@ -277,6 +302,8 @@ export function ProfileView({ lang }: Props) {
   }, [router, tabHref]);
 
   const [postsLimit] = useState(18);
+  const [draftCount, setDraftCount] = useState<number>();
+  const [savedCount, setSavedCount] = useState<number>();
 
   const {
     data: profileData,
@@ -298,6 +325,87 @@ export function ProfileView({ lang }: Props) {
   const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics(
     shownTab === "analytics",
   );
+
+  useEffect(() => {
+    const userId = profileData?.me?.id;
+    let active = true;
+
+    if (isDesktop !== false || !userId) {
+      setDraftCount(undefined);
+      setSavedCount(undefined);
+      return () => {
+        active = false;
+      };
+    }
+
+    setDraftCount(undefined);
+    setSavedCount(undefined);
+
+    const loadDraftCount = async () => {
+      let count = 0;
+      let afterId: string | undefined;
+
+      while (true) {
+        const { data } = await apolloClient.query<
+          { myDrafts: Array<{ id: string }> },
+          { limit: number; afterId?: string }
+        >({
+          query: MOBILE_DRAFT_COUNT,
+          variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
+          fetchPolicy: "network-only",
+        });
+        const drafts = data.myDrafts;
+        count += drafts.length;
+
+        if (drafts.length < PROFILE_COUNT_PAGE_SIZE) return count;
+        const nextCursor = drafts[drafts.length - 1]?.id;
+        if (!nextCursor || nextCursor === afterId) return count;
+        afterId = nextCursor;
+      }
+    };
+
+    const loadSavedCount = async () => {
+      let count = 0;
+      let afterId: string | undefined;
+
+      while (true) {
+        const { data } = await apolloClient.query<
+          {
+            mySavedContent: {
+              items: Array<{ id: string }>;
+              hasMore: boolean;
+              nextCursor: string | null;
+            };
+          },
+          { limit: number; afterId?: string }
+        >({
+          query: MOBILE_SAVED_COUNT,
+          variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
+          fetchPolicy: "network-only",
+        });
+        const result = data.mySavedContent;
+        count += result.items.length;
+
+        if (!result.hasMore || !result.nextCursor || result.nextCursor === afterId) {
+          return count;
+        }
+        afterId = result.nextCursor;
+      }
+    };
+
+    void Promise.all([
+      loadDraftCount().catch(() => undefined),
+      loadSavedCount().catch(() => undefined),
+    ]).then(([drafts, saved]) => {
+      if (!active) return;
+      setDraftCount(drafts);
+      setSavedCount(saved);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [apolloClient, isDesktop, profileData?.me?.id]);
 
   if (profileLoading && !profileData) return <ProfileSkeleton />;
 
@@ -399,6 +507,8 @@ export function ProfileView({ lang }: Props) {
             user={user}
             active={shownTab === "tiktok" ? null : shownTab}
             onSelect={selectTab}
+            draftCount={draftCount}
+            savedCount={savedCount}
           />
         </aside>
 
@@ -426,6 +536,7 @@ export function ProfileView({ lang }: Props) {
               onLoadMore={handleLoadMoreSaved}
               loading={savedLoading}
               lang={lang}
+              mobileList
             />
           )}
 
@@ -437,7 +548,25 @@ export function ProfileView({ lang }: Props) {
             <>
               {analyticsLoading && !analyticsData ? (
                 <section className="px-4 py-5 sm:px-6 lg:px-8">
-                  <div className="mx-auto w-full max-w-6xl flex flex-col gap-4">
+                  <div className="mx-auto w-full max-w-6xl">
+                    <div className="flex flex-col gap-3.5 md:hidden">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-36 rounded-md" />
+                          <Skeleton className="h-3 w-28 rounded-md" />
+                        </div>
+                        <Skeleton className="h-7 w-24 rounded-full" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <Skeleton className="h-28 rounded-2xl" />
+                        <Skeleton className="h-28 rounded-2xl" />
+                        <Skeleton className="col-span-2 h-24 rounded-2xl" />
+                      </div>
+                      <Skeleton className="h-64 rounded-2xl" />
+                      <Skeleton className="h-32 rounded-2xl" />
+                    </div>
+
+                    <div className="hidden flex-col gap-4 md:flex">
                     {/* header row */}
                     <div className="flex items-end justify-between">
                       <div className="flex flex-col gap-2">
@@ -460,10 +589,15 @@ export function ProfileView({ lang }: Props) {
                         <Skeleton className="h-32 rounded-lg" />
                       </div>
                     </div>
+                    </div>
                   </div>
                 </section>
               ) : analyticsData?.myAnalytics ? (
-                <AnalyticsPanel data={analyticsData.myAnalytics} lang={lang} />
+                <AnalyticsPanel
+                  data={analyticsData.myAnalytics}
+                  lang={lang}
+                  mobileRedesign
+                />
               ) : (
                 <section className="px-4 py-12 sm:px-6 lg:px-8">
                   <div className="mx-auto flex min-h-80 max-w-xl flex-col items-center justify-center text-center">

@@ -44,6 +44,8 @@ export type SocialProofListing = {
   id: string;
   slug?: string | null;
   title?: string | null;
+  /** Present when the query selected it: drives the Verified ID badge. */
+  creator?: { id?: string | null; isVerified?: boolean | null } | null;
   price?: { amount: number; currency: string; negotiable?: boolean } | null;
   location?: { placeName?: string | null; county?: string | null } | null;
   media?:

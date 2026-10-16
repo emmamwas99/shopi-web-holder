@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Activity,
+  ArrowDownRight,
   ArrowUpRight,
   Bookmark,
   CalendarDays,
@@ -22,6 +23,7 @@ interface Props {
   data: Analytics;
   lang: string;
   hideHeading?: boolean;
+  mobileRedesign?: boolean;
 }
 
 function formatCompact(value: number) {
@@ -122,10 +124,185 @@ function MetricCard({
   );
 }
 
-function EmptyGraph() {
+function MobileMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  detail: string;
+  tone: string;
+}) {
   return (
     <div
-      className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-center"
+      className="rounded-2xl border p-3.5"
+      style={{
+        backgroundColor: "rgb(var(--color-bg-elevated))",
+        borderColor: "rgb(var(--color-border))",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="flex size-8 items-center justify-center rounded-xl"
+          style={{
+            backgroundColor: `rgb(var(${tone}) / 0.12)`,
+            color: `rgb(var(${tone}))`,
+          }}
+        >
+          <Icon size={16} strokeWidth={2.1} aria-hidden />
+        </span>
+        <p className="text-[13px] font-semibold text-main">{label}</p>
+      </div>
+      <p className="mt-3 text-2xl font-bold leading-none tabular-nums text-main">
+        {value.toLocaleString("en-KE")}
+      </p>
+      <p className="mt-1.5 text-xs leading-snug text-muted">{detail}</p>
+    </div>
+  );
+}
+
+function MobileTopPost({
+  lang,
+  post,
+}: {
+  lang: string;
+  post: Analytics["topPost"];
+}) {
+  if (!post) return null;
+
+  return (
+    <Link
+      href={`/${lang}/content/${post.contentId}`}
+      scroll={false}
+      className="block rounded-2xl border p-4 transition-colors active:bg-surface"
+      style={{
+        backgroundColor: "rgb(var(--color-bg-elevated))",
+        borderColor: "rgb(var(--color-border))",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--brand-highlight)/0.14)] text-[rgb(var(--brand-highlight))]">
+          <Trophy size={18} strokeWidth={2.1} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-main">Top post</span>
+          <span className="mt-0.5 block text-xs text-muted">Most viewed in the last 30 days</span>
+        </span>
+        <ArrowUpRight size={17} className="shrink-0 text-primary" aria-hidden />
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-xl bg-subtle px-3 py-2.5">
+          <p className="text-base font-bold tabular-nums text-main">
+            {post.views.toLocaleString("en-KE")}
+          </p>
+          <p className="mt-0.5 text-xs text-muted">Views</p>
+        </div>
+        <div className="rounded-xl bg-subtle px-3 py-2.5">
+          <p className="text-base font-bold tabular-nums text-main">
+            {post.saves.toLocaleString("en-KE")}
+          </p>
+          <p className="mt-0.5 text-xs text-muted">Saves</p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function MobileAnalyticsOverview({
+  data,
+  lang,
+  viewsByDay,
+}: {
+  data: Analytics;
+  lang: string;
+  viewsByDay: ViewPoint[];
+}) {
+  const currentWeekViews = sumViews(viewsByDay.slice(-7));
+  const previousWeekViews = sumViews(viewsByDay.slice(-14, -7));
+  const showWeekComparison =
+    viewsByDay.length >= 14 && (currentWeekViews > 0 || previousWeekViews > 0);
+  const weeklyChange =
+    previousWeekViews > 0
+      ? ((currentWeekViews - previousWeekViews) / previousWeekViews) * 100
+      : null;
+
+  return (
+    <div className="flex flex-col gap-3.5 md:hidden">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-main">Performance overview</p>
+          <p className="mt-0.5 text-xs text-muted">Your account · last 30 days</p>
+        </div>
+        {showWeekComparison ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold"
+            style={{
+              backgroundColor:
+                weeklyChange === null || weeklyChange >= 0
+                  ? "rgb(var(--color-success) / 0.12)"
+                  : "rgb(var(--color-error) / 0.1)",
+              color:
+                weeklyChange === null || weeklyChange >= 0
+                  ? "rgb(var(--color-success))"
+                  : "rgb(var(--color-error))",
+            }}
+          >
+            {weeklyChange !== null && weeklyChange < 0 ? (
+              <ArrowDownRight size={14} aria-hidden />
+            ) : (
+              <TrendingUp size={14} aria-hidden />
+            )}
+            {weeklyChange === null
+              ? "Views started"
+              : `${weeklyChange > 0 ? "+" : ""}${formatPercent(weeklyChange)} vs last week`}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        <MobileMetric
+          icon={Eye}
+          label="Post views"
+          value={data.last30DaysViews}
+          detail="Times people viewed your posts"
+          tone="--brand-accent"
+        />
+        <MobileMetric
+          icon={Bookmark}
+          label="Saves"
+          value={data.last30DaysSaves}
+          detail="Times people saved your posts"
+          tone="--brand-primary"
+        />
+        <div className="col-span-2">
+          <MobileMetric
+            icon={Users}
+            label="New followers"
+            value={data.last30DaysFollowers}
+            detail="People who followed you"
+            tone="--color-success"
+          />
+        </div>
+      </div>
+
+      <TrendChart data={viewsByDay} />
+      <MobileTopPost lang={lang} post={data.topPost} />
+    </div>
+  );
+}
+
+function EmptyGraph({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={
+        compact
+          ? "flex h-44 flex-col items-center justify-center rounded-xl border border-dashed px-4 text-center"
+          : "flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-center"
+      }
       style={{
         borderColor: "rgb(var(--color-border))",
         color: "rgb(var(--color-text-muted))",
@@ -139,21 +316,29 @@ function EmptyGraph() {
           fontSize: "var(--text-base)",
         }}
       >
-        No view activity yet
+        {compact ? "No post views yet" : "No view activity yet"}
       </p>
       <p
         className="mt-1 max-w-xs leading-snug"
         style={{ fontSize: "var(--text-sm)" }}
       >
-        Your analytics will fill in as people watch your posts.
+        {compact
+          ? "Views will appear here as people open your posts."
+          : "Your analytics will fill in as people watch your posts."}
       </p>
     </div>
   );
 }
 
-function TrendChart({ data }: { data: ViewPoint[] }) {
+function TrendChart({
+  data,
+  compact = false,
+}: {
+  data: ViewPoint[];
+  compact?: boolean;
+}) {
   const points = data.slice(-30);
-  if (points.length === 0) return <EmptyGraph />;
+  if (points.length === 0) return <EmptyGraph compact={compact} />;
 
   const width = 640;
   const height = 220;
@@ -185,7 +370,7 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
 
   return (
     <div
-      className="rounded-lg border p-4"
+      className={compact ? "rounded-xl border p-3" : "rounded-lg border p-4"}
       style={{
         backgroundColor: "rgb(var(--color-bg-elevated))",
         borderColor: "rgb(var(--color-border))",
@@ -201,7 +386,7 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
               fontSize: "var(--text-base)",
             }}
           >
-            Views trend
+            {compact ? "Daily post views" : "Views trend"}
           </p>
           <p
             style={{
@@ -229,12 +414,14 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
               fontSize: "var(--text-sm)",
             }}
           >
-            Peak {formatCompact(peak.views)} on {formatDay(peak.date)}
+            {compact
+              ? `Busiest day: ${formatCompact(peak.views)} · ${formatDay(peak.date)}`
+              : `Peak ${formatCompact(peak.views)} on ${formatDay(peak.date)}`}
           </span>
         </div>
       </div>
 
-      <div className="h-64">
+      <div className={compact ? "h-44" : "h-64"}>
         <svg
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="none"
@@ -399,7 +586,12 @@ function LastSevenBars({ data }: { data: ViewPoint[] }) {
   );
 }
 
-export function AnalyticsPanel({ data, lang, hideHeading = false }: Props) {
+export function AnalyticsPanel({
+  data,
+  lang,
+  hideHeading = false,
+  mobileRedesign = false,
+}: Props) {
   const viewsByDay = data.viewsByDay ?? [];
   const weekChange = getWeekChange(viewsByDay);
   const averageDailyViews =
@@ -414,6 +606,16 @@ export function AnalyticsPanel({ data, lang, hideHeading = false }: Props) {
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full flex-col gap-4">
+        {mobileRedesign ? (
+          <MobileAnalyticsOverview data={data} lang={lang} viewsByDay={viewsByDay} />
+        ) : null}
+        <div
+          className={
+            mobileRedesign
+              ? "hidden w-full flex-col gap-4 md:flex"
+              : "flex w-full flex-col gap-4"
+          }
+        >
         {!hideHeading && <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2
@@ -487,7 +689,7 @@ export function AnalyticsPanel({ data, lang, hideHeading = false }: Props) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <TrendChart data={viewsByDay} />
+      <TrendChart data={viewsByDay} compact />
           <div className="flex flex-col gap-4">
             <LastSevenBars data={viewsByDay} />
 
@@ -592,6 +794,7 @@ export function AnalyticsPanel({ data, lang, hideHeading = false }: Props) {
               </Link>
             )}
           </div>
+        </div>
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, ImageIcon, MapPin } from "lucide-react";
+import { ArrowRight, ImageIcon, MapPin } from "lucide-react";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { siteConfig } from "@/config/site";
 import { contentPath } from "@/lib/content-url";
@@ -162,7 +163,7 @@ function SellerSpotlight({
             </h3>
             <p className="flex min-w-0 items-center gap-1.5 text-sm text-muted">
               <span className="truncate">@{seller.username}</span>
-              {seller.isVerified && <BadgeCheck size={16} className="shrink-0 text-primary" aria-label={t.verified} />}
+              {seller.isVerified && <VerifiedTick size={16} label={t.verified} />}
             </p>
           </div>
         </div>
@@ -209,9 +210,7 @@ function SellerCard({
           </h3>
           <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-muted">
             @{seller.username}
-            {seller.isVerified && (
-              <BadgeCheck size={15} className="shrink-0 text-primary" aria-label={t.verified} />
-            )}
+            {seller.isVerified && <VerifiedTick size={15} label={t.verified} />}
           </p>
         </div>
       </div>

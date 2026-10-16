@@ -45,10 +45,10 @@ export function InventoryControls<F extends string, S extends string>({
   return (
     <div className="mb-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="relative flex h-10 min-w-0 flex-1 items-center rounded-xl bg-surface">
+        <label className="relative flex h-11 min-w-0 flex-1 items-center rounded-full border border-default bg-surface transition-colors focus-within:border-primary/40 md:h-10 md:rounded-xl md:border-0 md:bg-surface">
           <Search
-            size={16}
-            className="pointer-events-none absolute left-3 text-muted"
+            size={17}
+            className="pointer-events-none absolute left-4 text-muted md:left-3 md:size-4"
             aria-hidden
           />
           <input
@@ -57,7 +57,10 @@ export function InventoryControls<F extends string, S extends string>({
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
             enterKeyHint="search"
-            className="h-full w-full min-w-0 rounded-xl bg-transparent pl-9 pr-9 text-sm text-main outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
+            className={cn(
+              "h-full w-full min-w-0 rounded-full bg-transparent pl-11 text-[14px] leading-5 text-main outline-none placeholder:text-[13px] placeholder:leading-5 placeholder:text-muted [&::-webkit-search-cancel-button]:hidden md:rounded-xl md:pl-9 md:pr-9 md:text-sm md:placeholder:text-sm",
+              search ? "pr-10 md:pr-9" : "pr-4 md:pr-9",
+            )}
             aria-label={searchPlaceholder}
           />
           {search && (
@@ -65,7 +68,7 @@ export function InventoryControls<F extends string, S extends string>({
               type="button"
               onClick={() => onSearchChange("")}
               aria-label="Clear search"
-              className="absolute right-1.5 flex size-7 items-center justify-center rounded-[8px] text-muted active:bg-black/5"
+              className="absolute right-1.5 flex size-7 items-center justify-center rounded-full text-muted active:bg-black/5 md:rounded-[8px]"
             >
               <X size={16} />
             </button>

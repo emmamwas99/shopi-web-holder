@@ -232,6 +232,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
           creator {
             id
             username
+            isVerified
             isFollowedByMe
             followerCount
             profile {

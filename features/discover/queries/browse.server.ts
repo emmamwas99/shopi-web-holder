@@ -77,6 +77,7 @@ const BROWSE_CARDS: TypedDocumentNode<
         creator {
           id
           username
+          isVerified
           isFollowedByMe
           followerCount
           profile {

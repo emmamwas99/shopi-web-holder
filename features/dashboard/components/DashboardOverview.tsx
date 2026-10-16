@@ -12,6 +12,12 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import {
+  useMyShopVerification,
+  verificationStage,
+  type VerificationStage,
+} from "@/features/verification/hooks/useShopVerification";
 
 type DashboardOverviewData = {
   myDashboardOverview: {
@@ -54,7 +60,69 @@ const DASHBOARD_OVERVIEW = gql`
 
 const numberFormat = new Intl.NumberFormat("en-KE", { notation: "compact" });
 
-export function DashboardOverview({ lang }: { lang: string }) {
+const VERIFICATION_PROMPT: Partial<Record<VerificationStage, { title: string; body: string; action: string }>> = {
+  none: {
+    title: "Get the blue tick — it's free",
+    body: "Verify your shop to show buyers you're a real, registered business.",
+    action: "Verify your shop",
+  },
+  draft: {
+    title: "Finish verifying your shop",
+    body: "You're part-way there. Your details are saved — a couple of minutes more.",
+    action: "Continue",
+  },
+  changes: {
+    title: "Your verification needs changes",
+    body: "See what to fix and resubmit. Everything else you sent is saved.",
+    action: "Fix now",
+  },
+  removed: {
+    title: "Get your blue tick back",
+    body: "Check your details are current and resubmit for review.",
+    action: "Resubmit",
+  },
+};
+
+/** Verification's nudge: only while there's something for the seller to do. */
+function VerificationPrompt({ onOpen }: { onOpen?: () => void }) {
+  const { verification } = useMyShopVerification();
+  const stage = verificationStage(verification);
+  const prompt = verification ? VERIFICATION_PROMPT[stage] : undefined;
+  if (!prompt || !onOpen) return null;
+  const urgent = stage === "changes";
+
+  return (
+    <div
+      className={`mb-4 flex items-center gap-3.5 rounded-2xl border px-4 py-3.5 sm:px-5 ${
+        urgent ? "border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10" : "border-border bg-elevated"
+      }`}
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1D9BF0]/10">
+        <VerifiedTick size={22} label={null} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold text-main">{prompt.title}</p>
+        <p className="mt-0.5 text-xs leading-5 text-muted">{prompt.body}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-white hover:opacity-90"
+      >
+        {prompt.action}
+      </button>
+    </div>
+  );
+}
+
+export function DashboardOverview({
+  lang,
+  onOpenVerification,
+}: {
+  lang: string;
+  /** Opens the dashboard's Verification tab. */
+  onOpenVerification?: () => void;
+}) {
   const { isAuthenticated } = useAuthSession();
   const { data, loading, error } = useQuery(DASHBOARD_OVERVIEW, {
     skip: !isAuthenticated,
@@ -97,6 +165,7 @@ export function DashboardOverview({ lang }: { lang: string }) {
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 md:px-6">
+      <VerificationPrompt onOpen={onOpenVerification} />
       {error && !overview ? (
         <div role="alert" className="mx-auto max-w-xl rounded-2xl border border-border bg-elevated p-6 text-center text-sm text-muted">
           We couldn’t load your dashboard right now. Please refresh and try again.

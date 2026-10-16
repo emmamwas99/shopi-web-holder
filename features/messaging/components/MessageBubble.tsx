@@ -98,10 +98,10 @@ export function MessageBubble({ message, mine, onRetry, onDiscard, onDelete }: P
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"} w-full`}>
       <div
-        className={`w-[75%] relative rounded-2xl px-3 py-2 ${
+        className={`relative w-fit min-w-24 max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-sm md:w-[75%] md:max-w-none ${
           mine
-            ? "rounded-br-sm text-white bg-primary"
-            : "rounded-bl-sm bg-subtle text-main"
+            ? "rounded-br-sm bg-primary text-white shadow-primary/10"
+            : "rounded-bl-sm border border-border bg-elevated text-main"
         }`}
       >
         {/* Tail — a little protruding flap at the bottom corner, like SMS/WhatsApp.
@@ -116,7 +116,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard, onDelete }: P
         ) : (
           <span
             aria-hidden
-            className="absolute bottom-0 -left-1.5 h-3 w-3 bg-subtle"
+            className="absolute bottom-0 -left-1.5 h-3 w-3 bg-elevated"
             style={{ clipPath: "polygon(100% 0, 0 100%, 100% 100%)" }}
           />
         )}

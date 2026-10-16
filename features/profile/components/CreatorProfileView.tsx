@@ -42,6 +42,8 @@ import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAv
 import { profileHref } from "@/lib/profile-url";
 import { toast } from "sonner";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
+import { VerifiedButton } from "@/components/verification/VerifiedExplainer";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -422,23 +424,10 @@ export function CreatorProfileView({
                     {displayName}
                   </h1>
                   {user.isVerified ? (
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      className="shrink-0"
-                      aria-label="Verified"
-                    >
-                      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-                      <path
-                        d="M6 10.5l2.5 2.5 5.5-5.5"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <>
+                      <VerifiedButton lang={lang} sellerName={displayName} tickSize={18} />
+                      <VerifiedIdBadge />
+                    </>
                   ) : null}
                 </div>
                 {user.username ? (
@@ -446,7 +435,6 @@ export function CreatorProfileView({
                     @{user.username}
                   </p>
                 ) : null}
-
                 <div className="mt-4 flex items-center gap-6">
                   <ProfileStat
                     label="Followers"
