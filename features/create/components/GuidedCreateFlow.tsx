@@ -72,6 +72,12 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useSocket } from "@/hooks/useSocket";
 import { trackPostJourney, trackPostPublished } from "@/lib/analytics";
 import {
+  descriptionProgressHint,
+  LISTING_TITLE_HINT,
+  listingDescriptionProblem,
+  listingTitleProblem,
+} from "@/lib/listingText";
+import {
   WS_EVENTS,
   type AgentStreamDeltaPayload,
   type AgentStreamDonePayload,
@@ -912,8 +918,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   async function confirmInsights() {
     if (!draftId) return;
-    if (!title.trim()) {
-      setFormError("Add a clear title so buyers know what you are offering.");
+    const titleProblem = listingTitleProblem(title);
+    if (titleProblem) {
+      setFormError(titleProblem);
       return;
     }
     if (!categoryId) {
@@ -1076,29 +1083,29 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   /** Local mirror of the server's deterministic planner (used only if the turn mutation fails). */
   function clientFallbackAsk(): AgentAsk | null {
     const s = useCreateStore.getState();
-    if (!s.title.trim()) {
+    if (listingTitleProblem(s.title)) {
       return {
         target: "TITLE",
         kind: "TEXT",
         specKey: null,
-        label: "What are you selling?",
-        helper: "A short, specific title works best.",
+        label: s.title.trim() ? "Add a detail to the title" : "What are you selling?",
+        helper: "At least 2 words: brand, model, colour or size, e.g. “Black leather shoes”.",
         placeholder: "e.g. Mazda CX-5 2018, Petrol",
         options: [],
-        prefill: null,
+        prefill: s.title.trim() || null,
         required: true,
       };
     }
-    if (!s.caption.trim()) {
+    if (listingDescriptionProblem(s.caption)) {
       return {
         target: "DESCRIPTION",
         kind: "LONGTEXT",
         specKey: null,
         label: "Describe your item",
-        helper: "Condition, useful features and what comes with it.",
+        helper: "Condition, useful features and what comes with it. At least 30 characters.",
         placeholder: "Describe the condition, features and what is included.",
         options: [],
-        prefill: null,
+        prefill: s.caption.trim() || null,
         required: true,
       };
     }
@@ -1166,6 +1173,17 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       setFormError("This one’s needed to keep your listing clear.");
       return;
     }
+    const textProblem =
+      ask.target === "TITLE"
+        ? listingTitleProblem(value)
+        : ask.target === "DESCRIPTION"
+          ? listingDescriptionProblem(value)
+          : null;
+    if (textProblem) {
+      setFormError(textProblem);
+      return;
+    }
+    setFormError(null);
 
     // Apply locally so the live preview and any fallback stay accurate.
     if (ask.target === "TITLE") setTitle(value);
@@ -1561,7 +1579,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                   <h2 className="font-black text-foreground">Item details</h2>
                 </div>
 
-                <Field label="Listing title">
+                <Field label="Listing title" hint={LISTING_TITLE_HINT}>
                   <input
                     value={title}
                     maxLength={120}
@@ -2157,6 +2175,21 @@ function AgentAskControl({
   } = useCreateStore();
 
   const [text, setText] = useState(ask.prefill ?? "");
+  // A title or description answer has to clear the listing text floor before
+  // it can be sent, and the line under the field says how far there is to go —
+  // so a too-short answer is caught here, not bounced back by the server.
+  const textProblem =
+    ask.target === "TITLE"
+      ? listingTitleProblem(text)
+      : ask.target === "DESCRIPTION"
+        ? listingDescriptionProblem(text)
+        : null;
+  const textHint =
+    ask.target === "DESCRIPTION"
+      ? descriptionProgressHint(text)
+      : ask.target === "TITLE" && text.trim() && textProblem
+        ? LISTING_TITLE_HINT
+        : null;
   const [priceText, setPriceText] = useState(
     ask.kind === "PRICE"
       ? (ask.prefill ?? (price != null ? String(price) : ""))
@@ -2311,6 +2344,7 @@ function AgentAskControl({
           placeholder={ask.placeholder ?? "Type your answer…"}
           className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
         />
+        {textHint ? <p className="-mt-1 text-xs text-muted">{textHint}</p> : null}
         <div className="flex items-center justify-between gap-2">
           {!ask.required ? (
             <button
@@ -2326,7 +2360,7 @@ function AgentAskControl({
           <AskPrimaryButton
             label="Send"
             inline
-            disabled={ask.required && !text.trim()}
+            disabled={(ask.required && !text.trim()) || Boolean(textProblem)}
             onClick={() => onScalar(text)}
           />
         </div>
@@ -2355,13 +2389,14 @@ function AgentAskControl({
         />
         <button
           type="submit"
-          disabled={ask.required && !text.trim()}
+          disabled={(ask.required && !text.trim()) || Boolean(textProblem)}
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white disabled:opacity-40"
           aria-label="Send"
         >
           <Send size={18} />
         </button>
       </form>
+      {textHint ? <p className="-mt-1 text-xs text-muted">{textHint}</p> : null}
       {!ask.required ? (
         <button
           type="button"

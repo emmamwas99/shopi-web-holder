@@ -22,6 +22,12 @@ import {
 } from "@/features/create/utils/draftAutosave";
 import { Switch } from "@/components/ui/switch";
 import { trackPostJourney } from "@/lib/analytics";
+import {
+  descriptionProgressHint,
+  LISTING_TITLE_HINT,
+  listingDescriptionProblem,
+  listingTitleProblem,
+} from "@/lib/listingText";
 
 interface EditFormValues {
   caption: string;
@@ -106,7 +112,11 @@ export function StepEdit({
 
   // ── Title (autosize textarea) ──────────────────────────────────────────────
   const [titleValue, setTitleValue] = useState(title);
-  const [titleError, setTitleError] = useState<string | null>(null);
+  // Title and description are checked against the listing text floor (see
+  // lib/listingText) once the seller first taps Next. From then on the inline
+  // messages follow what they type, so a message clears the moment the text is
+  // good enough rather than waiting for the next tap.
+  const [textChecked, setTextChecked] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
@@ -158,6 +168,11 @@ export function StepEdit({
     },
   );
   const watchCaption = useWatch({ control, name: "caption" }) ?? caption;
+
+  const titleProblem = listingTitleProblem(titleValue);
+  const descriptionProblem = listingDescriptionProblem(watchCaption);
+  const titleError = textChecked ? titleProblem : null;
+  const descriptionError = textChecked ? descriptionProblem : null;
 
   // ── Location auto-fill ─────────────────────────────────────────────────────
   // Pre-fill the location with the user's suggested location — their latest
@@ -297,7 +312,8 @@ export function StepEdit({
 
   const canProceed =
     !!draftId &&
-    titleValue.trim().length > 0 &&
+    !titleProblem &&
+    !descriptionProblem &&
     !!location &&
     !!contactPhone &&
     !!categoryId &&
@@ -311,16 +327,19 @@ export function StepEdit({
       return;
     }
     setError(null);
-    setTitleError(null);
+    setTextChecked(true);
     setLocationError(null);
     setPhoneError(null);
     setCategoryError(null);
     setMediaError(null);
 
     const trimmedTitle = titleValue.trim();
-    if (!trimmedTitle) {
-      setTitleError("Add a title before moving to settings.");
+    if (listingTitleProblem(trimmedTitle)) {
       focusTitle();
+      return;
+    }
+    if (listingDescriptionProblem(values.caption)) {
+      scrollFieldIntoView("description");
       return;
     }
 
@@ -440,6 +459,11 @@ export function StepEdit({
           variables: { id: draftId },
         });
         if (stepError) {
+          // The server holds the same title/description floor; its message
+          // names the field, so the inline hints are switched on as well.
+          if (/title|description/i.test(stepError.message ?? "")) {
+            setTextChecked(true);
+          }
           setError(stepError.message ?? "Could not advance step");
           return;
         }
@@ -465,11 +489,7 @@ export function StepEdit({
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (/title/i.test(message)) {
-        setTitleError("Add a title before moving to settings.");
-        focusTitle();
-        return;
-      }
+      if (/title|description/i.test(message)) setTextChecked(true);
       setError(message);
     }
   }
@@ -492,7 +512,6 @@ export function StepEdit({
         onChange={(e) => {
           if (e.target.value.length <= MAX_TITLE) {
             setTitleValue(e.target.value);
-            if (e.target.value.trim()) setTitleError(null);
           }
           autosize(e.currentTarget);
         }}
@@ -505,39 +524,65 @@ export function StepEdit({
           titleError ? "text-error" : "text-foreground"
         }`}
       />
-      {titleError && (
-        <span className="mt-1 text-xs font-medium text-error">
-          {titleError}
+      <div className="mt-1 flex items-start justify-between gap-3 text-xs">
+        {titleError ? (
+          <span className="font-medium text-error">{titleError}</span>
+        ) : (
+          <span className="text-muted">{LISTING_TITLE_HINT}</span>
+        )}
+        <span className="shrink-0 text-muted tabular-nums">
+          {titleValue.length}/{MAX_TITLE}
         </span>
-      )}
-      <span className="mt-1 text-xs text-muted">
-        {titleValue.length}/{MAX_TITLE}
-      </span>
+      </div>
     </div>
   );
 
+  // The line under the description: the error once Next has been tapped;
+  // before that, how far there is to go.
+  const descriptionHint = descriptionError ? null : descriptionProgressHint(watchCaption);
+
   const captionBlock = (
-    <div>
+    <div data-field="description">
       <div className="mb-1.5 flex items-center gap-2">
-        <label className="text-sm font-medium text-muted">
-          Detailed description (optional)
+        <label
+          htmlFor="listing-description"
+          className="text-sm font-medium text-muted"
+        >
+          Description
         </label>
       </div>
       <textarea
+        id="listing-description"
         {...register("caption", {
           maxLength: {
             value: MAX_CAPTION,
             message: `Max ${MAX_CAPTION} chars`,
           },
         })}
-        placeholder="Share what's on your mind…"
+        placeholder="Condition, size, colour, what’s included, why you’re selling…"
         rows={4}
-        className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2.5 text-base text-foreground caret-primary outline-none transition-all"
+        aria-invalid={!!descriptionError}
+        aria-describedby="listing-description-hint"
+        className={`w-full resize-none rounded-xl border bg-surface px-3 py-2.5 text-base text-foreground caret-primary outline-none transition-all ${
+          descriptionError
+            ? "border-[rgb(var(--color-error))]"
+            : "border-border focus:border-primary"
+        }`}
         maxLength={MAX_CAPTION}
       />
-      <p className="mt-1 text-right text-xs text-muted">
-        {watchCaption?.length ?? 0}/{MAX_CAPTION}
-      </p>
+      <div
+        id="listing-description-hint"
+        className="mt-1 flex items-start justify-between gap-3 text-xs"
+      >
+        {descriptionError ? (
+          <span className="font-medium text-error">{descriptionError}</span>
+        ) : (
+          <span className="text-muted">{descriptionHint}</span>
+        )}
+        <span className="shrink-0 text-muted tabular-nums">
+          {watchCaption?.length ?? 0}/{MAX_CAPTION}
+        </span>
+      </div>
     </div>
   );
 
