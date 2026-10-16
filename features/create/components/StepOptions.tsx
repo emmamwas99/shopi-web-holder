@@ -31,6 +31,7 @@ import {
   CreateSuccessScreen,
 } from "./CreateSuccessScreen";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
+import { CreateErrorDialog } from "./CreateErrorDialog";
 
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktokOptions($contentId: String!) {
@@ -602,11 +603,11 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
           {togglesSection}
           {tiktokSection}
 
-          {error && (
-            <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
-              {error}
-            </div>
-          )}
+          <CreateErrorDialog
+            message={error}
+            title="Couldn’t finish your post"
+            onClose={() => setError(null)}
+          />
         </div>
 
         {/* ── Fixed bottom action bar: Draft (outline) + Post (primary) ── */}

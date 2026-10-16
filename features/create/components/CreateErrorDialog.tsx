@@ -46,13 +46,17 @@ function copyFor(message: string): { title: string; body: string } {
 export function CreateErrorDialog({
   message,
   onClose,
+  title,
 }: {
   /** The error to show; null renders nothing. */
   message: string | null;
   onClose: () => void;
+  /** Override the default creation-error title for publish and save failures. */
+  title?: string;
 }) {
   if (message === null) return null;
-  const { title, body } = copyFor(message);
+  const copy = copyFor(createErrorMessage(message));
+  const dialogTitle = title ?? copy.title;
 
   return (
     <Dialog
@@ -78,9 +82,9 @@ export function CreateErrorDialog({
           >
             <CircleAlert size={24} />
           </span>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription className="leading-relaxed">
-            {body}
+            {copy.body}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-center">

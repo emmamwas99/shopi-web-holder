@@ -9,6 +9,7 @@ import Image from "next/image";
 import MuxPlayer from "@mux/mux-player-react";
 import { useRouter } from "next/navigation";
 import { useCreateStore } from "@/stores/create";
+import { CreateErrorDialog } from "./CreateErrorDialog";
 import { PublishDraftDocument } from "@/types/__generated__/graphql";
 import { gql } from "@apollo/client";
 import { invalidatePublishedContentCache } from "@/lib/apollo/feedCache";
@@ -532,12 +533,11 @@ export function StepReady({ lang }: StepReadyProps) {
             </button>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="absolute right-4 bottom-[calc(200px+env(safe-area-inset-bottom))] left-4 z-30 rounded-md bg-[rgb(var(--color-error)/0.9)] px-4 py-3 text-sm text-white">
-              {error}
-            </div>
-          )}
+          <CreateErrorDialog
+            message={error}
+            title="Couldn’t publish your post"
+            onClose={() => setError(null)}
+          />
         </div>
 
         {/* Dimmed right panel on desktop */}
@@ -681,11 +681,11 @@ export function StepReady({ lang }: StepReadyProps) {
               />
             </div>
 
-            {error && (
-              <div className="mt-4 rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
-                {error}
-              </div>
-            )}
+            <CreateErrorDialog
+              message={error}
+              title="Couldn’t publish your post"
+              onClose={() => setError(null)}
+            />
           </div>
 
           {/* Bottom actions */}
