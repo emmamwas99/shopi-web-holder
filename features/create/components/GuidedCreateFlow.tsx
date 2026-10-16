@@ -12,11 +12,13 @@ import { useRouter } from "next/navigation";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import {
+  AlertCircle,
   ArrowRight,
   Bot,
   Check,
   ChevronLeft,
   ChevronRight,
+  FilePen,
   Globe,
   Images,
   LockKeyhole,
@@ -1291,9 +1293,20 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   }
 
   async function handlePublish() {
-    if (!draftId || !location || !contactPhone || !categoryId) {
+    if (savingDraft) return;
+    if (!draftId) {
+      setFormError("Your draft is still being set up. Wait a moment and try again.");
+      return;
+    }
+    if (!categoryId || !location || !contactPhone) {
+      // Name what's missing, so the seller knows what to fix.
+      const missing = [
+        !categoryId && "a category",
+        !location && "a location",
+        !contactPhone && "a phone number",
+      ].filter(Boolean);
       setFormError(
-        "A required listing detail is missing. Please review the steps.",
+        `Add ${missing.join(", ").replace(/, ([^,]*)$/, " and $1")} before posting.`,
       );
       return;
     }
@@ -1524,7 +1537,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4 px-3 py-5 sm:px-5 md:py-8">
           <AgentBubble>
             <p className="font-semibold">
-              {greetingForNow()}, {firstName} 👋
+              {greetingForNow()}, {firstName}
             </p>
             <p className="mt-1">What are you selling today?</p>
           </AgentBubble>
@@ -1867,22 +1880,25 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
             <button
               type="button"
               onClick={handleSaveDraft}
-              disabled={savingDraft}
-              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[rgb(var(--color-border-strong))] bg-transparent px-4 text-base font-semibold text-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+              aria-busy={savingDraft}
+              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-[rgb(var(--color-border-strong))] bg-transparent px-4 text-base font-semibold text-foreground transition-transform active:scale-[0.98]"
             >
               {savingDraft ? (
                 <DrawerLoadingIndicator className="min-h-0 w-9 shrink-0" />
               ) : (
-                "Draft"
+                <>
+                  <FilePen size={18} aria-hidden />
+                  Save draft
+                </>
               )}
             </button>
             <button
               type="button"
               onClick={handlePublish}
-              disabled={savingDraft}
-              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-base font-semibold text-white shadow-[0_6px_20px_rgb(var(--brand-primary)/0.4)] transition-transform active:scale-[0.98] disabled:opacity-60"
+              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-4 text-base font-semibold text-white shadow-[0_6px_20px_rgb(var(--brand-primary)/0.35)] transition-transform active:scale-[0.98]"
             >
-              Post now
+              <Send size={18} aria-hidden />
+              Post
             </button>
           </div>
         </div>
@@ -2116,29 +2132,37 @@ function AskHeader({ ask, icon }: { ask: AgentAsk; icon?: ReactNode }) {
   );
 }
 
+/** Never greyed out: a tap with something missing shows why under the field
+ *  (AskError) instead of leaving the seller guessing at a dead button. */
 function AskPrimaryButton({
   label,
   onClick,
-  disabled,
   inline,
 }: {
   label: string;
   onClick: () => void;
-  disabled?: boolean;
   inline?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-40 ${
+      className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98] ${
         inline ? "" : "w-full"
       }`}
     >
       {label}
       <ArrowRight size={16} />
     </button>
+  );
+}
+
+function AskError({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className="-mt-1 flex items-start gap-1.5 text-xs font-medium text-error">
+      <AlertCircle size={14} className="mt-px shrink-0" aria-hidden />
+      <span>{children}</span>
+    </p>
   );
 }
 
@@ -2175,6 +2199,9 @@ function AgentAskControl({
   } = useCreateStore();
 
   const [text, setText] = useState(ask.prefill ?? "");
+  // Set by the first tap on the answer button; from then on the message under
+  // the field follows what the seller types.
+  const [tried, setTried] = useState(false);
   // A title or description answer has to clear the listing text floor before
   // it can be sent, and the line under the field says how far there is to go —
   // so a too-short answer is caught here, not bounced back by the server.
@@ -2197,6 +2224,23 @@ function AgentAskControl({
   );
 
   const suggested = guidedInsights?.suggestedPrice ?? null;
+
+  /** Why the typed answer can't be sent yet, or null. */
+  const answerProblem =
+    ask.required && !text.trim()
+      ? "This one’s needed to keep your listing clear."
+      : textProblem;
+  function submitText() {
+    setTried(true);
+    if (answerProblem) return;
+    onScalar(text);
+  }
+  const textFeedback =
+    tried && answerProblem ? (
+      <AskError>{answerProblem}</AskError>
+    ) : textHint ? (
+      <p className="-mt-1 text-xs text-muted">{textHint}</p>
+    ) : null;
 
   if (ask.kind === "CHOICE" || ask.kind === "CONFIRM") {
     return (
@@ -2226,6 +2270,9 @@ function AgentAskControl({
       </AssistantCard>
     );
   }
+
+  const parsedPrice = priceText.trim() ? Number(priceText) : 0;
+  const priceOk = Number.isFinite(parsedPrice) && parsedPrice >= 0;
 
   if (ask.kind === "PRICE") {
     return (
@@ -2284,12 +2331,15 @@ function AgentAskControl({
             aria-label="Mark price as negotiable"
           />
         </div>
+        {tried && !priceOk ? (
+          <AskError>Enter a price of 0 or more.</AskError>
+        ) : null}
         <AskPrimaryButton
           label="Confirm price"
           onClick={() => {
-            const parsed = priceText.trim() ? Number(priceText) : 0;
-            if (!Number.isFinite(parsed) || parsed < 0) return;
-            onPrice(parsed, negotiable);
+            setTried(true);
+            if (!priceOk) return;
+            onPrice(parsedPrice, negotiable);
           }}
         />
       </AssistantCard>
@@ -2308,10 +2358,15 @@ function AgentAskControl({
           onSelect={setLocation}
           onClear={() => setLocation(null)}
         />
+        {tried && !location ? (
+          <AskError>Choose where the item is, so nearby buyers find it.</AskError>
+        ) : null}
         <AskPrimaryButton
           label="Continue"
-          disabled={!location}
-          onClick={onLocation}
+          onClick={() => {
+            setTried(true);
+            if (location) onLocation();
+          }}
         />
       </AssistantCard>
     );
@@ -2321,11 +2376,17 @@ function AgentAskControl({
     return (
       <AssistantCard>
         <AskHeader ask={ask} />
-        <PhoneInput value={contactPhone} onChange={setContactPhone} error={null} />
+        <PhoneInput
+          value={contactPhone}
+          onChange={setContactPhone}
+          error={tried && !contactPhone ? "Add a phone number so buyers can call you." : null}
+        />
         <AskPrimaryButton
           label="Continue"
-          disabled={!contactPhone}
-          onClick={onPhone}
+          onClick={() => {
+            setTried(true);
+            if (contactPhone) onPhone();
+          }}
         />
       </AssistantCard>
     );
@@ -2344,7 +2405,7 @@ function AgentAskControl({
           placeholder={ask.placeholder ?? "Type your answer…"}
           className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
         />
-        {textHint ? <p className="-mt-1 text-xs text-muted">{textHint}</p> : null}
+        {textFeedback}
         <div className="flex items-center justify-between gap-2">
           {!ask.required ? (
             <button
@@ -2357,12 +2418,7 @@ function AgentAskControl({
           ) : (
             <span />
           )}
-          <AskPrimaryButton
-            label="Send"
-            inline
-            disabled={(ask.required && !text.trim()) || Boolean(textProblem)}
-            onClick={() => onScalar(text)}
-          />
+          <AskPrimaryButton label="Send" inline onClick={submitText} />
         </div>
       </AssistantCard>
     );
@@ -2376,7 +2432,7 @@ function AgentAskControl({
         className="flex items-end gap-2"
         onSubmit={(event) => {
           event.preventDefault();
-          onScalar(text);
+          submitText();
         }}
       >
         <input
@@ -2389,14 +2445,13 @@ function AgentAskControl({
         />
         <button
           type="submit"
-          disabled={(ask.required && !text.trim()) || Boolean(textProblem)}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white disabled:opacity-40"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition-transform active:scale-95"
           aria-label="Send"
         >
           <Send size={18} />
         </button>
       </form>
-      {textHint ? <p className="-mt-1 text-xs text-muted">{textHint}</p> : null}
+      {textFeedback}
       {!ask.required ? (
         <button
           type="button"

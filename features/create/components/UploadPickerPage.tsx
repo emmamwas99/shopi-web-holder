@@ -54,22 +54,14 @@ export function UploadPickerPage({
   const router = useRouter();
   const isDesktop = useIsDesktop();
   const [storeHydrated, setStoreHydrated] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [view, setView] = useState<"pick" | "tiktok">("pick");
-  const [createError, setCreateError] = useState<string | null>(null);
 
   const {
     creationMode,
     setCreationMode,
-    setDraftId,
-    setContentType,
-    setStep,
-    setError,
     draftId,
     draftPending,
     step,
   } = useCreateStore();
-  const [createDraft] = useMutation(CreateDraftDocument);
 
   useEffect(() => {
     if (useCreateStore.persist.hasHydrated()) {
@@ -107,13 +99,12 @@ export function UploadPickerPage({
       showingManual &&
       !manualRoute &&
       isDesktop === false &&
-      view === "pick" &&
       draftId &&
       step !== "pick"
     ) {
       router.replace(`/${lang}/upload/create-manual`);
     }
-  }, [isDesktop, view, draftId, step, lang, manualRoute, router, showingManual]);
+  }, [isDesktop, draftId, step, lang, manualRoute, router, showingManual]);
 
   if (isDesktop === null || !storeHydrated) return null;
 
@@ -146,6 +137,31 @@ export function UploadPickerPage({
   }
 
   if (isDesktop) return <DesktopCreateFlow lang={lang} />;
+
+  return <MediaTypePicker lang={lang} manualRoute={manualRoute} />;
+}
+
+/**
+ * The phone's "Choose media" screen. Its own component so it mounts fresh
+ * each time it's shown: on the manual route, picking a type swaps this route
+ * to the editor without a navigation, and Back from the editor swaps it back.
+ * Kept in the parent, `creating` stayed true from the last pick (it was only
+ * cleared on failure) and every option came back disabled; `view` reopened
+ * the TikTok picker after an import.
+ */
+function MediaTypePicker({
+  lang,
+  manualRoute,
+}: {
+  lang: string;
+  manualRoute: boolean;
+}) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [view, setView] = useState<"pick" | "tiktok">("pick");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const { setDraftId, setContentType, setStep, setError } = useCreateStore();
+  const [createDraft] = useMutation(CreateDraftDocument);
 
   async function handlePickType(kind: "image" | "video") {
     if (creating) return;

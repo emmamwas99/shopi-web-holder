@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import { useMutation } from "@apollo/client/react";
-import { Camera } from "lucide-react";
+import { Camera, CircleAlert } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import type { MediaItem } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
@@ -258,7 +258,7 @@ export function MediaPicker() {
                   showing, so a spinner overlay just makes it feel slow. */}
               {item.status === "error" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
-                  <span style={{ color: "#ff5555", fontSize: 16 }}>✕</span>
+                  <CircleAlert size={20} className="text-white" aria-label="Upload failed" />
                 </div>
               )}
 

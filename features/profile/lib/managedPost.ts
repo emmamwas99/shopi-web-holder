@@ -115,27 +115,17 @@ export function postProblem(post: ManagedPost): string | null {
   return null;
 }
 
-export const TONE_CLASSES: Record<StatusTone, { pill: string; dot: string }> = {
-  success: {
-    pill: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    dot: "bg-emerald-500",
-  },
-  warning: {
-    pill: "bg-amber-500/14 text-amber-700 dark:text-amber-400",
-    dot: "bg-amber-500",
-  },
-  danger: {
-    pill: "bg-rose-500/12 text-rose-700 dark:text-rose-400",
-    dot: "bg-rose-500",
-  },
-  info: {
-    pill: "bg-sky-500/12 text-sky-700 dark:text-sky-400",
-    dot: "bg-sky-500",
-  },
-  neutral: {
-    pill: "bg-slate-500/12 text-slate-700 dark:text-slate-300",
-    dot: "bg-slate-400",
-  },
+/**
+ * Badge colours, the admin's: a soft tint with the tone's text colour. Text
+ * shades are a step darker than the admin's so they hold up on a phone in
+ * daylight, and lighter in dark mode.
+ */
+export const TONE_CLASSES: Record<StatusTone, string> = {
+  success: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
+  warning: "bg-amber-400/20 text-amber-800 dark:text-amber-300",
+  danger: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  info: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
+  neutral: "bg-subtle text-muted",
 };
 
 export function matchesStatusFilter(post: ManagedPost, filter: StatusFilter): boolean {

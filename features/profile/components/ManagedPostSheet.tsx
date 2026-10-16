@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useCallback, useState, type ComponentType, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   BarChart3,
-  Bookmark,
-  ChevronRight,
   Eye,
   EyeOff,
-  Heart,
   ImageIcon,
-  MessageCircle,
+  MoreHorizontal,
   Pencil,
   Share2,
   Store,
@@ -19,9 +17,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MuxVideo } from "@/components/ui/MuxVideo";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useBackDismiss } from "@/hooks/useBackDismiss";
 import { contentPath } from "@/lib/content-url";
 import { fmtCompact } from "@/lib/format";
+import { timeAgoLong } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 import {
@@ -34,13 +34,13 @@ import {
   shortDate,
 } from "../lib/managedPost";
 import { DetailSheet } from "./DetailSheet";
-import { StatusPill } from "./ManagedPostRow";
+import { StatusBadge } from "./ManagedPostRow";
 
 /**
- * Everything about one of the seller's posts, and every action on it, in one
- * sheet — the admin's post panel, for a seller. Opened from the list; Back
- * closes it (useBackDismiss), and Edit and Delete open over it, so Back from
- * those returns here rather than to the list.
+ * One of the seller's posts and every action on it — the admin's post panel,
+ * for a seller: media, status, price, the action bar, then the facts. Back
+ * closes it (useBackDismiss); Edit, Delete and the More menu open over it, so
+ * Back from those comes back here first.
  */
 export function ManagedPostSheet({
   post,
@@ -76,7 +76,10 @@ export function ManagedPostSheet({
   const problem = postProblem(shown);
   const hidden = isHidden(shown);
   const live = shown.status === "ACTIVE" && shown.isLive && !hidden;
-  const listingHref = contentPath(lang, shown);
+  const inReview =
+    shown.status === "PENDING_REVIEW" ||
+    shown.status === "UNDER_REVIEW" ||
+    shown.status === "PROCESSING";
 
   // Leaving from inside the sheet: hand its history entry to the new page, so
   // Back from there comes to the list, not to an empty sheet step.
@@ -102,227 +105,275 @@ export function ManagedPostSheet({
     }
   }
 
-  const category = [shown.category?.name, shown.aiClassification?.level2]
-    .filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index)
-    .join(" › ");
-  const place = [shown.location?.placeName, shown.location?.subregion, shown.location?.county]
-    .filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index)
-    .join(", ");
+  const unique = (parts: (string | null | undefined)[]) =>
+    parts.filter(
+      (part, index, all): part is string => Boolean(part) && all.indexOf(part) === index,
+    );
+  const category = unique([shown.category?.name, shown.aiClassification?.level2]).join(" › ");
+  const place = unique([
+    shown.location?.placeName,
+    shown.location?.subregion,
+    shown.location?.county,
+  ]).join(", ");
+
+  const menu: MenuAction[] = [
+    ...(live
+      ? [
+          { key: "share", label: "Share link", icon: Share2, onSelect: () => void share(shown) },
+          { key: "store", label: "View on store", icon: Store, onSelect: () => go(contentPath(lang, shown)) },
+        ]
+      : []),
+    {
+      key: "insights",
+      label: "Performance insights",
+      icon: BarChart3,
+      onSelect: () => go(`/${lang}/profile/posts/${shown.id}`),
+    },
+    { key: "delete", label: "Delete post", icon: Trash2, onSelect: () => onDelete(shown), danger: true },
+  ];
 
   return (
     <DetailSheet
       open={open}
       desktop={desktop}
       title={shown.title || "Untitled post"}
-      subtitle={[shown.listingNumber, `Posted ${shortDate(shown.createdAt)}`]
-        .filter(Boolean)
-        .join(" · ")}
+      subtitle={unique([shown.listingNumber, `posted ${timeAgoLong(shown.createdAt)}`]).join(" · ")}
       onRequestClose={requestClose}
     >
-      <div className="flex flex-col gap-5">
-        <PostGallery post={shown} />
+      <div className="space-y-5">
+        <div className="mx-auto w-full max-w-[13rem]">
+          <PostMedia key={shown.id} post={shown} />
+        </div>
 
-        <div>
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+            {hidden && shown.status !== "ACTIVE" && (
+              <StatusBadge tone="outline">
+                <EyeOff /> Hidden
+              </StatusBadge>
+            )}
+            <span className="text-xs text-muted">{status.helper}</span>
+          </div>
+
+          <div>
             <p
               className={cn(
-                "text-[24px] font-bold leading-tight tracking-tight",
+                "text-lg font-semibold tabular-nums",
                 shown.price.amount > 0 ? "text-main" : "text-muted",
               )}
             >
-              {postPriceLabel(shown)}
+              {shown.price.amount > 0 ? postPriceLabel(shown) : "No price set"}
             </p>
             {shown.price.negotiable && shown.price.amount > 0 && (
-              <span className="rounded-full bg-surface px-2.5 py-0.5 text-[12px] font-semibold text-muted">
-                Negotiable
-              </span>
+              <p className="text-xs text-muted">Negotiable</p>
             )}
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            <StatusPill label={status.label} tone={status.tone} />
-            <span className="min-w-0 truncate text-[13px] text-muted">{status.helper}</span>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <ActionButton primary icon={Pencil} onClick={() => onEdit(shown)} disabled={busy}>
+              Edit details
+            </ActionButton>
+            <ActionButton
+              icon={hidden ? Eye : EyeOff}
+              onClick={() => onToggleHidden(shown)}
+              disabled={busy}
+            >
+              {hidden ? "Show in store" : "Hide"}
+            </ActionButton>
+            <MoreMenu actions={menu} disabled={busy} />
           </div>
+
           {problem && (
-            <p className="mt-3 rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-[13px] leading-snug text-rose-700 dark:text-rose-300">
-              {problem}
+            <section className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="size-3.5" />
+                {shown.status === "FAILED" ? "Upload failed" : "Not approved"}
+                {shown.approval?.rejectedAt && (
+                  <span className="font-normal">· {timeAgoLong(shown.approval.rejectedAt)}</span>
+                )}
+              </p>
+              <p className="mt-1 text-[13px] text-main">“{problem}”</p>
+            </section>
+          )}
+          {inReview && (
+            <p className="rounded-xl bg-subtle px-3 py-2.5 text-[13px] text-muted">
+              Shopi checks new posts before they go live. You can still edit it while you
+              wait.
             </p>
           )}
-        </div>
-
-        {/* The three things sellers come here to do, one tap each. */}
-        <div className="grid grid-cols-3 gap-2">
-          <ActionTile icon={Pencil} label="Edit" onClick={() => onEdit(shown)} disabled={busy} />
-          <ActionTile
-            icon={hidden ? Eye : EyeOff}
-            label={hidden ? "Show" : "Hide"}
-            onClick={() => onToggleHidden(shown)}
-            disabled={busy}
-          />
-          {live ? (
-            <ActionTile icon={Share2} label="Share" onClick={() => void share(shown)} />
-          ) : (
-            <ActionTile
-              icon={BarChart3}
-              label="Insights"
-              onClick={() => go(`/${lang}/profile/posts/${shown.id}`)}
-            />
-          )}
-        </div>
-
-        <div className="grid grid-cols-4 divide-x divide-border rounded-2xl border border-default py-3">
-          <Stat icon={Eye} label="Views" value={shown.stats.views} />
-          <Stat icon={Bookmark} label="Saves" value={shown.stats.saves} />
-          <Stat icon={Heart} label="Likes" value={shown.stats.likes} />
-          <Stat icon={MessageCircle} label="Comments" value={shown.stats.comments} />
         </div>
 
         <section>
-          <h3 className="mb-1 text-[13px] font-semibold text-muted">Details</h3>
-          <dl className="divide-y divide-border">
-            {shown.listingNumber && (
-              <Detail label="Listing no.">
-                <span className="font-mono text-[13px]">{shown.listingNumber}</span>
-              </Detail>
-            )}
-            <Detail label="Category">{category || "Not set"}</Detail>
-            <Detail label="Location">{place || "Not set"}</Detail>
-            <Detail label="Posted">{shortDate(shown.createdAt)}</Detail>
-            <Detail label="Last updated">{shortDate(shown.updatedAt)}</Detail>
-            <Detail label="Visibility">{hidden ? "Hidden from the store" : "Public"}</Detail>
-          </dl>
+          <p className="mb-1.5 text-xs font-medium text-muted">Performance</p>
+          <div className="grid grid-cols-4 divide-x divide-border rounded-xl border border-default py-2.5">
+            <Stat label="Views" value={shown.stats.views} />
+            <Stat label="Saves" value={shown.stats.saves} />
+            <Stat label="Likes" value={shown.stats.likes} />
+            <Stat label="Comments" value={shown.stats.comments} />
+          </div>
         </section>
 
-        <div className="overflow-hidden rounded-2xl border border-default">
-          {live && (
-            <LinkRow icon={Store} label="View on store" onClick={() => go(listingHref)} />
-          )}
-          <LinkRow
-            icon={BarChart3}
-            label="Performance insights"
-            onClick={() => go(`/${lang}/profile/posts/${shown.id}`)}
-            last
-          />
-        </div>
+        {shown.caption?.trim() && (
+          <section>
+            <p className="mb-1.5 text-xs font-medium text-muted">Description</p>
+            <p className="whitespace-pre-wrap text-sm text-main">{shown.caption.trim()}</p>
+          </section>
+        )}
 
-        {/* Apart from everything else, so a thumb running down the sheet
-            can't land on it. */}
-        <button
-          type="button"
-          onClick={() => onDelete(shown)}
-          disabled={busy}
-          className="mb-1 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-500/10 text-[15px] font-semibold text-rose-600 transition-opacity active:opacity-70 disabled:opacity-50 dark:text-rose-400"
-        >
-          <Trash2 size={17} aria-hidden />
-          Delete post
-        </button>
+        <dl className="divide-y divide-border rounded-xl border border-default px-3">
+          {shown.listingNumber && (
+            <Detail label="Listing no.">
+              <span className="font-mono text-[13px]">{shown.listingNumber}</span>
+            </Detail>
+          )}
+          <Detail label="Category">{category || "—"}</Detail>
+          <Detail label="Location">{place || "—"}</Detail>
+          <Detail label="Media">
+            {shown.type === "VIDEO"
+              ? "Video"
+              : `${shown.media.length} ${shown.media.length === 1 ? "photo" : "photos"}`}
+          </Detail>
+          <Detail label="Visibility">{hidden ? "Hidden from your store" : "Public"}</Detail>
+          <Detail label="Posted">
+            <span title={shortDate(shown.createdAt)}>{timeAgoLong(shown.createdAt)}</span>
+          </Detail>
+          <Detail label="Last updated">
+            <span title={shortDate(shown.updatedAt)}>{timeAgoLong(shown.updatedAt)}</span>
+          </Detail>
+        </dl>
       </div>
     </DetailSheet>
   );
 }
 
-type IconType = ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
+type IconType = ComponentType<{ className?: string; size?: number }>;
 
-function ActionTile({
+type MenuAction = {
+  key: string;
+  label: string;
+  icon: IconType;
+  onSelect: () => void;
+  danger?: boolean;
+};
+
+/** The admin's button: rounded-[8px], 36px, filled for the main action, outlined otherwise. */
+export function ActionButton({
   icon: Icon,
-  label,
+  primary,
   onClick,
   disabled,
+  children,
 }: {
   icon: IconType;
-  label: string;
+  primary?: boolean;
   onClick: () => void;
   disabled?: boolean;
+  children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-[68px] flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface text-[13px] font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-50"
+      className={cn(
+        "inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-[8px] px-3.5 text-sm font-medium transition-opacity active:opacity-70 disabled:pointer-events-none disabled:opacity-50",
+        primary ? "bg-primary text-white" : "border border-default bg-app text-main",
+      )}
     >
-      <Icon size={20} aria-hidden />
-      {label}
+      <Icon className="size-4 shrink-0" />
+      {children}
     </button>
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: IconType;
-  label: string;
-  value: number;
-}) {
+/**
+ * Everything that isn't one of the two main actions, behind "More" — as the
+ * admin does. Back closes the menu first.
+ */
+export function MoreMenu({ actions, disabled }: { actions: MenuAction[]; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  useBackDismiss(open, close);
+
   return (
-    <div className="flex flex-col items-center gap-0.5 px-1">
-      <span className="text-[17px] font-bold tabular-nums text-main">{fmtCompact(value)}</span>
-      <span className="flex items-center gap-1 text-[11px] text-muted">
-        <Icon size={11} aria-hidden />
-        {label}
-      </span>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border border-default bg-app px-3.5 text-sm font-medium text-main transition-opacity active:opacity-70 disabled:opacity-50"
+        >
+          <MoreHorizontal className="size-4" /> More
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        collisionPadding={16}
+        className="z-[90] w-56 rounded-xl border border-default bg-app p-1 shadow-lg"
+      >
+        {actions.map(({ key, label, icon: Icon, onSelect, danger }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onSelect();
+            }}
+            className={cn(
+              "flex h-10 w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-sm transition-colors active:bg-surface",
+              danger ? "text-rose-600 dark:text-rose-400" : "text-main",
+            )}
+          >
+            <Icon className={cn("size-4 shrink-0", danger ? "" : "text-muted")} />
+            {label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex flex-col items-center px-1">
+      <span className="text-[15px] font-semibold tabular-nums text-main">{fmtCompact(value)}</span>
+      <span className="text-[11px] text-muted">{label}</span>
     </div>
   );
 }
 
-function Detail({ label, children }: { label: string; children: ReactNode }) {
+export function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2.5 text-[14px]">
+    <div className="flex items-start justify-between gap-4 py-2 text-sm">
       <dt className="shrink-0 text-muted">{label}</dt>
       <dd className="min-w-0 text-right text-main">{children}</dd>
     </div>
   );
 }
 
-function LinkRow({
-  icon: Icon,
-  label,
-  onClick,
-  last,
-}: {
-  icon: IconType;
-  label: string;
-  onClick: () => void;
-  last?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex min-h-13 w-full items-center gap-3 px-4 text-left text-[15px] font-medium text-main transition-colors active:bg-surface",
-        !last && "border-b border-default",
-      )}
-    >
-      <Icon size={18} className="shrink-0 text-muted" aria-hidden />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
-    </button>
-  );
-}
-
 /**
- * The post's media: the video itself, or the photos as a swipeable strip with
- * a counter. Marked data-vaul-no-drag so a sideways swipe through the photos
- * never turns into dragging the sheet.
+ * The post's media, the admin's gallery: one item at a time in a bordered
+ * square, "1 of N" under it, and a strip to switch photos.
  */
-function PostGallery({ post }: { post: ManagedPost }) {
+function PostMedia({ post }: { post: ManagedPost }) {
   const [index, setIndex] = useState(0);
   const playbackId = post.media?.[0]?.muxMeta?.playbackId;
 
   if (post.type === "VIDEO" && playbackId) {
     return (
-      <div className="h-[min(46svh,440px)] overflow-hidden rounded-2xl bg-black">
-        <MuxVideo
-          muxPlaybackId={playbackId}
-          poster={postThumb(post) ?? undefined}
-          className="h-full w-full"
-          objectFit="contain"
-          muted={false}
-          playsInline
-          controls
-        />
+      <div className="space-y-2">
+        <div className="aspect-9/16 w-full overflow-hidden rounded-[8px] border border-default bg-black">
+          <MuxVideo
+            muxPlaybackId={playbackId}
+            poster={postThumb(post) ?? undefined}
+            className="h-full w-full"
+            objectFit="contain"
+            muted={false}
+            playsInline
+            controls
+          />
+        </div>
       </div>
     );
   }
@@ -330,42 +381,47 @@ function PostGallery({ post }: { post: ManagedPost }) {
   const images = postImages(post);
   if (images.length === 0) {
     return (
-      <div className="flex h-44 flex-col items-center justify-center gap-2 rounded-2xl bg-surface text-[13px] text-muted">
-        <ImageIcon size={24} aria-hidden />
+      <div className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-[8px] border border-default bg-surface text-center text-sm text-muted">
+        <ImageIcon className="size-5" />
         {post.type === "VIDEO" ? "Video still processing" : "No photos"}
       </div>
     );
   }
 
+  const current = Math.min(index, images.length - 1);
   return (
-    <div className="relative" data-vaul-no-drag>
-      <div
-        className="no-scroll-indicator flex snap-x snap-mandatory overflow-x-auto rounded-2xl"
-        onScroll={(event) => {
-          const el = event.currentTarget;
-          setIndex(Math.round(el.scrollLeft / Math.max(el.clientWidth, 1)));
-        }}
-      >
-        {images.map((url, i) => (
-          <div
-            key={`${url}-${i}`}
-            className="relative h-[min(46svh,440px)] w-full shrink-0 snap-center bg-surface"
-          >
-            <Image
-              src={url}
-              alt={i === 0 ? post.title : ""}
-              fill
-              sizes="(max-width: 768px) 100vw, 460px"
-              priority={i === 0}
-              className="object-cover"
-            />
-          </div>
-        ))}
+    <div className="space-y-2">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[8px] border border-default bg-surface">
+        <Image
+          key={images[current]}
+          src={images[current]}
+          alt={post.title}
+          fill
+          sizes="208px"
+          priority
+          className="object-cover"
+        />
       </div>
+      <p className="text-xs tabular-nums text-muted">
+        {current + 1} of {images.length}
+      </p>
       {images.length > 1 && (
-        <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[12px] font-semibold tabular-nums text-white">
-          {Math.min(index + 1, images.length)}/{images.length}
-        </span>
+        <div className="grid grid-cols-5 gap-1.5">
+          {images.map((url, i) => (
+            <button
+              key={`${url}-${i}`}
+              type="button"
+              onClick={() => setIndex(i)}
+              aria-label={`Photo ${i + 1}`}
+              className={cn(
+                "relative aspect-square overflow-hidden rounded-[6px] border-2",
+                i === current ? "border-primary" : "border-transparent opacity-70",
+              )}
+            >
+              <Image src={url} alt="" fill sizes="40px" className="object-cover" />
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -4,11 +4,30 @@
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import {
+  ChevronLeft,
+  Download,
+  FilePen,
+  Globe,
+  ImageIcon,
+  Images,
+  Lock,
+  MapPin,
+  Pencil,
+  Play,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { useCreateStore } from "@/stores/create";
+import { useCreateStore, type MediaItem, type TiktokEmbed } from "@/stores/create";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
+import { listingPriceText } from "@/lib/format";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
@@ -31,7 +50,8 @@ import {
   CreateSuccessScreen,
 } from "./CreateSuccessScreen";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
-import { CreateErrorDialog } from "./CreateErrorDialog";
+import { createErrorMessage } from "./CreateErrorDialog";
+import { FormNotice } from "./FormIssues";
 
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktokOptions($contentId: String!) {
@@ -65,26 +85,26 @@ type Visibility = "public" | "friends_only" | "private";
 const VISIBILITY_OPTIONS: {
   value: Visibility;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   desc: string;
 }[] = [
   {
     value: "public",
     label: "Everyone",
-    icon: "🌍",
-    desc: "Anyone can see this post",
+    icon: Globe,
+    desc: "Anyone on Shopi can find it",
   },
   {
     value: "friends_only",
     label: "Friends only",
-    icon: "👥",
+    icon: Users,
     desc: "Only people you follow",
   },
   {
     value: "private",
     label: "Only me",
-    icon: "🔒",
-    desc: "Only visible to you",
+    icon: Lock,
+    desc: "Hidden from everyone else",
   },
 ];
 
@@ -106,11 +126,12 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
     price,
     currency,
     title,
-    isFree,
     negotiable,
     mediaItems,
     contentType,
     categoryName,
+    subcategoryName,
+    location,
     tiktokEmbed,
     visibilityMode,
     allowDownload,
@@ -382,7 +403,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
   }
 
   const cover = mediaItems[0];
-  const coverSrc = getMediaPreviewSrc(cover);
+  const busy = publishing || advancing;
 
   // ── Published success ──────────────────────────────────────────────────────
   if (published) {
@@ -444,195 +465,189 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
     );
   }
 
-  // ── Shared form sections ──────────────────────────────────────────────────
-
-  const visibilitySection = (
-    <Section title="Audience">
-      <div className="flex flex-col gap-2">
-        {VISIBILITY_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setVisibilityMode(opt.value)}
-            className={`flex items-center gap-3 rounded-xl border-[1.5px] px-3 py-3 transition-all ${
-              visibilityMode === opt.value
-                ? "border-[rgb(var(--brand-primary)/0.4)] bg-[rgb(var(--brand-primary)/0.08)]"
-                : "border-transparent bg-surface"
-            }`}
-          >
-            <span className="text-[20px]">{opt.icon}</span>
-            <div className="flex-1 text-left">
-              <p className="text-base font-medium text-foreground">
-                {opt.label}
-              </p>
-              <p className="text-xs text-muted">{opt.desc}</p>
-            </div>
-            <RadioDot active={visibilityMode === opt.value} />
-          </button>
-        ))}
-      </div>
-    </Section>
-  );
-
-  const togglesSection = (
-    <Section title="More options">
-      <div className="flex flex-col">
-        <ToggleRow
-          label="Allow downloads"
-          description="Let others save your content"
-          value={allowDownload}
-          onChange={setAllowDownload}
-        />
-        <div className="my-0.5 h-px bg-border" />
-        <ToggleRow
-          label="HD quality"
-          description="Upload and serve in high definition"
-          value={hdEnabled}
-          onChange={setHdEnabled}
-        />
-      </div>
-    </Section>
-  );
-
-  const tiktokSection = contentType === "video" && (
-    <Section title="Share">
-      <div className="flex flex-col">
-        <ToggleRow
-          label="Post on TikTok"
-          description={
-            connectingTiktok
-              ? "Connecting to TikTok…"
-              : isTiktokConnected
-                ? "Cross-post this video to your TikTok"
-                : "Connect TikTok to enable cross-posting"
-          }
-          value={postOnTiktok}
-          onChange={handleTiktokToggle}
-          disabled={connectingTiktok}
-          icon={
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className={postOnTiktok ? "text-primary" : "text-muted"}
-            >
-              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.27 8.27 0 0 0 4.84 1.55V6.85a4.85 4.85 0 0 1-1.07-.16z" />
-            </svg>
-          }
-        />
-      </div>
-    </Section>
-  );
-
   return (
-    <div className="flex flex-col md:flex-row h-full flex-1">
-      {/* ── Desktop left — summary card (standalone page only; the dialog
-             shows the live preview panel instead) ── */}
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      {/* Header — hidden when embedded: the dialog header owns back + stepper */}
       {!embedded && (
-        <div className="hidden w-80 shrink-0 border-r border-border bg-surface md:flex md:flex-col md:justify-center md:items-center md:gap-5 md:p-8">
-          {/* Cover thumbnail */}
-          {cover && (
-            <div className="relative h-[213px] w-40 overflow-hidden rounded-2xl border border-border bg-background">
-              {tiktokEmbed ? (
-                <TikTokCreatePreview
-                  embed={tiktokEmbed}
-                  className="absolute inset-0 h-full w-full"
-                  sizes="160px"
-                />
-              ) : cover.type === "video" && cover.localUri ? (
-                <video
-                  src={cover.localUri}
-                  className="absolute inset-0 w-full h-full object-contain"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : coverSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={coverSrc}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
-              ) : (
-                <div className="absolute inset-0 bg-surface" />
-              )}
-            </div>
-          )}
-
-          {/* Summary rows */}
-          <div className="w-full max-w-[240px] flex flex-col gap-2">
-            <SummaryRow label="Title" value={title || "—"} />
-            <SummaryRow
-              label="Price"
-              value={`${isFree || !price ? "Custom" : `${currency} ${price}`}${
-                negotiable ? " · Negotiable" : ""
-              }`}
-            />
-            <SummaryRow
-              label="Files"
-              value={`${mediaItems.length} ${mediaItems.length === 1 ? "file" : "files"}`}
-            />
-          </div>
+        <div className="sticky top-0 z-50 flex shrink-0 items-center justify-between border-b border-border bg-background px-4 pb-3 pt-4">
+          <button
+            type="button"
+            onClick={() => setStep("edit")}
+            aria-label="Back to details"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+          >
+            <ChevronLeft size={23} strokeWidth={2.2} />
+          </button>
+          <h2 className="text-lg font-semibold text-foreground">Review and post</h2>
+          <span aria-hidden className="w-10 shrink-0" />
         </div>
       )}
 
-      {/* ── Right / mobile — settings form ── */}
-      <div className="flex flex-col flex-1 h-full min-h-0">
-        {/* Header — hidden when embedded: the dialog header owns back + stepper */}
+      <div
+        className={`flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-6 ${embedded ? "px-8 pt-6" : "px-4 pt-4"}`}
+      >
+        {/* What's about to go out. The dialog has its own live preview, so
+            this card is the phone's. */}
         {!embedded && (
-          <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => setStep("edit")}
-              aria-label="Back to details"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
-            >
-              <ChevronLeft size={23} strokeWidth={2.2} />
-            </button>
-            <h2 className="text-lg font-semibold text-foreground">Settings</h2>
-            {/* Spacer to keep the title centered (Post/Draft live in the bottom bar) */}
-            <div className="w-12.5" />
-          </div>
+          <section aria-labelledby="review-listing">
+            <SectionHeader
+              id="review-listing"
+              title="Your listing"
+              action={
+                <button
+                  type="button"
+                  onClick={() => setStep("edit")}
+                  className="-mr-2 flex h-8 items-center gap-1.5 rounded-full px-2 text-[13px] font-semibold text-primary transition-colors active:bg-primary-soft"
+                >
+                  <Pencil size={14} aria-hidden />
+                  Edit
+                </button>
+              }
+            />
+            <ListingSummary
+              cover={cover}
+              mediaCount={mediaItems.length}
+              tiktokEmbed={tiktokEmbed}
+              title={title}
+              price={price}
+              currency={currency}
+              negotiable={negotiable}
+              category={[categoryName, subcategoryName].filter(Boolean).join(" · ")}
+              place={location?.placeName}
+            />
+          </section>
         )}
 
-        <div
-          className={`flex-1 overflow-y-auto pb-8 flex flex-col gap-5 ${embedded ? "px-8 pt-6" : "px-4"}`}
-        >
-          {visibilitySection}
-          {togglesSection}
-          {tiktokSection}
-
-          <CreateErrorDialog
-            message={error}
-            title="Couldn’t finish your post"
-            onClose={() => setError(null)}
-          />
-        </div>
-
-        {/* ── Fixed bottom action bar: Draft (outline) + Post (primary) ── */}
-        <div
-          className={`flex shrink-0 gap-3 border-t border-border pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)] ${embedded ? "px-8" : "px-4"}`}
-        >
-          <button
-            onClick={handleSaveDraft}
-            disabled={advancing || publishing}
-            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[rgb(var(--color-border-strong))] bg-transparent text-base font-semibold text-foreground transition-transform active:scale-[0.98] ${
-              advancing || publishing ? "opacity-60" : ""
-            }`}
+        <section aria-labelledby="review-audience">
+          <SectionHeader id="review-audience" title="Who can see it" />
+          <div
+            role="radiogroup"
+            aria-labelledby="review-audience"
+            className="overflow-hidden rounded-[14px] border border-border bg-elevated"
           >
-            {advancing ? <MiniSpinnerDark /> : "Draft"}
+            {VISIBILITY_OPTIONS.map((opt, index) => {
+              const active = visibilityMode === opt.value;
+              const Icon = opt.icon;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setVisibilityMode(opt.value)}
+                  className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors active:bg-surface ${
+                    index > 0 ? "border-t border-border" : ""
+                  }`}
+                >
+                  <IconTile active={active}>
+                    <Icon size={18} aria-hidden />
+                  </IconTile>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-medium text-main">{opt.label}</span>
+                    <span className="block text-[13px] text-muted">{opt.desc}</span>
+                  </span>
+                  <RadioDot active={active} />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section aria-labelledby="review-options">
+          <SectionHeader id="review-options" title="Options" />
+          <div className="overflow-hidden rounded-[14px] border border-border bg-elevated">
+            <ToggleRow
+              icon={<Download size={18} aria-hidden />}
+              label="Allow downloads"
+              description="Let people save your media"
+              value={allowDownload}
+              onChange={setAllowDownload}
+            />
+            <ToggleRow
+              icon={<Sparkles size={18} aria-hidden />}
+              label="HD quality"
+              description="Show your media in high definition"
+              value={hdEnabled}
+              onChange={setHdEnabled}
+              divided
+            />
+            {contentType === "video" && (
+              <ToggleRow
+                icon={<TikTokIcon size={17} className="" />}
+                label="Also post on TikTok"
+                description={
+                  connectingTiktok
+                    ? "Connecting to TikTok…"
+                    : isTiktokConnected
+                      ? "Share this video to your TikTok too"
+                      : "Connect TikTok to share there too"
+                }
+                value={postOnTiktok}
+                onChange={() => void handleTiktokToggle()}
+                disabled={connectingTiktok}
+                divided
+              />
+            )}
+          </div>
+        </section>
+
+        <p className="flex items-start gap-2.5 px-1 text-[13px] leading-5 text-muted">
+          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
+          <span>
+            The Shopi team checks every post before it appears in the feed.
+            Drafts stay on your profile until you post them.
+          </span>
+        </p>
+      </div>
+
+      {/* ── Bottom bar: Save draft + Post. Sticky, like Details' Next: the
+             page scrolls as a whole on a phone. ── */}
+      <div
+        className={`sticky bottom-0 z-50 shrink-0 border-t border-border bg-background pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)] ${embedded ? "px-8" : "px-4"}`}
+      >
+        {error && (
+          <FormNotice title="Couldn’t finish your post">
+            {friendlyError(error)}
+          </FormNotice>
+        )}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            aria-busy={advancing}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-[rgb(var(--color-border-strong))] text-base font-semibold text-main transition-transform active:scale-[0.98]"
+          >
+            {advancing ? (
+              <>
+                <InterlockingBalls size={18} />
+                Saving
+              </>
+            ) : (
+              <>
+                <FilePen size={18} aria-hidden />
+                Save draft
+              </>
+            )}
           </button>
           <button
+            type="button"
             onClick={handlePost}
-            disabled={publishing || advancing}
-            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-base font-semibold text-white transition-transform active:scale-[0.98] ${
-              publishing
-                ? "opacity-80"
-                : "shadow-[0_6px_20px_rgb(var(--brand-primary)/0.4)]"
+            aria-busy={publishing}
+            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-base font-semibold text-white transition-transform active:scale-[0.98] ${
+              busy ? "" : "shadow-[0_6px_20px_rgb(var(--brand-primary)/0.35)]"
             }`}
           >
-            {publishing ? <MiniSpinner /> : "Post"}
+            {publishing ? (
+              <>
+                <InterlockingBalls size={18} />
+                Posting
+              </>
+            ) : (
+              <>
+                <Send size={18} aria-hidden />
+                Post
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -642,93 +657,193 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function MiniSpinner() {
-  return <InterlockingBalls size={18} />;
+/** The API's message, minus wrappers, with the known ones said plainly. */
+function friendlyError(message: string): string {
+  const text = createErrorMessage(message);
+  if (/maximum active drafts/i.test(text)) {
+    return "You have too many unfinished drafts. Post or delete one from your profile, then try again.";
+  }
+  return text || "Something went wrong. Please try again.";
 }
 
-function MiniSpinnerDark() {
-  return <InterlockingBalls size={18} />;
-}
-
-function Section({
+function SectionHeader({
+  id,
   title,
-  children,
+  action,
 }: {
+  id: string;
   title: string;
-  children: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
-    <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+    <div className="mb-2 flex min-h-8 items-center justify-between px-1">
+      <h3 id={id} className="text-[13px] font-semibold text-muted">
         {title}
-      </p>
-      {children}
+      </h3>
+      {action}
     </div>
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function ListingSummary({
+  cover,
+  mediaCount,
+  tiktokEmbed,
+  title,
+  price,
+  currency,
+  negotiable,
+  category,
+  place,
+}: {
+  cover: MediaItem | undefined;
+  mediaCount: number;
+  tiktokEmbed: TiktokEmbed | null;
+  title: string;
+  price: number | null;
+  currency: string;
+  negotiable: boolean;
+  category: string;
+  place?: string;
+}) {
+  const priceText = listingPriceText(price ? { amount: price, currency } : null);
+  // A video picked on this device previews from its own file; a restored one
+  // comes back with a poster frame.
+  const localVideo =
+    cover?.type === "video" && !cover.thumbnailUrl && cover.localUri?.startsWith("blob:");
+  const coverSrc = cover?.thumbnailUrl || getMediaPreviewSrc(cover);
+
   return (
-    <div className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-2.5">
-      <span className="text-xs text-muted">{label}</span>
-      <span className="line-clamp-1 max-w-35 text-right text-xs font-semibold text-foreground">
-        {value}
-      </span>
+    <div className="flex gap-3 rounded-[14px] border border-border bg-elevated p-3">
+      <div className="relative size-20 shrink-0 overflow-hidden rounded-[10px] border border-border bg-surface">
+        {tiktokEmbed ? (
+          <TikTokCreatePreview embed={tiktokEmbed} className="size-full" sizes="80px" />
+        ) : localVideo ? (
+          <video
+            src={cover.localUri}
+            className="absolute inset-0 size-full object-cover"
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : coverSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coverSrc} alt="" className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <span className="flex size-full items-center justify-center text-muted">
+            <ImageIcon size={20} aria-hidden />
+          </span>
+        )}
+        {cover?.type === "video" ? (
+          <span className="absolute bottom-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white">
+            <Play size={10} fill="currentColor" strokeWidth={0} className="ml-px" aria-hidden />
+          </span>
+        ) : mediaCount > 1 ? (
+          <span className="absolute bottom-1 right-1 flex h-5 items-center gap-1 rounded-full bg-black/60 px-1.5 text-[11px] font-semibold text-white">
+            <Images size={11} aria-hidden />
+            {mediaCount}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-main">
+          {title.trim() || "Untitled listing"}
+        </p>
+        <p className="mt-1 text-sm font-semibold text-main">
+          {priceText ?? "Price on request"}
+          {negotiable && priceText && (
+            <span className="font-normal text-muted"> · Negotiable</span>
+          )}
+        </p>
+        {category && <MetaLine icon={<Tag size={13} aria-hidden />}>{category}</MetaLine>}
+        {place && <MetaLine icon={<MapPin size={13} aria-hidden />}>{place}</MetaLine>}
+      </div>
     </div>
+  );
+}
+
+function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted">
+      <span className="shrink-0">{icon}</span>
+      <span className="truncate">{children}</span>
+    </p>
+  );
+}
+
+function IconTile({ active, children }: { active?: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors ${
+        active ? "bg-primary-soft text-primary" : "bg-surface text-muted"
+      }`}
+    >
+      {children}
+    </span>
   );
 }
 
 function RadioDot({ active }: { active: boolean }) {
   return (
-    <div
-      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+    <span
+      aria-hidden
+      className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
         active ? "border-primary" : "border-[rgb(var(--color-border-strong))]"
       }`}
     >
-      {active && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-    </div>
+      {active && <span className="size-2.5 rounded-full bg-primary" />}
+    </span>
   );
 }
 
 function ToggleRow({
+  icon,
   label,
   description,
   value,
   onChange,
   disabled,
-  icon,
+  divided,
 }: {
+  icon: React.ReactNode;
   label: string;
   description: string;
   value: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
-  icon?: React.ReactNode;
+  divided?: boolean;
 }) {
   return (
-    <div
-      className={`flex items-center gap-3 py-3 ${disabled ? "opacity-60" : ""}`}
+    // The whole row toggles, not just the switch, so the target is the row.
+    <button
+      type="button"
+      role="switch"
+      aria-checked={value}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!value)}
+      className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors active:bg-surface disabled:opacity-60 ${
+        divided ? "border-t border-border" : ""
+      }`}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
-      <div className="flex-1 min-w-0">
-        <p className="text-base font-medium text-foreground">{label}</p>
-        <p className="text-xs text-muted">{description}</p>
-      </div>
-      <button
-        role="switch"
-        aria-checked={value}
-        onClick={() => !disabled && onChange(!value)}
-        disabled={disabled}
-        className={`relative h-[26px] w-11 flex-shrink-0 rounded-full transition-colors ${
+      <IconTile active={value}>{icon}</IconTile>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-medium text-main">{label}</span>
+        <span className="block text-[13px] text-muted">{description}</span>
+      </span>
+      <span
+        aria-hidden
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors ${
           value ? "bg-primary" : "bg-[rgb(var(--color-border-strong))]"
         }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-5.5 w-5.5 rounded-full bg-white shadow-sm transition-transform ${
-            value ? "translate-x-[18px]" : "translate-x-0"
+          className={`block size-5 rounded-full bg-white shadow-md transition-transform ${
+            value ? "translate-x-5" : "translate-x-0"
           }`}
         />
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

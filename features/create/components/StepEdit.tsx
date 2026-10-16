@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronLeft, X } from "lucide-react";
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import { useForm, useWatch } from "react-hook-form";
 import { useCreateStore } from "@/stores/create";
 import {
@@ -16,6 +17,7 @@ import { PhoneInput } from "./PhoneInput";
 import { SpecsEditor } from "./SpecsEditor";
 import { MediaPicker } from "./MediaPicker";
 import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
+import { FormIssues, FormNotice, type FormIssue } from "./FormIssues";
 import {
   isDraftAutosaveBlocked,
   trackDraftAutosave,
@@ -112,15 +114,15 @@ export function StepEdit({
 
   // ── Title (autosize textarea) ──────────────────────────────────────────────
   const [titleValue, setTitleValue] = useState(title);
-  // Title and description are checked against the listing text floor (see
-  // lib/listingText) once the seller first taps Next. From then on the inline
-  // messages follow what they type, so a message clears the moment the text is
-  // good enough rather than waiting for the next tap.
-  const [textChecked, setTextChecked] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [categoryError, setCategoryError] = useState<string | null>(null);
-  const [mediaError, setMediaError] = useState<string | null>(null);
+  // Nothing is flagged until the seller first taps Next. From then on every
+  // inline message, and the list over the button, follows what they type, so
+  // a message clears the moment its field is good enough rather than waiting
+  // for the next tap.
+  const [attempted, setAttempted] = useState(false);
+  // Covers the whole of onNext, including the wait for uploads to attach,
+  // which the mutation's own loading flag doesn't.
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadTimedOut, setUploadTimedOut] = useState(false);
   // Resize every rendered title textarea (mobile + desktop copies) whenever the
   // value changes — including a restored draft, which sets it programmatically.
   // Per-element so the hidden copy doesn't starve the visible one.
@@ -171,8 +173,8 @@ export function StepEdit({
 
   const titleProblem = listingTitleProblem(titleValue);
   const descriptionProblem = listingDescriptionProblem(watchCaption);
-  const titleError = textChecked ? titleProblem : null;
-  const descriptionError = textChecked ? descriptionProblem : null;
+  const titleError = attempted ? titleProblem : null;
+  const descriptionError = attempted ? descriptionProblem : null;
 
   // ── Location auto-fill ─────────────────────────────────────────────────────
   // Pre-fill the location with the user's suggested location — their latest
@@ -288,10 +290,9 @@ export function StepEdit({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [titleValue, watchCaption, tags, priceInput]);
 
-  // ── Form validity (drives the sticky Next button's disabled state) ──────────
-  // Mirrors the synchronously-checkable rules in onNext: a non-empty title, a
-  // location, at least one media item that isn't broken, and a valid price.
-  // The async upload-still-attaching wait stays inside onNext.
+  // ── Form validity ──────────────────────────────────────────────────────────
+  // Everything checkable without a request. The wait for uploads to attach
+  // stays inside onNext.
   const parsedPriceValue = priceInput.trim() ? Number(priceInput) : 0;
   const priceValid = Number.isFinite(parsedPriceValue) && parsedPriceValue >= 0;
   const hasUsableMedia =
@@ -310,38 +311,112 @@ export function StepEdit({
    */
   const hasSubcategory = !!(subcategoryId || subcategoryName?.trim());
 
-  const canProceed =
-    !!draftId &&
-    !titleProblem &&
-    !descriptionProblem &&
-    !!location &&
-    !!contactPhone &&
-    !!categoryId &&
-    hasSubcategory &&
-    hasUsableMedia &&
-    priceValid;
+  // ── What's wrong, field by field ───────────────────────────────────────────
+  // The full sentence goes under the field; the short one goes in the list
+  // over the Next button. Null while the field is fine. In form order, so the
+  // list reads top to bottom like the page.
+  const mediaError = !hasUsableMedia
+    ? mediaItems.length === 0
+      ? "Add at least one photo or video."
+      : "Your upload failed. Remove it and add the photo or video again."
+    : uploadTimedOut
+      ? "Your upload is taking too long. Check your connection and tap Next again."
+      : null;
+  const categoryProblem = !categoryId
+    ? "Choose a category."
+    : !hasSubcategory
+      ? "Choose a subcategory."
+      : null;
+  const priceProblem = priceValid ? null : "Enter a price of 0 or more.";
+  const locationProblem = location ? null : "Add where the item is, so nearby buyers find it.";
+  // Null means empty or not yet a complete 9-digit number — PhoneInput can't
+  // represent a half-typed number as valid.
+  const phoneProblem = contactPhone ? null : "Add a phone number so buyers can call you.";
+
+  const issues: FormIssue[] = [];
+  if (mediaError) {
+    issues.push({
+      field: "media",
+      label: "Photos",
+      message: !hasUsableMedia
+        ? mediaItems.length === 0
+          ? "Add a photo or video"
+          : "Upload failed, add it again"
+        : "Upload is taking too long",
+    });
+  }
+  if (titleProblem) {
+    issues.push({
+      field: "title",
+      label: "Title",
+      message: titleValue.trim() ? "Use at least 2 words" : "Add a title",
+    });
+  }
+  if (descriptionProblem) {
+    issues.push({
+      field: "description",
+      label: "Description",
+      message: watchCaption.trim()
+        ? (descriptionProgressHint(watchCaption) ?? "Add a few more words")
+        : "Add a description",
+    });
+  }
+  if (categoryProblem) {
+    issues.push({
+      field: "category",
+      label: !categoryId ? "Category" : "Subcategory",
+      message: !categoryId ? "Choose a category" : "Choose a subcategory",
+    });
+  }
+  if (priceProblem) {
+    issues.push({ field: "price", label: "Price", message: "Enter 0 or more" });
+  }
+  if (locationProblem) {
+    issues.push({ field: "location", label: "Location", message: "Add where the item is" });
+  }
+  if (phoneProblem) {
+    issues.push({ field: "phone", label: "Phone", message: "Add a number buyers can call" });
+  }
+  const shownIssues = attempted ? issues : [];
+  const busy = submitting || advancing;
+
+  /** Take the seller to a field from the list: into view, and into the
+   *  keyboard when it's something they type. */
+  function goToField(field: string) {
+    scrollFieldIntoView(field);
+    if (field === "title") focusTitle();
+    else if (field === "description") document.getElementById("listing-description")?.focus();
+    else if (field === "price") document.getElementById("listing-price")?.focus();
+  }
 
   async function onNext(values: EditFormValues) {
+    if (busy) return;
     if (!draftId) {
-      setError("Draft is not ready yet - please wait a moment and try again.");
+      setError("Your draft is still being set up. Wait a moment and tap Next again.");
       return;
     }
     setError(null);
-    setTextChecked(true);
-    setLocationError(null);
-    setPhoneError(null);
-    setCategoryError(null);
-    setMediaError(null);
+    setAttempted(true);
+    setUploadTimedOut(false);
 
+    // Every problem at once: the list over the button names them all, and the
+    // page scrolls to the first so the seller starts at the top.
+    if (issues.length > 0) {
+      scrollFieldIntoView(issues[0].field);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await saveAndAdvance(values);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function saveAndAdvance(values: EditFormValues) {
+    if (!draftId) return;
     const trimmedTitle = titleValue.trim();
-    if (listingTitleProblem(trimmedTitle)) {
-      focusTitle();
-      return;
-    }
-    if (listingDescriptionProblem(values.caption)) {
-      scrollFieldIntoView("description");
-      return;
-    }
 
     // Wait for any items still in "uploading" status — those haven't been
     // attached to the draft yet (attach happens after the R2 PUT completes).
@@ -361,55 +436,17 @@ export function StepEdit({
     if (
       useCreateStore.getState().mediaItems.some((m) => m.status === "uploading")
     ) {
-      setMediaError("Upload is taking too long — please try again.");
+      setUploadTimedOut(true);
       scrollFieldIntoView("media");
       return;
     }
-    const attachedMedia = useCreateStore.getState().mediaItems;
-    if (attachedMedia.length === 0) {
-      setMediaError("Add at least one photo or video before continuing.");
+    // An upload can fail during the wait.
+    if (useCreateStore.getState().mediaItems.every((m) => m.status === "error")) {
       scrollFieldIntoView("media");
       return;
     }
-    if (attachedMedia.every((m) => m.status === "error")) {
-      setMediaError(
-        "Your upload failed. Please go back and choose media again.",
-      );
-      scrollFieldIntoView("media");
-      return;
-    }
-    if (!location) {
-      setLocationError("Add a location before moving to settings.");
-      scrollFieldIntoView("location");
-      return;
-    }
 
-    // Null here means either empty or not yet a complete 9-digit number —
-    // PhoneInput can't represent a half-typed number as valid.
-    if (!contactPhone) {
-      setPhoneError("Add a phone number so buyers can call you.");
-      scrollFieldIntoView("phone");
-      return;
-    }
-
-    if (!categoryId) {
-      setCategoryError("Choose a category before moving to settings.");
-      scrollFieldIntoView("category");
-      return;
-    }
-
-    if (!hasSubcategory) {
-      setCategoryError("Choose a subcategory before moving to settings.");
-      scrollFieldIntoView("category");
-      return;
-    }
-
-    const parsedPrice = priceInput.trim() ? Number(priceInput) : 0;
-    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
-      setError("Price must be 0 or more.");
-      return;
-    }
-
+    const parsedPrice = parsedPriceValue;
     const finalIsFree = parsedPrice === 0;
     setPrice(parsedPrice, finalIsFree);
 
@@ -462,7 +499,7 @@ export function StepEdit({
           // The server holds the same title/description floor; its message
           // names the field, so the inline hints are switched on as well.
           if (/title|description/i.test(stepError.message ?? "")) {
-            setTextChecked(true);
+            setAttempted(true);
           }
           setError(stepError.message ?? "Could not advance step");
           return;
@@ -489,7 +526,7 @@ export function StepEdit({
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (/title|description/i.test(message)) setTextChecked(true);
+      if (/title|description/i.test(message)) setAttempted(true);
       setError(message);
     }
   }
@@ -500,7 +537,7 @@ export function StepEdit({
   // ─────────────────────────────────────────────────────────────────────────
 
   const titleBlock = (
-    <div className="flex-1 flex flex-col justify-start pt-1">
+    <div className="flex-1 flex flex-col justify-start pt-1" data-field="title">
       <textarea
         // Callback ref sizes whichever copy (mobile/desktop) is actually
         // visible. A shared useRef breaks here because the title is rendered in
@@ -607,10 +644,10 @@ export function StepEdit({
                 e.stopPropagation();
                 removeTag(tag);
               }}
-              className="leading-none text-primary opacity-70"
+              className="-mr-1 flex size-4 items-center justify-center text-primary opacity-70"
               aria-label={`Remove ${tag}`}
             >
-              ×
+              <X size={12} strokeWidth={2.5} aria-hidden />
             </button>
           </span>
         ))}
@@ -642,10 +679,7 @@ export function StepEdit({
       <CategoryPickerDrawer
         value={categoryId}
         fallbackLabel={categoryName}
-        onChange={(id, name) => {
-          setCategory(id, name, "manual");
-          setCategoryError(null);
-        }}
+        onChange={(id, name) => setCategory(id, name, "manual")}
       />
       <label className="mb-1.5 mt-3 block text-sm font-medium text-muted">
         Subcategory
@@ -657,29 +691,36 @@ export function StepEdit({
         title="Subcategory"
         placeholderLabel="Choose subcategory"
         emptyLabel="No subcategories yet for this category."
-        onChange={(id, name) => {
-          setSubcategory(id, name);
-          setCategoryError(null);
-        }}
+        onChange={(id, name) => setSubcategory(id, name)}
       />
-      {categoryError && (
+      {attempted && categoryProblem && (
         <p className="mt-1.5 text-xs font-medium text-error">
-          {categoryError}
+          {categoryProblem}
         </p>
       )}
     </div>
   );
 
   const priceBlock = (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-muted">
+    <div data-field="price">
+      <label
+        htmlFor="listing-price"
+        className="mb-1.5 block text-sm font-medium text-muted"
+      >
         Price (optional)
       </label>
       <div className="flex items-center gap-3">
-        <div className="flex h-12 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3">
+        <div
+          className={`flex h-12 flex-1 items-center gap-2 rounded-xl border bg-surface px-3 ${
+            attempted && priceProblem ? "border-error" : "border-border"
+          }`}
+        >
           <span className="text-sm font-medium text-muted">{currency}</span>
           <input
+            id="listing-price"
             type="number"
+            inputMode="numeric"
+            aria-invalid={attempted && !!priceProblem}
             min="0"
             step="1"
             placeholder="0"
@@ -703,9 +744,13 @@ export function StepEdit({
           Custom
         </button>
       </div>
-      <p className="mt-1.5 text-xs text-muted">
-        Set a price in {currency} or leave at 0 for custom
-      </p>
+      {attempted && priceProblem ? (
+        <p className="mt-1.5 text-xs font-medium text-error">{priceProblem}</p>
+      ) : (
+        <p className="mt-1.5 text-xs text-muted">
+          Set a price in {currency} or leave at 0 for custom
+        </p>
+      )}
       <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-3">
         <div className="min-w-0 pr-4">
           <p className="text-sm font-medium text-foreground">Negotiable</p>
@@ -729,23 +774,18 @@ export function StepEdit({
       </label>
       <LocationPicker
         value={location}
-        onSelect={(loc) => {
-          setLocation(loc);
-          setLocationError(null);
-        }}
-        onClear={() => {
-          setLocation(null);
-          setLocationError("Add a location before moving to settings.");
-        }}
+        onSelect={(loc) => setLocation(loc)}
+        onClear={() => setLocation(null)}
       />
-      {locationError && (
+      {attempted && locationProblem ? (
         <p className="mt-1.5 text-xs font-medium text-error">
-          {locationError}
+          {locationProblem}
+        </p>
+      ) : (
+        <p className="mt-1.5 text-xs text-muted">
+          Helps buyers find your listing nearby
         </p>
       )}
-      <p className="mt-1.5 text-xs text-muted">
-        Helps buyers find your listing nearby
-      </p>
     </div>
   );
 
@@ -759,11 +799,8 @@ export function StepEdit({
       </label>
       <PhoneInput
         value={contactPhone}
-        onChange={(stored) => {
-          setContactPhone(stored);
-          if (stored) setPhoneError(null);
-        }}
-        error={phoneError}
+        onChange={setContactPhone}
+        error={attempted ? phoneProblem : null}
       />
     </div>
   );
@@ -774,15 +811,9 @@ export function StepEdit({
   // (both mobile + desktop copies) so "add at least one photo" appears where the
   // media is, not buried in the bottom error bar.
   const mediaErrorBlock =
-    mediaError && !hasUsableMedia ? (
+    attempted && mediaError ? (
       <p className="mt-2 text-xs font-medium text-error">{mediaError}</p>
     ) : null;
-
-  const errorBlock = error ? (
-    <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
-      {error}
-    </div>
-  ) : null;
 
   // ── Desktop media preview panel (left column) ──────────────────────────────
   const desktopPreview = (
@@ -881,31 +912,36 @@ export function StepEdit({
           {/* Contact number — sits with Location as the "how buyers reach this
               listing" pair, and last so the form still opens on the fun part. */}
           <div className="mt-4">{phoneBlock}</div>
-
-          {/* Error */}
-          {error && <div className="mt-4">{errorBlock}</div>}
         </div>
 
-        {/* Sticky bottom action bar — full-width Next, disabled until the
-            required fields are valid. Replaces the old top-right button so the
-            primary action sits where the thumb is. */}
+        {/* Sticky bottom action bar. Next never greys out: tapping it with
+            something missing lists every problem right above it, each row
+            jumping to its field, and marks the fields themselves. */}
         <div
           className={`sticky bottom-0 z-50 shrink-0 border-t border-border bg-background pt-3 pb-[calc(0.75rem+var(--safe-bottom))] ${embedded ? "px-8" : "px-4"}`}
         >
+          {shownIssues.length > 0 ? (
+            <FormIssues issues={shownIssues} onSelect={goToField} />
+          ) : error ? (
+            <FormNotice>{error}</FormNotice>
+          ) : null}
           <button
+            type="button"
             onClick={handleSubmit(onNext)}
-            // Always clickable (except while a save is in flight). Instead of a
-            // dead/disabled button that hides WHAT is missing, onNext validates
-            // each required field and surfaces a specific inline error so the
-            // user knows exactly what to fix. `canProceed` only dims the button
-            // as a soft hint that something still needs attention.
-            disabled={advancing}
-            aria-disabled={!canProceed}
-            className={`h-12 w-full rounded-full bg-primary text-base font-semibold text-white transition-opacity disabled:cursor-not-allowed ${
-              advancing ? "opacity-60" : canProceed ? "opacity-100" : "opacity-55"
-            }`}
+            aria-busy={busy}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-semibold text-white transition-transform active:scale-[0.98]"
           >
-            {advancing ? "Saving…" : "Next"}
+            {busy ? (
+              <>
+                <InterlockingBalls size={18} />
+                Saving
+              </>
+            ) : (
+              <>
+                Next
+                <ArrowRight size={18} aria-hidden />
+              </>
+            )}
           </button>
         </div>
       </div>
