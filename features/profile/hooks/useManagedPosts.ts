@@ -19,12 +19,17 @@ export type ManagedPostType = "VIDEO" | "IMAGE";
 export type ManagedPost = {
   id: string;
   slug?: string | null;
+  /** Seller-facing listing number, e.g. SH-EL-00012. */
+  listingNumber?: string | null;
   type: ManagedPostType;
   title: string;
   caption?: string | null;
   createdAt: string;
   updatedAt: string;
   categoryId?: string | null;
+  /** Only on the list and detail queries — see MY_MANAGED_CONTENT. */
+  category?: { id: string; name: string } | null;
+  aiClassification?: { level2?: string | null } | null;
   visibility: ManagedPostVisibility;
   status: ManagedPostStatus;
   isLive: boolean;
@@ -119,12 +124,16 @@ const MANAGED_POST_FIELDS = gql`
   fragment ManagedPostFields on Content {
     id
     slug
+    listingNumber
     type
     title
     caption
     createdAt
     updatedAt
     categoryId
+    aiClassification {
+      level2
+    }
     visibility
     status
     isLive
@@ -182,6 +191,13 @@ export const MY_MANAGED_CONTENT: TypedDocumentNode<
       nextCursor
       items {
         ...ManagedPostFields
+        # Here, not in the fragment: the edit and hide mutations return the
+        # fragment but don't resolve the category, and a null there would
+        # overwrite the cached name.
+        category {
+          id
+          name
+        }
       }
     }
   }
@@ -195,6 +211,10 @@ export const MY_MANAGED_CONTENT_DETAIL: TypedDocumentNode<
   query MyManagedContentDetail($contentId: String!) {
     myManagedContentDetail(contentId: $contentId) {
       ...ManagedPostFields
+      category {
+        id
+        name
+      }
     }
   }
   ${MANAGED_POST_FIELDS}
