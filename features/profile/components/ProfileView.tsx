@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { gql } from "@apollo/client";
+import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useApolloClient } from "@apollo/client/react";
 import { ChartColumn, ChevronLeft, Plus, UserRound } from "lucide-react";
 import {
@@ -45,7 +45,10 @@ const MOBILE_DRAFT_COUNT = gql`
       id
     }
   }
-`;
+` as TypedDocumentNode<
+  { myDrafts: Array<{ id: string }> },
+  { limit: number; afterId?: string }
+>;
 
 const MOBILE_SAVED_COUNT = gql`
   query MobileProfileSavedCount($limit: Int!, $afterId: String) {
@@ -57,7 +60,16 @@ const MOBILE_SAVED_COUNT = gql`
       nextCursor
     }
   }
-`;
+` as TypedDocumentNode<
+  {
+    mySavedContent: {
+      items: Array<{ id: string }>;
+      hasMore: boolean;
+      nextCursor: string | null;
+    };
+  },
+  { limit: number; afterId?: string }
+>;
 
 const PROFILE_COUNT_PAGE_SIZE = 100;
 
@@ -346,10 +358,7 @@ export function ProfileView({ lang }: Props) {
       let afterId: string | undefined;
 
       while (true) {
-        const { data } = await apolloClient.query<
-          { myDrafts: Array<{ id: string }> },
-          { limit: number; afterId?: string }
-        >({
+        const { data } = await apolloClient.query({
           query: MOBILE_DRAFT_COUNT,
           variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
           fetchPolicy: "network-only",
@@ -369,16 +378,7 @@ export function ProfileView({ lang }: Props) {
       let afterId: string | undefined;
 
       while (true) {
-        const { data } = await apolloClient.query<
-          {
-            mySavedContent: {
-              items: Array<{ id: string }>;
-              hasMore: boolean;
-              nextCursor: string | null;
-            };
-          },
-          { limit: number; afterId?: string }
-        >({
+        const { data } = await apolloClient.query({
           query: MOBILE_SAVED_COUNT,
           variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
           fetchPolicy: "network-only",
