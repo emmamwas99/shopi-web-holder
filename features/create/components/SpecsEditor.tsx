@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { Plus, Sparkles, X } from "lucide-react";
 import type { Spec } from "@/stores/create";
 
 interface Props {
@@ -60,7 +60,8 @@ export function SpecsEditor({ specs, onChange, aiGenerated }: Props) {
               fontWeight: 500,
             }}
           >
-            ✨ AI generated
+            <Sparkles size={12} aria-hidden />
+            AI generated
           </span>
         )}
       </div>

@@ -84,8 +84,8 @@ export function ConfirmSheet({
     <Drawer open={open} onOpenChange={(next) => !next && requestClose()}>
       <DrawerContent className="mx-auto w-full max-w-[480px] rounded-t-[24px] border-default bg-app">
         <DrawerHeader className="px-4 text-left">
-          <DrawerTitle className="text-[17px] font-bold">{title}</DrawerTitle>
-          <DrawerDescription className="text-[14px] text-muted">{description}</DrawerDescription>
+          <DrawerTitle className="text-base font-semibold">{title}</DrawerTitle>
+          <DrawerDescription className="text-[13px] text-muted">{description}</DrawerDescription>
         </DrawerHeader>
         {children && <div className="px-4 pb-2">{children}</div>}
         <DrawerFooter
@@ -94,7 +94,7 @@ export function ConfirmSheet({
         >
           <Button
             variant="destructive"
-            className="h-12 rounded-full text-[15px] font-semibold"
+            className="h-11 rounded-xl text-sm font-medium"
             onClick={onConfirm}
             disabled={busy}
           >
@@ -103,7 +103,7 @@ export function ConfirmSheet({
           </Button>
           <Button
             variant="ghost"
-            className="h-12 rounded-full text-[15px] font-semibold"
+            className="h-11 rounded-xl text-sm font-medium"
             onClick={requestClose}
             disabled={busy}
           >

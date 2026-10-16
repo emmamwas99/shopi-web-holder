@@ -7,7 +7,7 @@ export type InventoryChip<K extends string> = {
   key: K;
   label: string;
   count: number;
-  /** Work waiting: a dot stays on the chip while it isn't selected. */
+  /** Work waiting: its count stays highlighted while it isn't selected. */
   attention?: boolean;
 };
 
@@ -45,10 +45,10 @@ export function InventoryControls<F extends string, S extends string>({
   return (
     <div className="mb-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <label className="relative flex h-10 min-w-0 flex-1 items-center rounded-full bg-surface">
+        <label className="relative flex h-10 min-w-0 flex-1 items-center rounded-xl bg-surface">
           <Search
-            size={17}
-            className="pointer-events-none absolute left-3.5 text-muted"
+            size={16}
+            className="pointer-events-none absolute left-3 text-muted"
             aria-hidden
           />
           <input
@@ -57,7 +57,7 @@ export function InventoryControls<F extends string, S extends string>({
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
             enterKeyHint="search"
-            className="h-full w-full min-w-0 rounded-full bg-transparent pl-10 pr-10 text-[15px] text-main outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
+            className="h-full w-full min-w-0 rounded-xl bg-transparent pl-9 pr-9 text-sm text-main outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
             aria-label={searchPlaceholder}
           />
           {search && (
@@ -65,7 +65,7 @@ export function InventoryControls<F extends string, S extends string>({
               type="button"
               onClick={() => onSearchChange("")}
               aria-label="Clear search"
-              className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-full text-muted active:bg-black/5"
+              className="absolute right-1.5 flex size-7 items-center justify-center rounded-[8px] text-muted active:bg-black/5"
             >
               <X size={16} />
             </button>
@@ -74,7 +74,7 @@ export function InventoryControls<F extends string, S extends string>({
 
         {sortOptions && sort && onSortChange && (
           <label
-            className="relative flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold text-main"
+            className="relative flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-surface px-3 text-[13px] font-medium text-main"
             title="Sort"
           >
             <ArrowUpDown size={15} aria-hidden />
@@ -114,24 +114,25 @@ export function InventoryControls<F extends string, S extends string>({
               aria-selected={active}
               onClick={() => onFilterChange(chip.key)}
               className={cn(
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors",
-                active
-                  ? "bg-main text-[rgb(var(--color-bg))]"
-                  : "bg-surface text-main active:opacity-70",
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors",
+                active ? "bg-primary text-white" : "bg-surface text-main active:opacity-70",
               )}
             >
               {chip.label}
+              {/* The admin's count: tinted when the tab is chosen, or when
+                  it holds work waiting. */}
               <span
                 className={cn(
-                  "tabular-nums",
-                  active ? "opacity-70" : "text-muted",
+                  "rounded-[6px] px-1.5 text-xs tabular-nums",
+                  active
+                    ? "bg-white/20 text-white"
+                    : chip.attention && chip.count > 0
+                      ? "bg-primary-soft font-medium text-primary-strong"
+                      : "text-muted",
                 )}
               >
                 {chip.count}
               </span>
-              {chip.attention && !active && chip.count > 0 && (
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-hidden />
-              )}
             </button>
           );
         })}

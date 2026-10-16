@@ -12,13 +12,12 @@ export function CreateSuccessScreen({ children }: { children: ReactNode }) {
           <SuccessBadge />
 
           <div className={celebrationStyles.celebrateText}>
-            <h2 className="mb-1.5 text-2xl font-extrabold text-foreground">
-              Posted! 🎉
+            <h2 className="mb-2 text-2xl font-bold text-foreground">
+              Posted
             </h2>
-            <p className="text-base text-muted">
-              It’s been submitted and is waiting for a quick review by the Shopi
-              team to make sure it meets our guidelines. It’ll show up on the
-              feed as soon as it’s approved.
+            <p className="text-[15px] leading-relaxed text-muted">
+              The Shopi team is giving it a quick check. It shows up in the feed
+              as soon as it’s approved.
             </p>
           </div>
 

@@ -49,13 +49,12 @@ import {
   sortPosts,
   SORT_OPTIONS,
   STATUS_FILTERS,
-  TONE_CLASSES,
   type SortKey,
   type StatusFilter,
 } from "../lib/managedPost";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { InventoryControls } from "./InventoryControls";
-import { ManagedPostRow } from "./ManagedPostRow";
+import { ManagedPostRow, StatusBadge } from "./ManagedPostRow";
 import { ManagedPostSheet } from "./ManagedPostSheet";
 
 interface Props {
@@ -120,14 +119,9 @@ function InventoryTile({
         )}
         {hidden && <span className="absolute inset-0 bg-black/35" aria-hidden />}
         {!live && (
-          <span
-            className={cn(
-              "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold backdrop-blur-sm",
-              TONE_CLASSES[status.tone].pill,
-              "bg-white/90 dark:bg-black/70",
-            )}
-          >
-            {status.label}
+          // Over a photo the badge needs a solid base under its tint.
+          <span className="absolute left-2 top-2 rounded-[6px] bg-app">
+            <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
           </span>
         )}
         {post.type === "VIDEO" && (
@@ -406,9 +400,9 @@ export function ManagedPostsGrid({
       </div>
       <Link
         href={`/${lang}/upload`}
-        className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-white transition-transform active:scale-[0.98]"
+        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-primary px-3.5 text-sm font-medium text-white transition-opacity active:opacity-80"
       >
-        <Plus size={15} strokeWidth={2.4} />
+        <Plus className="size-4" />
         New post
       </Link>
     </div>
@@ -418,7 +412,7 @@ export function ManagedPostsGrid({
     return (
       <section className="px-4 py-4 sm:px-6 lg:px-8">
         <Skeleton className="mb-4 h-4 w-28 rounded" />
-        <Skeleton className="mb-3 h-10 w-full rounded-full" />
+        <Skeleton className="mb-3 h-10 w-full rounded-xl" />
         <div className="mb-3 flex gap-2">
           {[64, 56, 80, 112].map((width) => (
             <Skeleton key={width} className="h-8 shrink-0 rounded-full" style={{ width }} />
@@ -438,13 +432,13 @@ export function ManagedPostsGrid({
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {Array.from({ length: 7 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 py-3">
-                <Skeleton className="h-16 w-16 shrink-0 rounded-xl" />
-                <div className="flex-1 space-y-2">
+                <Skeleton className="size-12 shrink-0 rounded-[8px]" />
+                <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3.5 w-3/4 rounded" />
-                  <Skeleton className="h-3.5 w-1/3 rounded" />
                   <Skeleton className="h-3 w-1/2 rounded" />
+                  <Skeleton className="h-4 w-16 rounded-[6px]" />
                 </div>
               </div>
             ))}

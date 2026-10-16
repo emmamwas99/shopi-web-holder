@@ -1,8 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Image from "next/image";
-import { Bookmark, ChevronRight, Eye, ImageIcon, Play } from "lucide-react";
+import { ChevronRight, ImageIcon, Play } from "lucide-react";
 import { fmtCompact } from "@/lib/format";
+import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 import {
@@ -11,39 +13,37 @@ import {
   postProblem,
   postStatus,
   postThumb,
-  shortDate,
   TONE_CLASSES,
   type StatusTone,
 } from "../lib/managedPost";
 
-export function StatusPill({
-  label,
+/** The admin's badge: a small tinted rectangle, 12px, an optional icon. */
+export function StatusBadge({
   tone,
   className,
+  children,
 }: {
-  label: string;
-  tone: StatusTone;
+  tone: StatusTone | "outline";
   className?: string;
+  children: ReactNode;
 }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-4",
-        TONE_CLASSES[tone].pill,
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] px-2 py-0.5 text-xs font-medium [&_svg]:size-3",
+        tone === "outline" ? "border border-default text-muted" : TONE_CLASSES[tone],
         className,
       )}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", TONE_CLASSES[tone].dot)} aria-hidden />
-      {label}
+      {children}
     </span>
   );
 }
 
 /**
- * One post in the seller's list on a phone — the admin's post row, sized for
- * a thumb: photo, title, price, then status with either the numbers or the
- * problem. The whole row opens the post sheet; there is no second control to
- * miss.
+ * One post in the seller's list on a phone — the admin's post row: cover,
+ * title, listing number and price, then the status line. The whole row opens
+ * the post sheet.
  */
 export function ManagedPostRow({
   post,
@@ -67,71 +67,48 @@ export function ManagedPostRow({
         className="flex w-full items-center gap-3 py-3 text-left transition-colors active:bg-surface"
         aria-label={`${post.title || "Untitled post"}, ${postPriceLabel(post)}, ${status.label}`}
       >
-        <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-surface">
+        <span className="relative size-12 shrink-0 overflow-hidden rounded-[8px] border border-default bg-surface">
           {thumb ? (
-            <Image
-              src={thumb}
-              alt=""
-              fill
-              sizes="64px"
-              priority={priority}
-              className="object-cover"
-            />
+            <Image src={thumb} alt="" fill sizes="48px" priority={priority} className="object-cover" />
           ) : (
-            <span className="flex h-full w-full items-center justify-center text-muted">
-              <ImageIcon size={20} aria-hidden />
+            <span className="flex size-full items-center justify-center text-muted">
+              <ImageIcon size={16} aria-hidden />
             </span>
           )}
-          {/* Dimmed: "not on the store" reads faster than any label. */}
           {hidden && <span className="absolute inset-0 bg-black/40" aria-hidden />}
-          {post.type === "VIDEO" && (
-            <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white">
-              <Play size={9} fill="currentColor" strokeWidth={0} className="ml-px" aria-hidden />
+          {post.type === "VIDEO" && thumb && (
+            <span className="absolute bottom-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-black/60 text-white">
+              <Play size={8} fill="currentColor" strokeWidth={0} className="ml-px" aria-hidden />
             </span>
           )}
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-semibold leading-5 text-main">
-            {post.title || "Untitled post"}
-          </span>
-          <span className="flex items-baseline gap-1.5 leading-5">
-            <span
-              className={cn(
-                "text-[14px] font-bold",
-                post.price.amount > 0 ? "text-main" : "text-muted",
-              )}
-            >
-              {postPriceLabel(post)}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-2">
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-main">
+              {post.title || "Untitled post"}
             </span>
-            {post.price.negotiable && post.price.amount > 0 && (
-              <span className="text-[12px] text-muted">· Negotiable</span>
-            )}
+            <span className="shrink-0 text-xs text-muted">{timeAgo(post.createdAt)}</span>
           </span>
-          <span className="mt-0.5 flex min-w-0 items-center gap-2 text-[12px] text-muted">
-            <StatusPill label={status.label} tone={status.tone} />
+          <span className="block truncate text-xs text-muted">
+            {post.listingNumber && <span className="font-mono">{post.listingNumber} · </span>}
+            {postPriceLabel(post)}
+            {post.price.negotiable && post.price.amount > 0 && " · Negotiable"}
+          </span>
+          <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
+            <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
             {problem ? (
-              // The reason to act, instead of numbers that don't matter yet.
-              <span className="truncate font-medium text-rose-600 dark:text-rose-400">
-                {problem}
-              </span>
+              <span className="truncate text-xs text-rose-600 dark:text-rose-400">{problem}</span>
             ) : (
-              <>
-                <span className="flex shrink-0 items-center gap-1">
-                  <Eye size={12} aria-hidden />
-                  {fmtCompact(post.stats.views)}
-                </span>
-                <span className="flex shrink-0 items-center gap-1">
-                  <Bookmark size={12} aria-hidden />
-                  {fmtCompact(post.stats.saves)}
-                </span>
-                <span className="ml-auto shrink-0">{shortDate(post.createdAt)}</span>
-              </>
+              <span className="truncate text-xs text-muted">
+                {fmtCompact(post.stats.views)} {post.stats.views === 1 ? "view" : "views"}
+                {post.stats.saves > 0 && ` · ${fmtCompact(post.stats.saves)} saved`}
+              </span>
             )}
           </span>
         </span>
 
-        <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
+        <ChevronRight size={16} className="shrink-0 text-muted" aria-hidden />
       </button>
     </li>
   );
