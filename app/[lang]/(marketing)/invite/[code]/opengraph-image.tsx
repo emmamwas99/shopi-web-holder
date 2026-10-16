@@ -16,7 +16,7 @@ import { REFERRALS_PAUSED, REFERRALS_PAUSED_TITLE } from "@/features/referrals/p
 
 // Node runtime so we can reuse the Apollo `query` helper.
 export const runtime = "nodejs";
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const alt = REFERRALS_PAUSED ? REFERRALS_PAUSED_TITLE : "You're invited to sell on Shopi";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/jpeg";

@@ -1671,10 +1671,20 @@ export function DiscoverPage({
   lang,
   initialCategorySlug,
   initialSubcategorySlug,
+  initialPosts,
+  initialTitle,
 }: {
   lang: string;
   initialCategorySlug?: string;
   initialSubcategorySlug?: string;
+  /**
+   * The route's first page of cards, fetched on the server. Shown in place of
+   * the skeleton until the first client load settles, so the server HTML —
+   * all a non-JS crawler sees — has real listings and links in it.
+   */
+  initialPosts?: ContentCardFieldsFragment[];
+  /** The results heading before the client resolves the subcategory name. */
+  initialTitle?: string;
 }) {
   const isSubcategoryRoute = Boolean(
     initialCategorySlug && initialSubcategorySlug,
@@ -2310,6 +2320,15 @@ export function DiscoverPage({
   const isReloading =
     (isSubcategoryRoute && !subcategoryRouteReady) ||
     (loading && !isFetchingMore && items.length === 0);
+  // The server's cards stand in for the skeleton during the first load only.
+  // Once anything has settled, a later reload (a filter or sort change) is
+  // showing a different result set, so it gets the skeleton as before.
+  const [firstLoadSettled, setFirstLoadSettled] = useState(false);
+  useEffect(() => {
+    if (!isReloading) setFirstLoadSettled(true);
+  }, [isReloading]);
+  const showInitialPosts =
+    !firstLoadSettled && Boolean(initialPosts?.length);
 
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
@@ -2856,7 +2875,7 @@ export function DiscoverPage({
   // how many posts match and, where the title doesn't say it, where from.
   const resultsTitle = query
     ? `Results for “${query}”`
-    : (subcategory ?? selectedCategory?.name ?? "All listings");
+    : (subcategory ?? selectedCategory?.name ?? initialTitle ?? "All listings");
   const resultsCountText =
     matchingResultCount == null
       ? null
@@ -3197,7 +3216,23 @@ export function DiscoverPage({
             {/* A full reload (filter/search/sort change) — NOT pagination — is in
               flight. Show only the skeleton; the stale results grid below is
               hidden so we never stack old items under a loader. */}
-            {isReloading && <DiscoverFeedSkeleton />}
+            {isReloading &&
+              (showInitialPosts ? (
+                <div className="px-4 pb-6 lg:px-0">
+                  <div className={DISCOVER_GRID}>
+                    {initialPosts!.map((post, index) => (
+                      <DiscoverGridCard
+                        key={post.id}
+                        post={post}
+                        lang={lang}
+                        priority={index < 4}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <DiscoverFeedSkeleton />
+              ))}
 
             {showEmptyState ? (
               query ? (

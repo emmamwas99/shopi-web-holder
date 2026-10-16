@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
-import { query } from "@/lib/apollo/ApolloClient";
+import { SINGLE_LISTING_CACHE, query } from "@/lib/apollo/ApolloClient";
 import { GetContentDocument } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
+import { listingPriceText } from "@/lib/format";
 import {
   OG_PHOTO_HEADERS,
   ogJpegResponse,
@@ -21,6 +22,7 @@ async function fetchPost(id: string): Promise<Post | null> {
     const { data } = await query({
       query: GetContentDocument,
       variables: { id },
+      context: SINGLE_LISTING_CACHE,
     });
     return (data?.content as Post | undefined) ?? null;
   } catch {
@@ -57,10 +59,7 @@ function photoCandidates(post: Post): (string | null | undefined)[] {
 }
 
 function priceLabel(post: Post): string | null {
-  const p = post.price;
-  if (!p) return null;
-  if (p.amount === 0) return "Free";
-  return `${p.currency} ${p.amount.toLocaleString()}`;
+  return listingPriceText(post.price);
 }
 
 function locationName(post: Post): string | null {

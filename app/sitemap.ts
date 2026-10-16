@@ -13,6 +13,8 @@ import { contentPath } from "@/lib/content-url";
 import { isTranslatedPath, localeAlternates } from "@/lib/metadata";
 import { COUNTIES } from "@/lib/counties";
 import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
+import { fetchIndexableBrowsePages } from "@/features/discover/queries/browse.server";
+import { browsePath } from "@/lib/seo/browse-pages";
 import {
   searchIntentPages,
   searchIntentPath,
@@ -46,8 +48,13 @@ const LISTING_SITEMAP_MAX = 5000;
 
 // …but each page is a sequential round trip, so bound the walk by wall clock
 // too. Whatever has been collected when the budget runs out still ships; the
-// next hourly revalidate picks up from a fresh NEWEST ordering.
+// next daily revalidate picks up from a fresh NEWEST ordering.
 const LISTING_FETCH_BUDGET_MS = 20_000;
+
+// Pages of the all-categories NEWEST walk that run alongside the per-category
+// walks — enough to keep the freshest listings in however long the category
+// walks take, and to catch anything filed without a category.
+const NEWEST_SAFETY_PAGES = 2;
 
 type SitemapListing = {
   id: string;
@@ -98,24 +105,56 @@ function listingImages(item: SitemapListing): string[] {
     .slice(0, 6);
 }
 
-async function fetchRecentListings(): Promise<SitemapListing[]> {
-  const api = process.env.NEXT_PUBLIC_API_URL;
-  if (!api) return [];
+/** Top-level category ids, or [] if the taxonomy can't be fetched. */
+async function fetchTopLevelCategoryIds(api: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${api}/graphql`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query SitemapCategories { categories { id parentId } }`,
+      }),
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as {
+      data?: { categories?: { id: string; parentId?: string | null }[] };
+    };
+    return (json.data?.categories ?? [])
+      .filter((category) => !category.parentId)
+      .map((category) => category.id);
+  } catch {
+    return [];
+  }
+}
 
+/**
+ * One NEWEST-ordered cursor walk of discoveryFeed, optionally within one
+ * category, until it runs out of pages, `maxPages`, or the shared deadline.
+ */
+async function walkListings(
+  api: string,
+  categoryId: string | null,
+  deadline: number,
+  maxPages = Number.POSITIVE_INFINITY,
+): Promise<SitemapListing[]> {
   const listings: SitemapListing[] = [];
-  const seen = new Set<string>();
-  const deadline = Date.now() + LISTING_FETCH_BUDGET_MS;
   let after: string | null = null;
+  let pages = 0;
 
   try {
-    while (listings.length < LISTING_SITEMAP_MAX && Date.now() < deadline) {
+    while (
+      pages < maxPages &&
+      listings.length < LISTING_SITEMAP_MAX &&
+      Date.now() < deadline
+    ) {
       const res: Response = await fetch(`${api}/graphql`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: `
-            query SitemapListings($limit: Int, $after: String) {
-              discoveryFeed(sort: NEWEST, limit: $limit, after: $after) {
+            query SitemapListings($limit: Int, $after: String, $categoryId: String) {
+              discoveryFeed(sort: NEWEST, limit: $limit, after: $after, categoryId: $categoryId) {
                 items {
                   id
                   slug
@@ -135,11 +174,13 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
               }
             }
           `,
-          variables: { limit: LISTING_SITEMAP_PAGE, after },
+          variables: { limit: LISTING_SITEMAP_PAGE, after, categoryId },
         }),
-        // Refresh the listing set hourly; the sitemap itself is cheap to rebuild.
-        next: { revalidate: 3600 },
+        // Refresh the listing set daily: listings are posted a few dozen times
+        // a day, and engines don't refetch a sitemap more often than that.
+        next: { revalidate: 86400 },
       });
+      pages += 1;
       if (!res.ok) break;
 
       const json = (await res.json()) as {
@@ -152,14 +193,7 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
       };
       const page = json.data?.discoveryFeed;
       if (!page?.items?.length) break;
-
-      // A feed reordered mid-walk can repeat an item across cursor pages; a
-      // sitemap listing the same URL twice is a validation warning.
-      for (const item of page.items) {
-        if (!item?.id || seen.has(item.id)) continue;
-        seen.add(item.id);
-        listings.push(item);
-      }
+      listings.push(...page.items.filter((item) => item?.id));
 
       if (!page.pageInfo?.hasNextPage || !page.pageInfo.endCursor) break;
       after = page.pageInfo.endCursor;
@@ -168,6 +202,47 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
     // Best-effort: ship whatever pages made it.
   }
 
+  return listings;
+}
+
+/**
+ * The public listings to submit, gathered by walking every top-level category
+ * in parallel.
+ *
+ * A single newest-first walk is sequential — each page needs the previous
+ * page's cursor — so at ~1s a page the 20s budget stopped near 1,000
+ * listings: measured against the live data on 2026-10-16, it reached 978 of
+ * 1,520, and every older listing silently dropped out of the sitemap. Every
+ * listing belongs to a top-level category, so walking the categories side by
+ * side covers the same set with the wall time of the largest one. If the
+ * taxonomy can't be fetched, this falls back to the single walk.
+ */
+async function fetchRecentListings(): Promise<SitemapListing[]> {
+  const api = process.env.NEXT_PUBLIC_API_URL;
+  if (!api) return [];
+
+  const deadline = Date.now() + LISTING_FETCH_BUDGET_MS;
+  const categoryIds = await fetchTopLevelCategoryIds(api);
+  const walks = await Promise.all([
+    walkListings(
+      api,
+      null,
+      deadline,
+      categoryIds.length ? NEWEST_SAFETY_PAGES : undefined,
+    ),
+    ...categoryIds.map((id) => walkListings(api, id, deadline)),
+  ]);
+
+  // A feed reordered mid-walk can repeat an item across cursor pages, and the
+  // newest walk overlaps the category walks; a sitemap listing the same URL
+  // twice is a validation warning.
+  const seen = new Set<string>();
+  const listings: SitemapListing[] = [];
+  for (const item of walks.flat()) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    listings.push(item);
+  }
   return listings.slice(0, LISTING_SITEMAP_MAX);
 }
 
@@ -175,7 +250,7 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
 const FEATURED_SELLER_LISTINGS_MAX = 500;
 
 /**
- * Every public listing of each homepage-featured seller.
+ * Every public listing of each team-selected seller (admin → Social proof).
  *
  * The recent-listings walk is newest-first and time-boxed, so a featured
  * seller's older stock falls out of it as other sellers post — and their
@@ -222,7 +297,7 @@ async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<Sitemap
               `,
               variables: { userId, limit: LISTING_SITEMAP_PAGE, afterId },
             }),
-            next: { revalidate: 3600 },
+            next: { revalidate: 86400 },
           });
           if (!res.ok) break;
           const json = (await res.json()) as {
@@ -251,7 +326,13 @@ async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<Sitemap
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
+  // lastmod is set only where a real modification date exists (listings,
+  // profiles via their newest listing, blog posts). It used to be the
+  // generation time on every other page, so ~140 URLs claimed to change on
+  // every hourly rebuild. Google uses lastmod only when it is "consistently
+  // and verifiably accurate", and Bing names generation-time stamps as the
+  // common mistake that makes it distrust a sitemap's dates — including the
+  // accurate ones on listings. (Both ignore changefreq and priority.)
   const { url } = siteConfig;
 
   const langs = (l: string, path: string) => `${url}/${l}${path}`;
@@ -283,7 +364,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/jiji-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
     { path: "/pigiame-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
     { path: "/about", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/for-you", changeFrequency: "always", priority: 0.9 },
+    // Not /for-you: it's a personalised feed, and every desktop user agent —
+    // Bingbot and Googlebot's desktop crawler included — is redirected from it
+    // to /explore (proxy.ts). A sitemap URL that redirects for some crawlers
+    // is a mixed signal; /explore is the stable browse surface.
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
     // The seller directory. Worth crawling for its own sake and as the hub
@@ -322,7 +406,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = staticPages.flatMap((p) =>
     (isTranslatedPath(p.path) ? locales : ["en"]).map((l) => ({
       url: langs(l, p.path),
-      lastModified: now,
       changeFrequency: p.changeFrequency,
       priority: p.priority,
       alternates: alternates(p.path),
@@ -331,7 +414,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const countyEntries: MetadataRoute.Sitemap = COUNTIES.map((county) => ({
     url: langs("en", `/marketplace/${county.slug}`),
-    lastModified: now,
     changeFrequency: "daily",
     priority: 0.85,
     alternates: alternates(`/marketplace/${county.slug}`),
@@ -342,7 +424,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const path = searchIntentPath(page.slug);
       return {
         url: langs("en", path),
-        lastModified: now,
         changeFrequency: "daily",
         priority: 0.82,
         alternates: alternates(path),
@@ -357,7 +438,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const path = sellCarPath(page.slug);
     return {
       url: langs("en", path),
-      lastModified: now,
       changeFrequency: "weekly",
       priority: 0.88,
       alternates: alternates(path),
@@ -371,7 +451,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const path = sellCarLocationPath(location.slug);
       return {
         url: langs("en", path),
-        lastModified: now,
         changeFrequency: "weekly",
         priority: 0.88,
         alternates: alternates(path),
@@ -411,10 +490,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  const [recentListings, featuredSellers] = await Promise.all([
+  const [recentListings, featuredSellers, browsePages] = await Promise.all([
     fetchRecentListings(),
     fetchSocialProofSellers(12, 0),
+    fetchIndexableBrowsePages(),
   ]);
+
+  // Explore subcategories with enough live inventory to index — the same
+  // decision the route's robots tag makes (lib/seo/browse-pages.ts).
+  const browseEntries: MetadataRoute.Sitemap = browsePages.map((page) => {
+    const path = browsePath(page.categorySlug, page.subcategorySlug);
+    return {
+      url: langs("en", path),
+      changeFrequency: "daily",
+      priority: 0.75,
+      alternates: alternates(path),
+    };
+  });
   const featuredListings = await fetchFeaturedSellerListings(
     featuredSellers.map((seller) => seller.id),
   );
@@ -432,7 +524,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? new Date(item.updatedAt)
         : item.createdAt
           ? new Date(item.createdAt)
-          : now,
+          : undefined,
       changeFrequency: "daily",
       priority: 0.65,
       images: listingImages(item),
@@ -440,24 +532,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  // Sellers featured on the homepage (admin → Social proof) are the profiles we
+  // Sellers the team selected in admin → Social proof are the profiles we
   // most want crawled, so they are always listed, at a higher priority, even
   // when none of their listings fell inside this snapshot.
   const featuredUsernames = new Set(featuredSellers.map((s) => s.username));
 
-  const sellerLastModified = new Map<string, Date>();
-  for (const seller of featuredSellers) sellerLastModified.set(seller.username, now);
+  // A profile's lastmod is its newest listing; a featured seller with none in
+  // this snapshot gets no date rather than the generation time.
+  const sellerLastModified = new Map<string, Date | undefined>();
+  for (const seller of featuredSellers) sellerLastModified.set(seller.username, undefined);
   for (const item of listings) {
     const username = item.creator?.username?.trim();
     if (!username) continue;
-    const modified = item.updatedAt
-      ? new Date(item.updatedAt)
-      : item.createdAt
-        ? new Date(item.createdAt)
-        : now;
+    const stamp = item.updatedAt ?? item.createdAt;
+    const modified = stamp ? new Date(stamp) : undefined;
     const previous = sellerLastModified.get(username);
-    if (!previous || previous === now || modified > previous)
-      sellerLastModified.set(username, modified);
+    if (!previous || (modified && modified > previous))
+      sellerLastModified.set(username, modified ?? previous);
   }
   const sellerEntries: MetadataRoute.Sitemap = [...sellerLastModified].map(
     ([username, lastModified]) => {
@@ -480,6 +571,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...searchIntentEntries,
     ...sellCarEntries,
     ...sellCarLocationEntries,
+    ...browseEntries,
     ...blogEntries,
     ...sellerEntries,
     ...listingEntries,

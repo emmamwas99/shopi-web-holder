@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import { ContentDetail } from "@/features/feed/components/ContentDetail";
 import { ListingRelated } from "@/features/feed/components/ListingRelated";
-import { query } from "@/lib/apollo/ApolloClient";
+import { SINGLE_LISTING_CACHE, query } from "@/lib/apollo/ApolloClient";
 import { ContentDetailDocument } from "@/features/feed/queries/contentDetail";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { CategoriesDocument } from "@/types/__generated__/graphql";
@@ -19,6 +19,7 @@ import {
 import { contentPath, contentSlugSegment, slugifyContentTitle } from "@/lib/content-url";
 import { canonicalUrl, localeAlternates } from "@/lib/metadata";
 import { profileHref } from "@/lib/profile-url";
+import { listingPriceText } from "@/lib/format";
 import {
   cleanPublicText,
   META_DESCRIPTION_MAX,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/seo/public-text";
 import {
   durationOf,
+  hlsUrlOf,
   isPlayableVideo,
   posterOf,
 } from "@/features/feed/lib/videoSource";
@@ -68,29 +70,38 @@ type CategoryCrumb = Pick<CategoryEntry, "name" | "slug">;
 // GetContent document here would leave the rendered listing waiting on a
 // client round trip, which is what kept listings out of non-JS crawlers.
 //
-// `gone` is true only when the API says the listing doesn't exist (deleted, or
-// a bad link). The page answers that with a real 404 — a noindexed 200 is a
-// soft 404 that engines keep recrawling. Any other failure (API down) leaves
-// `gone` false and falls through to the client render, so an outage can't
-// deindex listings.
-const getPost = cache(async (id: string): Promise<{ post: Post | null; gone: boolean }> => {
+// Resolves to null only when the API says the listing doesn't exist (deleted,
+// removed by moderation, or a bad link), which the page answers with a real
+// 404 — a noindexed 200 is a soft 404 that engines keep recrawling.
+//
+// Any other failure (API down, rate-limited, a 5xx) throws, so the request
+// fails with a 500 and the route's error boundary offers a retry. It used to
+// fall through to a client render instead, but that render carried
+// `noindex` and the title "Post": every crawl that landed during an API
+// hiccup told engines to drop a live listing. A 5xx is the signal engines
+// treat as temporary — they keep the indexed copy and come back later.
+const getPost = cache(async (id: string): Promise<Post | null> => {
   let result;
   try {
     result = await query({
       query: ContentDetailDocument,
       variables: { id },
+      // Hourly, not the daily default: a pre-approval NOT_FOUND must not
+      // outlive the review by a day (see SINGLE_LISTING_CACHE).
+      context: SINGLE_LISTING_CACHE,
     });
-  } catch {
-    return { post: null, gone: false };
+  } catch (error) {
+    throw new Error(`Listing ${id} could not be loaded`, { cause: error });
   }
   const post =
     ((result.data as { content?: Post | null } | undefined)?.content as
       Post | undefined) ?? null;
+  if (post) return post;
   const gone =
-    !post &&
     CombinedGraphQLErrors.is(result.error) &&
     result.error.errors.some((e) => e.extensions?.code === "NOT_FOUND");
-  return { post, gone };
+  if (gone) return null;
+  throw new Error(`Listing ${id} could not be loaded`, { cause: result.error });
 });
 
 const getCategoryEntries = cache(async (): Promise<CategoryEntry[]> => {
@@ -110,6 +121,7 @@ const getCategoryEntries = cache(async (): Promise<CategoryEntry[]> => {
 async function getCategoryTrail(
   categoryId: string | null | undefined,
   fallback?: { name?: string | null; slug?: string | null } | null,
+  classification?: Post["aiClassification"],
 ): Promise<CategoryCrumb[]> {
   if (!categoryId) {
     return fallback?.name && fallback.slug
@@ -129,7 +141,22 @@ async function getCategoryTrail(
   }
 
   if (path.length > 0) {
-    return path.map(({ name, slug }) => ({ name, slug }));
+    const trail = path.map(({ name, slug }) => ({ name, slug }));
+    // Listings are filed under a top-level category; the subcategory lives
+    // only in the classifier's level-2 label — the same label Explore's
+    // subcategory pages filter on. Without it the trail stopped at the top
+    // level and no listing linked to a subcategory page. Only when the
+    // classifier agrees on the top level, so the link can't cross categories.
+    const level2 = classification?.level2?.trim();
+    if (
+      trail.length === 1 &&
+      level2 &&
+      classification?.level1?.trim().toLowerCase() ===
+        trail[0].name.toLowerCase()
+    ) {
+      trail.push({ name: level2, slug: slugifyContentTitle(level2) });
+    }
+    return trail;
   }
   return fallback?.name && fallback.slug
     ? [{ name: fallback.name, slug: fallback.slug }]
@@ -171,11 +198,9 @@ function listingImages(post: Post): string[] {
     .slice(0, 10);
 }
 
+// No price → no price claim. See listingPriceText: 0 means "not stated".
 function priceLabel(post: Post): string | null {
-  const price = post.price;
-  if (!price) return null;
-  if (price.amount === 0) return "Free";
-  return `${price.currency} ${price.amount.toLocaleString()}`;
+  return listingPriceText(post.price);
 }
 
 function categoryLabel(post: Post): string | null {
@@ -220,19 +245,11 @@ function buildDescription(post: Post): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, id } = await params;
-  const { post } = await getPost(id);
-  const path = `/content/${post ? contentSlugSegment(post) : id}`;
+  const post = await getPost(id);
+  if (!post) notFound();
+  const path = `/content/${contentSlugSegment(post)}`;
   // Listings are seller-written and never translated, so /sw canonicalises to /en.
   const canonical = canonicalUrl(lang, path);
-
-  if (!post) {
-    return {
-      title: "Post",
-      description: siteConfig.description,
-      alternates: { canonical },
-      robots: { index: false, follow: true },
-    };
-  }
 
   const isIndexable = post.isLive !== false;
   const price = priceLabel(post);
@@ -317,100 +334,98 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ContentDetailPage({ params }: Props) {
   const { lang, id } = await params;
-  const { post, gone } = await getPost(id);
-  if (gone) notFound();
-  const categoryTrail = post
-    ? await getCategoryTrail(post.categoryId, post.category)
-    : [];
-  const canonical = canonicalUrl(
-    lang,
-    `/content/${post ? contentSlugSegment(post) : id}`,
+  const post = await getPost(id);
+  if (!post) notFound();
+  const categoryTrail = await getCategoryTrail(
+    post.categoryId,
+    post.category,
+    post.aiClassification,
   );
-  const canonicalPath = post ? contentPath(lang, post) : null;
+  const canonical = canonicalUrl(lang, `/content/${contentSlugSegment(post)}`);
+  const canonicalPath = contentPath(lang, post);
 
-  if (canonicalPath && canonicalPath !== `/${lang}/content/${id}`) {
+  if (canonicalPath !== `/${lang}/content/${id}`) {
     permanentRedirect(canonicalPath);
   }
 
   return (
     <>
-      {post && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: jsonLd(
-              productSchema({
-                id,
-                url: canonical,
-                title: post.title,
-                description: buildDescription(post),
-                images: listingImages(post),
-                price: post.price?.amount,
-                currency: post.price?.currency,
-                negotiable: post.price?.negotiable,
-                sellerName: sellerName(post),
-                // The canonical /@handle profile — /profile/* is a legacy
-                // address that redirects, which weakens the seller link.
-                sellerUrl: post.creator?.username
-                  ? `${siteConfig.url}${profileHref(lang, post.creator)}`
-                  : null,
-                locationName: locationName(post),
-                category: categoryLabel(post),
-                specs: post.specs,
-              }),
-              productWebPageSchema({
-                url: canonical,
-                name: post.title,
-                description: buildDescription(post),
-                createdAt: post.createdAt
-                  ? new Date(post.createdAt as string).toISOString()
-                  : null,
-                updatedAt: post.updatedAt
-                  ? new Date(post.updatedAt as string).toISOString()
-                  : null,
-              }),
-              ...(isPlayableVideo(post) && posterOf(post) && post.createdAt
-                ? [
-                    videoObjectSchema({
-                      url: canonical,
-                      name: post.title,
-                      description: buildDescription(post),
-                      thumbnailUrl: posterOf(post)!,
-                      uploadDate: new Date(
-                        post.createdAt as string,
-                      ).toISOString(),
-                      durationSeconds: durationOf(post),
-                      creatorName: sellerName(post),
-                      creatorUrl: post.creator?.username
-                        ? `${siteConfig.url}${profileHref(lang, post.creator)}`
-                        : null,
-                      viewCount: post.stats?.views,
-                    }),
-                  ]
-                : []),
-              // Home › Seller › Listing: the seller is the listing's real
-              // parent, and the crumb shows in results as a second link to
-              // their storefront. Falls back to Explore without a handle.
-              breadcrumbSchema([
-                { name: "Home", url: `${siteConfig.url}/${lang}` },
-                { name: "Explore", url: `${siteConfig.url}/${lang}/explore` },
-                ...categoryTrail.map((category, index) => ({
-                  name: category.name,
-                  url: `${siteConfig.url}${categoryHref(lang, categoryTrail, index)}`,
-                })),
-                { name: post.title, url: canonical },
-              ]),
-            ),
-          }}
-        />
-      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            productSchema({
+              id,
+              url: canonical,
+              title: post.title,
+              description: buildDescription(post),
+              images: listingImages(post),
+              price: post.price?.amount,
+              currency: post.price?.currency,
+              negotiable: post.price?.negotiable,
+              sellerName: sellerName(post),
+              // The canonical /@handle profile — /profile/* is a legacy
+              // address that redirects, which weakens the seller link.
+              sellerUrl: post.creator?.username
+                ? `${siteConfig.url}${profileHref(lang, post.creator)}`
+                : null,
+              locationName: locationName(post),
+              category: categoryLabel(post),
+              specs: post.specs,
+            }),
+            productWebPageSchema({
+              url: canonical,
+              name: post.title,
+              description: buildDescription(post),
+              createdAt: post.createdAt
+                ? new Date(post.createdAt as string).toISOString()
+                : null,
+              updatedAt: post.updatedAt
+                ? new Date(post.updatedAt as string).toISOString()
+                : null,
+            }),
+            ...(isPlayableVideo(post) && posterOf(post) && post.createdAt
+              ? [
+                  videoObjectSchema({
+                    url: canonical,
+                    name: post.title,
+                    description: buildDescription(post),
+                    thumbnailUrl: posterOf(post)!,
+                    uploadDate: new Date(
+                      post.createdAt as string,
+                    ).toISOString(),
+                    contentUrl: hlsUrlOf(post),
+                    durationSeconds: durationOf(post),
+                    creatorName: sellerName(post),
+                    creatorUrl: post.creator?.username
+                      ? `${siteConfig.url}${profileHref(lang, post.creator)}`
+                      : null,
+                    viewCount: post.stats?.views,
+                  }),
+                ]
+              : []),
+            // Home › Explore › category › subcategory › listing — the same
+            // trail the page's own breadcrumb links, so the subcategory crumb
+            // points at that subcategory's landing page.
+            breadcrumbSchema([
+              { name: "Home", url: `${siteConfig.url}/${lang}` },
+              { name: "Explore", url: `${siteConfig.url}/${lang}/explore` },
+              ...categoryTrail.map((category, index) => ({
+                name: category.name,
+                url: `${siteConfig.url}${categoryHref(lang, categoryTrail, index)}`,
+              })),
+              { name: post.title, url: canonical },
+            ]),
+          ),
+        }}
+      />
       <ContentDetail
         id={id}
         lang={lang}
         desktopMode="page"
         initialPost={post}
         categoryTrail={categoryTrail}
-        related={post ? <ListingRelated lang={lang} post={post} /> : undefined}
+        related={<ListingRelated lang={lang} post={post} />}
       />
     </>
   );
