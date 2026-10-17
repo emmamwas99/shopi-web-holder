@@ -14,6 +14,8 @@ import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useUiStore } from "@/stores/ui";
 import { useNavTabHref } from "@/lib/navTabMemory";
+import { useHomeFeedLoading } from "@/lib/homeFeedRefresh";
+import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 type Tab = {
   key: string;
@@ -80,6 +82,7 @@ export function shouldHideBottomNav(pathname: string) {
 
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
+  const homeFeedLoading = useHomeFeedLoading();
   // Hydration-safe: no badge until the persisted session has rehydrated, so
   // the first client paint matches the server HTML.
   const { hydrated } = useAuthSession();
@@ -89,11 +92,10 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
   // to hide the nav WITHOUT unmounting it — a class toggle, so there's no
   // remount flash when they appear or leave.
   const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
-  // Each tab returns to the screen it was left on — the feed's sub-tab, the
-  // Explore search, the inbox tab — and RouteScrollRestoration puts the scroll
-  // back where it was. Profile always opens its root (see navTabMemory).
+  // Home opens a fresh For You feed. Other tabs remember their last screen
+  // and scroll position (see navTabMemory and RouteScrollRestoration).
   const tabHrefs: Record<string, string> = {
-    feed: useNavTabHref("feed", `/${lang}/for-you`),
+    feed: `/${lang}/for-you?tab=for-you`,
     explore: useNavTabHref("explore", `/${lang}/explore`),
     notifications: useNavTabHref("notifications", `/${lang}/notifications`),
   };
@@ -132,23 +134,28 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               key={tab.key}
               href={href}
               scroll={isUpload ? undefined : false}
-              // A tab: returns to where it was left, and re-tapping it while
-              // on it scrolls to the top (lib/scrollRestoration.ts).
+              // Home clicks refresh; other tab re-taps scroll to the top.
+              // Handled by lib/scrollRestoration.ts.
               data-nav-tab={isUpload ? undefined : tab.key}
               className={`flex min-h-11 flex-1 select-none flex-col items-center justify-center gap-0.5 py-1 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] ${
                 isActive ? "text-primary" : "text-muted"
               }`}
               aria-current={isActive ? "page" : undefined}
+              aria-busy={tab.key === "feed" && homeFeedLoading}
             >
-              <span className="relative">
+              <span className="relative flex h-6 w-6 items-center justify-center">
                 {/* Outline only. The old active state filled the glyph at 18%
                     opacity, which turned a crisp icon into a smudge — colour
                     and the label weight already say which tab you're on. */}
-                <Icon
-                  size={ICON_SIZE}
-                  strokeWidth={isActive ? STROKE_ACTIVE : STROKE_INACTIVE}
-                  fill="none"
-                />
+                {tab.key === "feed" && homeFeedLoading ? (
+                  <InterlockingBalls size={20} label="Loading feed" />
+                ) : (
+                  <Icon
+                    size={ICON_SIZE}
+                    strokeWidth={isActive ? STROKE_ACTIVE : STROKE_INACTIVE}
+                    fill="none"
+                  />
+                )}
                 {tab.key === "notifications" && unreadCount > 0 ? (
                   <span
                     className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-elevated bg-primary px-[3px] text-[9px] font-bold leading-none text-white"
