@@ -5,9 +5,8 @@ import Link from "next/link";
 
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { ChevronLeftIcon } from "lucide-react";
-import { Divider, ShopiLogo } from "@/features/auth/components/AuthIcons";
-import { BackLink } from "@/components/layout/BackLink";
+import { AuthMobileScreen } from "@/features/auth/components/AuthMobileScreen";
+import { Divider } from "@/features/auth/components/AuthIcons";
 
 export const metadata = { title: "Sign in" };
 
@@ -39,14 +38,14 @@ export default async function LoginPage({
       <p className="text-center text-xs leading-relaxed text-placeholder">
         By continuing you confirm you&apos;re 18 or older and agree to our{" "}
         <Link
-          href={`/${lang}/terms`}
+          href={`/${lang}/terms-and-conditions`}
           className="text-muted underline underline-offset-2"
         >
           Terms
         </Link>{" "}
         &{" "}
         <Link
-          href={`/${lang}/privacy`}
+          href={`/${lang}/privacy-policy`}
           className="text-muted underline underline-offset-2"
         >
           Privacy Policy
@@ -65,35 +64,15 @@ export default async function LoginPage({
   return (
     <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
-      <div className="relative mx-auto flex min-h-svh max-w-107.5 flex-col bg-app px-4 pb-6 pt-4 lg:hidden">
-        <div className="flex items-center justify-between">
-          <BackLink
-            href={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
-            aria-label="Back"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-elevated text-muted shadow-sm transition-opacity active:opacity-70"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </BackLink>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-center px-4 pb-5 pt-8 text-center">
-          <Link href={`/${lang}`} className="mb-5 inline-flex">
-            <ShopiLogo height={76} />
-          </Link>
-          <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-default">
-            Welcome back
-          </h1>
-          <p className="app-subcopy mt-2">
-            Sign in to keep your feed personalized.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-elevated p-5 shadow-lg">
-          {SocialTop}
-          <LoginForm from={from} lang={lang} />
-          {Footer}
-        </div>
-      </div>
+      <AuthMobileScreen
+        backHref={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
+        title="Welcome back"
+        subtitle="Sign in to keep your feed personalized."
+        footer={Footer}
+      >
+        {SocialTop}
+        <LoginForm from={from} lang={lang} />
+      </AuthMobileScreen>
 
       {/* ── Desktop right-panel content ───────────────────────── */}
       <div className="hidden lg:flex flex-col gap-6">

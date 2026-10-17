@@ -21,11 +21,14 @@ export function AuthExitButton({
   lang,
   from,
   className,
+  iconOnly = false,
 }: {
   lang: string;
   /** Where the guard sent them from, when it was the guard that sent them. */
   from?: string;
   className?: string;
+  /** A bare chevron, as in a phone nav bar. */
+  iconOnly?: boolean;
 }) {
   // Only same-origin paths. `from` arrives in the query string, so treating it
   // as a destination without this check is an open redirect.
@@ -34,6 +37,19 @@ export function AuthExitButton({
       ? from
       : `/${lang}`;
   const goBack = useAppBack(fallback);
+
+  if (iconOnly) {
+    return (
+      <button
+        type="button"
+        onClick={goBack}
+        aria-label="Back"
+        className={className}
+      >
+        <ChevronLeftIcon size={26} strokeWidth={2.2} aria-hidden />
+      </button>
+    );
+  }
 
   return (
     <button type="button" onClick={goBack} className={className}>

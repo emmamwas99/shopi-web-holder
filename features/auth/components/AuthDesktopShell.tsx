@@ -136,13 +136,13 @@ export function AuthDesktopShell({
           {/* Footer */}
           <div className="relative z-10 flex justify-center gap-6 text-sm font-medium text-white/70">
             <Link
-              href={`/${lang}/terms`}
+              href={`/${lang}/terms-and-conditions`}
               className="hover:text-white transition-colors"
             >
               Terms
             </Link>
             <Link
-              href={`/${lang}/privacy`}
+              href={`/${lang}/privacy-policy`}
               className="hover:text-white transition-colors"
             >
               Privacy

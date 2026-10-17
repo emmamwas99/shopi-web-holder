@@ -15,6 +15,11 @@ import {
 } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
 import { navigateAfterAuth } from "@/features/auth/lib/postAuthNavigate";
+import {
+  authInputClass,
+  authPasswordToggleClass,
+  authPrimaryButtonClass,
+} from "@/features/auth/components/authStyles";
 
 interface FormValues {
   newPassword: string;
@@ -24,15 +29,6 @@ interface FormValues {
 interface ResetPasswordFormProps {
   token?: string;
   lang: string;
-}
-
-function inputCls(hasError: boolean) {
-  return [
-    "h-12 w-full rounded-xl border px-4 pr-12 text-base bg-elevated text-default",
-    "placeholder:text-placeholder outline-none transition-all",
-    "focus:border-primary focus:ring-2 focus:ring-primary/20",
-    hasError ? "border-error" : "border-border",
-  ].join(" ");
 }
 
 export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
@@ -100,7 +96,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
         </div>
         <Link
           href={`/${lang}/auth/forgot-password`}
-          className="h-12 rounded-xl bg-primary text-white font-semibold text-base flex items-center justify-center transition-opacity active:opacity-80"
+          className={authPrimaryButtonClass}
         >
           Request a new link
         </Link>
@@ -125,7 +121,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             placeholder="At least 8 characters"
-            className={inputCls(!!errors.newPassword)}
+            className={`${authInputClass(!!errors.newPassword)} pr-12`}
             {...register("newPassword", {
               required: "Password is required",
               minLength: { value: 8, message: "At least 8 characters" },
@@ -135,7 +131,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
           <button
             type="button"
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted p-1 active:opacity-60"
+            className={authPasswordToggleClass}
             onClick={() => setShowPassword((v) => !v)}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -161,7 +157,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             placeholder="Re-enter your password"
-            className={inputCls(!!errors.confirmPassword)}
+            className={`${authInputClass(!!errors.confirmPassword)} pr-12`}
             {...register("confirmPassword", {
               required: "Please confirm your password",
               validate: (value) =>
@@ -189,7 +185,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
       <button
         type="submit"
         disabled={isBusy}
-        className="h-12 rounded-xl bg-primary text-white font-semibold text-base transition-opacity disabled:opacity-60 active:opacity-80"
+        className={authPrimaryButtonClass}
       >
         {isBusy ? (
           <span className="flex items-center justify-center gap-2">

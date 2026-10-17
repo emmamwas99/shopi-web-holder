@@ -22,6 +22,11 @@ import {
   authDestination,
   navigateAfterAuth,
 } from "@/features/auth/lib/postAuthNavigate";
+import {
+  authInputClass,
+  authPasswordToggleClass,
+  authPrimaryButtonClass,
+} from "@/features/auth/components/authStyles";
 
 interface RegisterFormValues {
   firstName: string;
@@ -40,15 +45,6 @@ interface RegisterFormProps {
   lang: string;
   /** Rendered below the form only on step 1 (hidden during the OTP verification step) */
   footer?: React.ReactNode;
-}
-
-function inputCls(hasError: boolean) {
-  return [
-    "h-12 w-full rounded-xl border bg-app px-4 text-base text-default",
-    "placeholder:text-placeholder outline-none transition-all",
-    "focus:border-primary focus:ring-2 focus:ring-primary/20",
-    hasError ? "border-error" : "border-border",
-  ].join(" ");
 }
 
 // ─── Step 1: Register ─────────────────────────────────────────────────────────
@@ -238,7 +234,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             maxLength={6}
             placeholder="123456"
             className={
-              inputCls(!!linkForm.formState.errors.otp) +
+              authInputClass(!!linkForm.formState.errors.otp) +
               " tracking-[0.35em] text-center text-lg font-semibold"
             }
             {...linkForm.register("otp", {
@@ -262,7 +258,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
               autoComplete="new-password"
               placeholder="At least 8 characters"
               className={
-                inputCls(!!linkForm.formState.errors.newPassword) +
+                authInputClass(!!linkForm.formState.errors.newPassword) +
                 " pl-10 pr-12"
               }
               {...linkForm.register("newPassword", {
@@ -273,7 +269,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             <button
               type="button"
               aria-label={showNewPassword ? "Hide password" : "Show password"}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-placeholder p-1 active:opacity-60"
+              className={authPasswordToggleClass}
               onClick={() => setShowNewPassword((v) => !v)}
             >
               {showNewPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -293,7 +289,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         <button
           type="submit"
           disabled={isStep2Loading}
-          className="h-12 rounded-xl bg-primary text-base font-semibold text-white transition-all disabled:opacity-60 active:scale-[0.98]"
+          className={authPrimaryButtonClass}
         >
           {isStep2Loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -344,7 +340,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             autoComplete="name"
             //placeholder="Kalani Rivera"
             className={
-              inputCls(
+              authInputClass(
                 !!(
                   registerForm.formState.errors.firstName ||
                   registerForm.formState.errors.lastName
@@ -372,7 +368,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             inputMode="email"
             //placeholder="you@example.com"
             className={
-              inputCls(!!registerForm.formState.errors.email) + " pl-10"
+              authInputClass(!!registerForm.formState.errors.email) + " pl-10"
             }
             {...registerForm.register("email", {
               required: "Email is required",
@@ -400,7 +396,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             autoComplete="new-password"
             placeholder="At least 8 characters"
             className={
-              inputCls(!!registerForm.formState.errors.password) +
+              authInputClass(!!registerForm.formState.errors.password) +
               " pl-10 pr-12"
             }
             {...registerForm.register("password", {
@@ -411,7 +407,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
           <button
             type="button"
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-placeholder p-1 active:opacity-60"
+            className={authPasswordToggleClass}
             onClick={() => setShowPassword((v) => !v)}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -431,14 +427,14 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       <p className="text-xs text-muted text-center leading-relaxed">
         By creating an account you confirm you&apos;re 18 or older and agree to our{" "}
         <Link
-          href={`/${lang}/terms`}
+          href={`/${lang}/terms-and-conditions`}
           className="text-primary underline-offset-2 underline"
         >
           Terms
         </Link>{" "}
         and{" "}
         <Link
-          href={`/${lang}/privacy`}
+          href={`/${lang}/privacy-policy`}
           className="text-primary underline-offset-2 underline"
         >
           Privacy Policy
@@ -450,7 +446,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       <button
         type="submit"
         disabled={isStep1Loading}
-        className="h-12 rounded-xl bg-primary text-base font-semibold text-white transition-all disabled:opacity-60 active:scale-[0.98]"
+        className={authPrimaryButtonClass}
       >
         {isStep1Loading ? (
           <span className="flex items-center justify-center gap-2">

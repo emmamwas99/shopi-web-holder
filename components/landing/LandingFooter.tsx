@@ -63,8 +63,8 @@ export function LandingFooter({
       {
         heading: label("Legal", "Sheria"),
         links: [
-          { label: label("Privacy Policy", "Sera ya faragha"), href: "/en/privacy" },
-          { label: label("Terms of Service", "Masharti ya huduma"), href: "/en/terms" },
+          { label: label("Privacy Policy", "Sera ya faragha"), href: "/en/privacy-policy" },
+          { label: label("Terms of Service", "Masharti ya huduma"), href: "/en/terms-and-conditions" },
           { label: label("Cookie Policy", "Sera ya kuki"), href: "/en/cookies" },
           { label: label("Community Guidelines", "Kanuni za jamii"), href: "/en/community-guidelines" },
           { label: label("Prohibited Items", "Bidhaa zilizopigwa marufuku"), href: "/en/prohibited-items" },
@@ -196,8 +196,8 @@ export function LandingFooter({
             {
               heading: "Legal",
               links: [
-                { label: "Privacy Policy", href: `/${lang}/privacy` },
-                { label: "Terms of Service", href: `/${lang}/terms` },
+                { label: "Privacy Policy", href: `/${lang}/privacy-policy` },
+                { label: "Terms of Service", href: `/${lang}/terms-and-conditions` },
                 { label: "Cookie Policy", href: `/${lang}/cookies` },
                 {
                   label: "Community Guidelines",

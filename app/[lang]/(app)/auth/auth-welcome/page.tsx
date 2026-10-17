@@ -1,10 +1,12 @@
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
 import { AuthExitButton } from "@/features/auth/components/AuthExitButton";
+import { authPrimaryButtonClass } from "@/features/auth/components/authStyles";
 
 export const metadata = { title: "Welcome" };
 
@@ -57,7 +59,7 @@ export default async function WelcomePage({
       {/* Email CTA */}
       <Link
         href={`/${lang}/auth/register${qs}`}
-        className="w-full flex items-center justify-center h-13 rounded-2xl font-semibold text-base text-white bg-primary active:opacity-80 transition-opacity"
+        className={authPrimaryButtonClass}
       >
         Sign up with Email
       </Link>
@@ -65,14 +67,14 @@ export default async function WelcomePage({
       <p className="text-center text-xs text-placeholder leading-relaxed pt-1">
         By continuing you confirm you&apos;re 18 or older and agree to our{" "}
         <Link
-          href={`/${lang}/terms`}
+          href={`/${lang}/terms-and-conditions`}
           className="text-muted underline underline-offset-2"
         >
           Terms
         </Link>{" "}
         &{" "}
         <Link
-          href={`/${lang}/privacy`}
+          href={`/${lang}/privacy-policy`}
           className="text-muted underline underline-offset-2"
         >
           Privacy Policy
@@ -95,101 +97,52 @@ export default async function WelcomePage({
   return (
     <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
-      <div
-        className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
-      >
-        {/* Left-aligned: this is a back control now, and back controls live on
-            the left. */}
-        <div className="flex items-center justify-start px-6 pt-5 shrink-0">
-          <AuthExitButton
-            lang={lang}
-            from={from}
-            className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
+      {/* min-h, not h: a fixed screen height clipped the sign-in link off
+          short phones. */}
+      <div className="relative mx-auto flex min-h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden">
+        {/* Hero photo — a seller and a buyer settling a listing on a phone:
+            local buying and selling, done over the phone, in one picture.
+            Capped in height so the CTAs still fit on short phones, cropped
+            from the top so the faces and the phone always stay in frame, and
+            faded into the page so the headline sits on the page colour. */}
+        <div className="relative h-[min(44svh,22rem)] w-full shrink-0">
+          <Image
+            src="/assets/hero/marketplace-banner-mobile.webp"
+            alt="A furniture seller showing a buyer a listing on a phone"
+            fill
+            sizes="(max-width: 430px) 100vw, 430px"
+            priority
+            fetchPriority="high"
+            className="object-cover object-top"
           />
-        </div>
-        {/* Subtle brand glow top-right */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl bg-[rgb(var(--brand-primary)/0.08)]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-40 -left-20 w-56 h-56 rounded-full blur-3xl bg-[rgb(var(--brand-accent)/0.06)]"
-        />
+          <div
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-[rgb(var(--color-bg))] to-transparent"
+          />
 
-        {/* Hero — grows to fill space above CTAs */}
-        <div className="flex-1 flex flex-col items-center justify-center px-8 pb-2 pt-10">
-          {/* Card stack — scaled up to fill the space where logo was */}
-          <div className="relative w-80 h-52 mb-4">
-            {/* Left card */}
-            <div
-              className="absolute left-0 top-4 h-37 w-36 rounded-2xl rotate-[-10deg] shadow-lg overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-primary)),rgb(var(--brand-primary)/0.55))]"
-            >
-              <div className="absolute inset-0 bg-linear-to-b from-white/10 to-transparent" />
-              <div className="absolute top-3 left-3">
-                <span className="text-white/70 text-xs font-semibold tracking-wide uppercase">
-                  Trending
-                </span>
-              </div>
-              <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">K</span>
-                </div>
-                <span className="text-white/80 text-xs font-medium">@kali</span>
-              </div>
-            </div>
-            {/* Right card */}
-            <div
-              className="absolute right-0 top-2 h-32 w-32 rounded-2xl rotate-[9deg] shadow-lg overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-accent)),rgb(var(--brand-accent)/0.55))]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-              <div className="absolute top-2.5 right-2.5 bg-white/20  rounded-full px-2 py-0.5">
-                <span className="text-white text-xs font-bold">New</span>
-              </div>
-              <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">M</span>
-                </div>
-                <span className="text-white/80 text-xs font-medium">
-                  @marco
-                </span>
-              </div>
-            </div>
-            {/* Center card — largest, on top */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 top-2 h-40 w-44 rounded-2xl shadow-xl overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-highlight)),rgb(var(--brand-highlight)/0.65))]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-              <div className="absolute top-3 left-3 bg-black/20  rounded-full px-2.5 py-1">
-                <span className="text-white text-xs font-bold">
-                  🔥 Trending
-                </span>
-              </div>
-              <div className="absolute top-3 right-3 bg-white/20  rounded-full px-2 py-1 flex items-center gap-1">
-                <span className="text-white text-xs">♥</span>
-                <span className="text-white text-xs font-bold">42K</span>
-              </div>
-              <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center ring-2 ring-white/30">
-                  <span className="text-white text-xs font-bold">N</span>
-                </div>
-                <span className="text-white/90 text-xs font-semibold">
-                  @nia
-                </span>
-              </div>
-            </div>
+          {/* Left-aligned: this is a back control now, and back controls live
+              on the left. Frosted so it reads over the photo. */}
+          <div className="absolute inset-x-0 top-0 z-10 px-3 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+            <AuthExitButton
+              lang={lang}
+              from={from}
+              iconOnly
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-md transition-opacity active:opacity-60"
+            />
           </div>
+        </div>
 
-          <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight text-balance">
+        <div className="flex flex-1 flex-col justify-center px-6 pb-6 pt-2 text-center">
+          <h1 className="text-2xl font-bold text-default font-display leading-[1.2] tracking-tight text-balance">
             {copy.mobileHeadline}
           </h1>
-          <p className="app-subcopy mt-2 text-center">
-            {copy.mobileBody}
-          </p>
+          <p className="app-subcopy mt-2">{copy.mobileBody}</p>
         </div>
 
         {/* CTAs pinned to bottom */}
-        <div className="px-6 pb-10 shrink-0">{CTAs}</div>
+        <div className="px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shrink-0">
+          {CTAs}
+        </div>
       </div>
 
       {/* ── Desktop right-panel content ───────────────────────── */}

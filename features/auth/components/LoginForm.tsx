@@ -19,6 +19,11 @@ import {
   authDestination,
   navigateAfterAuth,
 } from "@/features/auth/lib/postAuthNavigate";
+import {
+  authInputClass,
+  authPasswordToggleClass,
+  authPrimaryButtonClass,
+} from "@/features/auth/components/authStyles";
 
 interface FormValues {
   email: string;
@@ -106,9 +111,7 @@ export function LoginForm({ from, lang }: LoginFormProps) {
           autoCapitalize="none"
           inputMode="email"
           placeholder="you@example.com"
-          className={`h-12 rounded-xl border bg-app px-4 text-base text-default placeholder:text-placeholder outline-none transition-all
-            focus:border-primary focus:ring-2 focus:ring-primary/20
-            ${errors.email ? "border-error" : "border-border"}`}
+          className={authInputClass(!!errors.email)}
           {...register("email", {
             required: "Email is required",
             pattern: { value: /\S+@\S+\.\S+/, message: "Enter a valid email" },
@@ -141,15 +144,13 @@ export function LoginForm({ from, lang }: LoginFormProps) {
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             placeholder="••••••••"
-            className={`h-12 w-full rounded-xl border bg-app px-4 pr-12 text-base text-default placeholder:text-placeholder outline-none transition-all
-              focus:border-primary focus:ring-2 focus:ring-primary/20
-              ${errors.password ? "border-error" : "border-border"}`}
+            className={`${authInputClass(!!errors.password)} pr-12`}
             {...register("password", { required: "Password is required" })}
           />
           <button
             type="button"
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted p-1"
+            className={authPasswordToggleClass}
             onClick={() => setShowPassword((v) => !v)}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -171,7 +172,7 @@ export function LoginForm({ from, lang }: LoginFormProps) {
       <button
         type="submit"
         disabled={isSubmittingForm}
-        className="h-12 rounded-xl bg-primary text-white font-semibold text-base transition-opacity disabled:opacity-60 active:opacity-80"
+        className={authPrimaryButtonClass}
       >
         {isSubmittingForm ? (
           <span className="flex items-center justify-center gap-2">

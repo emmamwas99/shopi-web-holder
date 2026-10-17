@@ -52,7 +52,7 @@ export default async function CommunityGuidelinesPage({ params }: Props) {
           </p>
           <p>
             These guidelines work alongside our{" "}
-            <Link href={`${base}/terms`}>Terms of Service</Link> and{" "}
+            <Link href={`${base}/terms-and-conditions`}>Terms of Service</Link> and{" "}
             <Link href={`${base}/prohibited-items`}>
               Prohibited Items Policy
             </Link>
@@ -239,7 +239,7 @@ export default async function CommunityGuidelinesPage({ params }: Props) {
         </LegalSection>
 
         <div className="mt-12 flex flex-wrap gap-6 border-t border-border pt-8">
-          <Link href={`${base}/terms`} className="text-[0.875rem] text-primary">
+          <Link href={`${base}/terms-and-conditions`} className="text-[0.875rem] text-primary">
             Terms of Service
           </Link>
           <Link
