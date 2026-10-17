@@ -23,13 +23,6 @@ import {
   FEED_LOAD_MORE_SIZE,
 } from "@/features/feed/constants";
 import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
-import { cancelScrollRestore } from "@/lib/scrollRestoration";
-import {
-  HOME_FEED_REFRESH_EVENT,
-  beginHomeFeedLoading,
-  consumeHomeFeedRefresh,
-  hasPendingHomeFeedRefresh,
-} from "@/lib/homeFeedRefresh";
 
 // The first page is deliberately small (it is server-rendered and hydrated
 // before the feed is interactive); later pages are larger because they mount
@@ -88,9 +81,8 @@ export function usePaginationGuard(currentCount: number) {
  * outlives the feed: the feed unmounts whenever another screen is opened.
  */
 let visitSeed: string | null = null;
-let lastHomeRefreshAt = 0;
-const HOME_REFRESH_INTERVAL = 60_000;
-const isDocumentVisible = () => document.visibilityState === "visible";
+/** The mounted feed's seed setter, while a feed is mounted. */
+let showSeed: ((seed: string) => void) | null = null;
 
 /** A different shared API variant from the one the last visit got. */
 function nextVisitSeed(): string {
@@ -114,8 +106,7 @@ function nextVisitSeed(): string {
  */
 export function useForYouFeed({
   serverRendered = false,
-  active = true,
-}: { serverRendered?: boolean; active?: boolean } = {}) {
+}: { serverRendered?: boolean } = {}) {
   // Reuse the same permission/caching flow the Nearby tab already owns: this
   // never itself prompts for permission (no `requestLocation()` call here) —
   // it only picks up a fix the user already granted elsewhere, so ranking
@@ -123,119 +114,65 @@ export function useForYouFeed({
   // profile/listing address, without ambushing Home with a permission popup.
   const { location } = useNearbyLocation();
   const apollo = useApolloClient();
-  // Keep the accumulated stream for Back navigation. Refresh into a separate
-  // cache entry only while Home is visible and near the top.
+  // Each page load reads one ranked stream, a different variant per load, and
+  // keeps it until the next load. Coming back to the feed — Back from a
+  // listing, the Home tab, the For You sub-tab — finds that stream still
+  // cached, with the card the user left from in it. Re-ranking on every mount
+  // replaced the list, and Back landed near the top of a different feed.
   const [seed, setSeed] = useState(() => {
     if (visitSeed === null && !serverRendered && typeof window !== "undefined") {
+      // Rendered on the client alone (signed in): choose the variant up
+      // front — one request, and nothing to swap out later.
       visitSeed = nextVisitSeed();
-      lastHomeRefreshAt = Date.now();
     }
     return visitSeed ?? "initial";
   });
-  const latitude = location?.latitude;
-  const longitude = location?.longitude;
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshError, setRefreshError] = useState(false);
-  const refreshInFlight = useRef(false);
-  const refreshGeneration = useRef(0);
-
-  const refreshHead = useCallback(async (force = false) => {
-    if (!active || !isDocumentVisible() || refreshInFlight.current) return;
-    if (
-      !force &&
-      (window.scrollY > 80 || Date.now() - lastHomeRefreshAt < HOME_REFRESH_INTERVAL)
-    ) return;
-
-    const generation = refreshGeneration.current;
-    let candidate = nextVisitSeed();
-    if (candidate === visitSeed) candidate = nextVisitSeed();
-    const variables = { limit: PAGE_SIZE, latitude, longitude, seed: candidate };
-    refreshInFlight.current = true;
-    const finishLoading = beginHomeFeedLoading();
-    setRefreshing(true);
-    setRefreshError(false);
-    try {
-      // Stage the result outside the cache: a late response must not alter a
-      // list the user has started scrolling or a feed now hidden by a route.
-      const result = await apollo.query({
-        query: ForYouFeedDocument,
-        variables,
-        fetchPolicy: "no-cache",
-        errorPolicy: "none",
-      });
-      if (
-        generation !== refreshGeneration.current ||
-        !isDocumentVisible() ||
-        window.scrollY > 80
-      ) return;
-      if (!result.data?.forYouFeed) throw new Error("Missing Home feed");
-
-      // Variants are reused. Drop this variant's previous window before the
-      // write so a fresh first page never inherits an older pagination cursor.
-      apollo.cache.evict({
-        id: "ROOT_QUERY",
-        fieldName: "forYouFeed",
-        args: { seed: candidate, latitude, longitude },
-      });
-      apollo.writeQuery({ query: ForYouFeedDocument, variables, data: result.data });
-      visitSeed = candidate;
-      lastHomeRefreshAt = Date.now();
-      startTransition(() => setSeed(candidate));
-    } catch {
-      // An offline/error response leaves the existing cards and cursor intact.
-      if (generation === refreshGeneration.current) setRefreshError(true);
-    } finally {
-      refreshInFlight.current = false;
-      setRefreshing(false);
-      finishLoading();
-      // A Home click during an older request is handled as soon as it ends.
-      if (hasPendingHomeFeedRefresh()) {
-        window.dispatchEvent(new Event(HOME_FEED_REFRESH_EVENT));
-      }
-    }
-  }, [active, apollo, latitude, longitude]);
 
   useEffect(() => {
-    if (!active) return;
-    const refreshIfStale = () => {
-      if (refreshInFlight.current) return;
-      if (consumeHomeFeedRefresh()) {
-        cancelScrollRestore();
-        window.scrollTo({ top: 0, behavior: "instant" });
-        void refreshHead(true);
-      } else {
-        void refreshHead();
-      }
-    };
-    // Let route/sub-tab scroll restoration run before deciding to refresh.
-    const frame = requestAnimationFrame(refreshIfStale);
-    const timer = window.setInterval(refreshIfStale, HOME_REFRESH_INTERVAL);
-    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
-    const onScroll = () => {
-      clearTimeout(scrollTimer);
-      if (window.scrollY <= 80) scrollTimer = setTimeout(refreshIfStale, 200);
-    };
-    window.addEventListener(HOME_FEED_REFRESH_EVENT, refreshIfStale);
-    window.addEventListener("focus", refreshIfStale);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    document.addEventListener("visibilitychange", refreshIfStale);
+    showSeed = setSeed;
     return () => {
-      refreshGeneration.current += 1;
-      cancelAnimationFrame(frame);
-      clearInterval(timer);
-      clearTimeout(scrollTimer);
-      window.removeEventListener(HOME_FEED_REFRESH_EVENT, refreshIfStale);
-      window.removeEventListener("focus", refreshIfStale);
-      window.removeEventListener("scroll", onScroll);
-      document.removeEventListener("visibilitychange", refreshIfStale);
+      if (showSeed === setSeed) showSeed = null;
     };
-  }, [active, refreshHead]);
+  }, []);
 
-  const refresh = useCallback(() => {
-    cancelScrollRestore();
-    window.scrollTo({ top: 0, behavior: "instant" });
-    void refreshHead(true);
-  }, [refreshHead]);
+  // A server-rendered load opens on the shared "initial" stream in its HTML. A
+  // fresh variant takes over only if it arrives before the user starts
+  // browsing. Swapping the list in later moved it under someone mid-scroll,
+  // and if they had already left for a listing, Back came home to a different
+  // feed than the one they left.
+  const latitude = location?.latitude;
+  const longitude = location?.longitude;
+  useEffect(() => {
+    if (visitSeed !== null) return;
+    visitSeed = "initial";
+    const candidate = nextVisitSeed();
+    let engaged = false;
+    const engage = () => {
+      engaged = true;
+    };
+    const intent = ["scroll", "pointerdown", "keydown"] as const;
+    for (const type of intent) {
+      window.addEventListener(type, engage, { capture: true, passive: true });
+    }
+    apollo
+      .query({
+        query: ForYouFeedDocument,
+        variables: { limit: PAGE_SIZE, latitude, longitude, seed: candidate },
+        fetchPolicy: "network-only",
+      })
+      .then(() => {
+        if (engaged || !showSeed || visitSeed !== "initial") return;
+        visitSeed = candidate;
+        const show = showSeed;
+        startTransition(() => show(candidate));
+      })
+      .catch(() => {})
+      .finally(() => {
+        for (const type of intent) {
+          window.removeEventListener(type, engage, { capture: true });
+        }
+      });
+  }, [apollo, latitude, longitude]);
 
   const { data, error, fetchMore } = useSuspenseQuery(
     ForYouFeedDocument,
@@ -246,8 +183,8 @@ export function useForYouFeed({
         longitude: location?.longitude,
         seed,
       },
-      // Render the saved window immediately; refreshHead replaces it safely
-      // with a network result once the visible Home is stale and near the top.
+      // The seed gives each visit a separate ranked stream. Apollo still keeps
+      // the old stream cached, so returning to it remains instant.
       fetchPolicy: "cache-first",
       // Apollo's default refetch write mode is "overwrite", which can replace
       // an exhausted 33-item window with the refreshed first page while leaving
@@ -269,10 +206,7 @@ export function useForYouFeed({
   // pagination spinner never showed). Track "in flight" ourselves instead.
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMore = useCallback(() => {
-    if (
-      refreshInFlight.current || loadingMore ||
-      !pageInfo?.hasNextPage || !pageInfo.endCursor
-    ) return;
+    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
     guard(cursor, itemCount, () => {
@@ -285,13 +219,10 @@ export function useForYouFeed({
       });
       return request;
     });
-  }, [fetchMore, pageInfo, guard, itemCount, seed, loadingMore]);
+  }, [fetchMore, pageInfo, guard, itemCount, seed]);
 
   return {
     items,
-    refresh,
-    refreshing,
-    refreshError,
     // The initial request is represented by the nearest Suspense fallback.
     loading: false,
     loadingMore,

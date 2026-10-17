@@ -1992,7 +1992,7 @@ export function DiscoverPage({
     {
       variables: subcategoryFacetVariables,
       skip: !selectedCategory && !(subcategoryDrawerOpen && drawerCategory),
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
     },
   );
@@ -2121,7 +2121,7 @@ export function DiscoverPage({
     {
       skip: !subcategoryRouteReady,
       variables: feedVariables,
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
       // The discoveryFeed field policy needs `existing` during refetches so a
       // background page-1 refresh splices over the head of the accumulated
@@ -2166,7 +2166,7 @@ export function DiscoverPage({
     DISCOVERY_CATEGORIES,
     {
       variables: categoryFacetVariables,
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
     },
   );
@@ -2178,7 +2178,7 @@ export function DiscoverPage({
     {
       variables: facetVariables,
       skip: !subcategoryRouteReady,
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
     },
   );
@@ -2243,7 +2243,7 @@ export function DiscoverPage({
       // A deep-linked subcategory resolves first, or the header would flash
       // the whole category's count before settling on the subcategory's.
       skip: !subcategoryRouteReady || (!filterOpen && !isNarrowed),
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
     },
   );
@@ -2257,7 +2257,7 @@ export function DiscoverPage({
     {
       variables: facetVariables,
       skip: !subcategoryRouteReady || (!selectedCategory && !subcategory),
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
     },
   );

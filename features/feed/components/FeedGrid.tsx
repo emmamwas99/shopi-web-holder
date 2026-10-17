@@ -116,13 +116,12 @@ function LiveFeedCards({
 }) {
   const {
     items, loadingMore, hasMore, loadMore, loading,
-    refreshing,
-  } = useForYouFeed({ serverRendered, active });
+  } = useForYouFeed({ serverRendered });
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
     hasMore,
-    loading: loading || loadingMore || refreshing,
+    loading: loading || loadingMore,
     onLoadMore: loadMore,
   });
 

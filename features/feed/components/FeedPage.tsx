@@ -27,7 +27,6 @@ import {
   type ScrollPosition,
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
-import { requestHomeFeedRefresh } from "@/lib/homeFeedRefresh";
 import { useUiStore } from "@/stores/ui";
 import {
   RecordSearchTermDocument,
@@ -276,7 +275,6 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   }, [searchParams, visible]);
 
   function handleTabChange(next: Tab) {
-    if (next === "for-you") requestHomeFeedRefresh();
     if (next === tab) return;
     // Remember where we are on the tab we're leaving, before it gets hidden.
     if (isMobileViewport()) subTabPositions[tab] = captureScrollPosition();
