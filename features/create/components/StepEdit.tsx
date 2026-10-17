@@ -18,6 +18,7 @@ import { SpecsEditor } from "./SpecsEditor";
 import { MediaPicker } from "./MediaPicker";
 import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
 import { FormIssues, FormNotice, type FormIssue } from "./FormIssues";
+import { createErrorMessage } from "./CreateErrorDialog";
 import {
   isDraftAutosaveBlocked,
   trackDraftAutosave,
@@ -295,8 +296,6 @@ export function StepEdit({
   // stays inside onNext.
   const parsedPriceValue = priceInput.trim() ? Number(priceInput) : 0;
   const priceValid = Number.isFinite(parsedPriceValue) && parsedPriceValue >= 0;
-  const hasUsableMedia =
-    mediaItems.length > 0 && !mediaItems.every((m) => m.status === "error");
 
   /**
    * Level 2 is free-form: the AI writes a plain label ("Laptops") and there is
@@ -315,13 +314,23 @@ export function StepEdit({
   // The full sentence goes under the field; the short one goes in the list
   // over the Next button. Null while the field is fine. In form order, so the
   // list reads top to bottom like the page.
-  const mediaError = !hasUsableMedia
-    ? mediaItems.length === 0
+  // Any failed item blocks Next, not only "all failed": one that failed after
+  // it was attached is still on the draft, and the post would go out with a
+  // photo whose file never arrived.
+  const isVideoDraft = mediaItems[0]?.type === "video";
+  const failedCount = mediaItems.filter((m) => m.status === "error").length;
+  const mediaError =
+    mediaItems.length === 0
       ? "Add at least one photo or video."
-      : "Your upload failed. Remove it and add the photo or video again."
-    : uploadTimedOut
-      ? "Your upload is taking too long. Check your connection and tap Next again."
-      : null;
+      : failedCount > 0
+        ? isVideoDraft
+          ? "Your video didn't upload. Tap Retry, or Replace it with another video."
+          : failedCount === 1
+            ? "A photo didn't upload. Tap Retry on it, or remove it."
+            : `${failedCount} photos didn't upload. Tap Retry on them, or remove them.`
+        : uploadTimedOut
+          ? `Your ${isVideoDraft ? "video is" : "photos are"} still uploading. Keep this screen open and tap Next when it's done.`
+          : null;
   const categoryProblem = !categoryId
     ? "Choose a category."
     : !hasSubcategory
@@ -337,12 +346,13 @@ export function StepEdit({
   if (mediaError) {
     issues.push({
       field: "media",
-      label: "Photos",
-      message: !hasUsableMedia
-        ? mediaItems.length === 0
+      label: isVideoDraft ? "Video" : "Photos",
+      message:
+        mediaItems.length === 0
           ? "Add a photo or video"
-          : "Upload failed, add it again"
-        : "Upload is taking too long",
+          : failedCount > 0
+            ? "Upload failed, tap Retry"
+            : "Still uploading",
     });
   }
   if (titleProblem) {
@@ -440,8 +450,8 @@ export function StepEdit({
       scrollFieldIntoView("media");
       return;
     }
-    // An upload can fail during the wait.
-    if (useCreateStore.getState().mediaItems.every((m) => m.status === "error")) {
+    // An upload can fail during the wait; the media message names it.
+    if (useCreateStore.getState().mediaItems.some((m) => m.status === "error")) {
       scrollFieldIntoView("media");
       return;
     }
@@ -923,7 +933,7 @@ export function StepEdit({
           {shownIssues.length > 0 ? (
             <FormIssues issues={shownIssues} onSelect={goToField} />
           ) : error ? (
-            <FormNotice>{error}</FormNotice>
+            <FormNotice>{createErrorMessage(error)}</FormNotice>
           ) : null}
           <button
             type="button"

@@ -51,6 +51,11 @@ import {
 } from "./CreateSuccessScreen";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
 import { createErrorMessage } from "./CreateErrorDialog";
+import {
+  PUBLISH_TIMEOUT_MESSAGE,
+  PUBLISH_UNCONFIRMED_MESSAGE,
+  publishTimeout,
+} from "@/features/create/utils/publishTimeout";
 import { FormNotice } from "./FormIssues";
 
 const POST_TO_TIKTOK = gql`
@@ -278,6 +283,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
 
     const parsedPrice = price ?? 0;
     let didPublish = false;
+    const timeout = publishTimeout();
 
     try {
       // Let saves that were already on the wire settle, so the publish reads a
@@ -298,14 +304,23 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
       }
 
       // The API validates any remaining draft steps and publishes in one request.
+      // Idempotent there, so a retry after a timeout returns the same post.
       const { data: pubData, error: publishError } = await publishDraftNow({
         variables: { id: draftId },
+        context: timeout.context,
       });
       if (publishError) {
-        setError(publishError.message ?? "Failed to publish");
+        setError(
+          timeout.timedOut()
+            ? PUBLISH_TIMEOUT_MESSAGE
+            : (publishError.message ?? "Failed to publish"),
+        );
         return;
       }
-      if (!pubData?.publishDraftNow) return;
+      if (!pubData?.publishDraftNow) {
+        setError(PUBLISH_UNCONFIRMED_MESSAGE);
+        return;
+      }
 
       const contentId = pubData.publishDraftNow.id;
       didPublish = true;
@@ -333,8 +348,9 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
       // "Go to For You". The post is already submitted and will appear once it
       // clears automated review in the background.
     } catch (err) {
-      setError(String(err));
+      setError(timeout.timedOut() ? PUBLISH_TIMEOUT_MESSAGE : createErrorMessage(err));
     } finally {
+      timeout.done();
       setPublishing(false);
       // Publish failed — the draft is still ACTIVE, so let autosave resume and
       // keep the user's edits safe while they retry.

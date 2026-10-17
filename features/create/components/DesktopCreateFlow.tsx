@@ -19,6 +19,7 @@ import { CreateFlow } from "./CreateFlow";
 import { CreatePreviewPanel } from "./CreatePreviewPanel";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
+import { useDraftRequestKeys } from "@/features/create/utils/draftRequestKeys";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackPostJourney } from "@/lib/analytics";
@@ -72,6 +73,7 @@ export function DesktopCreateFlow({
   } =
     useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
+  const draftKeys = useDraftRequestKeys();
 
   useEffect(() => {
     if (useCreateStore.persist.hasHydrated()) {
@@ -91,10 +93,16 @@ export function DesktopCreateFlow({
     setCreating(true);
     try {
       const { data, error } = await createDraft({
-        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+        variables: {
+          input: {
+            type: kind === "video" ? "VIDEO" : "IMAGE",
+            clientRequestId: draftKeys.get(kind),
+          },
+        },
       });
       if (error || !data?.createDraft)
         throw new Error(error?.message ?? "Failed to create draft");
+      draftKeys.done(kind);
       setDraftId(data.createDraft.id);
       setContentType(kind);
       setStep("edit");

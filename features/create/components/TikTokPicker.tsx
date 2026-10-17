@@ -17,6 +17,7 @@ import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
 import { createErrorMessage } from "./CreateErrorDialog";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { TikTokLibrary } from "./TikTokLibrary";
+import { useDraftRequestKeys } from "@/features/create/utils/draftRequestKeys";
 
 export function TikTokPicker({
   onUsed,
@@ -32,16 +33,24 @@ export function TikTokPicker({
     useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startVideoUpload } = useMediaUpload();
+  const draftKeys = useDraftRequestKeys();
 
   async function handleSelect(file: File) {
     try {
       const { data, error } = await createDraft({
         // The type stays VIDEO; the flag records that it came from TikTok.
-        variables: { input: { type: "VIDEO", isTiktokImport: true } },
+        variables: {
+          input: {
+            type: "VIDEO",
+            isTiktokImport: true,
+            clientRequestId: draftKeys.get("tiktok"),
+          },
+        },
       });
       if (error || !data?.createDraft) {
         throw new Error(error?.message ?? "Could not start your draft");
       }
+      draftKeys.done("tiktok");
       const id = data.createDraft.id;
 
       // Start fresh, but stay in the mode the seller chose (manual skips the

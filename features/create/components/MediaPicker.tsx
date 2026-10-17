@@ -33,7 +33,8 @@ export function MediaPicker() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { draftId, contentType, mediaItems, tiktokEmbed } = useCreateStore();
-  const { startImageUpload, startVideoUpload } = useMediaUpload();
+  const { startImageUpload, startVideoUpload, retryUpload, canRetry } =
+    useMediaUpload();
   const [detachMediaAsset] = useMutation(DetachMediaAssetDocument);
 
   const isVideo = contentType === "video";
@@ -49,6 +50,9 @@ export function MediaPicker() {
   function handleFiles(files: FileList | null) {
     if (!files?.length || !draftId) return;
     if (isVideo) {
+      // Replace: a post has one video, so the old one leaves the draft first.
+      // Without this the draft kept both and the preview the old one.
+      mediaItems.forEach(handleRemove);
       startVideoUpload(files[0], draftId);
     } else {
       const remaining = MAX_IMAGES - mediaItems.length;
@@ -59,6 +63,10 @@ export function MediaPicker() {
     }
     // Allow re-selecting the same file again after removal
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleRetry(item: MediaItem) {
+    if (draftId) retryUpload(item.id, draftId);
   }
 
   function handleRemove(item: MediaItem) {
@@ -200,6 +208,13 @@ export function MediaPicker() {
             </div>
           )}
 
+          <UploadOverlay
+            item={item}
+            canRetry={canRetry(item.id)}
+            onRetry={() => handleRetry(item)}
+            large
+          />
+
           {/* Replace button */}
           <button
             type="button"
@@ -253,14 +268,15 @@ export function MediaPicker() {
                 </div>
               )}
 
-              {/* Failure only — upload/processing runs silently in the
-                  background (same as video); the local preview is already
-                  showing, so a spinner overlay just makes it feel slow. */}
-              {item.status === "error" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
-                  <CircleAlert size={20} className="text-white" aria-label="Upload failed" />
-                </div>
-              )}
+              <UploadOverlay
+                item={item}
+                canRetry={canRetry(item.id)}
+                onRetry={() => handleRetry(item)}
+              />
+
+              {/* Processing runs silently in the background: the local
+                  preview is already showing, so a spinner would only make it
+                  feel slow. */}
 
               {/* Remove */}
               <button
@@ -344,6 +360,78 @@ export function MediaPicker() {
         {mediaItems.length}/{MAX_IMAGES} photos
       </p>
       {hiddenInput}
+    </div>
+  );
+}
+
+/**
+ * What the seller needs to see on a tile: how far the file has got while it
+ * uploads (a slow phone connection otherwise looks frozen), and on failure
+ * what went wrong with a Retry that sends the same file again.
+ */
+function UploadOverlay({
+  item,
+  canRetry,
+  onRetry,
+  large = false,
+}: {
+  item: MediaItem;
+  canRetry: boolean;
+  onRetry: () => void;
+  large?: boolean;
+}) {
+  if (item.status === "uploading") {
+    const percent = Math.round((item.progress ?? 0) * 100);
+    return (
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/70 to-transparent px-2 pb-2 pt-6"
+        role="progressbar"
+        aria-label="Uploading"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className="h-1 overflow-hidden rounded-full bg-white/30">
+          <div
+            className="h-full rounded-full bg-white transition-[width] duration-300"
+            style={{ width: `${Math.max(4, percent)}%` }}
+          />
+        </div>
+        {large && (
+          <p className="mt-1.5 text-center text-xs font-semibold text-white">
+            Uploading… {percent}%
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (item.status !== "error") return null;
+
+  return (
+    <div
+      role="alert"
+      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 bg-black/60 px-2 text-center"
+    >
+      <CircleAlert size={large ? 26 : 18} className="text-white" aria-hidden />
+      {large ? (
+        <p className="max-w-52 text-sm font-medium leading-snug text-white">
+          {item.errorMessage ?? "Your video didn't upload."}
+        </p>
+      ) : (
+        <span className="sr-only">{item.errorMessage ?? "Upload failed"}</span>
+      )}
+      {canRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className={`rounded-full bg-white font-semibold text-black active:opacity-80 ${
+            large ? "mt-1 px-4 py-1.5 text-sm" : "px-2.5 py-0.5 text-[11px]"
+          }`}
+        >
+          Retry
+        </button>
+      )}
     </div>
   );
 }

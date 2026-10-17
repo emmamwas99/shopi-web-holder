@@ -170,6 +170,7 @@ export type ContentVisibility =
   | 'PUBLIC';
 
 export type CreateDraftInput = {
+  clientRequestId?: string | null | undefined;
   isTiktokImport?: boolean | null | undefined;
   type?: ContentType | null | undefined;
 };
