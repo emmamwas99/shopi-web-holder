@@ -2,7 +2,6 @@
 
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import { Search } from "lucide-react";
-import { HomeFeedTabLabel } from "./HomeFeedTabLabel";
 
 type Tab = "for-you" | "watch" | "ask-shopi";
 
@@ -66,7 +65,7 @@ export function FeedHeader({
                   : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab.id === "for-you" ? <HomeFeedTabLabel label={tab.label} /> : tab.label}
+            {tab.label}
           </button>
         ))}
         {!immersive && onSearchOpen ? (
