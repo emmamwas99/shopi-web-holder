@@ -12,6 +12,7 @@ import {
 import { contentPath } from "@/lib/content-url";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { cn } from "@/lib/utils";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 /**
@@ -74,7 +75,9 @@ function SavedPostRow({
         href={contentPath(lang, post)}
         scroll={false}
         className="flex w-full items-center gap-3 py-3 text-left transition-colors active:bg-surface"
-        aria-label={`${post.title}, ${price}${location ? `, ${location}` : ""}`}
+        aria-label={`${post.title}, ${price}${
+          post.creator?.isVerified ? ", Verified ID" : ""
+        }${location ? `, ${location}` : ""}`}
       >
         <span className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-default bg-surface">
           {thumbnail ? (
@@ -105,9 +108,14 @@ function SavedPostRow({
           <span className="block truncate text-sm font-medium text-main">
             {post.title || "Untitled post"}
           </span>
-          <span className="mt-0.5 block truncate text-sm font-semibold text-main">
-            {price}
-            {post.price.negotiable && post.price.amount > 0 ? " · Negotiable" : ""}
+          <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-main">
+              {price}
+              {post.price.negotiable && post.price.amount > 0 ? " · Negotiable" : ""}
+            </span>
+            {post.creator?.isVerified ? (
+              <VerifiedIdBadge className="px-1.5 py-0.5 text-[10px]" />
+            ) : null}
           </span>
           {location ? (
             <span className="mt-1 flex min-w-0 items-center gap-1 text-xs text-muted">
