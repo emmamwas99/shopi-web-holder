@@ -1,13 +1,9 @@
 import type { ApolloCache } from "@apollo/client";
 
 /**
- * Feeds and the profile post grid are read with `cache-first` so revisiting a
- * screen renders instantly from cache and preserves scroll position (see
- * features/feed/hooks/useFeed.ts). The trade-off is that newly published
- * content won't appear until the cached list is invalidated.
- *
- * Call this after a publish so the *next* mount of the feed / profile refetches
- * a fresh first page exactly once, instead of every navigation.
+ * Home refreshes stale results when visible near the top. Publishing also
+ * invalidates saved feed/profile windows so returning immediately fetches a
+ * fresh first page, even inside the normal Home refresh interval.
  */
 export function invalidatePublishedContentCache(cache: ApolloCache): void {
   cache.evict({ fieldName: "forYouFeed" });

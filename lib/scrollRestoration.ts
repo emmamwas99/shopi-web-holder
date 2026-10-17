@@ -1,3 +1,5 @@
+import { requestHomeFeedRefresh } from "./homeFeedRefresh";
+
 /**
  * Window scroll restoration that behaves like a native social app.
  *
@@ -830,6 +832,8 @@ export function installScrollTracking(): () => void {
     if (url.origin !== window.location.origin) return;
 
     const isTab = link.hasAttribute(NAV_TAB_ATTR);
+    const isHomeTab = link.getAttribute(NAV_TAB_ATTR) === "feed";
+    if (isHomeTab) requestHomeFeedRefresh();
     if (
       isTab &&
       url.pathname === window.location.pathname &&
@@ -842,12 +846,17 @@ export function installScrollTracking(): () => void {
       // tapping Profile from inside one of its pushed sections still pops
       // back to the profile, as a tab bar does from deeper in its stack.
       event.preventDefault();
-      scrollToTopLikeNative();
+      if (isHomeTab) {
+        cancelScrollRestore();
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } else {
+        scrollToTopLikeNative();
+      }
       return;
     }
 
     pendingReturn =
-      isTab || link.hasAttribute(RESTORE_LINK_ATTR)
+      !isHomeTab && (isTab || link.hasAttribute(RESTORE_LINK_ATTR))
         ? {
             url: scrollUrlKey(url.pathname, url.search),
             entry: null,

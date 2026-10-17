@@ -11,6 +11,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ShoppingBag } from "lucide-react";
 import { useForYouFeed } from "../hooks/useFeed";
+import { HomeFeedTabLabel } from "./HomeFeedTabLabel";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { FeedPaginationSkeleton, PostCardSkeleton } from "./FeedSkeleton";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
@@ -24,6 +25,7 @@ import {
   type ScrollPosition,
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
+import { requestHomeFeedRefresh } from "@/lib/homeFeedRefresh";
 import {
   hasPendingWatchScrollPosition,
   restoreWatchScrollPosition,
@@ -114,11 +116,15 @@ function DesktopPostCard({
   );
 }
 
-function ForYouColumn({ lang }: { lang: string }) {
-  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
+function ForYouColumn({ lang, active }: { lang: string; active: boolean }) {
+  const {
+    items, loading, loadingMore, hasMore, loadMore,
+    refreshing,
+  } = useForYouFeed({ active });
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
-    loading: loading || loadingMore,
+    loading: loading || loadingMore || refreshing,
+    enabled: active,
     onLoadMore: loadMore,
   });
 
@@ -253,7 +259,10 @@ export default function DesktopFeed({
               {TABS.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => selectTab(t.id)}
+                  onClick={() => {
+                    if (t.id === "for-you") requestHomeFeedRefresh();
+                    selectTab(t.id);
+                  }}
                   aria-current={tab === t.id ? "true" : undefined}
                   className={[
                     "-mb-px border-b-2 pb-2.5 pt-1 text-sm font-bold tracking-normal transition-colors",
@@ -262,7 +271,7 @@ export default function DesktopFeed({
                       : "border-transparent text-muted hover:text-main",
                   ].join(" ")}
                 >
-                  {t.label}
+                  {t.id === "for-you" ? <HomeFeedTabLabel label={t.label} /> : t.label}
                 </button>
               ))}
             </div>
@@ -270,7 +279,7 @@ export default function DesktopFeed({
 
           <div className={tab === "for-you" ? undefined : "hidden"}>
             <StoriesBar lang={lang} variant="desktop" />
-            <ForYouColumn lang={lang} />
+            <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
           </div>
         </section>
 

@@ -4,7 +4,7 @@
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useState, useRef, useEffect } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient, useMutation } from "@apollo/client/react";
 import Image from "next/image";
 import MuxPlayer from "@mux/mux-player-react";
 import { useRouter } from "next/navigation";
@@ -63,6 +63,7 @@ export function StepReady({ lang }: StepReadyProps) {
   } = useCreateStore();
 
   const router = useRouter();
+  const apollo = useApolloClient();
   const [publishing, setPublishing] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const saving = false;
@@ -179,6 +180,7 @@ export function StepReady({ lang }: StepReadyProps) {
         return;
       }
       if (data?.publishDraft) {
+        invalidatePublishedContentCache(apollo.cache);
         const contentId = data.publishDraft.id as string;
         didPublish = true;
         setPublished(true);

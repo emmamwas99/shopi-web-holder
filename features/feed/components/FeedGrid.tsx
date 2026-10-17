@@ -114,27 +114,28 @@ function LiveFeedCards({
   active: boolean;
   serverRendered: boolean;
 }) {
-  const { items, loadingMore, hasMore, loadMore, loading } = useForYouFeed({
-    serverRendered,
-  });
+  const {
+    items, loadingMore, hasMore, loadMore, loading,
+    refreshing,
+  } = useForYouFeed({ serverRendered, active });
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
     hasMore,
-    loading,
+    loading: loading || loadingMore || refreshing,
     onLoadMore: loadMore,
   });
 
   if (!loading && items.length === 0) {
     return (
-      <div className="flex min-h-[93svh] fixed top-0 left-0 right-0 bottom-0  flex-col items-center justify-center py-24 px-6 text-center">
-        <div className="text-5xl mb-4">🛍️</div>
-        <h3 className="font-bold text-default text-base mb-2">
-          Your feed is empty
-        </h3>
-        <p className="app-subcopy">
-          Follow sellers or explore categories to see content here.
-        </p>
+      <div className="flex min-h-[60svh] flex-col items-center justify-center py-24 px-6 text-center">
+          <div className="text-5xl mb-4">🛍️</div>
+          <h3 className="font-bold text-default text-base mb-2">
+            Your feed is empty
+          </h3>
+          <p className="app-subcopy">
+            Follow sellers or explore categories to see content here.
+          </p>
       </div>
     );
   }
