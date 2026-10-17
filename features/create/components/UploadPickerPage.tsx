@@ -34,6 +34,7 @@ import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvaila
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackPostJourney } from "@/lib/analytics";
 import { goBackOr } from "@/lib/useAppBack";
+import { useDraftRequestKeys } from "@/features/create/utils/draftRequestKeys";
 
 /**
  * /upload - the "Upload & sell" entry point.
@@ -162,6 +163,7 @@ function MediaTypePicker({
   const [createError, setCreateError] = useState<string | null>(null);
   const { setDraftId, setContentType, setStep, setError } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
+  const draftKeys = useDraftRequestKeys();
 
   async function handlePickType(kind: "image" | "video") {
     if (creating) return;
@@ -170,10 +172,16 @@ function MediaTypePicker({
     setCreating(true);
     try {
       const { data, error } = await createDraft({
-        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+        variables: {
+          input: {
+            type: kind === "video" ? "VIDEO" : "IMAGE",
+            clientRequestId: draftKeys.get(kind),
+          },
+        },
       });
       if (error || !data?.createDraft)
         throw new Error(error?.message ?? "Failed to create draft");
+      draftKeys.done(kind);
       setDraftId(data.createDraft.id);
       setContentType(kind);
       setStep("edit");

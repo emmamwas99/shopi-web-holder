@@ -288,12 +288,12 @@ export default async function CookiesPage({ params }: Props) {
 
         <div className="mt-12 flex flex-wrap gap-6 border-t border-border pt-8">
           <Link
-            href={`${base}/privacy`}
+            href={`${base}/privacy-policy`}
             className="text-[0.875rem] text-primary"
           >
             Privacy Policy
           </Link>
-          <Link href={`${base}/terms`} className="text-[0.875rem] text-primary">
+          <Link href={`${base}/terms-and-conditions`} className="text-[0.875rem] text-primary">
             Terms of Service
           </Link>
         </div>

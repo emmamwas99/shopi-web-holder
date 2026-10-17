@@ -176,7 +176,7 @@ export default async function ProhibitedItemsPage({ params }: Props) {
           >
             Community Guidelines
           </Link>
-          <Link href={`${base}/terms`} className="text-[0.875rem] text-primary">
+          <Link href={`${base}/terms-and-conditions`} className="text-[0.875rem] text-primary">
             Terms of Service
           </Link>
         </div>

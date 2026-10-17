@@ -216,8 +216,8 @@ const nextConfig: NextConfig = {
       "beauty-cosmetics-kenya",
       "phones-electronics-kenya",
       "tiktok-downloader",
-      "privacy",
-      "terms",
+      "privacy-policy",
+      "terms-and-conditions",
       "cookies",
       "feed",
       "explore",
@@ -246,6 +246,29 @@ const nextConfig: NextConfig = {
       {
         source: "/careers",
         destination: "/en/online-selling-jobs-kenya",
+        permanent: true,
+      },
+      // The legal pages moved from /terms and /privacy. One hop each, so links
+      // already out there (emails, OAuth consent screens, search results)
+      // land on the page directly.
+      {
+        source: "/:lang(en|sw)/terms",
+        destination: "/:lang/terms-and-conditions",
+        permanent: true,
+      },
+      {
+        source: "/:lang(en|sw)/privacy",
+        destination: "/:lang/privacy-policy",
+        permanent: true,
+      },
+      {
+        source: "/terms",
+        destination: "/en/terms-and-conditions",
+        permanent: true,
+      },
+      {
+        source: "/privacy",
+        destination: "/en/privacy-policy",
         permanent: true,
       },
       { source: "/", destination: "/en", permanent: true },

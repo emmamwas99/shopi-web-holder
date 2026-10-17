@@ -50,6 +50,8 @@ export type MediaItem = {
   }>;
   muxPlaybackId?: string;
   errorMessage?: string;
+  /** Share of the file sent to storage while `uploading`, 0–1. */
+  progress?: number;
 };
 
 /** A product attribute (Make, Model, Condition, …) — AI-generated, user-editable. */

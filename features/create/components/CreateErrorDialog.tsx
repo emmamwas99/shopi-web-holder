@@ -19,15 +19,39 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-/** Unwrap Apollo/Error wrappers down to the human-readable message. */
+const OFFLINE_MESSAGE =
+  "You're offline or the connection dropped. Check your connection and try again. Your draft is saved.";
+const SLOW_MESSAGE =
+  "This is taking longer than usual. Check your connection and try again. Your draft is saved.";
+const SERVER_DOWN_MESSAGE =
+  "Shopi is having trouble right now. Your draft is saved, so try again in a moment.";
+
+/**
+ * The seller-facing sentence for a failed create-flow request. The API's own
+ * refusals (validation, limits) are already written for sellers and pass
+ * through, minus "Error: …" wrappers. Transport failures (offline, a dropped
+ * connection, a timeout, the API down) used to surface raw, as "TypeError:
+ * Failed to fetch"; they become one plain sentence that says what to do.
+ */
 export function createErrorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    // ApolloError exposes the first GraphQL error via .message already, but
-    // String(err) style prefixes ("ApolloError: …", "Error: …") may have been
-    // baked in by callers — strip them.
-    return err.message.replace(/^(ApolloError|Error):\s*/, "");
+  const raw = (err instanceof Error ? err.message : String(err ?? ""))
+    .replace(/^(ApolloError|Error|TypeError):\s*/i, "")
+    .trim();
+  const name = err instanceof Error ? err.name : "";
+
+  if (name === "AbortError" || /\baborted\b|timed? ?out|timeout/i.test(raw)) {
+    return SLOW_MESSAGE;
   }
-  return String(err).replace(/^(ApolloError|Error):\s*/, "");
+  if (
+    (typeof navigator !== "undefined" && navigator.onLine === false) ||
+    /failed to fetch|networkerror|network request failed|load failed|network error|ECONNREFUSED|ERR_INTERNET/i.test(raw)
+  ) {
+    return OFFLINE_MESSAGE;
+  }
+  if (/status code 5\d\d|internal server error|bad gateway|service unavailable|gateway time/i.test(raw)) {
+    return SERVER_DOWN_MESSAGE;
+  }
+  return raw;
 }
 
 function copyFor(message: string): { title: string; body: string } {

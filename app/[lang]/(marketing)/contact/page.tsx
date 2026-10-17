@@ -245,8 +245,8 @@ export default async function ContactPage({ params }: Props) {
               href: `${base}/community-guidelines`,
               label: "Community Guidelines",
             },
-            { href: `${base}/terms`, label: "Terms of Service" },
-            { href: `${base}/privacy`, label: "Privacy Policy" },
+            { href: `${base}/terms-and-conditions`, label: "Terms of Service" },
+            { href: `${base}/privacy-policy`, label: "Privacy Policy" },
           ].map(({ href, label }) => (
             <Link
               key={href}

@@ -93,6 +93,13 @@ import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { OrDivider } from "./OrDivider";
 import { TikTokImportDrawer } from "./TikTokImportDrawer";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
+import { useDraftRequestKeys } from "@/features/create/utils/draftRequestKeys";
+import { createErrorMessage } from "./CreateErrorDialog";
+import {
+  PUBLISH_TIMEOUT_MESSAGE,
+  PUBLISH_UNCONFIRMED_MESSAGE,
+  publishTimeout,
+} from "@/features/create/utils/publishTimeout";
 
 const MAX_IMAGES = 10;
 const ATTACH_TIMEOUT_MS = 30_000;
@@ -274,6 +281,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   );
 
   const [createDraft] = useMutation(CreateDraftDocument);
+  const draftKeys = useDraftRequestKeys();
   const [discardDraft] = useMutation(DiscardDraftDocument);
   const [autosaveDraft] = useMutation(GUIDED_AUTOSAVE_DRAFT);
   const [extractFromFrames] = useMutation(GUIDED_EXTRACT_FROM_FRAMES);
@@ -542,6 +550,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         setGuidedStage("analyzing");
       }
 
+      const keyKind = isTiktokImport ? "tiktok" : kind;
       const { data, error } = await createDraft({
         variables: {
           input: {
@@ -549,12 +558,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
             // Only sent for the TikTok route: the type stays VIDEO, and the
             // admin uses the flag to see which create route the post took.
             ...(isTiktokImport ? { isTiktokImport: true } : {}),
+            clientRequestId: draftKeys.get(keyKind),
           },
         },
       });
       if (error || !data?.createDraft) {
         throw new Error(error?.message ?? "Could not start your draft");
       }
+      draftKeys.done(keyKind);
 
       const id = data.createDraft.id;
       createdDraftId = id;
@@ -1366,11 +1377,26 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         hdEnabled,
       });
 
-      const response = await publishDraftNow({ variables: { id: draftId } });
-      if (response.error || !response.data?.publishDraftNow) {
+      // Idempotent on the API, so a retry after a timeout returns the same post.
+      const timeout = publishTimeout();
+      let response;
+      try {
+        response = await publishDraftNow({
+          variables: { id: draftId },
+          context: timeout.context,
+        });
+      } catch (error) {
+        throw timeout.timedOut() ? new Error(PUBLISH_TIMEOUT_MESSAGE) : error;
+      } finally {
+        timeout.done();
+      }
+      if (response.error) {
         throw new Error(
-          response.error?.message ?? "Could not publish your post",
+          timeout.timedOut() ? PUBLISH_TIMEOUT_MESSAGE : response.error.message,
         );
+      }
+      if (!response.data?.publishDraftNow) {
+        throw new Error(PUBLISH_UNCONFIRMED_MESSAGE);
       }
 
       const contentId = response.data.publishDraftNow.id;
@@ -1830,8 +1856,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           ) : null}
 
           {formError ? (
-            <div className="ml-0 rounded-2xl border border-[rgb(var(--color-error)/0.25)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm font-medium text-error sm:ml-11">
-              {formError}
+            <div
+              role="alert"
+              className="ml-0 rounded-2xl border border-[rgb(var(--color-error)/0.25)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm font-medium text-error sm:ml-11"
+            >
+              {createErrorMessage(formError)}
             </div>
           ) : null}
 

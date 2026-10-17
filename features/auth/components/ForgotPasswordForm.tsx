@@ -12,6 +12,10 @@ import {
   RequestPasswordResetDocument,
   type RequestPasswordResetMutation,
 } from "@/types/__generated__/graphql";
+import {
+  authInputClass,
+  authPrimaryButtonClass,
+} from "@/features/auth/components/authStyles";
 
 interface FormValues {
   email: string;
@@ -103,7 +107,7 @@ export function ForgotPasswordForm({ lang }: ForgotPasswordFormProps) {
 
         <Link
           href={`/${lang}/auth/login`}
-          className="h-12 rounded-xl bg-primary text-white font-semibold text-base flex items-center justify-center transition-opacity active:opacity-80"
+          className={authPrimaryButtonClass}
         >
           Back to sign in
         </Link>
@@ -156,7 +160,7 @@ export function ForgotPasswordForm({ lang }: ForgotPasswordFormProps) {
 
         <Link
           href={`/${lang}/auth/login`}
-          className="h-12 rounded-xl border border-border text-default font-semibold text-base flex items-center justify-center transition-opacity active:opacity-80"
+          className="flex h-12 items-center justify-center rounded-xl border border-border text-base font-semibold text-default transition-opacity active:opacity-80 max-lg:rounded-full"
         >
           Back to sign in
         </Link>
@@ -182,9 +186,7 @@ export function ForgotPasswordForm({ lang }: ForgotPasswordFormProps) {
           autoCapitalize="none"
           inputMode="email"
           placeholder="you@example.com"
-          className={`h-12 rounded-xl border px-4 text-base bg-elevated text-default placeholder:text-placeholder outline-none transition-all
-            focus:border-primary focus:ring-2 focus:ring-primary/20
-            ${errors.email ? "border-error" : "border-border"}`}
+          className={authInputClass(!!errors.email)}
           {...register("email", {
             required: "Email is required",
             pattern: { value: /\S+@\S+\.\S+/, message: "Enter a valid email" },
@@ -204,7 +206,7 @@ export function ForgotPasswordForm({ lang }: ForgotPasswordFormProps) {
       <button
         type="submit"
         disabled={isBusy}
-        className="h-12 rounded-xl bg-primary text-white font-semibold text-base transition-opacity disabled:opacity-60 active:opacity-80"
+        className={authPrimaryButtonClass}
       >
         {isBusy ? (
           <span className="flex items-center justify-center gap-2">

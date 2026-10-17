@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: Props) {
   const { lang } = await params;
   return publicPageMetadata({
     lang,
-    path: "/terms",
+    path: "/terms-and-conditions",
     title: "Terms of Service",
     description:
       "The rules and agreements that govern your use of the Shopi platform.",
@@ -27,7 +27,7 @@ export default async function TermsPage({ params }: Props) {
       <LegalNav lang={lang} />
       <BreadcrumbJsonLd
         lang={lang}
-        trail={[{ name: "Terms of Service", path: "/terms" }]}
+        trail={[{ name: "Terms of Service", path: "/terms-and-conditions" }]}
       />
       <main className="mx-auto max-w-215 px-5 pt-20 pb-24">
         <div className="mb-10">
@@ -304,7 +304,7 @@ export default async function TermsPage({ params }: Props) {
 
         <div className="mt-12 flex flex-wrap gap-6 border-t border-border pt-8">
           <Link
-            href={`${base}/privacy`}
+            href={`${base}/privacy-policy`}
             className="text-[0.875rem] text-primary"
           >
             Privacy Policy
