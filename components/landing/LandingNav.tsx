@@ -25,6 +25,11 @@ export function LandingNav({ lang }: { lang: Locale }) {
     { href: "/en/shopi-agent", label: "Shopi Agent" },
     { href: `/${lang}/explore`, label: sw ? "Angalia bidhaa" : "Browse" },
   ];
+  const mobileLinks = links.map((item) =>
+    item.href === `/${lang}/explore`
+      ? { href: `/${lang}/for-you`, label: forYouLabel }
+      : item,
+  );
 
   return (
     <header className="sticky top-0 z-50 bg-landing-page text-landing-ink">
@@ -46,14 +51,13 @@ export function LandingNav({ lang }: { lang: Locale }) {
         </button>
       </nav>
       {open && <div className="absolute inset-x-0 top-full border-t border-landing-line bg-landing-page px-5 py-4 shadow-lg md:hidden">
-        {links.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block border-b border-landing-line py-3 font-medium text-landing-ink no-underline">{item.label}</Link>)}
+        {mobileLinks.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block border-b border-landing-line py-3 font-medium text-landing-ink no-underline">{item.label}</Link>)}
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-landing-muted">{sw ? "Mandhari" : "Theme"}</span>
           <ThemeSelect lang={lang} className="min-w-36" />
         </div>
-        <div className="mt-5 flex gap-3">
-          <Link href={`/${lang}/for-you`} onClick={() => setOpen(false)} className="flex-1 rounded-full border border-landing-ink px-4 py-3 text-center text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
-          <Link href="/en/upload" onClick={trackSellClick} className="flex-1 rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
+        <div className="mt-5">
+          <Link href="/en/upload" onClick={trackSellClick} className="block rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
         </div>
       </div>}
     </header>
