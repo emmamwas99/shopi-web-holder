@@ -44,6 +44,7 @@ export default async function RegisterPage({
     <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <AuthMobileScreen
+        lang={lang}
         backHref={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
         title="Create your account"
         subtitle="Takes less than a minute."

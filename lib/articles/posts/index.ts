@@ -1,5 +1,6 @@
 import type { Article } from "../types.ts";
 import { article as bedsittersForRentInNairobi } from "./bedsitters-for-rent-in-nairobi.ts";
+import { article as dropshippingInKenya } from "./dropshipping-in-kenya.ts";
 import { article as howToCheckAUsedCar } from "./how-to-check-a-used-car-before-buying-in-kenya.ts";
 import { article as makeMoneyOnline } from "./how-to-make-money-online-in-kenya-without-investment.ts";
 import { article as iphone13Price } from "./iphone-13-price-in-kenya.ts";
@@ -24,4 +25,5 @@ export const POSTS: Article[] = [
   sofaPrices,
   makeMoneyOnline,
   referAndEarn,
+  dropshippingInKenya,
 ];

@@ -8,6 +8,7 @@ import type { ReferralInviteQuery } from "@/types/__generated__/graphql";
 import { Logo } from "@/components/ui/Logo";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { captureReferral } from "@/lib/referral";
+import { homeHref } from "@/lib/home-url";
 
 type Invite = NonNullable<ReferralInviteQuery["referralInvite"]>;
 
@@ -46,7 +47,7 @@ export function InviteLanding({ lang, invite }: { lang: string; invite: Invite |
         className="pointer-events-none absolute -left-20 top-64 h-56 w-56 rounded-full bg-[rgb(var(--brand-highlight)/0.1)] blur-3xl"
       />
 
-      <Link href={`/${lang}`} aria-label="Shopi home" className="relative self-start">
+      <Link href={homeHref(lang)} aria-label="Shopi home" className="relative self-start">
         <Logo variant="lockup" size={34} />
       </Link>
 

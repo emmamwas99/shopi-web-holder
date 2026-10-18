@@ -44,6 +44,7 @@ import {
 import type { CategoryFacet } from "@/features/discover/categories";
 import { CategoryGlyph } from "@/features/discover/components/CategoryGlyph";
 import { shouldUnoptimize } from "@/lib/imageUtils";
+import { homeHref } from "@/lib/home-url";
 
 /**
  * The desktop filter rail appears once a shopper has chosen a category. The
@@ -111,7 +112,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         <div className="desktop-app-frame flex h-full items-center gap-4 px-5 lg:px-8 xl:gap-0">
           {/* Align the logo with the PDP and the sidebar's inner edge. */}
           <Link
-            href={`/${lang}?view=home`}
+            href={homeHref(lang)}
             className="flex h-full shrink-0 items-center xl:w-[calc(var(--side-nav-width)-2rem)]"
             aria-label="Shopi home"
           >

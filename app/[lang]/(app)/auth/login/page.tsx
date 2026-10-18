@@ -65,6 +65,7 @@ export default async function LoginPage({
     <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <AuthMobileScreen
+        lang={lang}
         backHref={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
         title="Welcome back"
         subtitle="Sign in to keep your feed personalized."

@@ -24,6 +24,7 @@ export default async function ResetPasswordPage({
     <AuthDesktopShell lang={lang}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <AuthMobileScreen
+        lang={lang}
         backHref={`/${lang}/auth/login`}
         title="Set a new password"
         subtitle="Choose a strong password you don’t use anywhere else."

@@ -19,6 +19,7 @@ export default async function ForgotPasswordPage({
     <AuthDesktopShell lang={lang}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <AuthMobileScreen
+        lang={lang}
         backHref={`/${lang}/auth/login`}
         title="Forgot your password?"
         subtitle="Enter your email and we’ll send you a link to reset it."

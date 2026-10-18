@@ -7,11 +7,13 @@ import {
   BadgeCheck,
   Check,
   ChevronDown,
+  ChevronLeft,
   MapPin,
   Search,
   Store as StoreIcon,
   X,
 } from "lucide-react";
+import { BackLink } from "@/components/layout/BackLink";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -448,23 +450,36 @@ export function StoresPage({
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-12">
-      <header className="mx-auto w-full max-w-360 px-4 pt-4 pb-3 md:pt-6 md:pb-5 xl:px-8">
-        <h1 className="flex items-baseline gap-2 text-xl font-bold text-main md:text-2xl xl:text-3xl">
-          Stores
-          {/* The live total sits with the title rather than on its own line
-              above the grid — the active-filter chips already say what is
-              narrowing it, so the number only needed saying once. */}
-          <span className="text-base font-semibold text-muted md:text-lg xl:text-xl" aria-live="polite">
-            · {page.total.toLocaleString("en-KE")}
-          </span>
-        </h1>
-        <p className="mt-0.5 text-[13px] text-muted md:hidden">
-          Browse sellers across Kenya
-        </p>
-        <p className="mt-1.5 hidden max-w-2xl text-sm text-muted md:block">
-          Browse sellers across Kenya. Stock, reach and activity on every card
-          are counted live from public listings.
-        </p>
+      <header className="mx-auto flex w-full max-w-360 items-start px-4 pt-4 pb-3 md:block md:pt-6 md:pb-5 xl:px-8">
+        {/* Phones only: Stores has no tab of its own there, so it is a pushed
+            screen with a back chevron — sized like Browse's, its sibling. With
+            no in-app history it falls back to "/{lang}", which the proxy turns
+            into the homepage for guests and the feed for signed-in users. */}
+        <BackLink
+          href={`/${lang}`}
+          aria-label="Back"
+          className="-mt-1.5 -ml-2 -mr-1 grid h-10 w-9 shrink-0 place-items-center rounded-full text-main active:bg-subtle md:hidden"
+        >
+          <ChevronLeft size={22} strokeWidth={2.25} aria-hidden />
+        </BackLink>
+        <div className="min-w-0">
+          <h1 className="flex items-baseline gap-2 text-xl font-bold text-main md:text-2xl xl:text-3xl">
+            Stores
+            {/* The live total sits with the title rather than on its own line
+                above the grid — the active-filter chips already say what is
+                narrowing it, so the number only needed saying once. */}
+            <span className="text-base font-semibold text-muted md:text-lg xl:text-xl" aria-live="polite">
+              · {page.total.toLocaleString("en-KE")}
+            </span>
+          </h1>
+          <p className="mt-0.5 text-[13px] text-muted md:hidden">
+            Browse sellers across Kenya
+          </p>
+          <p className="mt-1.5 hidden max-w-2xl text-sm text-muted md:block">
+            Browse sellers across Kenya. Stock, reach and activity on every card
+            are counted live from public listings.
+          </p>
+        </div>
       </header>
 
       {/* Sticky below the desktop top nav, at the viewport edge on mobile —

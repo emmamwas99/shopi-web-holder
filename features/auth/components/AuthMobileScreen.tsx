@@ -1,7 +1,9 @@
 // Server component — no "use client" needed
 
+import Link from "next/link";
 import { ChevronLeftIcon } from "lucide-react";
 import { BackLink } from "@/components/layout/BackLink";
+import { homeHref } from "@/lib/home-url";
 import { ShopiLogo } from "./AuthIcons";
 
 /**
@@ -14,12 +16,14 @@ import { ShopiLogo } from "./AuthIcons";
  * ones. Both bars clear the notch and home indicator (viewport-fit=cover).
  */
 export function AuthMobileScreen({
+  lang,
   backHref,
   title,
   subtitle,
   footer,
   children,
 }: {
+  lang: string;
   backHref: string;
   title: string;
   subtitle: string;
@@ -42,7 +46,9 @@ export function AuthMobileScreen({
 
       <main className="flex flex-1 flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="pb-7 pt-2">
-          <ShopiLogo height={56} />
+          <Link href={homeHref(lang)} aria-label="Shopi home" className="inline-block">
+            <ShopiLogo height={56} />
+          </Link>
           <h1 className="mt-5 font-display text-[28px] font-bold leading-tight tracking-tight text-default">
             {title}
           </h1>
