@@ -28,7 +28,7 @@ function applyTheme(resolved: "light" | "dark") {
   // in-app theme, which can differ from the device's OS appearance.
   document
     .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-    ?.setAttribute("content", dark ? "#0f172a" : "#ffffff");
+    ?.setAttribute("content", dark ? "#18191a" : "#ffffff");
   if (root.classList.contains("dark") === dark) return;
 
   // Flip the theme atomically: the global 0.18s per-element color transition
