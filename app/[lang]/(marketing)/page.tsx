@@ -23,9 +23,9 @@ import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { SellersIllustration } from "@/components/landing/SellersIllustration";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
 import {
-  fetchSellerCount,
-  sellerCountLabel,
-} from "@/features/social-proof/queries/sellerCount";
+  countLabel,
+  fetchMarketplaceCounts,
+} from "@/features/social-proof/queries/marketplaceCounts";
 import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import {
@@ -75,7 +75,9 @@ const COPY = {
     hookSteps: ["Post a product", "Keep the profit"],
     hookHidden: "Step 2 is in the guide",
     hookImageAlt: "A hand holding a smartphone",
-    sellersTitle: "sellers already sell on Shopi.",
+    sellersTitle: "Kenyans already sell on Shopi.",
+    sellersStat: "sellers",
+    listingsStat: "live listings",
     sellersBody: "Phones, fashion, furniture, cars and more. Free to join.",
     sellersCta: "Join them free",
     sellersLink: "See their shops",
@@ -193,7 +195,9 @@ const COPY = {
     hookSteps: ["Weka bidhaa", "Baki na faida"],
     hookHidden: "Hatua ya 2 iko kwenye mwongozo",
     hookImageAlt: "Mkono ulioshika simu janja",
-    sellersTitle: "wauzaji tayari wanauza kwenye Shopi.",
+    sellersTitle: "Wakenya tayari wanauza kwenye Shopi.",
+    sellersStat: "wauzaji",
+    listingsStat: "matangazo hai",
     sellersBody: "Simu, mavazi, fanicha, magari na zaidi. Kujiunga ni bure.",
     sellersCta: "Jiunge nao bure",
     sellersLink: "Ona maduka yao",
@@ -312,11 +316,12 @@ export async function generateMetadata({
   };
 }
 
-// Matches SOCIAL_PROOF_REVALIDATE_SECONDS, the seller-count fetch below.
+// Matches SOCIAL_PROOF_REVALIDATE_SECONDS, the marketplace-count fetch below.
 export const revalidate = 86400;
 
-/** Below this, a seller count reads as weak proof, so the section is left out. */
+/** Below these, a figure reads as weak proof rather than strong, so it's left out. */
 const MIN_SELLERS_SHOWN = 50;
+const MIN_LISTINGS_SHOWN = 100;
 
 const PATH_ICONS = { own: Package, resell: TrendingUp, verified: BadgeCheck };
 
@@ -324,7 +329,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   const { lang } = await params;
   if (!isValidLocale(lang)) notFound();
   const t = COPY[lang];
-  const sellerCount = await fetchSellerCount();
+  const counts = await fetchMarketplaceCounts();
+  const stats = [
+    { label: t.sellersStat, value: counts.sellers, min: MIN_SELLERS_SHOWN },
+    { label: t.listingsStat, value: counts.listings, min: MIN_LISTINGS_SHOWN },
+  ].flatMap(({ label, value, min }) =>
+    value !== null && value >= min ? [{ label, value: countLabel(value) }] : [],
+  );
+  // The section stands on the seller count; listings only add to it.
+  const showSocialProof = counts.sellers !== null && counts.sellers >= MIN_SELLERS_SHOWN;
 
   // Every path ends in an account: guests only see this page (signed-in
   // visitors are redirected by the proxy), and register returns to `from`.
@@ -486,10 +499,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           </div>
         </section>
 
-        {/* Social proof: the live count of sellers with a shop buyers can
-            open, rounded down. Hidden when the API is down or the number is
-            too small to persuade. */}
-        {sellerCount !== null && sellerCount >= MIN_SELLERS_SHOWN && (
+        {/* Social proof: live counts of sellers and of listings buyers can
+            open, compact and rounded down. Hidden when the API is down or the
+            seller count is too small to persuade. */}
+        {showSocialProof && (
           <section
             id="sellers"
             aria-labelledby="sellers-title"
@@ -502,11 +515,20 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   id="sellers-title"
                   className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
                 >
-                  <span className="block text-[3.5rem] leading-none text-primary tabular-nums md:text-[5.5rem]">
-                    {sellerCountLabel(sellerCount, lang === "sw" ? "sw-KE" : "en-KE")}
-                  </span>{" "}
                   {t.sellersTitle}
                 </h2>
+                <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 md:mt-8 md:gap-x-14">
+                  {stats.map(({ label, value }) => (
+                    <div key={label} className="flex flex-col-reverse">
+                      <dt className="mt-1 text-sm font-semibold text-landing-body md:text-base">
+                        {label}
+                      </dt>
+                      <dd className="m-0 font-display text-[3rem] font-semibold leading-none text-primary tabular-nums md:text-[4.5rem]">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
                 <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
                   {t.sellersBody}
                 </p>
