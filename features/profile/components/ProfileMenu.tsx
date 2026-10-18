@@ -527,6 +527,7 @@ function DeleteAccountDialog({
       // deleted account straight back in.
       disableGoogleAutoSelect();
       useAuthStore.getState().clearAuth();
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- the full reload explained above
       window.location.href = `/${lang}/for-you`;
     } catch (caught) {
       setError(

@@ -8,6 +8,8 @@ import { locales } from "@/i18n/config";
 import { RouteScrollRestoration } from "@/components/layout/RouteScrollRestoration";
 import { GlobalPushBootstrap } from "@/components/providers/GlobalPushBootstrap";
 import { GlobalPushToastBridge } from "@/components/providers/GlobalPushToastBridge";
+import { ApolloReconnect } from "@/components/providers/ApolloReconnect";
+import { ConnectivityBanner } from "@/components/layout/ConnectivityBanner";
 
 const ApolloWrapper = dynamic(() =>
   import("@/lib/apollo/ApolloWrapper").then((mod) => mod.ApolloWrapper),
@@ -67,12 +69,16 @@ export function RouteProviders({ children }: { children: React.ReactNode }) {
       </Suspense>
       <GlobalPushBootstrap lang={pathname.split("/")[1] || "en"} />
       <GlobalPushToastBridge />
+      {/* Every route, homepages included: losing signal is the same problem
+          on any page. */}
+      <ConnectivityBanner lang={pathname.split("/")[1] || "en"} />
       {isLandingPage ? (
         <main>{children}</main>
       ) : (
         <>
           <ApolloWrapper>
             <SessionAnalyticsTracker />
+            <ApolloReconnect />
             <main>{children}</main>
           </ApolloWrapper>
         </>

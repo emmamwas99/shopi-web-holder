@@ -109,14 +109,16 @@ async function checkSitemap() {
   }));
   const count = (re) => entries.filter((e) => re.test(pathOf(e.loc))).length;
   pass(
-    `${entries.length} URLs: ${count(/\/content\//)} listings, ${count(/\/explore\/[^/]+\/[^/]+/)} category pages, ${count(/\/@/)} profiles`,
+    `${entries.length} URLs: ${count(/\/content\//)} listings, ${count(/\/video\//)} video watch pages, ${count(/\/explore\/[^/]+\/[^/]+/)} category pages, ${count(/\/@/)} profiles`,
   );
 
   const hosts = new Set(entries.map((e) => new URL(e.loc).origin));
   if (hosts.size !== 1) fail(`sitemap mixes hosts: ${[...hosts].join(", ")}`);
   if (entries.some((e) => /\/for-you$/.test(e.loc)))
     fail("lists /for-you, which redirects desktop crawlers to /explore");
-  const undated = /\/(content|@|blog)/;
+  // Pages whose lastmod is a real date: listings and their video watch pages
+  // (the listing's updatedAt), profiles (newest listing) and blog posts.
+  const undated = /\/(content|video|@|blog)/;
   const stamped = entries.filter((e) => e.hasLastmod && !undated.test(pathOf(e.loc)));
   if (stamped.length)
     warn(`${stamped.length} non-listing URLs carry a lastmod — is it a real modification date?`);

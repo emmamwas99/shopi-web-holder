@@ -141,10 +141,13 @@ function buildDescription(p: Profile, place: string | null): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, handle } = await params;
+  // The same 404s the page throws, so a deleted shop's tab reads "Page not
+  // found" rather than its old @handle.
   const username = usernameFromHandle(handle);
-  if (!username) return { title: siteConfig.name, robots: { index: false, follow: false } };
+  if (!username) notFound();
 
-  const { profile } = await getProfile(username);
+  const { profile, gone } = await getProfile(username);
+  if (gone) notFound();
   const canonical = canonicalUrl(lang, `/@${username}`);
 
   if (!profile) {

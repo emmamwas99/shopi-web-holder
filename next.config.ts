@@ -155,6 +155,20 @@ const nextConfig: NextConfig = {
   /* config options here */
   devIndicators: false,
 
+  experimental: {
+    // app/global-not-found.tsx: the 404 for URLs that match no route. The
+    // root layout is app/[lang]/layout.tsx (a dynamic segment), so a plain
+    // app/not-found.tsx has no layout to render in — Next's docs name this
+    // exact case for global-not-found.
+    globalNotFound: true,
+    // Network resilience (Next 16.3+): a navigation or prefetch that fails
+    // because the connection dropped stays pending and retries when it comes
+    // back, instead of throwing. Also powers useOffline() from next/offline,
+    // which ConnectivityBanner and ApolloReconnect read. Most visitors are on
+    // phones with patchy mobile data, so this is the common case, not an edge.
+    useOffline: true,
+  },
+
   // `experimental.inlineCss` is deliberately OFF.
   //
   // Inlining saved two render-blocking round trips, but Next emits the inline

@@ -39,6 +39,9 @@ export function useLogout(lang: string) {
     // time the login screen opens.
     disableGoogleAutoSelect();
     useAuthStore.getState().clearAuth();
+    // A full reload on purpose, not router.push: it is what guarantees no
+    // cached query or socket from the signed-in session survives.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/${lang}/for-you`;
   }, [refreshToken, logoutMutation, removePushSubscription, lang]);
 
