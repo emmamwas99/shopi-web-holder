@@ -312,8 +312,8 @@ export function CreatorProfileView({
 
 
   return (
-    <div className="min-h-screen bg-white dark:bg-app">
-      <div className="sticky top-0 z-30 border-b border-border bg-white dark:bg-app">
+    <div className="min-h-screen bg-app">
+      <div className="sticky top-0 z-30 border-b border-border bg-app">
         <div className="desktop-app-frame flex h-14 w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
           <button
             onClick={goBack}
