@@ -14,6 +14,7 @@ import {
   PenLine,
   Sparkles,
   Video,
+  Wrench,
   X,
 } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
@@ -31,6 +32,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
+import {
+  SHOPI_AGENT_AVAILABLE,
+  SHOPI_AGENT_PAUSED_LABEL,
+  SHOPI_AGENT_PAUSED_REASON,
+} from "@/features/create/utils/agentAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackPostJourney } from "@/lib/analytics";
 import { goBackOr } from "@/lib/useAppBack";
@@ -87,7 +93,10 @@ export function UploadPickerPage({
 
   useEffect(() => {
     if (storeHydrated && hasActiveDraft && creationMode === "ai") {
-      router.replace(`/${lang}/upload/create-ai`);
+      // With the agent paused, an in-progress guided draft carries on in the
+      // manual composer instead.
+      if (SHOPI_AGENT_AVAILABLE) router.replace(`/${lang}/upload/create-ai`);
+      else setCreationMode("manual");
       return;
     }
     if (storeHydrated && manualRoute && creationMode !== "manual") {
@@ -376,7 +385,9 @@ function CreationModeChooser({
 }) {
   const router = useRouter();
   const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
-  const [selected, setSelected] = useState<CreationModeKey>("agent");
+  const [selected, setSelected] = useState<CreationModeKey>(
+    SHOPI_AGENT_AVAILABLE ? "agent" : "manual",
+  );
 
   useLayoutEffect(() => {
     setBottomNavHidden(true);
@@ -388,8 +399,9 @@ function CreationModeChooser({
   }
 
   function handleContinue() {
-    if (selected === "agent") onAgent();
-    else if (selected === "manual") onManual();
+    if (selected === "agent") {
+      if (SHOPI_AGENT_AVAILABLE) onAgent();
+    } else if (selected === "manual") onManual();
     else if (isDesktop) onBulkUpload();
   }
 
@@ -402,17 +414,19 @@ function CreationModeChooser({
       {CREATION_MODES.map((mode) => {
         const isSelected = selected === mode.key;
         const Icon = mode.icon;
+        const agentPaused = mode.key === "agent" && !SHOPI_AGENT_AVAILABLE;
+        const unavailable = agentPaused || (mode.key === "bulk" && !isDesktop);
         return (
           <button
             key={mode.key}
             type="button"
             role="radio"
             aria-checked={isSelected}
-            aria-disabled={mode.key === "bulk" && !isDesktop}
-            disabled={mode.key === "bulk" && !isDesktop}
+            aria-disabled={unavailable}
+            disabled={unavailable}
             onClick={() => setSelected(mode.key)}
             className={`flex min-h-[88px] w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left outline-none transition-[border-color,background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed ${
-              mode.key === "bulk" && !isDesktop
+              unavailable
                 ? "border-border bg-surface/70"
                 : isSelected
                   ? "border-primary bg-primary/5 shadow-sm"
@@ -420,7 +434,9 @@ function CreationModeChooser({
             }`}
           >
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                agentPaused ? "bg-surface text-muted" : "bg-primary/10 text-primary"
+              }`}
             >
               <Icon size={19} strokeWidth={2.1} />
             </span>
@@ -430,7 +446,11 @@ function CreationModeChooser({
                 <span className="text-[15px] font-semibold text-foreground">
                   {mode.label}
                 </span>
-                {mode.recommended ? (
+                {agentPaused ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                    <Wrench size={11} /> {SHOPI_AGENT_PAUSED_LABEL}
+                  </span>
+                ) : mode.recommended ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                     <Sparkles size={11} /> Recommended
                   </span>
@@ -441,15 +461,17 @@ function CreationModeChooser({
                 ) : null}
               </span>
               <span className="mt-1 block text-[13px] leading-5 text-muted">
-                {mode.key === "bulk" && !isDesktop
-                  ? "Use a computer to upload multiple listings from Excel."
-                  : mode.key === "bulk"
-                    ? "Upload an Excel file. Shopi Agent fills in categories and product specs."
-                    : mode.description}
+                {agentPaused
+                  ? SHOPI_AGENT_PAUSED_REASON
+                  : mode.key === "bulk" && !isDesktop
+                    ? "Use a computer to upload multiple listings from Excel."
+                    : mode.key === "bulk"
+                      ? "Upload an Excel file. Shopi Agent fills in categories and product specs."
+                      : mode.description}
               </span>
             </span>
 
-            {mode.key === "bulk" && !isDesktop ? (
+            {unavailable ? (
               <span className="shrink-0 text-xs font-semibold text-muted">Unavailable</span>
             ) : (
               <RadioDot selected={isSelected} />
