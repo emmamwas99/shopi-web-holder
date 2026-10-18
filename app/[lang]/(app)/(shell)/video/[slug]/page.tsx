@@ -6,9 +6,16 @@ import {
   GetContentDocument,
   type ContentCardFieldsFragment,
 } from "@/types/__generated__/graphql";
-import { isPlayableVideo, posterOf } from "@/features/feed/lib/videoSource";
+import {
+  durationOf,
+  hlsUrlOf,
+  isPlayableVideo,
+  posterOf,
+} from "@/features/feed/lib/videoSource";
 import { contentPath, contentSlugSegment, videoPath } from "@/lib/content-url";
-import { canonicalUrl } from "@/lib/metadata";
+import { canonicalUrl, localeAlternates } from "@/lib/metadata";
+import { profileHref } from "@/lib/profile-url";
+import { jsonLd, videoObjectSchema } from "@/lib/structured-data";
 import { siteConfig } from "@/config/site";
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
@@ -24,6 +31,12 @@ type Props = { params: Promise<{ lang: string; slug: string }> };
  * The segment is a slug, but the API resolves an id or a `title-id` form too,
  * so older links keep working — they are redirected to the canonical slug
  * below rather than serving the same video at two indexable URLs.
+ *
+ * This is the listing's watch page: its own canonical, with the VideoObject
+ * and the video itself in the server HTML. Google indexes a video only on a
+ * page whose main content is the video, so pointing this URL at the product
+ * page (as it did from 6 Oct 2026) left all ~250 videos "not on a watch page"
+ * and none indexed. The product page stays the canonical for the listing.
  */
 
 // Videos change less than listings do, and the viewer refetches its own list
@@ -58,11 +71,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  // The content PDP is the single indexable authority for every listing,
-  // including videos. The immersive URL remains shareable and interactive,
-  // but its canonical consolidates product, image and video signals on the
-  // server-rendered PDP that is also submitted in the sitemap.
-  const canonical = canonicalUrl(lang, `/content/${contentSlugSegment(post)}`);
+  const path = `/video/${contentSlugSegment(post)}`;
+  // English-only like every listing URL, so /sw canonicalises to /en.
+  const canonical = canonicalUrl(lang, path);
   const title = post.title || "Video";
   const description =
     post.caption?.trim() || `Watch ${title} on ${siteConfig.name}.`;
@@ -72,21 +83,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     (image): image is string => Boolean(image),
   );
 
+  // Unlisted, still-processing or image posts stay out of the index (image
+  // posts are redirected to their listing below anyway).
+  const indexable = post.isLive !== false && isPlayableVideo(post);
+
   return {
-    title,
+    // "Watch …" keeps the title distinct from the listing page's
+    // "title · price · place", so the two don't read as duplicates.
+    title: `Watch ${title}`,
     description,
     keywords: [post.title, ...(post.hashtags ?? [])].filter(
       Boolean,
     ) as string[],
-    // No hreflang: this URL canonicalises to the PDP, and engines ignore
-    // hreflang on a non-canonical page. The PDP carries the alternates.
-    alternates: { canonical },
-    // Unlisted or still-processing videos stay out of the index.
+    alternates: { canonical, ...localeAlternates(path) },
     robots: {
-      index: post.isLive !== false,
+      index: indexable,
       follow: true,
       googleBot: {
-        index: post.isLive !== false,
+        index: indexable,
         follow: true,
         "max-snippet": -1,
         "max-image-preview": "large",
@@ -141,5 +155,51 @@ export default async function VideoPageRoute({ params }: Props) {
   // own preload on the auth-hint cookie for exactly this reason; the viewer
   // sidesteps it entirely, since the seed usually paints from the feed's
   // existing cache anyway.
-  return <ImmersiveVideoViewer seed={slug} lang={lang} />;
+  const title = post.title || "Video";
+  const watchUrl = canonicalUrl(lang, `/video/${contentSlugSegment(post)}`);
+  const poster = posterOf(post);
+  const sellerName =
+    [post.creator?.profile?.firstName, post.creator?.profile?.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    post.creator?.username ||
+    null;
+
+  return (
+    <>
+      {/* Google requires a thumbnail and an upload date; without them the
+          markup would be invalid, so it is left out rather than faked. */}
+      {poster && post.createdAt && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLd(
+              videoObjectSchema({
+                url: watchUrl,
+                productUrl: canonicalUrl(lang, `/content/${contentSlugSegment(post)}`),
+                name: title,
+                description:
+                  post.caption?.trim() || `Watch ${title} on ${siteConfig.name}.`,
+                thumbnailUrl: poster,
+                uploadDate: new Date(post.createdAt as string).toISOString(),
+                contentUrl: hlsUrlOf(post),
+                durationSeconds: durationOf(post),
+                creatorName: sellerName,
+                creatorUrl: post.creator?.username
+                  ? `${siteConfig.url}${profileHref(lang, post.creator)}`
+                  : null,
+                viewCount: post.stats?.views,
+              }),
+            ),
+          }}
+        />
+      )}
+      <ImmersiveVideoViewer
+        seed={slug}
+        lang={lang}
+        placeholder={{ title, poster, src: hlsUrlOf(post) }}
+      />
+    </>
+  );
 }

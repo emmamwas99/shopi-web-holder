@@ -12,7 +12,6 @@ import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import {
   productSchema,
   productWebPageSchema,
-  videoObjectSchema,
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
@@ -25,12 +24,6 @@ import {
   META_DESCRIPTION_MAX,
   truncateAtWord,
 } from "@/lib/seo/public-text";
-import {
-  durationOf,
-  hlsUrlOf,
-  isPlayableVideo,
-  posterOf,
-} from "@/features/feed/lib/videoSource";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -384,26 +377,9 @@ export default async function ContentDetailPage({ params }: Props) {
                 ? new Date(post.updatedAt as string).toISOString()
                 : null,
             }),
-            ...(isPlayableVideo(post) && posterOf(post) && post.createdAt
-              ? [
-                  videoObjectSchema({
-                    url: canonical,
-                    name: post.title,
-                    description: buildDescription(post),
-                    thumbnailUrl: posterOf(post)!,
-                    uploadDate: new Date(
-                      post.createdAt as string,
-                    ).toISOString(),
-                    contentUrl: hlsUrlOf(post),
-                    durationSeconds: durationOf(post),
-                    creatorName: sellerName(post),
-                    creatorUrl: post.creator?.username
-                      ? `${siteConfig.url}${profileHref(lang, post.creator)}`
-                      : null,
-                    viewCount: post.stats?.views,
-                  }),
-                ]
-              : []),
+            // No VideoObject here: a video listing's video is marked up on its
+            // watch page, /video/{slug}. Google indexes videos only where the
+            // video is the page's main content, which this page isn't.
             // Home › Explore › category › subcategory › listing — the same
             // trail the page's own breadcrumb links, so the subcategory crumb
             // points at that subcategory's landing page.

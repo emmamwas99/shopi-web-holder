@@ -494,12 +494,22 @@ function isoDuration(seconds?: number | null): string | undefined {
 }
 
 /**
- * Video markup for a video listing's canonical product page. Required fields
- * follow Google's VideoObject eligibility rules; optional values are emitted
- * only when the API supplies real data.
+ * Video markup for a video listing's watch page, /video/{slug}.
+ *
+ * Google indexes a video only on a page whose main content is that video. The
+ * product page (/content/{slug}) leads with price, photos and details, so
+ * markup there was reported as "Video isn't on a watch page" for every video
+ * and none were indexed. The immersive viewer is the watch page; `productUrl`
+ * ties the video back to the listing's Product on the product page.
+ *
+ * Required fields follow Google's VideoObject eligibility rules; optional
+ * values are emitted only when the API supplies real data.
  */
 export function videoObjectSchema(input: {
+  /** The watch page's canonical URL. */
   url: string;
+  /** The listing's canonical product page, whose Product this video is about. */
+  productUrl?: string | null;
   name: string;
   description: string;
   thumbnailUrl: string;
@@ -529,8 +539,8 @@ export function videoObjectSchema(input: {
     // and pointing it at the listing page itself described the watch page as
     // its own player. The stream is the file engines can actually fetch.
     ...(input.contentUrl ? { contentUrl: input.contentUrl } : {}),
-    mainEntityOfPage: { "@id": `${input.url}#webpage` },
-    about: { "@id": `${input.url}#product` },
+    mainEntityOfPage: input.url,
+    ...(input.productUrl ? { about: { "@id": `${input.productUrl}#product` } } : {}),
     publisher: { "@id": `${url}/#organization` },
     ...(duration ? { duration } : {}),
     ...(input.creatorName

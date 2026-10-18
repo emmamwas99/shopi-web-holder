@@ -143,7 +143,7 @@ All 60 listings sampled have a **top-level** `categoryId`; the subcategory exist
 | Trailing slash | `/en/about/` → 308 `/en/about` | Correct. |
 | Listing by id or legacy slug | 308 → `/en/content/{slug}` | Correct (`permanentRedirect`). |
 | `/en/profile/{username}` | 308 → `/en/@{username}` | Correct. |
-| `/en/video/{slug}` | Canonical → `/en/content/{slug}`; non-video listings 307 to the listing | Correct. A 308 would be better for non-video listings (low). |
+| `/en/video/{slug}` | Self-canonical watch page for playable videos (changed 2026-10-18); non-video listings 307 to the listing | Correct. A 308 would be better for non-video listings (low). Pointing it at `/content/{slug}` left every video "not on a watch page" in Search Console. |
 | `?utm_*` and other unknown parameters | 200, canonical without parameters | Correct. |
 | `/sw/*` (untranslated pages) | Canonical → `/en/*`, no `sw` hreflang | Correct, per the policy in `lib/metadata.ts`. |
 | `/EN/about`, `/fr/content/x` | 307 → `/en/EN/about` → 404 | Low: uppercase or unknown locales aren't normalised. |
@@ -336,7 +336,7 @@ Direct answers to the brief's sample questions exist and are accurate. For examp
 
 - Listing images are served from `media.shopi.co.ke` R2 variants, with Next image optimisation disabled (`images.unoptimized: true`, a deliberate quota decision). The sitemap carries up to 6 image entries per listing.
 - Alt text is the listing title on cards and the summary. No `<img>` without an `alt` was found on the probed pages.
-- Video listings (28%) have a VideoObject with thumbnail, duration and, now, `contentUrl`. `/video/{slug}` canonicalises to the listing.
+- Video listings (28%) carry their VideoObject (thumbnail, duration, `contentUrl`) on the watch page `/video/{slug}`, which is self-canonical, server-renders the video and is in the sitemap. The product page `/content/{slug}` has no VideoObject: Google indexes videos only where the video is the main content, and on 2026-10-18 Search Console showed 248 videos, 0 indexed, all "Video isn't on a watch page".
 
 ---
 

@@ -75,9 +75,23 @@ interface Props {
    */
   seed: string;
   lang: string;
+  /**
+   * The seed video as the server rendered it, shown while the list loads.
+   * Only the /video/{slug} route passes this: it puts the video in the HTML,
+   * which is what makes that URL a watch page Google can index the video on.
+   * The modal interceptor leaves it out — its seed is usually already cached.
+   */
+  placeholder?: ViewerPlaceholder;
 }
 
-export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
+export type ViewerPlaceholder = {
+  title: string;
+  poster: string | null;
+  /** The HLS stream. Not loaded (preload="none"); it's there to be found. */
+  src: string | null;
+};
+
+export function ImmersiveVideoViewer({ seed: seedProp, lang, placeholder }: Props) {
   const client = useApolloClient();
   const pathname = usePathname();
   const router = useRouter();
@@ -402,6 +416,23 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   if (loading) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
+        {placeholder && (
+          <>
+            {/* The cover frame instead of a black screen, in the same
+                object-contain box the slide paints, so the swap is seamless.
+                No autoplay or controls: the slide takes over playback. */}
+            <video
+              poster={placeholder.poster ?? undefined}
+              src={placeholder.src ?? undefined}
+              preload="none"
+              muted
+              playsInline
+              aria-label={placeholder.title}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+            <h1 className="sr-only">{placeholder.title}</h1>
+          </>
+        )}
         <button
           type="button"
           onClick={close}
@@ -413,7 +444,10 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <BufferSpinner />
+        {/* Positioned so it paints above the placeholder video. */}
+        <div className="relative">
+          <BufferSpinner />
+        </div>
       </div>
     );
   }

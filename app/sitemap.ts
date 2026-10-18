@@ -9,7 +9,7 @@ import {
   lastModified,
 } from "@/lib/articles";
 import { locales } from "@/i18n/config";
-import { contentPath } from "@/lib/content-url";
+import { contentPath, videoPath } from "@/lib/content-url";
 import { isTranslatedPath, localeAlternates } from "@/lib/metadata";
 import { COUNTIES } from "@/lib/counties";
 import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
@@ -60,6 +60,7 @@ type SitemapListing = {
   id: string;
   slug?: string | null;
   title?: string | null;
+  type?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   creator?: { username?: string | null } | null;
@@ -67,7 +68,7 @@ type SitemapListing = {
     imageUrl?: string | null;
     thumbnailUrl?: string | null;
     sortOrder?: number | null;
-    muxMeta?: { thumbnailUrl?: string | null } | null;
+    muxMeta?: { thumbnailUrl?: string | null; playbackId?: string | null } | null;
     r2Variants?: { url?: string | null; variant?: string | null }[] | null;
   }[];
 };
@@ -87,6 +88,14 @@ type SitemapListing = {
  */
 function isXmlSafeImageUrl(url: string): boolean {
   return !/[&<>"']/.test(url);
+}
+
+/** Same rule as isPlayableVideo(): a VIDEO post with a real Mux stream. */
+function isPlayableVideoListing(item: SitemapListing): boolean {
+  return (
+    item.type === "VIDEO" &&
+    (item.media ?? []).some((media) => (media.muxMeta?.playbackId ?? "").length > 0)
+  );
 }
 
 function listingImages(item: SitemapListing): string[] {
@@ -159,6 +168,7 @@ async function walkListings(
                   id
                   slug
                   title
+                  type
                   createdAt
                   updatedAt
                   creator { username }
@@ -166,7 +176,7 @@ async function walkListings(
                     imageUrl
                     thumbnailUrl
                     sortOrder
-                    muxMeta { thumbnailUrl }
+                    muxMeta { thumbnailUrl playbackId }
                     r2Variants { url variant }
                   }
                 }
@@ -281,6 +291,7 @@ async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<Sitemap
                       id
                       slug
                       title
+                      type
                       createdAt
                       updatedAt
                       creator { username }
@@ -288,7 +299,7 @@ async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<Sitemap
                         imageUrl
                         thumbnailUrl
                         sortOrder
-                        muxMeta { thumbnailUrl }
+                        muxMeta { thumbnailUrl playbackId }
                         r2Variants { url variant }
                       }
                     }
@@ -532,6 +543,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  // Each playable video listing also has a watch page, /video/{slug}: the
+  // only page Google will index its video on (the product page above stays
+  // the listing's canonical). Plain <url> entries, not <video:video> ones —
+  // Next writes video titles into the XML unescaped, so one "&" in a title
+  // would get the whole sitemap rejected. The page's VideoObject carries the
+  // video details instead.
+  const videoEntries: MetadataRoute.Sitemap = listings
+    .filter(isPlayableVideoListing)
+    .map((item) => {
+      const path = videoPath("en", item).replace(/^\/en/, "");
+      return {
+        url: langs("en", path),
+        lastModified: item.updatedAt
+          ? new Date(item.updatedAt)
+          : item.createdAt
+            ? new Date(item.createdAt)
+            : undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+        images: listingImages(item).slice(0, 1),
+        alternates: alternates(path),
+      };
+    });
+
   // Sellers the team selected in admin → Social proof are the profiles we
   // most want crawled, so they are always listed, at a higher priority, even
   // when none of their listings fell inside this snapshot.
@@ -575,5 +610,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...blogEntries,
     ...sellerEntries,
     ...listingEntries,
+    ...videoEntries,
   ];
 }
