@@ -1658,8 +1658,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Actions ──────────────────────────────────────────────────────
           One hairline, then three equal actions with the label beside the
-          icon. Contact carries the brand colour: it is the move that turns a
-          view into a sale. Save fills when active. */}
+          icon. Save fills when active. */}
       <div className="mx-4 mt-2.5 border-t border-border md:mt-3" />
       <div className={cn("grid gap-1 px-2 py-1", actionGridCols)}>
         <button
@@ -1709,7 +1708,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             }}
             className={cn(
               actionClass,
-              "text-primary-strong hover:bg-primary-soft dark:text-primary",
+              "text-muted hover:bg-surface hover:text-main",
             )}
           >
             <MessageCircle className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
