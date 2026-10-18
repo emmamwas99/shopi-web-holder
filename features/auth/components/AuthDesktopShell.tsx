@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ShopiLogo } from "./AuthIcons";
 import { AuthExitButton } from "./AuthExitButton";
+import { homeHref } from "@/lib/home-url";
 
 /** Floating social-product card stack — shared between welcome & desktop panel */
 export function CardStack() {
@@ -91,7 +92,7 @@ export function AuthDesktopShell({
         <div className="relative flex w-[52%] flex-col overflow-hidden bg-linear-150 from-primary from-10% via-primary via-45% to-highlight px-12 py-10 text-white xl:w-[55%]">
           {/* Logo — top */}
           <div className="relative z-10 flex justify-center">
-            <Link href={`/${lang}`} className="inline-block">
+            <Link href={homeHref(lang)} aria-label="Shopi home" className="inline-block">
               <ShopiLogo className="h-16 w-auto" />
             </Link>
           </div>

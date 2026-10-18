@@ -8,6 +8,7 @@ import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 import { usePathname } from "next/navigation";
 import { trackHomepageButtonClick } from "@/lib/analytics";
 import { ThemeSelect } from "@/components/ui/ThemeSelect";
+import { homeHref } from "@/lib/home-url";
 
 export function LandingNav({ lang }: { lang: Locale }) {
   const [open, setOpen] = useState(false);
@@ -28,7 +29,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
   return (
     <header className="sticky top-0 z-50 bg-landing-page text-landing-ink">
       <nav aria-label={sw ? "Menyu kuu" : "Main navigation"} className="mx-auto flex h-18 w-[calc(100%-2.5rem)] max-w-[1500px] items-center justify-between gap-4 md:h-22 md:w-[calc(100%-4rem)]">
-        <Link href={`/${lang}`} aria-label="Shopi home" className="flex items-center gap-2 no-underline">
+        <Link href={homeHref(lang)} aria-label="Shopi home" className="flex items-center gap-2 no-underline">
           <ShopiLogo className="h-9 w-9" />
           <span className="text-xl font-bold text-landing-ink">Shopi</span>
         </Link>

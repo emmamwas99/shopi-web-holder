@@ -3,11 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowUpRight,
+  BadgeCheck,
   Camera,
   Car,
   Check,
   FileSpreadsheet,
+  Lock,
   MessageCircle,
+  Package,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -16,7 +20,14 @@ import { siteConfig } from "@/config/site";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
+import { SellersIllustration } from "@/components/landing/SellersIllustration";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
+import {
+  fetchSellerCount,
+  sellerCountLabel,
+} from "@/features/social-proof/queries/sellerCount";
+import { VerifiedTick } from "@/components/verification/VerifiedTick";
+import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import {
   organizationSchema,
   websiteSchema,
@@ -56,6 +67,47 @@ const COPY = {
     agentBody:
       "Shopi Agent can draft your listing and suggest a price from a photo. Buyers can describe what they want to find matches.",
     agentLink: "More about Shopi Agent",
+    hookEyebrow: "Free guide · 3-minute read",
+    hookTitle: "How Kenyans earn online in 2026 — with zero stock.",
+    hookBody: "No shop. No capital. Just your phone and one simple method.",
+    hookLink: "See the method",
+    hookCard: "The method",
+    hookSteps: ["Post a product", "Keep the profit"],
+    hookHidden: "Step 2 is in the guide",
+    hookImageAlt: "A hand holding a smartphone",
+    sellersTitle: "sellers already sell on Shopi.",
+    sellersBody: "Phones, fashion, furniture, cars and more. Free to join.",
+    sellersCta: "Join them free",
+    sellersLink: "See their shops",
+    pathsTitle: "Pick your path.",
+    pathsBadge: "Recommended",
+    paths: [
+      {
+        key: "own",
+        title: "Sell what you own",
+        body: "Old phone, sofa, clothes. Turn them into cash.",
+        cta: "Sell an item",
+      },
+      {
+        key: "resell",
+        title: "Resell for profit",
+        body: "Sell a supplier's stock. Keep the margin. No capital.",
+        cta: "Open your shop free",
+      },
+      {
+        key: "verified",
+        title: "Run a verified shop",
+        body: "Registered business? Get the blue tick.",
+        cta: "Get verified",
+      },
+    ],
+    verifiedEyebrow: "Verified shops",
+    verifiedTitle: "The blue tick is free. For now.",
+    verifiedBody: "Only registered businesses qualify. Buyers see it on every listing.",
+    verifiedCta: "Get your blue tick",
+    verifiedShop: "Your shop",
+    verifiedHandle: "@yourshop",
+    verifiedChecks: ["Business permit", "Shop photo", "Shop location"],
     bulkEyebrowDesktop: "New: AI bulk upload",
     bulkEyebrowMobile: "New: AI bulk upload",
     bulkTitle: "Bulk upload from Excel.",
@@ -133,6 +185,48 @@ const COPY = {
     agentBody:
       "Shopi Agent inaweza kukuandikia tangazo na kupendekeza bei kutokana na picha. Wanunuzi wanaweza kueleza wanachotafuta ili wapate bidhaa zinazofaa.",
     agentLink: "Zaidi kuhusu Shopi Agent",
+    hookEyebrow: "Mwongozo wa bure · dakika 3",
+    hookTitle: "Jinsi Wakenya wanavyopata pesa mtandaoni 2026 — bila stoki.",
+    hookBody: "Bila duka. Bila mtaji. Simu yako na mbinu moja rahisi tu.",
+    hookLink: "Ona mbinu",
+    hookCard: "Mbinu",
+    hookSteps: ["Weka bidhaa", "Baki na faida"],
+    hookHidden: "Hatua ya 2 iko kwenye mwongozo",
+    hookImageAlt: "Mkono ulioshika simu janja",
+    sellersTitle: "wauzaji tayari wanauza kwenye Shopi.",
+    sellersBody: "Simu, mavazi, fanicha, magari na zaidi. Kujiunga ni bure.",
+    sellersCta: "Jiunge nao bure",
+    sellersLink: "Ona maduka yao",
+    pathsTitle: "Chagua njia yako.",
+    pathsBadge: "Inapendekezwa",
+    paths: [
+      {
+        key: "own",
+        title: "Uza vitu vyako",
+        body: "Simu, sofa, nguo za zamani. Zigeuze kuwa pesa.",
+        cta: "Uza bidhaa",
+      },
+      {
+        key: "resell",
+        title: "Uza upate faida",
+        body: "Uza stoki ya msambazaji. Baki na faida. Bila mtaji.",
+        cta: "Fungua duka lako bure",
+      },
+      {
+        key: "verified",
+        title: "Duka lililothibitishwa",
+        body: "Una biashara iliyosajiliwa? Pata tiki ya bluu.",
+        cta: "Thibitisha duka",
+      },
+    ],
+    verifiedEyebrow: "Maduka yaliyothibitishwa",
+    verifiedTitle: "Tiki ya bluu ni bure. Kwa sasa.",
+    verifiedBody:
+      "Ni kwa biashara zilizosajiliwa tu. Wanunuzi huiona kwenye kila tangazo.",
+    verifiedCta: "Pata tiki ya bluu",
+    verifiedShop: "Duka lako",
+    verifiedHandle: "@dukalako",
+    verifiedChecks: ["Leseni ya biashara", "Picha ya duka", "Mahali duka lilipo"],
     bulkEyebrowDesktop: "Mpya: upakiaji wa bidhaa nyingi kwa AI",
     bulkEyebrowMobile: "Mpya: upakiaji wa bidhaa nyingi kwa AI",
     bulkTitle: "Pakia bidhaa nyingi kutoka Excel.",
@@ -218,10 +312,28 @@ export async function generateMetadata({
   };
 }
 
+// Matches SOCIAL_PROOF_REVALIDATE_SECONDS, the seller-count fetch below.
+export const revalidate = 86400;
+
+/** Below this, a seller count reads as weak proof, so the section is left out. */
+const MIN_SELLERS_SHOWN = 50;
+
+const PATH_ICONS = { own: Package, resell: TrendingUp, verified: BadgeCheck };
+
 export default async function HomePage({ params }: PageProps<"/[lang]">) {
   const { lang } = await params;
   if (!isValidLocale(lang)) notFound();
   const t = COPY[lang];
+  const sellerCount = await fetchSellerCount();
+
+  // Every path ends in an account: guests only see this page (signed-in
+  // visitors are redirected by the proxy), and register returns to `from`.
+  const pathHrefs = {
+    own: `/${lang}/upload`,
+    resell: `/${lang}/auth/register?from=${encodeURIComponent(`/${lang}/upload`)}`,
+    verified: `/${lang}/profile/verification`,
+  };
+  const pathButtonIds = { own: "sell_item", resell: "open_shop", verified: "get_verified" };
 
   return (
     <div id="top" className="bg-landing-page text-landing-ink">
@@ -296,6 +408,199 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </div>
               <p className="mt-3 text-balance text-sm text-white/75">{t.heroPostNote}</p>
             </div>
+          </div>
+        </section>
+
+        {/* Curiosity: the headline raises a question and the method card
+            hides its answer (step 2), so the guide is the only way to close
+            the gap. Keep the copy short and never reveal the method here. */}
+        <section
+          id="side-hustle"
+          aria-labelledby="side-hustle-title"
+          className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
+        >
+          <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
+            <div className="max-w-lg">
+              <p className="mb-3 text-sm font-semibold text-primary">
+                {t.hookEyebrow}
+              </p>
+              <h2
+                id="side-hustle-title"
+                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+              >
+                {t.hookTitle}
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
+                {t.hookBody}
+              </p>
+              <TrackedHomepageLink
+                href={`/${lang}/blog/dropshipping-in-kenya`}
+                buttonId="side_hustle_guide"
+                placement="curiosity_section"
+                className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
+              >
+                {t.hookLink}
+                <ArrowUpRight size={18} aria-hidden />
+              </TrackedHomepageLink>
+            </div>
+            <div className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint">
+              <Image
+                src="/assets/blog/budget-phone.jpg"
+                alt={t.hookImageAlt}
+                fill
+                sizes="(max-width: 768px) 100vw, 600px"
+                className="object-cover"
+              />
+              <div className="absolute inset-x-4 bottom-4 rounded-xl border border-landing-line bg-landing-card p-4 shadow-lg sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-72">
+                <p className="text-xs font-bold uppercase tracking-wide text-landing-muted">
+                  {t.hookCard}
+                </p>
+                <ol className="mt-3 grid list-none gap-2.5 p-0 text-sm font-semibold text-landing-ink">
+                  <li className="flex items-center gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-white" aria-hidden>
+                      1
+                    </span>
+                    {t.hookSteps[0]}
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-white" aria-hidden>
+                      2
+                    </span>
+                    {/* Blurred bars, not blurred text: nothing to read or copy. */}
+                    <span className="flex flex-1 items-center gap-1.5" aria-hidden>
+                      <span className="h-2.5 w-14 rounded-full bg-landing-line-strong/70 blur-[2px]" />
+                      <span className="h-2.5 w-20 rounded-full bg-landing-line-strong/70 blur-[2px]" />
+                    </span>
+                    <Lock className="size-4 shrink-0 text-landing-muted" aria-hidden />
+                    <span className="sr-only">{t.hookHidden}</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-white" aria-hidden>
+                      3
+                    </span>
+                    {t.hookSteps[1]}
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Social proof: the live count of sellers with a shop buyers can
+            open, rounded down. Hidden when the API is down or the number is
+            too small to persuade. */}
+        {sellerCount !== null && sellerCount >= MIN_SELLERS_SHOWN && (
+          <section
+            id="sellers"
+            aria-labelledby="sellers-title"
+            className="border-b border-landing-line px-5 py-16 md:px-8 md:py-24"
+          >
+            <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
+              <SellersIllustration className="order-2 md:order-1" />
+              <div className="order-1 max-w-lg md:order-2">
+                <h2
+                  id="sellers-title"
+                  className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                >
+                  <span className="block text-[3.5rem] leading-none text-primary tabular-nums md:text-[5.5rem]">
+                    {sellerCountLabel(sellerCount, lang === "sw" ? "sw-KE" : "en-KE")}
+                  </span>{" "}
+                  {t.sellersTitle}
+                </h2>
+                <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
+                  {t.sellersBody}
+                </p>
+                <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
+                  <TrackedHomepageLink
+                    href={pathHrefs.resell}
+                    buttonId="join_sellers"
+                    placement="sellers_section"
+                    className="inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
+                  >
+                    {t.sellersCta}
+                    <ArrowUpRight size={18} aria-hidden />
+                  </TrackedHomepageLink>
+                  <TrackedHomepageLink
+                    href={`/${lang}/stores`}
+                    buttonId="browse_stores"
+                    placement="sellers_section"
+                    className="font-semibold text-landing-body underline underline-offset-4"
+                  >
+                    {t.sellersLink}
+                  </TrackedHomepageLink>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Three paths, with the one we most want sellers on highlighted in
+            the middle (and first on phones, where there is no middle). */}
+        <section
+          id="paths"
+          aria-labelledby="paths-title"
+          className="px-5 py-16 md:px-8 md:py-24"
+        >
+          <div className="mx-auto max-w-7xl">
+            <h2
+              id="paths-title"
+              className="font-display text-[2rem] font-semibold leading-tight md:text-center md:text-[3.25rem]"
+            >
+              {t.pathsTitle}
+            </h2>
+            <ul className="mt-8 grid list-none gap-5 p-0 md:mt-12 md:grid-cols-3 md:items-center md:gap-6">
+              {t.paths.map((path) => {
+                const featured = path.key === "resell";
+                const Icon = PATH_ICONS[path.key];
+                return (
+                  <li key={path.key} className={featured ? "max-md:order-first" : undefined}>
+                    <article
+                      className={
+                        featured
+                          ? "relative rounded-md bg-[#18282a] p-6 text-white shadow-xl md:px-8 md:py-12"
+                          : "rounded-md border border-landing-line bg-landing-surface p-6 md:p-8"
+                      }
+                    >
+                      {featured && (
+                        <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
+                          {t.pathsBadge}
+                        </span>
+                      )}
+                      <span
+                        className={`flex size-11 items-center justify-center rounded-xl ${
+                          featured ? "bg-white/10 text-white" : "bg-landing-card text-primary"
+                        }`}
+                      >
+                        <Icon className="size-6" aria-hidden />
+                      </span>
+                      <h3 className="mt-4 font-display text-xl font-semibold md:text-2xl">
+                        {path.title}
+                      </h3>
+                      <p
+                        className={`mt-2 leading-relaxed ${
+                          featured ? "text-white/80" : "text-landing-body"
+                        }`}
+                      >
+                        {path.body}
+                      </p>
+                      <TrackedHomepageLink
+                        href={pathHrefs[path.key]}
+                        buttonId={pathButtonIds[path.key]}
+                        placement="paths_section"
+                        className={
+                          featured
+                            ? "mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
+                            : "mt-6 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
+                        }
+                      >
+                        {path.cta}
+                        <ArrowUpRight size={18} aria-hidden />
+                      </TrackedHomepageLink>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </section>
 
@@ -507,6 +812,74 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.bulkCta}
                 <ArrowUpRight size={18} aria-hidden />
               </TrackedHomepageLink>
+            </div>
+          </div>
+        </section>
+
+        {/* Scarcity, kept true: verification is free "for now" (the promise
+            in features/verification/copy.ts) and only open to registered
+            businesses. Don't add counts or deadlines the product doesn't
+            enforce. */}
+        <section
+          id="verified-shops"
+          aria-labelledby="verified-title"
+          className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
+        >
+          <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
+            <div className="max-w-lg">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
+                <VerifiedTick size={18} label={null} />
+                {t.verifiedEyebrow}
+              </p>
+              <h2
+                id="verified-title"
+                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+              >
+                {t.verifiedTitle}
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
+                {t.verifiedBody}
+              </p>
+              <TrackedHomepageLink
+                href={`/${lang}/profile/verification`}
+                buttonId="get_verified"
+                placement="verified_section"
+                className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
+              >
+                {t.verifiedCta}
+                <ArrowUpRight size={18} aria-hidden />
+              </TrackedHomepageLink>
+            </div>
+            <div
+              className="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-landing-tint p-5 sm:p-8"
+              aria-hidden
+            >
+              <div className="w-full max-w-sm rounded-xl border border-landing-line bg-landing-card p-5 shadow-sm sm:p-6">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary font-display text-lg font-bold text-white">
+                    S
+                  </span>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 font-semibold text-landing-ink">
+                      {t.verifiedShop}
+                      <VerifiedTick size={18} label={null} />
+                    </p>
+                    <p className="text-sm text-landing-muted">{t.verifiedHandle}</p>
+                  </div>
+                  <VerifiedIdBadge className="ml-auto" />
+                </div>
+                <ul className="mt-5 grid list-none gap-2.5 border-t border-landing-line p-0 pt-4">
+                  {t.verifiedChecks.map((check) => (
+                    <li
+                      key={check}
+                      className="flex items-center gap-2.5 text-sm font-medium text-landing-body"
+                    >
+                      <Check className="size-4 shrink-0 text-primary" strokeWidth={2.5} />
+                      {check}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </section>

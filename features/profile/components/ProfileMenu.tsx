@@ -51,6 +51,7 @@ import {
   useMyShopVerification,
   verificationStage,
 } from "@/features/verification/hooks/useShopVerification";
+import { homeHref } from "@/lib/home-url";
 
 /**
  * The profile's menu: one grouped list holding everything the profile offers,
@@ -431,7 +432,7 @@ export function ProfileMenu({
         <MenuRow
           icon={Globe}
           label="Shopi homepage"
-          href={`/${lang}?view=home`}
+          href={homeHref(lang)}
         />
       </MenuGroup>
 

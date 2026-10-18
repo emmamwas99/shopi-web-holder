@@ -5,6 +5,7 @@ import { CookieSettingsButton } from "@/components/layout/CookieConsent";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 import { COUNTIES } from "@/lib/counties";
+import { homeHref } from "@/lib/home-url";
 
 export function LandingFooter({
   dict,
@@ -78,7 +79,7 @@ export function LandingFooter({
         <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-18">
           <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-white/20 pb-12 sm:grid-cols-3 lg:grid-cols-[1.6fr_repeat(5,minmax(0,1fr))] lg:gap-7">
             <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-              <Link href={`/${lang}`} className="inline-flex items-center gap-2 text-white no-underline"><ShopiLogo className="h-9 w-9" /><span className="text-xl font-bold">Shopi</span></Link>
+              <Link href={homeHref(lang)} aria-label="Shopi home" className="inline-flex items-center gap-2 text-white no-underline"><ShopiLogo className="h-9 w-9" /><span className="text-xl font-bold">Shopi</span></Link>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">{sw ? "Gundua, nunua na uuze karibu nawe kwa msaada wa Shopi Agent." : "Discover, buy and sell locally with help from Shopi Agent."}</p>
               <Link href="/en/upload" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
             </div>
@@ -107,9 +108,9 @@ export function LandingFooter({
           {/* Brand */}
           <div className="col-span-2 sm:col-span-1">
             <div className="mb-4 flex items-center gap-2">
-              <div className="h-7.5  font-display text-[0.875rem]">
+              <Link href={homeHref(lang)} aria-label="Shopi home" className="h-7.5 font-display text-[0.875rem]">
                 <ShopiLogo height={56} />
-              </div>
+              </Link>
             </div>
             <p className="max-w-65 text-sm leading-normal text-muted">
               {dict?.footer.tagline ??

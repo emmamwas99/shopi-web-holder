@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 import { useAppBack } from "@/lib/useAppBack";
+import { homeHref } from "@/lib/home-url";
 
 export function LegalNav({ lang }: { lang: string }) {
   // Legal pages are mostly opened from a link elsewhere (a footer, an app
@@ -39,7 +40,7 @@ export function LegalNav({ lang }: { lang: string }) {
         </button>
 
         {/* Logo → home */}
-        <Link href={`/${lang}`} aria-label="Shopi home" className="absolute left-1/2 -translate-x-1/2">
+        <Link href={homeHref(lang)} aria-label="Shopi home" className="absolute left-1/2 -translate-x-1/2">
           <ShopiLogo className="h-11 w-auto" />
         </Link>
 

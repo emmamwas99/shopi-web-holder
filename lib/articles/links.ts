@@ -44,6 +44,8 @@ const STATIC_PATHS = new Set<string>([
   // The viewer's own profile. Private, but a CTA may point at it (e.g.
   // /profile?tab=invite): signed-out readers are sent to sign in and back.
   "/profile",
+  // Shop verification. Private like /profile; signed-out readers sign in first.
+  "/profile/verification",
   "/prohibited-items",
   "/property-for-sale-kenya",
   "/safety-centre",

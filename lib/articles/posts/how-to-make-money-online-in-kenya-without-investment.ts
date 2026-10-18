@@ -253,6 +253,7 @@ export const article: Article = {
     { kind: "page", path: "/upload", label: "Post an item for free" },
   ],
   related: [
+    "dropshipping-in-kenya",
     "refer-and-earn-in-kenya",
     "where-to-sell-used-items-in-kenya",
     "how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
