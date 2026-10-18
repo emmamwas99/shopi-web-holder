@@ -7,6 +7,7 @@ import {
   Camera,
   Check,
   CircleAlert,
+  ExternalLink,
   FileText,
   ImagePlus,
   MapPin,
@@ -15,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LocationPickerDrawer } from "@/features/create/components/LocationPickerDrawer";
 import type { DraftLocation } from "@/stores/create";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,7 @@ import type {
   SaveShopVerificationInput,
   ShopVerificationDocument,
   ShopVerificationDocumentKind,
+  ShopVerificationGuidanceFile,
   ShopVerificationIssueDetail,
   ShopVerificationLocation,
   ShopVerificationLocationInput,
@@ -165,17 +168,24 @@ function DocumentField({
   disabled,
   onUploaded,
   onRemoved,
+  onUploadingChange,
+  onUploadFailed,
+  onUploadCancelled,
 }: {
   kind: ShopVerificationDocumentKind;
   document?: ShopVerificationDocument | null;
   disabled?: boolean;
   onUploaded: () => void;
   onRemoved: () => void;
+  onUploadingChange: (uploading: boolean) => void;
+  onUploadFailed: () => void;
+  onUploadCancelled: () => void;
 }) {
   const { upload, removeDocument, removing } = useShopVerificationActions();
   const [state, setState] = useState<UploadState>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [documentOpen, setDocumentOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const pickRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -193,15 +203,18 @@ function DocumentField({
     setError(null);
     if (file.size > MAX_UPLOAD_BYTES * 2) {
       setError("That file is too large. Try a photo from your camera, or a smaller PDF.");
+      onUploadFailed();
       return;
     }
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     if (!isPermit && isPdf) {
       setError("Upload a photo of your shop — a PDF can't show us your storefront.");
+      onUploadFailed();
       return;
     }
     const controller = new AbortController();
     abortRef.current = controller;
+    onUploadingChange(true);
     setPreviewFailed(false);
     setState({
       progress: 0,
@@ -215,10 +228,15 @@ function DocumentField({
       setState(null);
     } catch (err) {
       setState(null);
-      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (err instanceof DOMException && err.name === "AbortError") {
+        onUploadCancelled();
+        return;
+      }
+      onUploadFailed();
       setError(errorMessage(err, "Upload failed. Please try again."));
     } finally {
       abortRef.current = null;
+      onUploadingChange(false);
     }
   }
 
@@ -308,10 +326,9 @@ function DocumentField({
       <div>
         {pickers}
         <div className="flex items-center gap-3 rounded-xl border border-border p-2.5">
-          <a
-            href={document.url || undefined}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => setDocumentOpen(true)}
             className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-subtle"
             aria-label={`View your ${noun}`}
           >
@@ -322,9 +339,10 @@ function DocumentField({
                 <FileText size={22} strokeWidth={1.7} aria-hidden />
               </span>
             )}
-          </a>
+          </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-medium text-main">{document.fileName ?? (isPermit ? "Business permit" : "Shop photo")}</p>
+            <p className="truncate text-[13px] font-semibold text-main">{isPermit ? "Business permit" : "Shop photo"}</p>
+            {document.fileName ? <p className="truncate text-[11px] text-muted">{document.fileName}</p> : null}
             <p className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[12px] text-muted">
               <Check size={13} strokeWidth={2.6} className="shrink-0 text-[#1D9BF0]" aria-hidden />
               Uploaded · {fileSize(document.sizeBytes)}
@@ -353,6 +371,25 @@ function DocumentField({
           ) : null}
         </div>
         {error ? <FieldError>{error}</FieldError> : null}
+        <Dialog open={documentOpen} onOpenChange={setDocumentOpen}>
+          <DialogContent className="flex max-h-[90dvh] w-[min(94vw,760px)] flex-col gap-3 overflow-hidden rounded-2xl p-3 sm:p-4">
+            <DialogHeader className="pr-8 text-left">
+              <DialogTitle>{isPermit ? "Business permit" : "Shop photo"}</DialogTitle>
+              <DialogDescription>{document.fileName || "Uploaded document"}</DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-auto rounded-xl bg-subtle">
+              {document.isPdf ? (
+                <iframe src={document.url} title={isPermit ? "Business permit" : "Shop photo"} className="h-[70dvh] w-full rounded-xl bg-white" />
+              ) : showImage ? (
+                <img src={document.url} alt={isPermit ? "Business permit" : "Shop photo"} className="mx-auto max-h-[70dvh] w-full object-contain" />
+              ) : (
+                <a href={document.url} target="_blank" rel="noopener noreferrer" className="flex h-48 items-center justify-center gap-2 text-sm font-semibold text-primary">
+                  Open document <ExternalLink size={16} />
+                </a>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -446,6 +483,9 @@ export function VerificationForm({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [uploadingDocuments, setUploadingDocuments] = useState<Set<ShopVerificationDocumentKind>>(new Set());
+  const [failedDocumentUploads, setFailedDocumentUploads] = useState<Set<ShopVerificationDocumentKind>>(new Set());
+  const [guidancePreview, setGuidancePreview] = useState<ShopVerificationGuidanceFile | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [changed, setChanged] = useState<Set<ShopVerificationRequirement>>(new Set());
   const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -476,6 +516,22 @@ export function VerificationForm({
 
   function markChanged(requirement: ShopVerificationRequirement) {
     setChanged((current) => (current.has(requirement) ? current : new Set(current).add(requirement)));
+  }
+
+  function setDocumentUploading(kind: ShopVerificationDocumentKind, uploading: boolean) {
+    setUploadingDocuments((current) => {
+      const next = new Set(current);
+      if (uploading) next.add(kind);
+      else next.delete(kind);
+      return next;
+    });
+    if (uploading) {
+      setFailedDocumentUploads((current) => {
+        const next = new Set(current);
+        next.delete(kind);
+        return next;
+      });
+    }
   }
 
   async function save(input: SaveShopVerificationInput) {
@@ -513,7 +569,7 @@ export function VerificationForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!complete || !confirmed || submitting) return;
+    if (!complete || !confirmed || submitting || uploadingDocuments.size > 0 || failedDocumentUploads.size > 0) return;
     setSubmitError(null);
     if (nameTimer.current) clearTimeout(nameTimer.current);
     if (addressTimer.current) clearTimeout(addressTimer.current);
@@ -550,7 +606,7 @@ export function VerificationForm({
           <p className="mt-1 text-[13px] leading-5 text-main">
             Change what&rsquo;s marked below and resubmit — everything else you sent is saved.
           </p>
-          {generalIssues.length > 0 || application?.decisionNote ? (
+          {generalIssues.length > 0 || application?.decisionNote || (application?.guidanceFiles?.length ?? 0) > 0 ? (
             <div className="mt-2.5 flex flex-col gap-1.5 text-[13px] leading-5 text-main">
               {generalIssues.map((issue) => (
                 <p key={issue.issue}>
@@ -561,6 +617,34 @@ export function VerificationForm({
                 <p>
                   <span className="font-semibold">Note from our team:</span> {application.decisionNote}
                 </p>
+              ) : null}
+              {(application?.guidanceFiles?.length ?? 0) > 0 ? (
+                <div className="grid gap-2 pt-1 sm:grid-cols-2">
+                  {application!.guidanceFiles.map((file) => {
+                    const imageFile = file.contentType.startsWith("image/");
+                    return (
+                      <button
+                        key={`${file.fileName}-${file.url}`}
+                        type="button"
+                        onClick={() => setGuidancePreview(file)}
+                        className="flex min-w-0 items-center gap-3 rounded-xl border border-amber-200 bg-white/80 p-2.5 text-left transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D9BF0] dark:border-amber-500/30 dark:bg-black/10 dark:hover:bg-black/20"
+                      >
+                        <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
+                          {imageFile ? (
+                            <img src={file.url} alt="" className="size-full object-cover" />
+                          ) : (
+                            <FileText size={21} aria-hidden />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[12px] font-semibold text-main">Example document</span>
+                          <span className="block truncate text-[11px] text-muted">{file.fileName}</span>
+                        </span>
+                        <ExternalLink size={15} className="shrink-0 text-muted" aria-hidden />
+                      </button>
+                    );
+                  })}
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -637,8 +721,17 @@ export function VerificationForm({
         <DocumentField
           kind="PERMIT"
           document={application?.permit}
-          onUploaded={() => markChanged("PERMIT")}
-          onRemoved={() => markChanged("PERMIT")}
+          onUploaded={() => {
+            markChanged("PERMIT");
+            setFailedDocumentUploads((current) => { const next = new Set(current); next.delete("PERMIT"); return next; });
+          }}
+          onRemoved={() => {
+            markChanged("PERMIT");
+            setFailedDocumentUploads((current) => { const next = new Set(current); next.delete("PERMIT"); return next; });
+          }}
+          onUploadingChange={(uploading) => setDocumentUploading("PERMIT", uploading)}
+          onUploadFailed={() => setFailedDocumentUploads((current) => new Set(current).add("PERMIT"))}
+          onUploadCancelled={() => setFailedDocumentUploads((current) => { const next = new Set(current); next.delete("PERMIT"); return next; })}
         />
       </StepCard>
 
@@ -652,8 +745,17 @@ export function VerificationForm({
         <DocumentField
           kind="SHOP_PHOTO"
           document={application?.shopPhoto}
-          onUploaded={() => markChanged("SHOP_PHOTO")}
-          onRemoved={() => markChanged("SHOP_PHOTO")}
+          onUploaded={() => {
+            markChanged("SHOP_PHOTO");
+            setFailedDocumentUploads((current) => { const next = new Set(current); next.delete("SHOP_PHOTO"); return next; });
+          }}
+          onRemoved={() => {
+            markChanged("SHOP_PHOTO");
+            setFailedDocumentUploads((current) => { const next = new Set(current); next.delete("SHOP_PHOTO"); return next; });
+          }}
+          onUploadingChange={(uploading) => setDocumentUploading("SHOP_PHOTO", uploading)}
+          onUploadFailed={() => setFailedDocumentUploads((current) => new Set(current).add("SHOP_PHOTO"))}
+          onUploadCancelled={() => setFailedDocumentUploads((current) => { const next = new Set(current); next.delete("SHOP_PHOTO"); return next; })}
         />
       </StepCard>
 
@@ -757,20 +859,44 @@ export function VerificationForm({
       >
         <button
           type="submit"
-          disabled={!complete || !confirmed || submitting}
+          disabled={!complete || !confirmed || submitting || uploadingDocuments.size > 0 || failedDocumentUploads.size > 0}
           className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-45 md:w-auto md:self-start md:px-7"
         >
           {submitting ? <InterlockingBalls size={16} /> : null}
           {submitting ? "Submitting…" : status === "REJECTED" || status === "REVOKED" ? "Resubmit for review" : "Submit for review"}
         </button>
         <p className="text-center text-[12px] leading-4 text-muted md:text-left">
-          {!complete
-            ? `Finish ${ORDER.length - doneCount === 1 ? "the last step" : `the ${ORDER.length - doneCount} steps left`} to submit.`
-            : !confirmed
+          {uploadingDocuments.size > 0
+            ? "Wait for the document upload to finish before submitting."
+            : failedDocumentUploads.size > 0
+              ? "Retry or replace the failed upload before submitting."
+              : !complete
+              ? `Finish ${ORDER.length - doneCount === 1 ? "the last step" : `the ${ORDER.length - doneCount} steps left`} to submit.`
+              : !confirmed
               ? "Tick the confirmation to submit."
               : "We review every shop by hand and let you know as soon as it's done."}
         </p>
       </div>
+
+      <Dialog open={Boolean(guidancePreview)} onOpenChange={(open) => !open && setGuidancePreview(null)}>
+        <DialogContent className="flex max-h-[90dvh] w-[min(94vw,760px)] flex-col gap-3 overflow-hidden rounded-2xl p-3 sm:p-4">
+          <DialogHeader className="pr-8 text-left">
+            <DialogTitle>Example document</DialogTitle>
+            <DialogDescription className="truncate">{guidancePreview?.fileName}</DialogDescription>
+          </DialogHeader>
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-xl bg-subtle">
+            {guidancePreview?.contentType.startsWith("image/") ? (
+              <img src={guidancePreview.url} alt={guidancePreview.fileName} className="mx-auto max-h-[70dvh] w-full object-contain" />
+            ) : guidancePreview?.contentType === "application/pdf" ? (
+              <iframe src={guidancePreview.url} title={guidancePreview.fileName} className="h-[70dvh] w-full rounded-xl bg-white" />
+            ) : guidancePreview ? (
+              <a href={guidancePreview.url} target="_blank" rel="noopener noreferrer" className="flex h-48 items-center gap-2 text-sm font-semibold text-primary">
+                Open document <ExternalLink size={16} />
+              </a>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

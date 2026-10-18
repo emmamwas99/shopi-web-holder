@@ -10,6 +10,14 @@ export type ShopVerificationStatus = "DRAFT" | "PENDING" | "APPROVED" | "REJECTE
 export type ShopVerificationRequirement = "BUSINESS_NAME" | "PERMIT" | "SHOP_PHOTO" | "LOCATION";
 export type ShopVerificationDocumentKind = "PERMIT" | "SHOP_PHOTO";
 
+export interface ShopVerificationGuidanceFile {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+  urlExpiresAt: string;
+}
+
 export interface ShopVerificationDocument {
   kind: ShopVerificationDocumentKind;
   fileName?: string | null;
@@ -56,6 +64,7 @@ export interface ShopVerification {
   reviewedAt?: string | null;
   issues: ShopVerificationIssueDetail[];
   decisionNote?: string | null;
+  guidanceFiles: ShopVerificationGuidanceFile[];
   verifiedAt?: string | null;
   revokedAt?: string | null;
   updatedAt: string;
@@ -140,6 +149,13 @@ export const SHOP_VERIFICATION_FIELDS = gql`
       requirement
     }
     decisionNote
+    guidanceFiles {
+      fileName
+      contentType
+      sizeBytes
+      url
+      urlExpiresAt
+    }
     verifiedAt
     revokedAt
     updatedAt
