@@ -61,10 +61,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0e" },
-  ],
+  // The active app theme can differ from the OS preference. ThemeProvider and
+  // the pre-hydration theme script update this single tag to match the page.
+  themeColor: "#ffffff",
 };
 
 export async function generateStaticParams() {

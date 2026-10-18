@@ -24,6 +24,8 @@ type EditState = {
   negotiable: boolean;
   categoryId: string | null;
   categoryLabel: string | null;
+  subcategoryId: string | null;
+  subcategory: string | null;
 };
 
 export function DashboardListingActions({
@@ -56,7 +58,9 @@ export function DashboardListingActions({
       currency: post.price.currency ?? "KES",
       negotiable: post.price.negotiable ?? false,
       categoryId: post.categoryId ?? null,
-      categoryLabel: null,
+      categoryLabel: post.category?.name ?? null,
+      subcategoryId: null,
+      subcategory: null,
     });
   }
 
@@ -76,6 +80,7 @@ export function DashboardListingActions({
     setEditTried(true);
     const textProblems = changedListingTextProblems(post, editState);
     if (textProblems.title || textProblems.description) return;
+    if (!editState.categoryId || !editState.subcategoryId || !editState.subcategory) return;
     const amount = Number(editState.amount);
     if (!Number.isFinite(amount) || amount < 0) {
       toast.error("Enter a valid price");
@@ -89,6 +94,7 @@ export function DashboardListingActions({
             title: editState.title.trim(),
             caption: editState.caption.trim(),
             categoryId: editState.categoryId,
+            subcategory: editState.subcategory,
             price: { amount, currency: editState.currency.trim() || "KES", negotiable: editState.negotiable },
           },
         },
@@ -175,8 +181,20 @@ export function DashboardListingActions({
                 {editTried && editTextProblems?.description ? <span className="block text-[11px] font-medium text-error">{editTextProblems.description}</span> : null}
               </Field>
               <Field label="Category">
-                <CategoryPickerDrawer value={editState.categoryId} fallbackLabel={editState.categoryLabel} onChange={(id, name) => setEditState((current) => current ? { ...current, categoryId: id, categoryLabel: name } : current)} />
+                <CategoryPickerDrawer value={editState.categoryId} fallbackLabel={editState.categoryLabel} onChange={(id, name) => setEditState((current) => current ? { ...current, categoryId: id, categoryLabel: name, ...(current.categoryId !== id ? { subcategoryId: null, subcategory: null } : {}) } : current)} />
               </Field>
+              {editTried && !editState.categoryId ? <p className="-mt-3 text-[11px] font-medium text-error">Choose a category before saving.</p> : null}
+              <Field label="Subcategory">
+                <CategoryPickerDrawer
+                  value={editState.subcategoryId}
+                  parentId={editState.categoryId}
+                  title="Subcategory"
+                  placeholderLabel="Choose subcategory"
+                  emptyLabel="No subcategories for this category."
+                  onChange={(id, name) => setEditState((current) => current ? { ...current, subcategoryId: id, subcategory: name } : current)}
+                />
+              </Field>
+              {editTried && editState.categoryId && !editState.subcategoryId ? <p className="-mt-3 text-[11px] font-medium text-error">Choose a subcategory from the list before saving.</p> : null}
               <p className="text-[11px] leading-5 text-muted">Photos and location stay as published.</p>
             </div>
           ) : null}

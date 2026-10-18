@@ -173,6 +173,8 @@ type EditFormState = {
   negotiable: boolean;
   categoryId: string | null;
   categoryLabel: string | null;
+  subcategoryId: string | null;
+  subcategory: string | null;
 };
 
 /**
@@ -297,6 +299,8 @@ export function ManagedPostsGrid({
       negotiable: post.price.negotiable ?? false,
       categoryId: post.categoryId ?? null,
       categoryLabel: post.category?.name ?? null,
+      subcategoryId: null,
+      subcategory: null,
     });
   };
 
@@ -333,7 +337,13 @@ export function ManagedPostsGrid({
     if (!editingPost || !editState) return;
     setEditTried(true);
     const textProblems = changedListingTextProblems(editingPost, editState);
-    if (textProblems.title || textProblems.description) return;
+    if (
+      textProblems.title ||
+      textProblems.description ||
+      !editState.categoryId ||
+      !editState.subcategoryId ||
+      !editState.subcategory
+    ) return;
     const parsedAmount = editState.amount.trim() === "" ? 0 : Number(editState.amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
       toast.error("Enter a valid price");
@@ -348,6 +358,7 @@ export function ManagedPostsGrid({
             title: editState.title.trim(),
             caption: editState.caption.trim(),
             categoryId: editState.categoryId,
+            subcategory: editState.subcategory,
             price: {
               amount: parsedAmount,
               currency: editState.currency.trim() || "KES",
@@ -380,7 +391,8 @@ export function ManagedPostsGrid({
       editState.caption !== (editingPost.caption ?? "") ||
       editState.amount !== storedAmount ||
       editState.negotiable !== (editingPost.price.negotiable ?? false) ||
-      editState.categoryId !== (editingPost.categoryId ?? null)
+      editState.categoryId !== (editingPost.categoryId ?? null) ||
+      editState.subcategory !== (editingPost.aiClassification?.level2 ?? null)
     );
   }, [editingPost, editState]);
 
@@ -555,6 +567,9 @@ export function ManagedPostsGrid({
         open={Boolean(editingPost && editState)}
         busy={mutationBusy}
         dirty={editDirty}
+        canSubmit={Boolean(
+          editDirty || !editState?.categoryId || !editState?.subcategoryId,
+        )}
         onClose={closeEdit}
         onSubmit={() => void handleSaveEdit()}
       >
@@ -644,20 +659,51 @@ export function ManagedPostsGrid({
               ) : null}
             </FieldBlock>
 
-            {isDesktop ? (
-              <FieldBlock label="Category">
-                <CategoryPickerDrawer
-                  value={editState.categoryId}
-                  fallbackLabel={editState.categoryLabel}
-                  onChange={(id, name) =>
-                    setEditState((current) =>
-                      current
-                        ? { ...current, categoryId: id, categoryLabel: name }
-                        : current,
-                    )
-                  }
-                />
-              </FieldBlock>
+            <FieldBlock label="Category">
+              <CategoryPickerDrawer
+                value={editState.categoryId}
+                fallbackLabel={editState.categoryLabel}
+                onChange={(id, name) =>
+                  setEditState((current) =>
+                    current
+                      ? {
+                          ...current,
+                          categoryId: id,
+                          categoryLabel: name,
+                          ...(current.categoryId !== id
+                            ? { subcategoryId: null, subcategory: null }
+                            : {}),
+                        }
+                      : current,
+                  )
+                }
+              />
+            </FieldBlock>
+            {editTried && !editState.categoryId ? (
+              <p className="-mt-3 text-[12px] font-medium text-error">
+                Choose a category before saving.
+              </p>
+            ) : null}
+            <FieldBlock label="Subcategory">
+              <CategoryPickerDrawer
+                value={editState.subcategoryId}
+                parentId={editState.categoryId}
+                title="Subcategory"
+                placeholderLabel="Choose subcategory"
+                emptyLabel="No subcategories for this category."
+                onChange={(id, name) =>
+                  setEditState((current) =>
+                    current
+                      ? { ...current, subcategoryId: id, subcategory: name }
+                      : current,
+                  )
+                }
+              />
+            </FieldBlock>
+            {editTried && editState.categoryId && !editState.subcategoryId ? (
+              <p className="-mt-3 text-[12px] font-medium text-error">
+                Choose a subcategory from the list before saving.
+              </p>
             ) : null}
 
             <p className="text-[12px] leading-relaxed text-muted">
@@ -718,6 +764,7 @@ function EditSurface({
   open,
   busy,
   dirty,
+  canSubmit,
   onClose,
   onSubmit,
   children,
@@ -727,6 +774,8 @@ function EditSurface({
   busy: boolean;
   /** Whether anything actually changed — gates Save and the discard prompt. */
   dirty: boolean;
+  /** Keep Save clickable while required fields are missing so errors can show. */
+  canSubmit: boolean;
   onClose: () => void;
   onSubmit: () => void;
   children: React.ReactNode;
@@ -800,7 +849,7 @@ function EditSurface({
               <Button variant="outline" onClick={requestClose} disabled={busy}>
                 Cancel
               </Button>
-              <Button className="text-white" onClick={onSubmit} disabled={busy || !dirty}>
+              <Button className="text-white" onClick={onSubmit} disabled={busy || !canSubmit}>
                 {busy ? <InterlockingBalls size={20} /> : null}
                 Save changes
               </Button>
@@ -847,7 +896,7 @@ function EditSurface({
             <Button
               className="h-11 w-full rounded-full text-[14px] font-semibold text-white"
               onClick={onSubmit}
-              disabled={busy || !dirty}
+              disabled={busy || !canSubmit}
             >
               {busy ? <InterlockingBalls size={20} /> : null}
               {busy ? "Saving…" : "Save changes"}

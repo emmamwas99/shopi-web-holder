@@ -72,7 +72,9 @@ export function CategoryPickerDrawer({
       : all.filter((category) => category.depth === 0);
   }, [data?.categories, isSubcategoryMode, parentId]);
 
-  const selected = categories.find((category) => category.id === value);
+  const selected =
+    categories.find((category) => category.id === value) ??
+    categories.find((category) => category.name === fallbackLabel);
   const selectedLabel =
     selected?.name ?? fallbackLabel ?? (value ? "Selected" : placeholderLabel);
 
@@ -146,7 +148,7 @@ export function CategoryPickerDrawer({
         className="flex flex-col gap-2 pb-2"
       >
         {categories.map((category) => {
-          const checked = category.id === value;
+          const checked = category.id === selected?.id;
           return (
             // A real <button>, not a div+onClick: inside a vaul drawer the click
             // has to survive the pointer-capture/drag gesture, and a native
