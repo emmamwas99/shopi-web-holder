@@ -24,6 +24,7 @@ import {
   type DraftStep,
 } from "@/types/__generated__/graphql";
 import { useCreateStore } from "@/stores/create";
+import { SHOPI_AGENT_AVAILABLE } from "@/features/create/utils/agentAvailability";
 import { trackPostPublished } from "@/lib/analytics";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useBackDismiss } from "@/hooks/useBackDismiss";
@@ -252,7 +253,7 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
     setDraftId(draft.id);
     setContentType(mapType(draft.type));
     setStep("edit");
-    if (draft.bulkStage === "COMPLETE") {
+    if (draft.bulkStage === "COMPLETE" && SHOPI_AGENT_AVAILABLE) {
       setCreationMode("ai");
       setGuidedStage("analyzing");
       navigate(`/${lang}/upload/create-ai`);
