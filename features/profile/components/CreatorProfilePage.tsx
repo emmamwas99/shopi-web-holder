@@ -41,7 +41,7 @@ export function CreatorProfilePage({
   // supplied profile the first paint is the real page.
   if (loading && !profile) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-app">
         <div className="border-b border-border">
           <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
             <div
@@ -130,8 +130,7 @@ export function CreatorProfilePage({
   if (!profile) {
     return (
       <div
-        className="flex min-h-screen items-center justify-center"
-        style={{ backgroundColor: "white" }}
+        className="flex min-h-screen items-center justify-center bg-app"
       >
         <p
           style={{
