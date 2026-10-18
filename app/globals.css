@@ -99,35 +99,35 @@
 
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
 .dark {
-  /* Navy/slate dark palette: deep navy page, slate surfaces and clear borders. */
-  --color-bg: 15 23 42; /* #0f172a */
-  --color-bg-subtle: 30 41 59; /* #1e293b */
-  --color-bg-elevated: 30 41 59; /* #1e293b */
+  /* Facebook-style dark palette: charcoal page, raised cards and soft text. */
+  --color-bg: 24 25 26; /* #18191a */
+  --color-bg-subtle: 36 37 38; /* #242526 */
+  --color-bg-elevated: 36 37 38; /* #242526 */
   --color-overlay: 255 255 255;
 
-  --color-border: 51 65 85; /* #334155 */
-  --color-border-strong: 71 85 105; /* #475569 */
+  --color-border: 58 59 60; /* #3a3b3c */
+  --color-border-strong: 80 82 84;
 
-  --color-text: 241 245 249;
-  --color-text-main: 248 250 252; /* #f8fafc */
-  --color-text-muted: 148 163 184; /* #94a3b8 */
-  --color-text-placeholder: 148 163 184;
+  --color-text: 228 230 235; /* #e4e6eb */
+  --color-text-main: 228 230 235;
+  --color-text-muted: 176 179 184; /* #b0b3b8 */
+  --color-text-placeholder: 176 179 184;
 
-  --color-subtle: 30 41 59;
+  --color-subtle: 58 59 60;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
 
-  --landing-page: #0f172a;
-  --landing-card: #1e293b;
-  --landing-surface: #1e293b;
-  --landing-tint: #273449;
-  --landing-ink: #f8fafc;
-  --landing-body: #cbd5e1;
-  --landing-muted: #94a3b8;
-  --landing-line: #334155;
-  --landing-line-strong: #475569;
+  --landing-page: #18191a;
+  --landing-card: #242526;
+  --landing-surface: #242526;
+  --landing-tint: #3a3b3c;
+  --landing-ink: #e4e6eb;
+  --landing-body: #d0d2d6;
+  --landing-muted: #b0b3b8;
+  --landing-line: #3a3b3c;
+  --landing-line-strong: #505254;
 }
 
 /* ─── Tailwind v4 theme tokens ─────────────────────────────────── */

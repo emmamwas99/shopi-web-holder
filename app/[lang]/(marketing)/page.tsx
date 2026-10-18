@@ -983,8 +983,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           </div>
         </section>
 
-        <section className="bg-tertiary px-5 py-16 text-center md:px-8 md:py-22">
-          <h2 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
+        <section className="bg-tertiary px-5 py-16 text-center dark:bg-landing-surface md:px-8 md:py-22">
+          <h2 className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]">
             {t.closingTitle}
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-base text-landing-body md:text-lg">

@@ -43,7 +43,7 @@ export const themeScript = `
     var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
     var themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.setAttribute('content', dark ? '#0f172a' : '#ffffff');
+    if (themeColor) themeColor.setAttribute('content', dark ? '#18191a' : '#ffffff');
   } catch(e){}
 })();
 `;
