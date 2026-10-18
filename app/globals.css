@@ -99,41 +99,35 @@
 
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
 .dark {
-  /* Unified near-black (TikTok-style): the app background AND cards/elevated
-     surfaces are the SAME black, so PostCards etc. merge into the page and are
-     separated by borders, not by a lighter fill. Only `subtle` (inputs, hover,
-     muted fills) sits a hair above black so those stay visible. */
-  --color-bg: 8 8 10;
-  --color-bg-subtle: 20 20 24;
-  --color-bg-elevated: 8 8 10;
+  /* Navy/slate dark palette: deep navy page, slate surfaces and clear borders. */
+  --color-bg: 15 23 42; /* #0f172a */
+  --color-bg-subtle: 30 41 59; /* #1e293b */
+  --color-bg-elevated: 30 41 59; /* #1e293b */
   --color-overlay: 255 255 255;
 
-  /* Borders carry the visual separation now, so they're a touch brighter. */
-  --color-border: 40 40 46;
-  --color-border-strong: 62 62 72;
+  --color-border: 51 65 85; /* #334155 */
+  --color-border-strong: 71 85 105; /* #475569 */
 
-  --color-text: 240 240 245;
-  --color-text-main: 240 240 245; /* dark mode: main text reads light */
-  --color-text-muted: 148 148 165;
-  /* 5.0:1 on --color-bg, 4.6:1 on --color-bg-subtle (WCAG AA); was 2.96:1. */
-  --color-text-placeholder: 126 126 142;
+  --color-text: 241 245 249;
+  --color-text-main: 248 250 252; /* #f8fafc */
+  --color-text-muted: 148 163 184; /* #94a3b8 */
+  --color-text-placeholder: 148 163 184;
 
-  /* Incoming chat bubbles / muted fills — same subtle lift as inputs. */
-  --color-subtle: 20 20 24;
+  --color-subtle: 30 41 59;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
 
-  --landing-page: rgb(8 8 10);
-  --landing-card: #151b1d;
-  --landing-surface: #0f1517;
-  --landing-tint: #1a2224;
-  --landing-ink: #eef2f1;
-  --landing-body: #b6c2c2;
-  --landing-muted: #93a0a2;
-  --landing-line: #263032;
-  --landing-line-strong: #46545a;
+  --landing-page: #0f172a;
+  --landing-card: #1e293b;
+  --landing-surface: #1e293b;
+  --landing-tint: #273449;
+  --landing-ink: #f8fafc;
+  --landing-body: #cbd5e1;
+  --landing-muted: #94a3b8;
+  --landing-line: #334155;
+  --landing-line-strong: #475569;
 }
 
 /* ─── Tailwind v4 theme tokens ─────────────────────────────────── */
