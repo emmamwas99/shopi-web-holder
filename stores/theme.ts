@@ -24,6 +24,11 @@ function applyTheme(resolved: "light" | "dark") {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   const dark = resolved === "dark";
+  // Keep the browser chrome (address/status bars on mobile) in step with the
+  // in-app theme, which can differ from the device's OS appearance.
+  document
+    .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    ?.setAttribute("content", dark ? "#08080a" : "#ffffff");
   if (root.classList.contains("dark") === dark) return;
 
   // Flip the theme atomically: the global 0.18s per-element color transition

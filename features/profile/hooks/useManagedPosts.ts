@@ -103,6 +103,7 @@ type UpdateOwnedContentVariables = {
     title?: string;
     caption?: string;
     categoryId?: string | null;
+    subcategory?: string | null;
     price?: {
       amount: number;
       currency?: string;

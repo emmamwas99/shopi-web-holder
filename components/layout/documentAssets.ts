@@ -42,6 +42,8 @@ export const themeScript = `
     var t = s.state?.theme || 'light';
     var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
+    var themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.setAttribute('content', dark ? '#08080a' : '#ffffff');
   } catch(e){}
 })();
 `;
