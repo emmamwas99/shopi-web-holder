@@ -21,6 +21,13 @@ export const MY_TEAM_MESSAGES = gql`
         sender
         subject
         body
+        mediaAssetId
+        mediaAsset {
+          type
+          thumbnailUrl
+          r2Variants { url variant width height }
+          muxMeta { playbackId thumbnailUrl }
+        }
         readAt
         createdAt
       }
@@ -29,12 +36,19 @@ export const MY_TEAM_MESSAGES = gql`
 `;
 
 export const SEND_TEAM_REPLY = gql`
-  mutation SendTeamReply($body: String!) {
-    sendTeamReply(body: $body) {
+  mutation SendTeamReply($body: String!, $mediaAssetId: String) {
+    sendTeamReply(body: $body, mediaAssetId: $mediaAssetId) {
       id
       sender
       subject
       body
+      mediaAssetId
+      mediaAsset {
+        type
+        thumbnailUrl
+        r2Variants { url variant width height }
+        muxMeta { playbackId thumbnailUrl }
+      }
       readAt
       createdAt
     }
