@@ -314,6 +314,8 @@ export function ProfileView({ lang }: Props) {
   }, [router, tabHref]);
 
   const [postsLimit] = useState(18);
+  const fetchingManagedMoreRef = useRef(false);
+  const fetchingSavedMoreRef = useRef(false);
   const [draftCount, setDraftCount] = useState<number>();
   const [savedCount, setSavedCount] = useState<number>();
 
@@ -421,9 +423,10 @@ export function ProfileView({ lang }: Props) {
   const managedHasMore = managedPostsData?.myManagedContent.hasMore ?? false;
   const managedNextCursor = managedPostsData?.myManagedContent.nextCursor;
 
-  function handleLoadMore() {
-    if (!managedNextCursor) return;
-    fetchMore({
+  function handleLoadMore(): Promise<unknown> | undefined {
+    if (!managedNextCursor || fetchingManagedMoreRef.current) return;
+    fetchingManagedMoreRef.current = true;
+    return fetchMore({
       variables: { afterId: managedNextCursor, limit: postsLimit },
       updateQuery(prev, { fetchMoreResult }) {
         if (!fetchMoreResult) return prev;
@@ -437,16 +440,21 @@ export function ProfileView({ lang }: Props) {
           },
         };
       },
-    });
+    })
+      .catch(() => {})
+      .finally(() => {
+        fetchingManagedMoreRef.current = false;
+      });
   }
 
   const savedPosts = savedData?.mySavedContent.items ?? [];
   const savedHasMore = savedData?.mySavedContent.hasMore ?? false;
   const savedNextCursor = savedData?.mySavedContent.nextCursor;
 
-  function handleLoadMoreSaved() {
-    if (!savedNextCursor) return;
-    fetchMoreSaved({
+  function handleLoadMoreSaved(): Promise<unknown> | undefined {
+    if (!savedNextCursor || fetchingSavedMoreRef.current) return;
+    fetchingSavedMoreRef.current = true;
+    return fetchMoreSaved({
       variables: { afterId: savedNextCursor, limit: postsLimit },
       updateQuery(prev, { fetchMoreResult }) {
         if (!fetchMoreResult) return prev;
@@ -460,7 +468,11 @@ export function ProfileView({ lang }: Props) {
           },
         };
       },
-    });
+    })
+      .catch(() => {})
+      .finally(() => {
+        fetchingSavedMoreRef.current = false;
+      });
   }
 
   const sectionTitle =

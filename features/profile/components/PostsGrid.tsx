@@ -35,7 +35,7 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 interface Props {
   posts: ContentCardFieldsFragment[];
   hasMore: boolean;
-  onLoadMore: () => void;
+  onLoadMore: () => void | Promise<unknown>;
   loading: boolean;
   lang: string;
   hideHeading?: boolean;
@@ -141,6 +141,7 @@ export function PostsGrid({
   mobileList = false,
 }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const fetchingMoreRef = useRef(false);
   // Keep the latest onLoadMore without re-subscribing the observer each render.
   const onLoadMoreRef = useRef(onLoadMore);
 
@@ -156,7 +157,13 @@ export function PostsGrid({
     if (!el || !hasMore || loading) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) onLoadMoreRef.current();
+        if (!entries[0].isIntersecting || fetchingMoreRef.current) return;
+        fetchingMoreRef.current = true;
+        void Promise.resolve(onLoadMoreRef.current())
+          .catch(() => {})
+          .finally(() => {
+            fetchingMoreRef.current = false;
+          });
       },
       { rootMargin: "400px" },
     );

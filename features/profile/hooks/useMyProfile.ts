@@ -30,6 +30,7 @@ export function useMySavedContent(limit = 18, enabled = true) {
   return useQuery(GetMySavedContentDocument, {
     variables: { limit },
     fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
     skip: !enabled,
   });
 }

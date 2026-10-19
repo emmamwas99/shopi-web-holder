@@ -7,6 +7,7 @@ export type InventoryChip<K extends string> = {
   key: K;
   label: string;
   count: number;
+  countSuffix?: string;
   /** Work waiting: its count stays highlighted while it isn't selected. */
   attention?: boolean;
 };
@@ -134,7 +135,7 @@ export function InventoryControls<F extends string, S extends string>({
                       : "text-muted",
                 )}
               >
-                {chip.count}
+                {chip.count}{chip.countSuffix}
               </span>
             </button>
           );
