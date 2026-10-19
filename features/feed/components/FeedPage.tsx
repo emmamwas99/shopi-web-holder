@@ -321,12 +321,12 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
         </div>
       )}
 
-      {/* ── Mobile: existing card feed with tabs ── */}
+      {/* ── Mobile: feed toolbar and selected feed view ── */}
       {!desktop ? (
         <div className="feed-mobile-shell md:hidden min-h-svh">
           <FeedHeader
-            activeTab={tab}
             onTabChange={handleTabChange}
+            lang={lang}
             onSearchOpen={() => {
               setMobileSearchDraft("");
               setSearchResultsOpen(false);

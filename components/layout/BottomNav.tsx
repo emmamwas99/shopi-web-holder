@@ -136,18 +136,22 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               // on it scrolls to the top (lib/scrollRestoration.ts).
               data-nav-tab={isUpload ? undefined : tab.key}
               className={`flex min-h-11 flex-1 select-none flex-col items-center justify-center gap-0.5 py-1 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] ${
-                isActive ? "text-primary" : "text-muted"
+                isActive ? "text-primary dark:text-main" : "text-muted"
               }`}
               aria-current={isActive ? "page" : undefined}
             >
-              <span className="relative">
-                {/* Outline only. The old active state filled the glyph at 18%
-                    opacity, which turned a crisp icon into a smudge — colour
-                    and the label weight already say which tab you're on. */}
+              <span
+                className={`relative flex size-9 items-center justify-center rounded-full ${
+                  isActive ? "dark:bg-[#3a3b3c]" : ""
+                }`}
+              >
+                {/* Keep the outline glyphs in light mode; in dark mode the
+                    active tab gets the filled icon and the charcoal marker. */}
                 <Icon
                   size={ICON_SIZE}
                   strokeWidth={isActive ? STROKE_ACTIVE : STROKE_INACTIVE}
                   fill="none"
+                  className={isActive ? "dark:fill-current" : undefined}
                 />
                 {tab.key === "notifications" && unreadCount > 0 ? (
                   <span
