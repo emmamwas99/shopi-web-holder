@@ -37,6 +37,8 @@ import {
   shouldUnoptimizeMedia,
 } from "@/features/create/utils/mediaPreview";
 
+const SHOW_TIKTOK_CROSSPOST = process.env.NODE_ENV !== "production";
+
 interface StepReadyProps {
   lang: string;
 }
@@ -186,7 +188,7 @@ export function StepReady({ lang }: StepReadyProps) {
         setPublished(true);
         trackPostPublished("create", { category: categoryName, contentType });
 
-        if (postOnTiktok && contentId) {
+        if (SHOW_TIKTOK_CROSSPOST && postOnTiktok && contentId) {
           // Await so we can show the reconnect banner before auto-redirect
           try {
             const tiktokResult = await postToTiktok({

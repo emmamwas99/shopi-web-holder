@@ -64,6 +64,8 @@ const POST_TO_TIKTOK = gql`
   }
 `;
 
+const SHOW_TIKTOK_CROSSPOST = process.env.NODE_ENV !== "production";
+
 const PUBLISH_DRAFT_NOW: TypedDocumentNode<
   { publishDraftNow: { id: string; type: string; title: string } | null },
   { id: string }
@@ -328,7 +330,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
       trackPostPublished("create", { category: categoryName, contentType });
 
       // 4. Optional TikTok cross-post
-      if (postOnTiktok && contentId) {
+      if (SHOW_TIKTOK_CROSSPOST && postOnTiktok && contentId) {
         try {
           const tiktokResult = await postToTiktok({ variables: { contentId } });
           const tiktokErrors = tiktokResult?.errors ?? [];
@@ -587,7 +589,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
               onChange={setHdEnabled}
               divided
             />
-            {contentType === "video" && (
+            {SHOW_TIKTOK_CROSSPOST && contentType === "video" && (
               <ToggleRow
                 icon={<TikTokIcon size={17} className="" />}
                 label="Also post on TikTok"

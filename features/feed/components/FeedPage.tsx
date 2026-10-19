@@ -346,7 +346,6 @@ export function FeedPage({
           <FeedHeader
             activeTab={tab}
             onTabChange={handleTabChange}
-            lang={lang}
             onSearchOpen={() => {
               setMobileSearchDraft("");
               setSearchResultsOpen(false);

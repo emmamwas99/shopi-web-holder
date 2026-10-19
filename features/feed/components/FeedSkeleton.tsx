@@ -219,22 +219,31 @@ function MobileFeedHeaderSkeleton() {
     <>
       <div className="h-[57px]" aria-hidden="true" />
       <header
-        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-white px-4 md:px-6"
+        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-app px-4 md:px-6"
         aria-hidden
       >
-        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3">
-          <div className="shrink-0 text-base font-bold tracking-tight text-main">
-            For you
+        <div className="mx-auto flex h-14 max-w-2xl items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
+            <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-transparent bg-subtle pl-3.5 pr-2">
+              <Search size={16} className="shrink-0 text-muted" aria-hidden />
+              <Skeleton className="h-3.5 w-40 max-w-full rounded-full" />
+            </div>
+            <Skeleton className="size-10 shrink-0 rounded-full" />
           </div>
-          <div className="flex items-center gap-2">
-            {icons.map((Icon, index) => (
-              <div
-                key={index}
-                className="grid size-10 place-items-center rounded-full bg-surface text-foreground"
-              >
-                <Icon size={index === 0 ? 19 : 21} strokeWidth={2.1} aria-hidden />
-              </div>
-            ))}
+          <div className="hidden min-w-0 items-center justify-between gap-3 md:flex md:flex-1">
+            <div className="shrink-0 text-base font-bold tracking-tight text-main">
+              For you
+            </div>
+            <div className="flex items-center gap-2">
+              {icons.map((Icon, index) => (
+                <div
+                  key={index}
+                  className="grid size-10 place-items-center rounded-full bg-surface text-foreground"
+                >
+                  <Icon size={index === 0 ? 19 : 21} strokeWidth={2.1} aria-hidden />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </header>
