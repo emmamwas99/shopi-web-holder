@@ -17,6 +17,7 @@ export interface TeamMessage {
   mediaAssetId?: string | null;
   mediaAsset?: {
     type: 'IMAGE' | 'GENERATED_IMAGE' | 'VIDEO';
+    status?: string;
     thumbnailUrl?: string | null;
     r2Variants?: { url: string; variant: string; width: number; height: number }[];
     muxMeta?: { playbackId?: string | null; thumbnailUrl?: string | null } | null;

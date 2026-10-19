@@ -24,6 +24,7 @@ export const MY_TEAM_MESSAGES = gql`
         mediaAssetId
         mediaAsset {
           type
+          status
           thumbnailUrl
           r2Variants { url variant width height }
           muxMeta { playbackId thumbnailUrl }
