@@ -70,15 +70,6 @@ function getPathLocale(pathname: string) {
   );
 }
 
-function isMobileRequest(request: NextRequest): boolean {
-  const mobileHint = request.headers.get("sec-ch-ua-mobile");
-  if (mobileHint) return mobileHint === "?1";
-
-  return /android|iphone|ipad|ipod|mobile|tablet|kindle|silk/i.test(
-    request.headers.get("user-agent") ?? "",
-  );
-}
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const pathnameLocale = getPathLocale(pathname);
@@ -96,21 +87,6 @@ export function proxy(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = `/${locale}${barePath.replace(/^\/feed/, "/for-you")}`;
     return NextResponse.redirect(redirectUrl, 308);
-  }
-
-  // The For You feed is the phone home tab. Desktop users browse through
-  // Explore instead, so redirect before the feed page can render and flash.
-  // Watch remains available on both layouts through its explicit query tab.
-  if (
-    barePath === "/for-you" &&
-    request.nextUrl.searchParams.get("tab") !== "watch" &&
-    !isMobileRequest(request)
-  ) {
-    const locale = pathnameLocale ?? defaultLocale;
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = `/${locale}/explore`;
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
   }
 
   // Signed-in users enter the app by default. The logo can explicitly open

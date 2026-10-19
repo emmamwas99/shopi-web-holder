@@ -92,8 +92,14 @@ export function DashboardModal({
     if (tab === "overview") nextParams.delete("tab");
     else nextParams.set("tab", tab);
     const query = nextParams.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [activeTab, pathname, router, searchParams]);
+    const nextUrl = query ? `${pathname}?${query}` : pathname;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (nextUrl !== currentUrl) {
+      // Dashboard sections are already client-rendered in this modal. Keep the
+      // URL in sync without starting a route navigation for every tour step.
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, [activeTab, pathname, searchParams]);
 
   const onTourStepChange = useCallback((step: DashboardTourStep | null) => {
     if (suppressTour) return;

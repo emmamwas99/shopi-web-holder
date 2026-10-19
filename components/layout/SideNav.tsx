@@ -79,6 +79,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   // The tabs return to the screen they were left on (sub-tab, search,
   // filters); RouteScrollRestoration restores the scroll to match.
   const browseHref = useNavTabHref("explore", `/${lang}/explore`);
+  const forYouHref = `/${lang}/for-you`;
   const watchHref = `/${lang}/for-you?tab=watch`;
   const storesHref = useNavTabHref("stores", `/${lang}/stores`);
 
@@ -99,6 +100,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const watchActive =
     pathname.startsWith(`/${lang}/for-you`) &&
     searchParams.get("tab") === "watch";
+  const forYouActive =
+    pathname.startsWith(`/${lang}/for-you`) && !watchActive;
   const storesActive = pathname.startsWith(`/${lang}/stores`);
   const showSideNav = hasDesktopSideNav(
     pathname,
@@ -129,7 +132,14 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
           <div className="flex h-full min-w-0 flex-1 items-center gap-2 xl:gap-5">
             <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
-              {(browseActive || watchActive) && isDesktop ? (
+              <TopNavLink
+                href={forYouHref}
+                navTab="feed"
+                active={forYouActive}
+              >
+                For You
+              </TopNavLink>
+              {(forYouActive || browseActive || watchActive) && isDesktop ? (
                 <AllCategoriesPicker lang={lang} watchMode={watchActive} />
               ) : null}
               <TopNavLink
@@ -142,7 +152,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               <TopNavLink
                 href={watchHref}
                 navTab="feed"
-                active={pathname.startsWith(`/${lang}/for-you`) && searchParams.get("tab") === "watch"}
+                active={watchActive}
               >
                 Watch
               </TopNavLink>

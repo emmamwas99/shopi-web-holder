@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Clapperboard, MapPin, Search, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
@@ -121,10 +120,8 @@ export function FeedSkeleton() {
         )}
       </div>
 
-      {/* ── Desktop skeleton — mirrors DesktopFeed's frame exactly (same
-          container, grid and column widths) so nothing jumps when the real
-          feed mounts: tabs + stories + card column, sellers in the RIGHT rail
-          on xl. */}
+      {/* ── Desktop skeleton — mirrors the stories, card column and right rail
+          without showing feed subtabs that are absent from the desktop UI. */}
       {/* Desktop Watch is a full-width video grid with no tabs or right rail
           (DesktopFeed), so its placeholder is that grid alone. */}
       {activeTab === "watch" ? (
@@ -135,15 +132,9 @@ export function FeedSkeleton() {
         </div>
       ) : (
       <div className="hidden min-h-svh bg-app md:block">
-        <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 md:px-6 md:pt-6 xl:px-8">
+        <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 md:px-6 xl:px-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
             <div className="mx-auto w-full min-w-0 max-w-[780px] pb-4 md:pb-6 xl:mx-0 xl:max-w-none">
-              <LoadingFeedTabs
-                activeTab={activeTab === "ask-shopi" ? "for-you" : activeTab}
-                showAskShopi={false}
-                className="mb-4"
-              />
-
               {(
                 <>
                   {/* Stories belong to For You, not Watch. */}
@@ -248,46 +239,6 @@ function MobileFeedHeaderSkeleton() {
         </div>
       </header>
     </>
-  );
-}
-
-function LoadingFeedTabs({
-  activeTab,
-  showAskShopi = SHOW_ASK_SHOPI,
-  className = "",
-}: {
-  activeTab: "for-you" | "watch" | "ask-shopi";
-  showAskShopi?: boolean;
-  className?: string;
-}) {
-  const tabs = [
-    { id: "for-you" as const, label: "For You" },
-    { id: "watch" as const, label: "Watch" },
-    ...(showAskShopi ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }] : []),
-  ];
-  const tabClass = (tab: "for-you" | "watch" | "ask-shopi") =>
-    `-mb-px border-b-2 px-3 pb-2.5 pt-1 text-sm font-bold ${
-      activeTab === tab
-        ? "border-primary text-primary"
-        : "border-transparent text-muted hover:text-main"
-    }`;
-
-  return (
-    <nav
-      aria-label="Home feed"
-      className={`sticky top-0 z-30 grid ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"} border-b border-border bg-app px-2 py-3  md:top-(--desktop-top-nav-height,68px) ${className}`}
-    >
-      {tabs.map((tab) => (
-        <Link
-          key={tab.id}
-          href={tab.id === "for-you" ? "?tab=for-you" : `?tab=${tab.id}`}
-          scroll={false}
-          className={tabClass(tab.id)}
-        >
-          {tab.label}
-        </Link>
-      ))}
-    </nav>
   );
 }
 
