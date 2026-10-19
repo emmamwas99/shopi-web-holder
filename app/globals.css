@@ -551,6 +551,10 @@ body {
     padding-top: 0 !important;
   }
 
+  .tablet-stores-sticky {
+    top: 0;
+  }
+
   .tablet-bottom-padding {
     padding-bottom: calc(var(--nav-height, 0) + var(--safe-bottom, 0)) !important;
   }
