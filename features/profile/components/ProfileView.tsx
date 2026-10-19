@@ -30,6 +30,7 @@ import {
 import { appendUnique } from "../lib/appendUnique";
 import { previousAppUrl } from "@/lib/appHistory";
 import { useUiStore } from "@/stores/ui";
+import { isTabletViewportNow, TABLET_QUERY } from "@/hooks/useIsTablet";
 
 // "tiktok" is not in the menu, so it is hidden from the UI, but
 // TiktokImportPanel and its render branch below are kept intact.
@@ -260,8 +261,17 @@ export function ProfileView({ lang }: Props) {
   const setBottomNavHidden = useUiStore((state) => state.setBottomNavHidden);
 
   useLayoutEffect(() => {
-    setBottomNavHidden(Boolean(tab));
-    return () => setBottomNavHidden(false);
+    const syncBottomNavVisibility = () => {
+      setBottomNavHidden(Boolean(tab) && !isTabletViewportNow());
+    };
+    syncBottomNavVisibility();
+
+    const tabletMedia = window.matchMedia(TABLET_QUERY);
+    tabletMedia.addEventListener("change", syncBottomNavVisibility);
+    return () => {
+      tabletMedia.removeEventListener("change", syncBottomNavVisibility);
+      setBottomNavHidden(false);
+    };
   }, [setBottomNavHidden, tab]);
 
   // Whether back from a section can pop history to the menu, or whether the

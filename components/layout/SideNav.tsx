@@ -108,8 +108,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border bg-elevated  md:block">
-        <div className="desktop-app-frame flex h-full items-center gap-4 px-5 lg:px-8 xl:gap-0">
+      <header className="tablet-top-navigation fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border bg-elevated md:block">
+        <div className="desktop-app-frame flex h-full items-center gap-2 px-3 md:px-4 lg:gap-4 lg:px-8 xl:gap-0">
           {/* Align the logo with the PDP and the sidebar's inner edge. */}
           <Link
             href={homeHref(lang)}
@@ -123,7 +123,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                 so `size` 60 paints the box 43px tall — a 42px badge, the same
                 as the mark-only logo had here — and 157px wide, well inside the
                 232px this column leaves after its padding. */}
-            <Logo variant="lockup" size={60} />
+            <Logo variant="lockup" size={60} className="hidden lg:inline-block" />
+            <Logo variant="icon" size={52} className="hidden md:inline-block lg:hidden" />
           </Link>
 
           <div className="flex h-full min-w-0 flex-1 items-center gap-2 xl:gap-5">
@@ -145,12 +146,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               >
                 Watch
               </TopNavLink>
-              {/* Desktop only, deliberately. This whole header is `hidden
-                  md:block`, and Stores is not added to BottomNav: the phone bar
-                  is five tabs of things you do (feed, search, post, inbox,
-                  profile), and browsing shops is a lean-back desktop intent that
-                  would push that bar to six. Sellers are still reachable on a
-                  phone from any listing's seller row. */}
+              {/* Desktop header link. Phones keep their five-item bar; the
+                  tablet bar includes Stores and Watch for one-tap access. */}
               <TopNavLink
                 href={storesHref}
                 navTab="stores"
@@ -416,7 +413,7 @@ function TopNavLink({
       scroll={false}
       data-nav-tab={navTab}
       className={[
-        "inline-flex h-full min-w-20 items-center justify-center border-b-2 px-4 text-[13px] font-bold transition-colors",
+        "inline-flex h-full min-w-20 items-center justify-center border-b-2 px-4 text-[13px] font-bold transition-colors md:max-lg:px-2",
         active
           ? "border-primary text-main"
           : "border-transparent text-muted hover:text-main",
@@ -443,6 +440,7 @@ function AllCategoriesPicker({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const pointerWithinMenu = useRef(false);
+  const openedByHover = useRef(false);
   const suppressHoverUntil = useRef(0);
   const { data, loading } = useQuery(DISCOVERY_CATEGORIES, {
     variables: watchMode ? { type: "VIDEO" } : {},
@@ -483,13 +481,20 @@ function AllCategoriesPicker({
     closeTimer.current = null;
   }
 
-  function scheduleClose() {
+  function scheduleClose(suppressTriggerReopen = false) {
     cancelClose();
+    if (suppressTriggerReopen) {
+      suppressHoverUntil.current = Date.now() + 500;
+    }
     closeTimer.current = setTimeout(() => {
-      if (
-        !pointerWithinMenu.current &&
-        !contentRef.current?.contains(document.activeElement)
-      ) {
+      const focusWithinMenu =
+        triggerRef.current?.contains(document.activeElement) ||
+        contentRef.current?.contains(document.activeElement);
+      if (!pointerWithinMenu.current && (openedByHover.current || !focusWithinMenu)) {
+        // Radix may restore focus to the trigger as the hover-opened popover
+        // closes. Don't let that focus event immediately reopen the menu.
+        suppressHoverUntil.current = Date.now() + 500;
+        openedByHover.current = false;
         setOpen(false);
       }
     }, 180);
@@ -498,6 +503,7 @@ function AllCategoriesPicker({
   function closeForSelection() {
     cancelClose();
     pointerWithinMenu.current = false;
+    openedByHover.current = false;
     suppressHoverUntil.current = Date.now() + 500;
     setOpen(false);
   }
@@ -506,6 +512,7 @@ function AllCategoriesPicker({
     if (Date.now() < suppressHoverUntil.current) return;
     cancelClose();
     pointerWithinMenu.current = true;
+    openedByHover.current = true;
     setOpen(true);
   }
 
@@ -517,6 +524,7 @@ function AllCategoriesPicker({
         contentRef.current?.contains(activeElement);
       if (!focusInsideMenu) {
         pointerWithinMenu.current = false;
+        openedByHover.current = false;
         setOpen(false);
       }
     }, 0);
@@ -529,16 +537,19 @@ function AllCategoriesPicker({
           ref={triggerRef}
           type="button"
           onPointerEnter={openOnHover}
-          onMouseLeave={scheduleClose}
+          onMouseLeave={() => scheduleClose()}
           onPointerLeave={() => {
             pointerWithinMenu.current = false;
             scheduleClose();
           }}
           onFocus={() => {
-            if (Date.now() >= suppressHoverUntil.current) setOpen(true);
+            if (Date.now() >= suppressHoverUntil.current) {
+              openedByHover.current = false;
+              setOpen(true);
+            }
           }}
           onBlur={closeIfFocusLeaves}
-          className="inline-flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-bold text-main transition-colors hover:bg-surface"
+          className="inline-flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-bold text-main transition-colors hover:bg-surface md:max-lg:max-w-40 md:max-lg:gap-1 md:max-lg:px-2"
         >
           <Menu className="h-4 w-4 shrink-0" aria-hidden />
           <span className="max-w-44 truncate">{selectedCategoryName}</span>
@@ -557,10 +568,10 @@ function AllCategoriesPicker({
           cancelClose();
           pointerWithinMenu.current = true;
         }}
-        onMouseLeave={scheduleClose}
+        onMouseLeave={() => scheduleClose()}
         onPointerLeave={() => {
           pointerWithinMenu.current = false;
-          scheduleClose();
+          scheduleClose(true);
         }}
         onBlur={closeIfFocusLeaves}
         className="w-[min(92vw,400px)] max-w-none rounded-xl border-border bg-app p-1.5 text-main shadow-xl"

@@ -36,6 +36,7 @@ import {
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
 import { useUiStore } from "@/stores/ui";
+import { isTabletViewportNow, TABLET_QUERY } from "@/hooks/useIsTablet";
 import {
   RecordSearchTermDocument,
   type ContentCardFieldsFragment,
@@ -77,19 +78,24 @@ type Tab = "for-you" | "watch" | "ask-shopi";
 const isTab = (v: string | null): v is Tab =>
   v === "for-you" || v === "watch" || (SHOW_ASK_SHOPI && v === "ask-shopi");
 
-const DESKTOP_QUERY = "(min-width: 768px)";
+const DESKTOP_QUERY = "(min-width: 1280px) and (pointer: fine)";
+const isDesktopViewportNow = () =>
+  window.matchMedia(DESKTOP_QUERY).matches && !isTabletViewportNow();
 
-/** The mobile card feed is hidden on md+ (DesktopFeed owns the window scroll
- *  there), so its save/restore must not fire on desktop viewports. */
+/** Tablets use the phone feed too, including its window scroll restoration. */
 const isMobileViewport = () =>
-  typeof window !== "undefined" && !window.matchMedia(DESKTOP_QUERY).matches;
+  typeof window !== "undefined" && !isDesktopViewportNow();
 
 function subscribeViewport(onChange: () => void) {
-  const media = window.matchMedia(DESKTOP_QUERY);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
+  const desktopMedia = window.matchMedia(DESKTOP_QUERY);
+  const tabletMedia = window.matchMedia(TABLET_QUERY);
+  desktopMedia.addEventListener("change", onChange);
+  tabletMedia.addEventListener("change", onChange);
+  return () => {
+    desktopMedia.removeEventListener("change", onChange);
+    tabletMedia.removeEventListener("change", onChange);
+  };
 }
-const isDesktopViewportNow = () => window.matchMedia(DESKTOP_QUERY).matches;
 const serverIsDesktop = () => false;
 
 /**
@@ -324,21 +330,19 @@ export function FeedPage({
         />
       ) : null}
 
-      {/* ── Desktop: loaded only on a desktop viewport. Until the media query
-          resolves, desktop viewports see the desktop-shaped skeleton (inside
-          `hidden md:block` so it never shows on phones) instead of a blank
-          reserved area. ── */}
+      {/* ── Desktop: loaded only on a desktop viewport. The skeleton reserves
+          the desktop layout during hydration; CSS limits it to desktop. ── */}
       {desktop ? (
         <DesktopFeed lang={lang} visible={visible} />
       ) : (
-        <div className="hidden md:block" aria-hidden>
+        <div className="desktop-feed-skeleton" aria-hidden>
           <FeedSkeleton />
         </div>
       )}
 
-      {/* ── Mobile: feed toolbar and selected feed view ── */}
+      {/* ── Phone and tablet: feed toolbar and selected feed view ── */}
       {!desktop ? (
-        <div className="feed-mobile-shell md:hidden min-h-svh">
+        <div className="feed-mobile-shell min-h-svh">
           <FeedHeader
             activeTab={tab}
             onTabChange={handleTabChange}

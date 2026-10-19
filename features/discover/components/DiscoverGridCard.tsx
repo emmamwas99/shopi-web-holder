@@ -56,7 +56,7 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
  * and 40 down at xl is the reference spacing.
  */
 export const DISCOVER_GRID =
-  "grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 md:gap-x-5 md:gap-y-8 xl:grid-cols-4 xl:gap-x-6 xl:gap-y-10 min-[90rem]:grid-cols-5";
+  "grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 md:gap-x-5 md:gap-y-8 md:max-lg:grid-cols-2 md:max-lg:gap-x-3 md:max-lg:gap-y-6 xl:grid-cols-4 xl:gap-x-6 xl:gap-y-10 min-[90rem]:grid-cols-5";
 
 /** "KES 12,500" — grouped thousands, no decimals. */
 function formatPrice(amount: number, currency: string) {

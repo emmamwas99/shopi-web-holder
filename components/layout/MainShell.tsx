@@ -3,7 +3,11 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { Suspense, useLayoutEffect, useState } from "react";
-import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
+import {
+  BottomNav,
+  BottomNavWithSearchParams,
+  shouldHideBottomNav,
+} from "@/components/layout/BottomNav";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { hasDesktopSideNav } from "@/components/layout/SideNav";
 import { usePreloadInbox } from "@/features/notifications/hooks/usePreloadInbox";
@@ -52,18 +56,15 @@ export function MainShell({
           "mx-auto",
           isImmersiveCreate
             ? "md:mx-0 md:ml-0 md:max-w-none"
-            : "desktop-app-frame md:pt-(--desktop-top-nav-height,68px)",
+            : "tablet-shell desktop-app-frame md:pt-(--desktop-top-nav-height,68px)",
         ].join(" ")}
       >
-        {/* The bottom padding clears the fixed BottomNav, which is md:hidden —
-            so drop it on md+ too. Leaving it creates dead scroll space below
-            the page content, and scrolling into that space pushes desktop
-            sticky elements (feed tabs, right rail) up out of the viewport. */}
+        {/* The bottom padding clears the mobile and tablet bottom navigation. */}
         <main
           className={`flex-1 ${
             hideBottomNav
               ? ""
-              : "pb-[calc(var(--nav-height,0)+var(--safe-bottom,0))] md:pb-0"
+              : "tablet-bottom-padding pb-[calc(var(--nav-height,0)+var(--safe-bottom,0))] md:pb-0"
           }`}
         >
           <Suspense fallback={null}>
@@ -75,7 +76,9 @@ export function MainShell({
         </main>
       </div>
 
-      <BottomNav lang={lang} />
+      <Suspense fallback={<BottomNav lang={lang} />}>
+        <BottomNavWithSearchParams lang={lang} />
+      </Suspense>
       {/* Away while a screen owns the bottom of the viewport (Ask Shopi's
           input, full-screen flows) — the same signal that hides the nav. */}
       {hasBackToTop && (

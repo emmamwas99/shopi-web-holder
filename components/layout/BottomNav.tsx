@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
+  Clapperboard,
   House,
   LayoutGrid,
   MessageCircle,
   SquarePlus,
+  Store,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -78,7 +80,13 @@ export function shouldHideBottomNav(pathname: string) {
   );
 }
 
-export function BottomNav({ lang = "en" }: { lang: string }) {
+export function BottomNav({
+  lang = "en",
+  activeFeedTab = null,
+}: {
+  lang: string;
+  activeFeedTab?: string | null;
+}) {
   const pathname = usePathname();
   // Hydration-safe: no badge until the persisted session has rehydrated, so
   // the first client paint matches the server HTML.
@@ -94,18 +102,27 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
   const tabHrefs: Record<string, string> = {
     explore: useNavTabHref("explore", `/${lang}/explore`),
     notifications: useNavTabHref("notifications", `/${lang}/notifications`),
+    stores: useNavTabHref("stores", `/${lang}/stores`),
+    watch: `/${lang}/for-you?tab=watch`,
   };
+  const tabletTabs: Tab[] = [
+    ...tabs.slice(0, 2),
+    { key: "stores", path: "stores", label: "Stores", icon: Store },
+    tabs[2],
+    { key: "watch", path: "for-you?tab=watch", label: "Watch", icon: Clapperboard },
+    ...tabs.slice(3),
+  ];
 
   // Hide on the full create flow, content detail, creator profile, and chat detail pages
   if (shouldHideBottomNav(pathname)) return null;
 
   return (
     <nav
-      className={`bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-elevated   ${
+      className={`bottom-nav tablet-bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-elevated   ${
         bottomNavHidden ? "hidden" : ""
       }`}
     >
-      <div className="relative flex h-(--nav-height) items-center justify-between border-t border-border">
+      <div className="mobile-bottom-nav-items relative flex h-(--nav-height) items-center justify-between border-t border-border">
         {tabs.map((tab) => {
           const href = tabHrefs[tab.key] ?? `/${lang}/${tab.path}`;
           const Icon = tab.icon;
@@ -115,15 +132,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
           const isUpload = tab.key === "upload";
 
           // Active if the pathname segment after lang matches this tab's path
-          const isActive =
-            tab.key === "feed"
-              ? pathname === `/${lang}` ||
-                pathname.startsWith(`/${lang}/for-you`) ||
-                pathname.startsWith(`/${lang}/collections/`)
-              : tab.key === "explore"
-                ? pathname.startsWith(`/${lang}/explore`) ||
-                  pathname.startsWith(`/${lang}/search`)
-              : pathname.startsWith(`/${lang}/${tab.path}`);
+          const isActive = isTabActive(tab, pathname, lang, activeFeedTab, false);
 
           return (
             <Link
@@ -173,6 +182,93 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
           );
         })}
       </div>
+      <div className="tablet-bottom-nav-items relative flex h-(--nav-height) items-center justify-between border-t border-border">
+        {tabletTabs.map((tab) => {
+          const href = tabHrefs[tab.key] ?? `/${lang}/${tab.path}`;
+          const Icon = tab.icon;
+          const isUpload = tab.key === "upload";
+          const isActive = isTabActive(tab, pathname, lang, activeFeedTab, true);
+
+          return (
+            <Link
+              key={tab.key}
+              href={href}
+              scroll={isUpload ? undefined : false}
+              data-nav-tab={isUpload ? undefined : tab.key === "watch" ? "feed" : tab.key}
+              className={`tablet-bottom-nav-link flex min-h-11 flex-1 select-none flex-col items-center justify-center gap-0.5 py-1 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] ${
+                isUpload
+                  ? "tablet-bottom-nav-sell text-primary dark:text-main"
+                  : isActive
+                    ? "text-primary dark:text-main"
+                    : "text-muted"
+              }`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <span
+                className={`tablet-bottom-nav-icon relative flex size-9 items-center justify-center rounded-full ${
+                  isUpload
+                    ? "tablet-bottom-nav-sell-icon text-white"
+                    : isActive
+                      ? "dark:bg-[#3a3b3c]"
+                      : ""
+                }`}
+              >
+                <Icon
+                  size={isUpload ? 28 : 26}
+                  strokeWidth={isActive ? STROKE_ACTIVE : STROKE_INACTIVE}
+                  fill="none"
+                  className={isUpload ? undefined : isActive ? "dark:fill-current" : undefined}
+                />
+                {tab.key === "notifications" && unreadCount > 0 ? (
+                  <span
+                    className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-elevated bg-primary px-[3px] text-[9px] font-bold leading-none text-white"
+                    aria-label={`${unreadCount} unread`}
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                ) : null}
+              </span>
+              <p
+                className={`tablet-bottom-nav-label ${isUpload ? "text-[13px]" : "text-xs"} leading-none ${
+                  isUpload || isActive
+                    ? "font-semibold tracking-[0.01em]"
+                    : "font-normal tracking-normal"
+                }`}
+              >
+                {tab.label}
+              </p>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
+}
+
+export function BottomNavWithSearchParams({ lang }: { lang: string }) {
+  const searchParams = useSearchParams();
+  return <BottomNav lang={lang} activeFeedTab={searchParams.get("tab")} />;
+}
+
+function isTabActive(
+  tab: Tab,
+  pathname: string,
+  lang: string,
+  activeFeedTab: string | null,
+  tablet: boolean,
+) {
+  if (tab.key === "watch") {
+    return pathname.startsWith(`/${lang}/for-you`) && activeFeedTab === "watch";
+  }
+  if (tab.key === "feed") {
+    return (
+      pathname === `/${lang}` ||
+      (pathname.startsWith(`/${lang}/for-you`) && (!tablet || activeFeedTab !== "watch")) ||
+      pathname.startsWith(`/${lang}/collections/`)
+    );
+  }
+  if (tab.key === "explore") {
+    return pathname.startsWith(`/${lang}/explore`) || pathname.startsWith(`/${lang}/search`);
+  }
+  return pathname.startsWith(`/${lang}/${tab.path}`);
 }
