@@ -1954,7 +1954,7 @@ export function ContentDetail({
           <header
             aria-hidden={mediaInView}
             className={[
-              "fixed inset-x-0 top-0 z-40 flex items-center gap-1 border-b border-default bg-app px-2 pb-2 transition-all duration-200",
+              "fixed inset-x-0 top-0 z-[60] flex items-center gap-1 border-b border-default bg-app px-2 pb-2 transition-all duration-200",
               mediaInView ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100",
             ].join(" ")}
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 8px)" }}
