@@ -325,6 +325,7 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
       {!desktop ? (
         <div className="feed-mobile-shell md:hidden min-h-svh">
           <FeedHeader
+            activeTab={tab}
             onTabChange={handleTabChange}
             lang={lang}
             onSearchOpen={() => {

@@ -1,19 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Clapperboard, Search, Sparkles } from "lucide-react";
+import { Clapperboard, Newspaper, Search, Sparkles } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
 type Tab = "for-you" | "watch" | "ask-shopi";
 
 interface Props {
+  activeTab: Tab;
   onTabChange: (tab: Tab) => void;
   onSearchOpen?: () => void;
   lang: string;
 }
 
-export function FeedHeader({ onTabChange, onSearchOpen, lang }: Props) {
+export function FeedHeader({ activeTab, onTabChange, onSearchOpen, lang }: Props) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-app px-4">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between">
@@ -48,11 +49,15 @@ export function FeedHeader({ onTabChange, onSearchOpen, lang }: Props) {
           ) : null}
           <button
             type="button"
-            onClick={() => onTabChange("watch")}
-            aria-label="Open videos"
+            onClick={() => onTabChange(activeTab === "watch" ? "for-you" : "watch")}
+            aria-label={activeTab === "watch" ? "Back to For You" : "Open videos"}
             className="grid size-10 place-items-center rounded-full bg-surface text-foreground transition-colors active:bg-border"
           >
-            <Clapperboard size={21} strokeWidth={2.1} />
+            {activeTab === "watch" ? (
+              <Newspaper size={21} strokeWidth={2.1} />
+            ) : (
+              <Clapperboard size={21} strokeWidth={2.1} />
+            )}
           </button>
         </div>
       </div>

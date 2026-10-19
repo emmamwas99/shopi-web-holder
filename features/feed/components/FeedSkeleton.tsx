@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
+import { Logo } from "@/components/ui/Logo";
 import { WatchGridSkeleton } from "./WatchGridSkeleton";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
@@ -105,9 +106,9 @@ export function FeedSkeleton() {
 
   return (
     <div>
-      {/* The real tab links stay visible while the content below loads. */}
+      {/* Match the mobile toolbar while the feed content loads. */}
       <div className="md:hidden">
-        <LoadingFeedTabs activeTab={activeTab} />
+        <MobileFeedHeaderSkeleton />
         {activeTab === "watch" ? (
           <WatchGridSkeleton />
         ) : activeTab === "ask-shopi" ? (
@@ -206,6 +207,25 @@ export function FeedSkeleton() {
       </div>
       )}
     </div>
+  );
+}
+
+function MobileFeedHeaderSkeleton() {
+  return (
+    <header className="sticky top-0 z-30 border-b border-border bg-app px-4" aria-hidden>
+      <div className="mx-auto flex h-14 max-w-2xl items-center justify-between">
+        <Logo
+          variant="wordmark"
+          size={44}
+          className="dark:brightness-0 dark:invert"
+        />
+        <div className="flex items-center gap-2">
+          {[...Array(SHOW_ASK_SHOPI ? 3 : 2)].map((_, index) => (
+            <Skeleton key={index} className="size-10 rounded-full" />
+          ))}
+        </div>
+      </div>
+    </header>
   );
 }
 
