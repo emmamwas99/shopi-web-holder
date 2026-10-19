@@ -5,7 +5,9 @@
  * Handles iOS Safari, HLS, autoplay-muted out of the box.
  */
 
+import { useCallback, useRef } from "react";
 import MuxPlayer from "@mux/mux-player-react";
+import type MuxPlayerElement from "@mux/mux-player";
 
 interface MuxVideoProps {
   /** Mux playback ID */
@@ -25,6 +27,7 @@ interface MuxVideoProps {
   onPause?: () => void;
   onTimeUpdate?: () => void;
   onLoadedMetadata?: () => void;
+  onVolumeChange?: () => void;
   videoRef?: React.RefObject<HTMLVideoElement | null>;
 }
 
@@ -44,11 +47,32 @@ export function MuxVideo({
   onPause,
   onTimeUpdate,
   onLoadedMetadata,
+  onVolumeChange,
+  videoRef,
 }: MuxVideoProps) {
+  const playerRef = useRef<MuxPlayerElement | null>(null);
+  const setPlayerRef = useCallback(
+    (player: MuxPlayerElement | null) => {
+      playerRef.current = player;
+      if (videoRef) {
+        videoRef.current = (player?.media as unknown as HTMLVideoElement | null) ?? null;
+      }
+    },
+    [videoRef],
+  );
+  const handleLoadedMetadata = useCallback(() => {
+    if (videoRef) {
+      videoRef.current =
+        (playerRef.current?.media as unknown as HTMLVideoElement | null) ?? null;
+    }
+    onLoadedMetadata?.();
+  }, [onLoadedMetadata, videoRef]);
+
   // If no Mux playback ID, fall back to a plain <video> (blob / local file)
   if (!muxPlaybackId) {
     return (
       <video
+        ref={videoRef}
         src={src}
         className={className}
         style={{ ...style, objectFit }}
@@ -62,6 +86,7 @@ export function MuxVideo({
         onPause={onPause}
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
+        onVolumeChange={onVolumeChange}
         preload="metadata"
       />
     );
@@ -71,10 +96,12 @@ export function MuxVideo({
     <MuxPlayer
       playbackId={muxPlaybackId}
       className={className}
+      ref={setPlayerRef}
       style={{
         ...style,
         "--media-object-fit": objectFit,
         "--media-object-position": "center",
+        "--controls": controls ? undefined : "none",
         width: "100%",
         height: "100%",
       } as never}
@@ -88,7 +115,8 @@ export function MuxVideo({
       onPlay={onPlay}
       onPause={onPause}
       onTimeUpdate={onTimeUpdate}
-      onLoadedMetadata={onLoadedMetadata}
+      onLoadedMetadata={handleLoadedMetadata}
+      onVolumeChange={onVolumeChange}
     />
   );
 }

@@ -14,6 +14,7 @@ interface Props {
   active: boolean;
   className?: string;
   showTime?: boolean;
+  timeClassName?: string;
 }
 
 export function VideoProgressBar({
@@ -21,6 +22,7 @@ export function VideoProgressBar({
   active,
   className = "",
   showTime = false,
+  timeClassName = "",
 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
@@ -126,7 +128,7 @@ export function VideoProgressBar({
       onClick={(e) => e.stopPropagation()}
     >
       {showTime && (
-        <div className="mx-3 mb-1 flex items-center justify-between text-xs font-medium tabular-nums text-white/80 drop-shadow pointer-events-none">
+        <div className={`mx-3 mb-1 flex items-center justify-between text-xs font-medium tabular-nums text-white/80 drop-shadow pointer-events-none ${timeClassName}`}>
           <span ref={timeRef}>0:00</span>
           <span>{fmtTime(duration)}</span>
         </div>

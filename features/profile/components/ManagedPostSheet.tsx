@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type ComponentType, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ComponentType, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -8,12 +8,17 @@ import {
   BarChart3,
   Eye,
   EyeOff,
+  Expand,
   ImageIcon,
   MoreHorizontal,
   Pencil,
+  Play,
+  Zap,
   Share2,
   Store,
   Trash2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MuxVideo } from "@/components/ui/MuxVideo";
@@ -23,6 +28,7 @@ import { contentPath } from "@/lib/content-url";
 import { fmtCompact } from "@/lib/format";
 import { timeAgoLong } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { VideoProgressBar } from "@/features/feed/components/VideoProgressBar";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 import {
   isHidden,
@@ -35,6 +41,8 @@ import {
 } from "../lib/managedPost";
 import { DetailSheet } from "./DetailSheet";
 import { StatusBadge } from "./ManagedPostRow";
+
+const SHOW_POST_BOOST_ACTION = process.env.NODE_ENV !== "production";
 
 /**
  * One of the seller's posts and every action on it — the admin's post panel,
@@ -173,18 +181,49 @@ export function ManagedPostSheet({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <ActionButton primary icon={Pencil} onClick={() => onEdit(shown)} disabled={busy}>
-              Edit details
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2",
+              !desktop &&
+                (SHOW_POST_BOOST_ACTION
+                  ? "grid grid-cols-4 gap-1.5"
+                  : "grid grid-cols-3 gap-1.5"),
+            )}
+          >
+            <ActionButton
+              compact={!desktop}
+              primary
+              icon={Pencil}
+              onClick={() => onEdit(shown)}
+              disabled={busy}
+            >
+              {desktop ? "Edit details" : "Edit"}
             </ActionButton>
             <ActionButton
+              compact={!desktop}
               icon={hidden ? Eye : EyeOff}
               onClick={() => onToggleHidden(shown)}
               disabled={busy}
             >
-              {hidden ? "Show in store" : "Hide"}
+              {hidden && desktop ? "Show in store" : hidden ? "Show" : "Hide"}
             </ActionButton>
-            <MoreMenu actions={menu} disabled={busy} container={menuPortalContainer} />
+            {SHOW_POST_BOOST_ACTION && (
+              <ActionButton
+                compact={!desktop}
+                icon={Zap}
+                onClick={() => {}}
+                disabled
+                title="Boosting is not available yet"
+              >
+                Boost
+              </ActionButton>
+            )}
+            <MoreMenu
+              actions={menu}
+              disabled={busy}
+              container={menuPortalContainer}
+              compact={!desktop}
+            />
           </div>
 
           {problem && (
@@ -267,12 +306,16 @@ export function ActionButton({
   primary,
   onClick,
   disabled,
+  compact,
+  title,
   children,
 }: {
   icon: IconType;
   primary?: boolean;
   onClick: () => void;
   disabled?: boolean;
+  compact?: boolean;
+  title?: string;
   children: ReactNode;
 }) {
   return (
@@ -280,8 +323,10 @@ export function ActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={cn(
         "inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-[8px] px-3.5 text-sm font-medium transition-opacity active:opacity-70 disabled:pointer-events-none disabled:opacity-50",
+        compact && "w-full min-w-0 gap-1 px-1.5 text-xs",
         primary ? "bg-primary text-white" : "border border-default bg-app text-main",
       )}
     >
@@ -299,10 +344,12 @@ export function MoreMenu({
   actions,
   disabled,
   container,
+  compact,
 }: {
   actions: MenuAction[];
   disabled?: boolean;
   container?: HTMLElement | null;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -314,7 +361,10 @@ export function MoreMenu({
         <button
           type="button"
           disabled={disabled}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border border-default bg-app px-3.5 text-sm font-medium text-main transition-opacity active:opacity-70 disabled:opacity-50"
+          className={cn(
+            "inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border border-default bg-app px-3.5 text-sm font-medium text-main transition-opacity active:opacity-70 disabled:opacity-50",
+            compact && "w-full min-w-0 gap-1 px-1.5 text-xs",
+          )}
         >
           <MoreHorizontal className="size-4" /> More
         </button>
@@ -379,17 +429,7 @@ function PostMedia({ post }: { post: ManagedPost }) {
   if (post.type === "VIDEO" && playbackId) {
     return (
       <div className="space-y-2">
-        <div className="aspect-9/16 w-full overflow-hidden rounded-[8px] border border-default bg-black">
-          <MuxVideo
-            muxPlaybackId={playbackId}
-            poster={postThumb(post) ?? undefined}
-            className="h-full w-full"
-            objectFit="contain"
-            muted={false}
-            playsInline
-            controls
-          />
-        </div>
+        <PostVideoPreview playbackId={playbackId} poster={postThumb(post) ?? undefined} />
       </div>
     );
   }
@@ -438,6 +478,99 @@ function PostMedia({ post }: { post: ManagedPost }) {
             </button>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function PostVideoPreview({
+  playbackId,
+  poster,
+}: {
+  playbackId: string;
+  poster?: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [metadataReady, setMetadataReady] = useState(false);
+
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  };
+
+  const toggleMuted = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setMuted(video.muted);
+  };
+
+  const toggleFullscreen = () => {
+    const fullscreen = videoRef.current?.requestFullscreen?.();
+    fullscreen?.catch(() => {});
+  };
+
+  return (
+    <div className="relative aspect-9/16 w-full overflow-hidden rounded-[8px] border border-default bg-black">
+      <MuxVideo
+        muxPlaybackId={playbackId}
+        poster={poster}
+        className="h-full w-full"
+        objectFit="contain"
+        muted={muted}
+        playsInline
+        controls={false}
+        videoRef={videoRef}
+        onLoadedMetadata={() => setMetadataReady(true)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onVolumeChange={() => setMuted(videoRef.current?.muted ?? false)}
+      />
+
+      <button
+        type="button"
+        onClick={togglePlayback}
+        className="absolute inset-0 z-10 flex items-center justify-center"
+        aria-label={playing ? "Pause video" : "Play video"}
+      >
+        {!playing && (
+          <span className="flex size-12 items-center justify-center rounded-full bg-black/55 text-white">
+            <Play className="ml-0.5 size-5" fill="currentColor" />
+          </span>
+        )}
+      </button>
+
+      <div className="absolute right-2 top-2 z-30 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={toggleMuted}
+          className="grid size-9 place-items-center rounded-full bg-black/55 text-white"
+          aria-label={muted ? "Unmute video" : "Mute video"}
+        >
+          {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+        </button>
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="grid size-9 place-items-center rounded-full bg-black/55 text-white"
+          aria-label="View video full screen"
+        >
+          <Expand size={17} />
+        </button>
+      </div>
+
+      {metadataReady && (
+        <VideoProgressBar
+          videoRef={videoRef}
+          active={playing}
+          showTime
+          timeClassName="translate-y-3"
+          className="z-40 px-2"
+        />
       )}
     </div>
   );

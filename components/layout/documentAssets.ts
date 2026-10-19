@@ -39,7 +39,7 @@ export const themeScript = `
 (function(){
   try {
     var s = JSON.parse(localStorage.getItem('shopi-theme') || '{}');
-    var t = s.state?.theme || 'light';
+    var t = s.state?.theme || 'system';
     var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
     var themeColor = document.querySelector('meta[name="theme-color"]');
