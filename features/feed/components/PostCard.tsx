@@ -1579,7 +1579,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </Link>
 
         {showCaption && (
-          <div className="mt-1.5 text-[14px] leading-5 text-muted md:mt-1 md:text-[14px] md:leading-5">
+          <div className="mt-1.5 text-[15px] leading-[21px] text-main/80 md:mt-1">
             <p
               ref={captionRef}
               role="link"

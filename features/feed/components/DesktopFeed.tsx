@@ -32,11 +32,6 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 type Tab = "for-you" | "watch";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "for-you", label: "For You" },
-  { id: "watch", label: "Watch" },
-];
-
 // `loading` gives each its own Suspense boundary (see FeedPage): without it the
 // first open suspended to the route boundary and replaced the whole feed with
 // its skeleton, snapping the window scroll.
@@ -230,55 +225,18 @@ export default function DesktopFeed({
           <WatchGrid lang={lang} active={visible} desktopLayout />
         </div>
       ) : (
-      <>
-      {/* Capped and centered like the Discover/Explore shell (same
-          `lg:max-w-[1560px]` and `lg:px-8`) — without a cap, the fixed
-          380/400px right rail just slides further from the feed column as
-          the viewport widens past a laptop screen, and the feed itself
-          pressed flush against the sidebar with zero gutter.
-          The feed column flexes (minmax(0,1fr)) instead of demanding 720–840px:
-          beside the 304px side menu those minimums pushed the rail past the
-          window on every screen narrower than ~1900px (cut off, with a sideways
-          scroll). At 1280px the feed is still ~540px — wider than Instagram's. */}
-      <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-        <section className="min-w-0">
-          <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app px-2 py-3 ">
-            {/* Equal-width Home subtabs across the whole column. */}
-            <div
-              className={[
-                "grid w-full border-b border-border",
-                TABS.length === 2 ? "grid-cols-2" : "grid-cols-3",
-              ].join(" ")}
-            >
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => selectTab(t.id)}
-                  aria-current={tab === t.id ? "true" : undefined}
-                  className={[
-                    "-mb-px border-b-2 pb-2.5 pt-1 text-sm font-bold tracking-normal transition-colors",
-                    tab === t.id
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted hover:text-main",
-                  ].join(" ")}
-                >
-                  {t.label}
-                </button>
-              ))}
+        <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+          <section className="min-w-0">
+            <div className={tab === "for-you" ? undefined : "hidden"}>
+              <StoriesBar lang={lang} variant="desktop" />
+              <ForYouColumn lang={lang} />
             </div>
-          </div>
+          </section>
 
-          <div className={tab === "for-you" ? undefined : "hidden"}>
-            <StoriesBar lang={lang} variant="desktop" />
-            <ForYouColumn lang={lang} />
-          </div>
-        </section>
-
-        <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">
-          <DesktopFeedRail lang={lang} />
-        </aside>
-      </div>
-      </>
+          <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">
+            <DesktopFeedRail lang={lang} />
+          </aside>
+        </div>
       )}
     </div>
   );
