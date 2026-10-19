@@ -52,10 +52,11 @@ interface Props {
   params: Promise<{ lang: string; handle: string }>;
 }
 
-// Profiles change (new posts, follower counts), but slowly — a few dozen
-// listings a day across the site — so daily keeps shared links and crawled
-// metadata fresh enough without hourly rebuilds.
-export const revalidate = 86400;
+// Time-based ISR for public storefronts. Verification changes are picked up
+// immediately by the browser's cache-and-network queries; the static HTML and
+// its GraphQL data regenerate hourly for fast repeat visits and crawlers.
+const PROFILE_REVALIDATE_SECONDS = 3600;
+export const revalidate = PROFILE_REVALIDATE_SECONDS;
 
 type Profile = ProfileUserFieldsFragment;
 
@@ -71,6 +72,7 @@ const getProfile = cache(
       result = await query({
         query: GetUserProfileDocument,
         variables: { username },
+        context: { fetchOptions: { next: { revalidate: PROFILE_REVALIDATE_SECONDS } } },
       });
     } catch {
       return { profile: null, gone: false };
@@ -92,6 +94,7 @@ const getInitialPosts = cache(
       const { data } = await query({
         query: GetUserPostsDocument,
         variables: { userId, limit: INITIAL_POSTS, sort: "RELEVANCE" },
+        context: { fetchOptions: { next: { revalidate: PROFILE_REVALIDATE_SECONDS } } },
       });
       return (data?.userPosts?.posts ?? []) as ContentCardFieldsFragment[];
     } catch {

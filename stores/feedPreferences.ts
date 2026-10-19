@@ -16,12 +16,16 @@ type NearbyLocationInput = Omit<NearbyLocation, "updatedAt">;
 type FeedPreferencesState = {
   nearbyLocation: NearbyLocation | null;
   nearbyRadiusKm: number;
+  homeNearbyRadiusKm: number;
+  homeNearbyFilterActive: boolean;
   videoMuted: boolean;
   /** When the "enable location" feed banner was last dismissed, or null if never. */
   locationBannerDismissedAt: number | null;
   setNearbyLocation: (location: NearbyLocationInput) => void;
   clearNearbyLocation: () => void;
   setNearbyRadiusKm: (radiusKm: number) => void;
+  setHomeNearbyRadiusKm: (radiusKm: number) => void;
+  setHomeNearbyFilterActive: (active: boolean) => void;
   setVideoMuted: (muted: boolean) => void;
   toggleVideoMuted: () => void;
   dismissLocationBanner: () => void;
@@ -30,17 +34,22 @@ type FeedPreferencesState = {
 type PersistedFeedPreferencesState = {
   nearbyLocation?: NearbyLocation | null;
   nearbyRadiusKm?: number;
+  homeNearbyRadiusKm?: number;
+  homeNearbyFilterActive?: boolean;
   videoMuted?: boolean;
   locationBannerDismissedAt?: number | null;
 };
 
 const DEFAULT_NEARBY_RADIUS_KM = 50;
+const DEFAULT_HOME_NEARBY_RADIUS_KM = 5;
 
 export const useFeedPreferencesStore = create<FeedPreferencesState>()(
   persist(
     (set) => ({
       nearbyLocation: null,
       nearbyRadiusKm: DEFAULT_NEARBY_RADIUS_KM,
+      homeNearbyRadiusKm: DEFAULT_HOME_NEARBY_RADIUS_KM,
+      homeNearbyFilterActive: false,
       videoMuted: true,
       locationBannerDismissedAt: null,
 
@@ -57,6 +66,9 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
 
       clearNearbyLocation: () => set({ nearbyLocation: null }),
       setNearbyRadiusKm: (nearbyRadiusKm) => set({ nearbyRadiusKm }),
+      setHomeNearbyRadiusKm: (homeNearbyRadiusKm) => set({ homeNearbyRadiusKm }),
+      setHomeNearbyFilterActive: (homeNearbyFilterActive) =>
+        set({ homeNearbyFilterActive }),
       setVideoMuted: (videoMuted) => set({ videoMuted }),
       toggleVideoMuted: () =>
         set((state) => ({ videoMuted: !state.videoMuted })),
@@ -68,6 +80,8 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
       partialize: (state) => ({
         nearbyLocation: state.nearbyLocation,
         nearbyRadiusKm: state.nearbyRadiusKm,
+        homeNearbyRadiusKm: state.homeNearbyRadiusKm,
+        homeNearbyFilterActive: state.homeNearbyFilterActive,
         videoMuted: state.videoMuted,
         locationBannerDismissedAt: state.locationBannerDismissedAt,
       }),
@@ -83,11 +97,19 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
           typeof persistedState?.nearbyRadiusKm === "number"
             ? persistedState.nearbyRadiusKm
             : DEFAULT_NEARBY_RADIUS_KM;
+        const homeNearbyRadiusKm =
+          typeof persistedState?.homeNearbyRadiusKm === "number" &&
+          [5, 10, 20, 50, 100, 200, 400].includes(persistedState.homeNearbyRadiusKm)
+            ? persistedState.homeNearbyRadiusKm
+            : DEFAULT_HOME_NEARBY_RADIUS_KM;
 
         return {
           ...current,
           nearbyLocation,
           nearbyRadiusKm,
+          homeNearbyRadiusKm,
+          homeNearbyFilterActive:
+            persistedState?.homeNearbyFilterActive === true,
           videoMuted:
             typeof persistedState?.videoMuted === "boolean"
               ? persistedState.videoMuted

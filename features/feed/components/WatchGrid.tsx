@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
@@ -12,7 +12,8 @@ import {
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
-import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
+import { useNearbyFeed, usePaginationGuard } from "@/features/feed/hooks/useFeed";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import {
   WATCH_GRID_DESKTOP_PAGE_SIZE,
   WATCH_GRID_PAGE_SIZE,
@@ -36,18 +37,30 @@ export function WatchGrid({
   active: boolean;
   desktopLayout?: boolean;
 }) {
-  const { location } = useNearbyLocation();
+  const nearbyFilterActive = useFeedPreferencesStore((s) => s.homeNearbyFilterActive);
+  const nearbyRadiusKm = useFeedPreferencesStore((s) => s.homeNearbyRadiusKm);
+  const {
+    location,
+    permState,
+    geoError,
+    requestLocation,
+  } = useNearbyLocation();
   const searchParams = useSearchParams();
   const requestedCategoryId = searchParams.get("categoryId");
   const categoryFiltered = desktopLayout && Boolean(requestedCategoryId);
+  const useNearbyFilter = nearbyFilterActive && !categoryFiltered;
   const pageSize = desktopLayout ? WATCH_GRID_DESKTOP_PAGE_SIZE : WATCH_GRID_PAGE_SIZE;
+  const nearbyFeed = useNearbyFeed(
+    useNearbyFilter ? location : null,
+    nearbyRadiusKm,
+  );
   const { data: videoData, loading: videoLoading, fetchMore: fetchMoreVideos } = useQuery(VideoFeedDocument, {
     variables: {
       limit: pageSize,
       latitude: location?.latitude,
       longitude: location?.longitude,
     },
-    skip: categoryFiltered,
+    skip: categoryFiltered || useNearbyFilter,
     fetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
   });
@@ -73,16 +86,56 @@ export function WatchGrid({
   // card fragment.
   const rawItems = categoryFiltered
     ? categoryData?.discoveryFeed?.items ?? []
-    : videoData?.videoFeed.items ?? [];
+    : useNearbyFilter
+      ? nearbyFeed.items
+      : videoData?.videoFeed.items ?? [];
   const items = (rawItems as ContentCardFieldsFragment[]).filter(isPlayableVideo);
   const pageInfo = categoryFiltered
     ? categoryData?.discoveryFeed?.pageInfo
-    : videoData?.videoFeed.pageInfo;
-  const loading = categoryFiltered ? categoryLoading : videoLoading;
+    : useNearbyFilter
+      ? undefined
+      : videoData?.videoFeed.pageInfo;
+  const hasMore = categoryFiltered
+    ? pageInfo?.hasNextPage ?? false
+    : useNearbyFilter
+      ? nearbyFeed.hasMore
+      : pageInfo?.hasNextPage ?? false;
+  const loading = useNearbyFilter
+    ? nearbyFeed.loading || permState === "checking" || permState === "requesting"
+    : categoryFiltered
+      ? categoryLoading
+      : videoLoading;
   const [loadingMore, setLoadingMore] = useState(false);
   const guard = usePaginationGuard(items.length);
 
+  // Local results contain photos and videos. If the first nearby page has no
+  // playable videos, continue through its cursor pages until we find some or
+  // exhaust the radius, so the grid does not show a premature empty state.
+  useEffect(() => {
+    if (
+      !useNearbyFilter ||
+      items.length > 0 ||
+      !nearbyFeed.hasMore ||
+      nearbyFeed.loading ||
+      nearbyFeed.loadingMore
+    ) {
+      return;
+    }
+    nearbyFeed.loadMore();
+  }, [
+    items.length,
+    nearbyFeed.hasMore,
+    nearbyFeed.loadMore,
+    nearbyFeed.loading,
+    nearbyFeed.loadingMore,
+    useNearbyFilter,
+  ]);
+
   const loadMore = useCallback(() => {
+    if (useNearbyFilter) {
+      nearbyFeed.loadMore();
+      return;
+    }
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     guard(cursor, items.length, () => {
@@ -108,37 +161,75 @@ export function WatchGrid({
     fetchMoreVideos,
     guard,
     items.length,
+    nearbyFeed.loadMore,
     pageInfo,
     pageSize,
     requestedCategoryId,
+    useNearbyFilter,
   ]);
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
-    hasMore: pageInfo?.hasNextPage ?? false,
-    loading: loading || loadingMore,
+    hasMore,
+    loading: loading || loadingMore || nearbyFeed.loadingMore,
     onLoadMore: loadMore,
     // Posters are tall (9:16): start the next page about two rows early so it
     // has landed by the time the user reaches the end.
     rootMargin: "800px",
   });
 
-  if (loading && items.length === 0) {
-    return <WatchGridSkeleton desktopLayout={desktopLayout} />;
-  }
-
-  if (!loading && items.length === 0) {
+  if (useNearbyFilter && (permState === "denied" || permState === "unavailable" || geoError)) {
     return (
       <div className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
         <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-surface text-primary">
           <Play className="ml-0.5 size-5 fill-current" />
         </div>
         <h2 className="font-display text-lg font-bold text-foreground">
-          No videos to watch yet
+          Location needed for nearby videos
         </h2>
         <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
-          Videos from Shopi sellers will show up here. You can still find video
-          posts in Home as you browse.
+          {permState === "denied"
+            ? "Allow location access in your browser settings, then try again."
+            : permState === "unavailable"
+              ? "This browser or device does not support location access."
+              : geoError}
+        </p>
+        {permState !== "unavailable" ? (
+          <button
+            type="button"
+            onClick={() => requestLocation()}
+            className="mt-4 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white"
+          >
+            Try again
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (useNearbyFilter && !location) {
+    return <WatchGridSkeleton desktopLayout={desktopLayout} />;
+  }
+
+  if (loading && items.length === 0) {
+    return <WatchGridSkeleton desktopLayout={desktopLayout} />;
+  }
+
+  if (!loading && !hasMore && items.length === 0) {
+    return (
+      <div className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
+        <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-surface text-primary">
+          <Play className="ml-0.5 size-5 fill-current" />
+        </div>
+        <h2 className="font-display text-lg font-bold text-foreground">
+          {useNearbyFilter
+            ? `No videos within ${nearbyRadiusKm} km`
+            : "No videos to watch yet"}
+        </h2>
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
+          {useNearbyFilter
+            ? "Try a wider distance from the location filter."
+            : "Videos from Shopi sellers will show up here. You can still find video posts in Home as you browse."}
         </p>
       </div>
     );
@@ -156,6 +247,11 @@ export function WatchGrid({
             : "mx-auto grid max-w-5xl grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
         }
       >
+        {useNearbyFilter ? (
+          <p className="col-span-full pb-1 text-center text-xs text-muted">
+            Videos within {nearbyRadiusKm} km of your location
+          </p>
+        ) : null}
         {items.map((post) => (
           <WatchTile
             key={post.id}
@@ -166,7 +262,7 @@ export function WatchGrid({
         ))}
       </div>
       <div ref={sentinelRef} className="h-1" />
-      {loadingMore && <FeedPaginationSkeleton />}
+      {(loadingMore || nearbyFeed.loadingMore) && <FeedPaginationSkeleton />}
     </section>
   );
 }

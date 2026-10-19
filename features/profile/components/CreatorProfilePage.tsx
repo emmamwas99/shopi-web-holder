@@ -33,6 +33,10 @@ export function CreatorProfilePage({
 
   const { data, loading } = useQuery(GetUserProfileDocument, {
     variables: { username },
+    // Verification can change after this profile has already been cached in
+    // the browser. Keep the rendered server profile immediately, then refresh
+    // it from the API on each visit.
+    fetchPolicy: "cache-and-network",
   });
 
   const profile = data?.userProfile ?? initialProfile;

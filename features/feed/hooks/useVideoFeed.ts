@@ -3,7 +3,13 @@
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { concatAST } from "graphql";
-import { startTransition, useCallback, useMemo, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   ContentCardFieldsFragmentDoc,
   GetContentDocument,
@@ -15,7 +21,9 @@ import {
   VIDEO_FEED_LOAD_MORE_SIZE,
 } from "@/features/feed/constants";
 import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
-import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
+import { useNearbyFeed, usePaginationGuard } from "@/features/feed/hooks/useFeed";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
+import { isPlayableVideo } from "@/features/feed/lib/videoSource";
 
 const CategoryVideoFeedDocument = concatAST([
   gql`
@@ -69,6 +77,13 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
   // Passive only — this never prompts for location.
   const { location } = useNearbyLocation();
   const isCategoryFeed = Boolean(categoryId);
+  const nearbyFilterActive = useFeedPreferencesStore((s) => s.homeNearbyFilterActive);
+  const nearbyRadiusKm = useFeedPreferencesStore((s) => s.homeNearbyRadiusKm);
+  const useNearbyFilter = nearbyFilterActive && !isCategoryFeed;
+  const nearbyFeed = useNearbyFeed(
+    useNearbyFilter ? location : null,
+    nearbyRadiusKm,
+  );
 
   const globalQuery = useQuery(VideoFeedDocument, {
     variables: {
@@ -77,7 +92,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
       latitude: location?.latitude,
       longitude: location?.longitude,
     },
-    skip: isCategoryFeed,
+    skip: isCategoryFeed || useNearbyFilter,
     fetchPolicy: "cache-first",
     returnPartialData: false,
     notifyOnNetworkStatusChange: true,
@@ -99,7 +114,7 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
   // the video the user tapped.
   const seedQuery = useQuery(GetContentDocument, {
     variables: { id: seed },
-    skip: !isCategoryFeed,
+    skip: !isCategoryFeed && !useNearbyFilter,
     fetchPolicy: "cache-first",
     returnPartialData: false,
   });
@@ -110,7 +125,18 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
   const categoryItems = (categoryQuery.data?.discoveryFeed?.items ?? []) as ContentCardFieldsFragment[];
   const categorySeed = seedQuery.data?.content as ContentCardFieldsFragment | null | undefined;
   const globalItems = (globalQuery.data?.videoFeed?.items ?? []) as ContentCardFieldsFragment[];
+  const nearbyItems = nearbyFeed.items.filter(isPlayableVideo);
+  const nearbySeed = seedQuery.data?.content as ContentCardFieldsFragment | null | undefined;
   const items = useMemo(() => {
+    if (useNearbyFilter) {
+      const selectedSeed =
+        nearbyItems.find((item) => item.id === seed || item.slug === seed) ?? nearbySeed;
+      if (!selectedSeed) return nearbyItems;
+      return [
+        selectedSeed,
+        ...nearbyItems.filter((item) => item.id !== selectedSeed.id),
+      ];
+    }
     if (!isCategoryFeed) return globalItems;
 
     const foundSeed = categoryItems.find(
@@ -123,19 +149,58 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
       selectedSeed,
       ...categoryItems.filter((item) => item.id !== selectedSeed.id),
     ];
-  }, [categoryItems, categorySeed, globalItems, isCategoryFeed, seed]);
+  }, [
+    categoryItems,
+    categorySeed,
+    globalItems,
+    isCategoryFeed,
+    nearbyItems,
+    nearbySeed,
+    seed,
+    useNearbyFilter,
+  ]);
+
+  useEffect(() => {
+    if (
+      !useNearbyFilter ||
+      nearbyItems.length > 0 ||
+      !nearbyFeed.hasMore ||
+      nearbyFeed.loading ||
+      nearbyFeed.loadingMore
+    ) {
+      return;
+    }
+    nearbyFeed.loadMore();
+  }, [
+    nearbyFeed.hasMore,
+    nearbyFeed.loadMore,
+    nearbyFeed.loading,
+    nearbyFeed.loadingMore,
+    nearbyItems.length,
+    useNearbyFilter,
+  ]);
 
   const pageInfo = isCategoryFeed
     ? categoryQuery.data?.discoveryFeed?.pageInfo
-    : globalQuery.data?.videoFeed?.pageInfo;
+    : useNearbyFilter
+      ? undefined
+      : globalQuery.data?.videoFeed?.pageInfo;
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
-  const loading = isCategoryFeed
-    ? (categoryQuery.loading && itemCount === 0) ||
-      (seedQuery.loading && !categoryItems.some((item) => item.id === seed || item.slug === seed))
-    : globalQuery.loading && itemCount === 0;
+  const loading = useNearbyFilter
+    ? nearbyFeed.loading ||
+      (seedQuery.loading && nearbyItems.length === 0 && !nearbySeed)
+    : isCategoryFeed
+      ? (categoryQuery.loading && itemCount === 0) ||
+        (seedQuery.loading &&
+          !categoryItems.some((item) => item.id === seed || item.slug === seed))
+      : globalQuery.loading && itemCount === 0;
 
   const loadMore = useCallback(() => {
+    if (useNearbyFilter) {
+      nearbyFeed.loadMore();
+      return;
+    }
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     guard(cursor, itemCount, () => {
@@ -181,15 +246,23 @@ export function useVideoFeed(seed: string, categoryId?: string | null) {
     guard,
     isCategoryFeed,
     itemCount,
+    nearbyFeed.loadMore,
     pageInfo,
+    useNearbyFilter,
   ]);
 
   return {
     items,
     loading,
-    loadingMore,
-    error: isCategoryFeed ? categoryQuery.error ?? seedQuery.error : globalQuery.error,
-    hasMore: pageInfo?.hasNextPage ?? false,
+    loadingMore: loadingMore || nearbyFeed.loadingMore,
+    error: useNearbyFilter
+      ? nearbyFeed.error ?? seedQuery.error
+      : isCategoryFeed
+        ? categoryQuery.error ?? seedQuery.error
+        : globalQuery.error,
+    hasMore: useNearbyFilter
+      ? nearbyFeed.hasMore
+      : pageInfo?.hasNextPage ?? false,
     loadMore,
   };
 }
