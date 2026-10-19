@@ -56,7 +56,8 @@ interface Props {
 // immediately by the browser's cache-and-network queries; the static HTML and
 // its GraphQL data regenerate hourly for fast repeat visits and crawlers.
 const PROFILE_REVALIDATE_SECONDS = 3600;
-export const revalidate = PROFILE_REVALIDATE_SECONDS;
+// Next statically analyzes route config exports, so keep this value literal.
+export const revalidate = 3600;
 
 type Profile = ProfileUserFieldsFragment;
 

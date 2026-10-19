@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Clapperboard, MapPin, Search, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { Logo } from "@/components/ui/Logo";
@@ -211,6 +212,10 @@ export function FeedSkeleton() {
 }
 
 function MobileFeedHeaderSkeleton() {
+  const icons = SHOW_ASK_SHOPI
+    ? [MapPin, Search, Sparkles, Clapperboard]
+    : [MapPin, Search, Clapperboard];
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-app px-4" aria-hidden>
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between">
@@ -220,8 +225,13 @@ function MobileFeedHeaderSkeleton() {
           className="dark:brightness-0 dark:invert"
         />
         <div className="flex items-center gap-2">
-          {[...Array(SHOW_ASK_SHOPI ? 3 : 2)].map((_, index) => (
-            <Skeleton key={index} className="size-10 rounded-full" />
+          {icons.map((Icon, index) => (
+            <div
+              key={index}
+              className="grid size-10 place-items-center rounded-full bg-surface text-foreground"
+            >
+              <Icon size={index === 0 ? 19 : 21} strokeWidth={2.1} aria-hidden />
+            </div>
           ))}
         </div>
       </div>
