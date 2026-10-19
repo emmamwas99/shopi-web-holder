@@ -6,6 +6,8 @@ import {
   useLayoutEffect,
   useRef,
   useSyncExternalStore,
+  use,
+  Suspense,
 } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -14,7 +16,13 @@ import { FeedHeader } from "./FeedHeader";
 import { MobileSearchScreen, type MobileSearchTab } from "./MobileSearchScreen";
 import { GoogleOneTap } from "@/features/auth/components/GoogleOneTap";
 import FeedGrid from "./FeedGrid";
-import { AskShopiSkeleton, FeedSkeleton } from "./FeedSkeleton";
+import {
+  AskShopiSkeleton,
+  FeedCardsSkeleton,
+  FeedSkeleton,
+} from "./FeedSkeleton";
+import { StoriesBar } from "@/features/stories/components/StoriesBar";
+import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { WatchGridSkeleton } from "./WatchGridSkeleton";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import {
@@ -60,6 +68,8 @@ interface Props {
   /** Server-fetched first page, handed to FeedGrid so the feed's cards (and
    *  the LCP image) are present in the server-rendered HTML. */
   initialItems?: ContentCardFieldsFragment[];
+  /** Server query streamed separately so the header need not wait for it. */
+  initialItemsPromise?: Promise<ContentCardFieldsFragment[]>;
 }
 
 type Tab = "for-you" | "watch" | "ask-shopi";
@@ -107,7 +117,12 @@ function mirrorTabToUrl(tab: Tab) {
   rememberNavTabUrl();
 }
 
-export function FeedPage({ lang, visible = true, initialItems }: Props) {
+export function FeedPage({
+  lang,
+  visible = true,
+  initialItems,
+  initialItemsPromise,
+}: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -345,11 +360,29 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
             active-video election. */}
           <div className="relative bg-surface">
             <div className={tab === "for-you" ? undefined : "hidden"}>
-              <FeedGrid
-                lang={lang}
-                active={visible && tab === "for-you"}
-                initialItems={initialItems}
-              />
+              {initialItemsPromise ? (
+                <Suspense
+                  fallback={
+                    <>
+                      <StoriesBar lang={lang} />
+                      <LocationPermissionBanner />
+                      <FeedCardsSkeleton />
+                    </>
+                  }
+                >
+                  <DeferredFeedGrid
+                    lang={lang}
+                    active={visible && tab === "for-you"}
+                    initialItemsPromise={initialItemsPromise}
+                  />
+                </Suspense>
+              ) : (
+                <FeedGrid
+                  lang={lang}
+                  active={visible && tab === "for-you"}
+                  initialItems={initialItems}
+                />
+              )}
             </div>
 
             {openedTabs.has("watch") ? (
@@ -367,4 +400,17 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
       ) : null}
     </div>
   );
+}
+
+function DeferredFeedGrid({
+  lang,
+  active,
+  initialItemsPromise,
+}: {
+  lang: string;
+  active: boolean;
+  initialItemsPromise: Promise<ContentCardFieldsFragment[]>;
+}) {
+  const initialItems = use(initialItemsPromise);
+  return <FeedGrid lang={lang} active={active} initialItems={initialItems} />;
 }

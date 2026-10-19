@@ -74,37 +74,35 @@ export default async function FeedPageRoute({
   // which is React error #419 and left every card — including the LCP image —
   // to be fetched and rendered on the client.
   //
-  // Awaiting the same query here gives the server real items to render. It is
-  // not an extra round trip in practice: it shares the Next data cache
-  // (FEED_CACHE) with the PreloadQuery below, so the cost is amortised across
-  // visitors rather than paid per request. A failure degrades to the old
-  // behaviour (skeleton + client fetch) rather than breaking the route — the
-  // feed's error boundary covers the rest.
-  let initialItems: ContentCardFieldsFragment[] = [];
+  // Start the server query alongside PreloadQuery and pass its result as a
+  // promise. The feed section unwraps it inside its own Suspense boundary, so
+  // the header streams immediately while the server still renders real cards
+  // as soon as the API responds. A failure falls back to the client query.
+  let initialItemsPromise: Promise<ContentCardFieldsFragment[]> | undefined;
   if (!cookieStore.has("shopi-auth-hint")) {
-    try {
-      const { data } = await query({
-        query: ForYouFeedDocument,
-        variables: { limit: FEED_PAGE_SIZE, seed: "initial" },
-        context: FEED_CACHE,
-      });
-      initialItems = (data?.forYouFeed?.items ??
-        []) as ContentCardFieldsFragment[];
-    } catch {
-      initialItems = [];
-    }
+    initialItemsPromise = query({
+      query: ForYouFeedDocument,
+      variables: { limit: FEED_PAGE_SIZE, seed: "initial" },
+      context: FEED_CACHE,
+    })
+      .then(({ data }) =>
+        (data?.forYouFeed?.items ?? []) as ContentCardFieldsFragment[],
+      )
+      .catch(() => []);
   }
 
   const feed = (
     <Suspense fallback={<FeedSkeleton />}>
-      <FeedPage lang={lang} initialItems={initialItems} />
+      <FeedPage lang={lang} initialItemsPromise={initialItemsPromise} />
     </Suspense>
   );
 
   // The server cannot safely preload a personalized query because auth tokens
   // live in the client store. The existing hint cookie lets authenticated users
   // keep their private cache path, while anonymous users (including search and
-  // performance crawlers) receive the first feed response during SSR.
+  // performance crawlers) receive the first feed response during SSR. The
+  // unresolved initial-items promise is read inside the feed's own Suspense
+  // boundary, so the header can stream before the API responds.
   if (cookieStore.has("shopi-auth-hint")) {
     return <AuthenticatedFeedPage lang={lang} />;
   }
