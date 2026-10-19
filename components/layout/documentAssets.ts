@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, JetBrains_Mono, Manrope } from "next/font/google";
+import localFont from "next/font/local";
 
 /**
  * What every full HTML document Shopi renders needs: the fonts and the theme
@@ -7,23 +7,23 @@ import { Bricolage_Grotesque, JetBrains_Mono, Manrope } from "next/font/google";
  * own <html>, so the 404 page looks like the rest of the site.
  */
 
-const manrope = Manrope({
-  weight: ["400", "500", "600", "700", "800"],
-  subsets: ["latin"],
+const manrope = localFont({
+  src: "./fonts/manrope-latin.woff2",
+  weight: "400 800",
   display: "swap",
   variable: "--font-sans",
 });
 
-const bricolage = Bricolage_Grotesque({
-  weight: ["500", "600", "700"],
-  subsets: ["latin"],
+const bricolage = localFont({
+  src: "./fonts/bricolage-grotesque-latin.woff2",
+  weight: "500 700",
   display: "swap",
   variable: "--font-display",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  weight: ["400", "500"],
-  subsets: ["latin"],
+const jetbrainsMono = localFont({
+  src: "./fonts/jetbrains-mono-latin.woff2",
+  weight: "400 500",
   display: "swap",
   // This face is used for small supporting details, never the initial hero or
   // feed content. Keep it out of the critical mobile preload set.

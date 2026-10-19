@@ -498,6 +498,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Use each phone platform's native UI typeface while keeping the brand fonts
+   on tablets and larger screens. iOS exposes San Francisco through the system
+   font aliases; Android's system Roboto is available by its family name. */
+@media (max-width: 767.98px) {
+  html[class] {
+    --font-sans: Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-display: Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    html[class] {
+      --font-sans: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+  }
+}
+
 /* ─── Utility classes (use these directly in JSX) ──────────────── */
 .bg-app {
   background-color: rgb(var(--color-bg));
@@ -526,6 +543,21 @@ body {
 .feed-mobile-shell {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+.feed-scroll-header {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.feed-scroll-header[data-hidden="true"] {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-scroll-header {
+    transition: none !important;
+  }
 }
 
 .desktop-feed-skeleton {

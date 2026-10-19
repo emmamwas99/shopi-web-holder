@@ -1030,7 +1030,6 @@ function BulkListingsDialog({
                     contactPhone: draft.contactPhone,
                   };
                   const waitingForMedia = draft.bulkStage !== "COMPLETE";
-                  const mediaInputId = `bulk-media-${draft.id}`;
                   return (
                     <article key={draft.id} className="min-w-0 rounded-xl border border-border bg-elevated p-4">
                       <div className="mb-3 flex items-start gap-3">
@@ -1051,20 +1050,20 @@ function BulkListingsDialog({
                         </div>
                         {waitingForMedia ? (
                           <>
-                            <input
-                              id={mediaInputId}
-                              type="file"
-                              accept="image/*,video/*"
-                              className="sr-only"
-                              disabled={uploadState?.uploading}
-                              onChange={(event) => {
-                                const selectedFile = event.target.files?.[0];
-                                if (selectedFile) onUploadMedia(draft.id, selectedFile);
-                                event.target.value = "";
-                              }}
-                            />
-                            <label htmlFor={mediaInputId} className={`inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-bold text-white ${uploadState?.uploading ? "pointer-events-none opacity-50" : ""}`}>
+                            <label className={`relative inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg bg-primary px-3 text-xs font-bold text-white focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${uploadState?.uploading ? "pointer-events-none opacity-50" : ""}`}>
                               <Upload className="h-3.5 w-3.5" aria-hidden /> Add media
+                              <input
+                                type="file"
+                                accept="image/*,video/*"
+                                aria-label={`Add media for ${edit.title || "listing"}`}
+                                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                disabled={uploadState?.uploading}
+                                onChange={(event) => {
+                                  const selectedFile = event.target.files?.[0];
+                                  if (selectedFile) onUploadMedia(draft.id, selectedFile);
+                                  event.target.value = "";
+                                }}
+                              />
                             </label>
                           </>
                         ) : null}

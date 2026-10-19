@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { useThemeStore } from "@/stores/theme";
 import { Switch } from "@/components/ui/switch";
 
-export function ThemeToggle() {
+export function ThemeToggle({ showIcons = true }: { showIcons?: boolean }) {
   const { resolvedTheme, setTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
@@ -27,23 +27,27 @@ export function ThemeToggle() {
 
   return (
     <div className="inline-flex items-center gap-2">
-      <Sun
-        size={14}
-        strokeWidth={2.1}
-        className={isDark ? "text-placeholder" : "text-highlight"}
-        aria-hidden
-      />
+      {showIcons ? (
+        <Sun
+          size={14}
+          strokeWidth={2.1}
+          className={isDark ? "text-placeholder" : "text-highlight"}
+          aria-hidden
+        />
+      ) : null}
       <Switch
         checked={isDark}
         onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
         aria-label="Toggle dark mode"
       />
-      <Moon
-        size={14}
-        strokeWidth={2.1}
-        className={isDark ? "text-accent" : "text-placeholder"}
-        aria-hidden
-      />
+      {showIcons ? (
+        <Moon
+          size={14}
+          strokeWidth={2.1}
+          className={isDark ? "text-accent" : "text-placeholder"}
+          aria-hidden
+        />
+      ) : null}
     </div>
   );
 }
