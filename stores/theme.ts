@@ -43,8 +43,8 @@ function applyTheme(resolved: "light" | "dark") {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      // Default to light until the user explicitly chooses a theme.
-      theme: "light",
+      // Follow the device appearance until the user explicitly chooses a theme.
+      theme: "system",
       // Read the class the inline script already applied so the first
       // render matches — avoids a sun/moon icon flicker on hydration.
       resolvedTheme:
