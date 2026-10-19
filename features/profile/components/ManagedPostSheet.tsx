@@ -64,6 +64,7 @@ export function ManagedPostSheet({
 }) {
   const router = useRouter();
   const open = Boolean(post);
+  const [menuPortalContainer, setMenuPortalContainer] = useState<HTMLDivElement | null>(null);
   // Keep showing the last post while the sheet animates closed.
   const [shown, setShown] = useState(post);
   if (post && post !== shown) setShown(post);
@@ -138,6 +139,7 @@ export function ManagedPostSheet({
       desktop={desktop}
       title={shown.title || "Untitled post"}
       subtitle={unique([shown.listingNumber, `posted ${timeAgoLong(shown.createdAt)}`]).join(" · ")}
+      contentRef={setMenuPortalContainer}
       onRequestClose={requestClose}
     >
       <div className="space-y-5">
@@ -181,7 +183,7 @@ export function ManagedPostSheet({
             >
               {hidden ? "Show in store" : "Hide"}
             </ActionButton>
-            <MoreMenu actions={menu} disabled={busy} />
+            <MoreMenu actions={menu} disabled={busy} container={menuPortalContainer} />
           </div>
 
           {problem && (
@@ -291,7 +293,15 @@ export function ActionButton({
  * Everything that isn't one of the two main actions, behind "More" — as the
  * admin does. Back closes the menu first.
  */
-export function MoreMenu({ actions, disabled }: { actions: MenuAction[]; disabled?: boolean }) {
+export function MoreMenu({
+  actions,
+  disabled,
+  container,
+}: {
+  actions: MenuAction[];
+  disabled?: boolean;
+  container?: HTMLElement | null;
+}) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   useBackDismiss(open, close);
@@ -308,6 +318,7 @@ export function MoreMenu({ actions, disabled }: { actions: MenuAction[]; disable
         </button>
       </PopoverTrigger>
       <PopoverContent
+        container={container}
         align="end"
         collisionPadding={16}
         className="z-[90] w-56 rounded-xl border border-default bg-app p-1 shadow-lg"

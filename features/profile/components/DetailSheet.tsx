@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -23,6 +23,7 @@ export function DetailSheet({
   desktop,
   title,
   subtitle,
+  contentRef,
   onRequestClose,
   children,
 }: {
@@ -30,6 +31,7 @@ export function DetailSheet({
   desktop: boolean | null;
   title: string;
   subtitle?: string;
+  contentRef?: Ref<HTMLDivElement>;
   onRequestClose: () => void;
   children: ReactNode;
 }) {
@@ -37,6 +39,7 @@ export function DetailSheet({
     return (
       <Sheet open={open} onOpenChange={(next) => !next && onRequestClose()}>
         <SheetContent
+          ref={contentRef}
           side="right"
           className="z-[80] flex h-full w-full flex-col gap-0 border-l border-default bg-app p-0 sm:max-w-[480px]"
           overlayClassName="z-[70] bg-black/40"
@@ -58,6 +61,7 @@ export function DetailSheet({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onRequestClose()}>
       <DialogContent
+        ref={contentRef}
         overlayClassName="z-[70] bg-black/50"
         className="!fixed !inset-0 !left-0 !top-0 !z-[80] !flex !h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !rounded-none !border-0 !bg-app !p-0 !shadow-none [&>button:last-child]:hidden"
       >
