@@ -219,7 +219,7 @@ function MobileFeedHeaderSkeleton() {
     <>
       <div className="h-[57px]" aria-hidden="true" />
       <header
-        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-white px-4 md:px-6"
+        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-app px-4 md:px-6"
         aria-hidden
       >
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-3">
