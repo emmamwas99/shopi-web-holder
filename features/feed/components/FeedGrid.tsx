@@ -1,13 +1,15 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { MapPin } from "lucide-react";
 import { PostCard } from "./PostCard";
 import {
   FeaturedSellerCard,
   useFeaturedSellers,
 } from "./FeaturedSellerCard";
 import { FEED_PAGE_SIZE } from "../constants";
-import { useForYouFeed } from "../hooks/useFeed";
+import { useForYouFeed, useNearbyFeed } from "../hooks/useFeed";
+import { useNearbyLocation } from "../hooks/useNearbyLocation";
 import {
   FeedCardsSkeleton,
   FeedPaginationSkeleton,
@@ -15,6 +17,7 @@ import {
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { memo, Suspense } from "react";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
@@ -169,7 +172,118 @@ function LiveFeedCards({
   );
 }
 
+/** The home radius filter swaps the ranked stream for real distance results. */
+function NearbyFeedCards({ lang, active }: { lang: string; active: boolean }) {
+  const nearbyRadiusKm = useFeedPreferencesStore((s) => s.homeNearbyRadiusKm);
+  const {
+    location,
+    permState,
+    geoError,
+    requestLocation,
+  } = useNearbyLocation({
+    requireLiveLocation: true,
+    useCachedLocation: false,
+  });
+  const {
+    items,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    error,
+  } = useNearbyFeed(location, nearbyRadiusKm);
+
+  const { sentinelRef } = useInfiniteScroll({
+    enabled: active && Boolean(location),
+    hasMore,
+    loading: loading || loadingMore,
+    onLoadMore: loadMore,
+  });
+
+  if (permState === "denied" || permState === "unavailable" || geoError) {
+    return (
+      <div className="mx-3 my-4 rounded-2xl border border-border bg-elevated px-5 py-6 text-center sm:mx-0">
+        <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-primary/10 text-primary">
+          <MapPin size={19} aria-hidden />
+        </div>
+        <h2 className="text-sm font-bold text-main">Location needed for nearby listings</h2>
+        <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-muted">
+          {permState === "denied"
+            ? "Allow location access in your browser settings, then try again."
+            : permState === "unavailable"
+              ? "This browser or device does not support location access."
+              : geoError}
+        </p>
+        {permState !== "unavailable" ? (
+          <button
+            type="button"
+            onClick={() => requestLocation()}
+            className="mt-4 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white"
+          >
+            Try again
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!location || (loading && items.length === 0)) {
+    return (
+      <div className="px-3 py-4 sm:px-0">
+        <p className="mb-3 flex items-center justify-center gap-2 text-xs text-muted">
+          <MapPin size={14} className="text-primary" aria-hidden />
+          {permState === "requesting"
+            ? "Finding listings near you…"
+            : "Loading nearby listings…"}
+        </p>
+        <FeedCardsSkeleton />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2.5">
+        <MapPin size={14} className="shrink-0 text-primary" aria-hidden />
+        <p className="min-w-0 flex-1 truncate text-xs text-muted">
+          Within <strong className="font-semibold text-main">{nearbyRadiusKm} km</strong> of{" "}
+          <span className="font-medium text-main">{location.label || "your location"}</span>
+        </p>
+      </div>
+      {error && items.length === 0 ? (
+        <p className="px-5 py-12 text-center text-sm text-muted">
+          Nearby listings could not load. Please try again.
+        </p>
+      ) : items.length === 0 ? (
+        <div className="flex min-h-[45svh] flex-col items-center justify-center px-6 py-16 text-center">
+          <div className="mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+            <MapPin size={22} aria-hidden />
+          </div>
+          <h2 className="text-base font-bold text-main">Nothing nearby yet</h2>
+          <p className="mt-1 max-w-xs text-sm text-muted">
+            No listings within {nearbyRadiusKm} km. Try a wider distance from the location
+            filter.
+          </p>
+        </div>
+      ) : (
+        <>
+          <FeedCards items={items} lang={lang} />
+          <div ref={sentinelRef} className="h-1" />
+          <div
+            className="flex items-center justify-center"
+            style={{ minHeight: hasMore ? "72px" : undefined }}
+            aria-hidden={!loadingMore}
+          >
+            {loadingMore ? <FeedPaginationSkeleton /> : null}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 function FeedGrid({ lang, active = true, initialItems }: Props) {
+  const nearbyFilterActive = useFeedPreferencesStore((s) => s.homeNearbyFilterActive);
   return (
     <div className="pb-safe-area-inset-bottom pb-6 min-h-svh">
       {/* ── Stories tray ──────────────────────────────────────────────── */}
@@ -181,7 +295,7 @@ function FeedGrid({ lang, active = true, initialItems }: Props) {
       <StoriesBar lang={lang} />
 
       {/* ── Location permission nudge ────────────────────────────────── */}
-      <LocationPermissionBanner />
+      {!nearbyFilterActive ? <LocationPermissionBanner /> : null}
 
       {/* ── Post cards ───────────────────────────────────────────────────
           `useForYouFeed` suspends. Without a boundary here, the *route's*
@@ -198,21 +312,25 @@ function FeedGrid({ lang, active = true, initialItems }: Props) {
           to render: the cards, and with them the LCP <img>, land in the initial
           HTML. The live feed then takes over on the client with the same items
           (same query, same cache), so the swap is invisible. */}
-      <Suspense
-        fallback={
-          initialItems && initialItems.length > 0 ? (
-            <FeedCards items={initialItems} lang={lang} />
-          ) : (
-            <FeedCardsSkeleton />
-          )
-        }
-      >
-        <LiveFeedCards
-          lang={lang}
-          active={active}
-          serverRendered={Boolean(initialItems?.length)}
-        />
-      </Suspense>
+      {nearbyFilterActive ? (
+        <NearbyFeedCards lang={lang} active={active} />
+      ) : (
+        <Suspense
+          fallback={
+            initialItems && initialItems.length > 0 ? (
+              <FeedCards items={initialItems} lang={lang} />
+            ) : (
+              <FeedCardsSkeleton />
+            )
+          }
+        >
+          <LiveFeedCards
+            lang={lang}
+            active={active}
+            serverRendered={Boolean(initialItems?.length)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

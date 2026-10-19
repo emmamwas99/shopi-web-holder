@@ -232,6 +232,9 @@ export function CreatorProfileView({
       sort,
       search: debouncedSearch || undefined,
     },
+    // Post tiles carry creator.isVerified. Refresh cached creator data when a
+    // storefront is revisited so newly verified sellers get their badge.
+    fetchPolicy: "cache-and-network",
     notifyOnNetworkStatusChange: true,
   });
 

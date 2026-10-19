@@ -80,9 +80,9 @@ export function useNearbyLocation({
     (s) => s.clearNearbyLocation,
   );
 
-  const [prefsHydrated, setPrefsHydrated] = useState(() =>
-    useFeedPreferencesStore.persist.hasHydrated(),
-  );
+  // Start consistently on server and client; the effect below reads persisted
+  // browser data after hydration without changing the initial HTML.
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
   const requestIdRef = useRef(0);
 
   // Read the stored position inside callbacks without making them depend on
@@ -195,10 +195,18 @@ export function useNearbyLocation({
 
   useEffect(() => {
     if (prefsHydrated) return;
-    const unsubscribe = useFeedPreferencesStore.persist.onFinishHydration(() =>
-      setPrefsHydrated(true),
-    );
-    return unsubscribe;
+    const persist = useFeedPreferencesStore.persist;
+    if (!persist) {
+      // Zustand omits its persist API during SSR or when browser storage is
+      // unavailable. There is no saved location to wait for in that case.
+      setPrefsHydrated(true);
+      return;
+    }
+    if (persist.hasHydrated()) {
+      setPrefsHydrated(true);
+      return;
+    }
+    return persist.onFinishHydration(() => setPrefsHydrated(true));
   }, [prefsHydrated]);
 
   // Resolve the position on mount, and again whenever the stored one has gone
