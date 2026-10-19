@@ -358,6 +358,42 @@ export function useInbox(
     });
   }, [messagesData, selectedConversationId]);
 
+  // Direct message attachments can arrive before their responsive image
+  // variants (or video metadata) are ready. Keep the open conversation fresh
+  // while any attached asset is still processing so recipients see the final
+  // media without reopening the chat or refreshing the page.
+  const processingMediaKey = messages
+    .filter((message) => {
+      const status = message.mediaAsset?.status?.toUpperCase();
+      return status === "PENDING" || status === "PROCESSING";
+    })
+    .map((message) => message.mediaAssetId ?? message.id)
+    .sort()
+    .join("|");
+
+  useEffect(() => {
+    if (!selectedConversationId || !isAuthenticated || !processingMediaKey)
+      return;
+
+    let attempts = 0;
+    const interval = window.setInterval(() => {
+      attempts += 1;
+      if (attempts >= 40) {
+        window.clearInterval(interval);
+        return;
+      }
+
+      void refetchMessagesRef.current?.({
+        input: {
+          conversationId: selectedConversationId,
+          limit: PAGE_SIZE,
+        },
+      });
+    }, 1500);
+
+    return () => window.clearInterval(interval);
+  }, [isAuthenticated, processingMediaKey, selectedConversationId]);
+
   useEffect(() => {
     if (!contentIdParam) return;
     if (ensureKeyRef.current === contentIdParam) return;

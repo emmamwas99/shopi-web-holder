@@ -121,13 +121,14 @@ export function ManagedPostSheet({
     ...(live
       ? [
           { key: "share", label: "Share link", icon: Share2, onSelect: () => void share(shown) },
-          { key: "store", label: "View on store", icon: Store, onSelect: () => go(contentPath(lang, shown)) },
+          { key: "store", label: "View on store", icon: Store, navigate: true, onSelect: () => go(contentPath(lang, shown)) },
         ]
       : []),
     {
       key: "insights",
       label: "Performance insights",
       icon: BarChart3,
+      navigate: true,
       onSelect: () => go(`/${lang}/profile/posts/${shown.id}`),
     },
     { key: "delete", label: "Delete post", icon: Trash2, onSelect: () => onDelete(shown), danger: true },
@@ -256,6 +257,7 @@ type MenuAction = {
   label: string;
   icon: IconType;
   onSelect: () => void;
+  navigate?: boolean;
   danger?: boolean;
 };
 
@@ -304,7 +306,7 @@ export function MoreMenu({
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
-  useBackDismiss(open, close);
+  const { release } = useBackDismiss(open, close);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -323,11 +325,14 @@ export function MoreMenu({
         collisionPadding={16}
         className="z-[90] w-56 rounded-xl border border-default bg-app p-1 shadow-lg"
       >
-        {actions.map(({ key, label, icon: Icon, onSelect, danger }) => (
+        {actions.map(({ key, label, icon: Icon, onSelect, navigate, danger }) => (
           <button
             key={key}
             type="button"
             onClick={() => {
+              // Release this menu's Back entry before the parent sheet
+              // releases its entry and navigates away.
+              if (navigate) release();
               setOpen(false);
               onSelect();
             }}

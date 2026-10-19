@@ -14,6 +14,14 @@ export interface TeamMessage {
   sender: "TEAM" | "MEMBER";
   subject?: string | null;
   body: string;
+  mediaAssetId?: string | null;
+  mediaAsset?: {
+    type: 'IMAGE' | 'GENERATED_IMAGE' | 'VIDEO';
+    status?: string;
+    thumbnailUrl?: string | null;
+    r2Variants?: { url: string; variant: string; width: number; height: number }[];
+    muxMeta?: { playbackId?: string | null; thumbnailUrl?: string | null } | null;
+  } | null;
   readAt?: string | null;
   createdAt: string;
   /** Client-only send state for messages rendered before the server responds. */
