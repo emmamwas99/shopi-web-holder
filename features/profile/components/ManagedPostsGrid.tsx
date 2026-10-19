@@ -60,7 +60,7 @@ import { ManagedPostSheet } from "./ManagedPostSheet";
 interface Props {
   posts: ManagedPost[];
   hasMore: boolean;
-  onLoadMore: () => void;
+  onLoadMore: () => void | Promise<unknown>;
   loading: boolean;
   lang: string;
   onRefresh: () => Promise<unknown> | void;
@@ -194,6 +194,7 @@ export function ManagedPostsGrid({
   const isDesktop = useIsDesktop({ ssrDefault: false });
   const onLoadMoreRef = useRef(onLoadMore);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const fetchingMoreRef = useRef(false);
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<ManagedPost | null>(null);
@@ -219,13 +220,6 @@ export function ManagedPostsGrid({
     onLoadMoreRef.current = onLoadMore;
   }, [onLoadMore]);
 
-  // Load the whole inventory, so the chip counts, search and sort cover every
-  // post rather than the first page — a rejected post on page three otherwise
-  // read as "Needs attention 0".
-  useEffect(() => {
-    if (hasMore && !loading) onLoadMoreRef.current();
-  }, [hasMore, loading, posts.length]);
-
   // The open post, read from the live list: after an edit or a hide the
   // mutation updates the cache, and the sheet shows the new state in place.
   const openPost = useMemo(
@@ -238,9 +232,10 @@ export function ManagedPostsGrid({
       STATUS_FILTERS.map((filter) => ({
         ...filter,
         count: posts.filter((post) => matchesStatusFilter(post, filter.key)).length,
+        countSuffix: hasMore ? "+" : "",
         attention: filter.key === "attention",
       })),
-    [posts],
+    [hasMore, posts],
   );
 
   const filteredPosts = useMemo(
@@ -255,21 +250,36 @@ export function ManagedPostsGrid({
   );
   const renderedPosts = filteredPosts.slice(0, renderCount);
 
-  // Render more as the end of the list comes into view.
+  // Render the next visible batch or fetch the next server page as the end of
+  // the inventory comes into view.
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || renderCount >= filteredPosts.length) return;
+    if (
+      !sentinel ||
+      (renderCount >= filteredPosts.length && (!hasMore || loading))
+    ) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+
+        if (renderCount < filteredPosts.length) {
           setRenderCount((count) => count + RENDER_STEP);
+          return;
         }
+
+        if (!hasMore || loading || fetchingMoreRef.current) return;
+        fetchingMoreRef.current = true;
+        void Promise.resolve(onLoadMoreRef.current())
+          .catch(() => {})
+          .finally(() => {
+            fetchingMoreRef.current = false;
+          });
       },
       { rootMargin: "600px 0px" },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredPosts.length, renderCount]);
+  }, [filteredPosts.length, hasMore, loading, posts.length, renderCount]);
 
   // A new view starts from its top.
   const changeFilter = (key: StatusFilter) => {
@@ -406,8 +416,8 @@ export function ManagedPostsGrid({
           My posts
         </h2>
         <p className="hidden text-[13px] text-muted md:mt-1 md:block">
-          {posts.length === 1 ? "1 post" : `${posts.length} posts`}
-          {posts.length > 0 && ` · ${liveCount} live`}
+          {posts.length}{hasMore ? "+" : ""} {posts.length === 1 && !hasMore ? "post" : "posts"}
+          {posts.length > 0 && ` · ${liveCount}${hasMore ? "+" : ""} live`}
         </p>
       </div>
       <Link
