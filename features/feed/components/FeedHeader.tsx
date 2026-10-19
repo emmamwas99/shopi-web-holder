@@ -37,7 +37,7 @@ export function FeedHeader({ activeTab, onTabChange, onSearchOpen, lang }: Props
   const setNearbyActive = useFeedPreferencesStore((s) => s.setHomeNearbyFilterActive);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-app px-4">
+    <header className="tablet-feed-header sticky top-0 z-30 border-b border-border bg-app px-4">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between">
         <Link href={`/${lang}/for-you`} aria-label="Shopi home" className="inline-flex items-center">
           <Logo
@@ -125,7 +125,7 @@ export function FeedHeader({ activeTab, onTabChange, onSearchOpen, lang }: Props
             type="button"
             onClick={() => onTabChange(activeTab === "watch" ? "for-you" : "watch")}
             aria-label={activeTab === "watch" ? "Back to For You" : "Open videos"}
-            className="grid size-10 place-items-center rounded-full bg-surface text-foreground transition-colors active:bg-border"
+            className="tablet-feed-watch-control grid size-10 place-items-center rounded-full bg-surface text-foreground transition-colors active:bg-border"
           >
             {activeTab === "watch" ? (
               <Newspaper size={21} strokeWidth={2.1} />

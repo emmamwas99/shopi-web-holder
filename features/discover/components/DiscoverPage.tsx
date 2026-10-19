@@ -43,6 +43,7 @@ import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { useIsTablet } from "@/hooks/useIsTablet";
 import {
   useDiscoverFiltersStore,
   type DiscoverContentType,
@@ -1769,6 +1770,7 @@ export function DiscoverPage({
   // but a centered dialog on desktop, where a slide-in panel reads as a leftover
   // mobile pattern rather than a deliberate desktop control.
   const isDesktop = useIsDesktop({ ssrDefault: false });
+  const isTablet = useIsTablet();
   // One search box shared by all three location steps — only one step is ever
   // visible at a time, so a single term is enough. It's client-side (the
   // facet lists are already fully loaded); every step transition below clears
@@ -2924,14 +2926,13 @@ export function DiscoverPage({
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
           <div
-            className="sticky top-0 z-30 grid border-b border-default bg-app [overflow-anchor:none] lg:hidden"
-            style={{
-              gridTemplateRows:
-                showCategoryFilterChips &&
-                subcategoryHeaderMode === "expanded"
-                  ? "56px auto"
-                  : "56px",
-            }}
+            className={cn(
+              "sticky top-0 z-30 grid border-b border-default bg-app [overflow-anchor:none] lg:hidden",
+              showCategoryFilterChips && subcategoryHeaderMode === "expanded"
+                ? "grid-rows-[56px_auto]"
+                : "grid-rows-[56px]",
+              hasCategoryResults && "md:max-lg:grid-rows-[56px]",
+            )}
           >
             <motion.div
               initial={false}
@@ -3044,6 +3045,7 @@ export function DiscoverPage({
                     ? "items-start pb-2.5"
                     : "h-full items-center",
                   !showSubcategoryChips && "pointer-events-none",
+                  hasCategoryResults && "md:max-lg:hidden",
                 )}
               >
                 <div className="flex min-w-0 flex-1 items-center">
@@ -3842,16 +3844,29 @@ export function DiscoverPage({
         return (
           <>
             {locationDialog}
-            <Drawer
-              open={drawerOpen}
-              onOpenChange={(open) => {
-                if (!open) closeFilterSheet();
-              }}
-            >
-              <DrawerContent className="mx-auto h-[88svh] w-full max-w-107.5 bg-app">
-                <div className="flex min-h-0 flex-1 flex-col">{drawerView}</div>
-              </DrawerContent>
-            </Drawer>
+            {isTablet ? (
+              <Dialog
+                open={drawerOpen}
+                onOpenChange={(open) => {
+                  if (!open) closeFilterSheet();
+                }}
+              >
+                <DialogContent className="flex max-h-[88svh] w-[min(92vw,640px)] max-w-none flex-col gap-0 overflow-hidden rounded-2xl bg-app p-0 [&>button:last-of-type]:hidden">
+                  <div className="flex min-h-0 flex-1 flex-col">{drawerView}</div>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Drawer
+                open={drawerOpen}
+                onOpenChange={(open) => {
+                  if (!open) closeFilterSheet();
+                }}
+              >
+                <DrawerContent className="mx-auto h-[88svh] w-full max-w-107.5 bg-app">
+                  <div className="flex min-h-0 flex-1 flex-col">{drawerView}</div>
+                </DrawerContent>
+              </Drawer>
+            )}
           </>
         );
       })()}

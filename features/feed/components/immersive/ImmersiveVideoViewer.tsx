@@ -34,6 +34,7 @@ import { VIDEO_FEED_PREFETCH_AHEAD } from "@/features/feed/constants";
 import { useVideoFeed } from "../../hooks/useVideoFeed";
 import { useSnapPager } from "../../hooks/useSnapPager";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { useIsTablet } from "@/hooks/useIsTablet";
 import { useInteractions } from "../../hooks/useInteractions";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
 import { useFollow } from "../../hooks/useFollow";
@@ -155,7 +156,8 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang, placeholder }: Prop
   const [commentsOpen, setCommentsOpen] = useState(false);
   // ssrDefault:false keeps the first paint mobile-first, matching how the
   // feed page decides its own layout.
-  const desktop = useIsDesktop({ ssrDefault: false }) === true;
+  const isTablet = useIsTablet();
+  const desktop = useIsDesktop({ ssrDefault: false }) === true && !isTablet;
 
   const loadMoreRef = useRef(loadMore);
   useEffect(() => {
@@ -579,13 +581,14 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang, placeholder }: Prop
         </div>
       )}
 
-      {/* Mobile comments, portalled above the viewer so the video stays visible
-          and playing behind it — the arrangement people expect from TikTok. */}
-      {commentsOpen &&
+      {/* Phone/tablet comments, portalled above the viewer so the video stays
+          visible and playing behind it — the arrangement people expect here. */}
+      {!desktop &&
+        commentsOpen &&
         activePost &&
         typeof document !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[110] md:hidden">
+          <div className="fixed inset-0 z-[110]">
             <CommentsDrawer
               contentId={activePost.id}
               contentCreatorId={activePost.creatorId}
@@ -705,9 +708,8 @@ function SlideContainer({
       muted={muted}
       onSetMuted={onSetMuted}
       onRequestNext={onRequestNext}
-      // Mobile only — ImmersiveSlide renders this subtree under `md:hidden`.
-      // The rail takes over on desktop, where the comments panel already
-      // carries the composer and a full-width button would be wrong.
+      // Phone/tablet only — the desktop rail carries the comments panel and
+      // its composer beside the video.
       overlay={(sound) => (
         <div className="flex h-full w-full flex-col justify-end gap-3 p-4 pb-[calc(var(--immersive-bottom)+2.25rem)]">
           {/* Action rail sits above the text block rather than beside it, so

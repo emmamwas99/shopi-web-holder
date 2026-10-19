@@ -367,8 +367,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           aria-labelledby="home-title"
           className="px-4 pb-8 md:px-8 md:pb-14"
         >
-          <div className="relative mx-auto flex min-h-[min(700px,72vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-[min(710px,72vh)] md:items-center">
-            <picture className="absolute inset-0">
+          <div className="relative mx-auto flex min-h-[min(700px,72vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-0 md:items-center">
+            <picture className="absolute inset-0 block h-full w-full overflow-hidden">
               <source
                 media="(max-width: 767px)"
                 type="image/webp"
@@ -389,17 +389,17 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-linear-to-r md:from-black/45 md:via-black/10 md:to-transparent"
               aria-hidden
             />
-            <div className="relative z-10 w-full max-w-7xl px-6 py-10 text-center text-white md:mx-auto md:px-12 md:py-16 md:text-left">
+            <div className="relative z-10 w-full max-w-7xl px-6 py-10 text-center text-white md:mx-auto md:px-12 md:py-5 md:text-left lg:py-12">
               <h1
                 id="home-title"
-                className="mx-auto max-w-3xl text-balance font-display text-[2rem] font-semibold leading-[1.1] md:mx-0 md:text-[clamp(2.75rem,4.5vw,4.25rem)]"
+                className="mx-auto max-w-3xl text-balance font-display text-[2rem] font-semibold leading-[1.1] md:mx-0 md:text-[clamp(2rem,4.5vw,4.25rem)]"
               >
                 {t.heroTitle}
               </h1>
-              <p className="mx-auto mt-4 max-w-xl text-base leading-snug md:mx-0 md:mt-5 md:text-lg">
+              <p className="mx-auto mt-4 max-w-xl text-base leading-snug md:mx-0 md:mt-4 md:text-base lg:mt-5 lg:text-lg">
                 {t.heroBody}
               </p>
-              <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 md:mx-0 md:mt-8 md:max-w-none md:flex-row md:flex-wrap">
+              <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 md:mx-0 md:mt-6 md:max-w-none md:flex-row md:flex-wrap lg:mt-8">
                 <TrackedHomepageLink
                   href={`/${lang}/upload`}
                   buttonId="sell_item"
@@ -419,7 +419,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   <ArrowUpRight size={18} aria-hidden />
                 </TrackedHomepageLink>
               </div>
-              <p className="mt-3 text-balance text-sm text-white/75">{t.heroPostNote}</p>
+              <p className="mt-2 text-balance text-sm text-white/75 md:mt-2">{t.heroPostNote}</p>
             </div>
           </div>
         </section>

@@ -97,6 +97,13 @@
   }
 }
 
+/* Give portrait tablets more room for the page beside the persistent rail. */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  :root {
+    --side-nav-width: 256px;
+  }
+}
+
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
 .dark {
   /* Facebook-style dark palette: charcoal page, raised cards and soft text. */
@@ -519,6 +526,70 @@ body {
 .feed-mobile-shell {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+.desktop-feed-skeleton {
+  display: none;
+}
+
+.tablet-bottom-nav-items {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1279px),
+  (min-width: 768px) and (pointer: coarse) {
+  :root {
+    --nav-height: 68px;
+  }
+
+  .tablet-top-navigation,
+  .tablet-feed-watch-control {
+    display: none;
+  }
+
+  .tablet-shell {
+    padding-top: 0 !important;
+  }
+
+  .tablet-bottom-padding {
+    padding-bottom: calc(var(--nav-height, 0) + var(--safe-bottom, 0)) !important;
+  }
+
+  .tablet-bottom-nav:not(.hidden) {
+    display: block;
+  }
+
+  .mobile-bottom-nav-items {
+    display: none;
+  }
+
+  .tablet-bottom-nav-items {
+    display: flex;
+  }
+
+  .tablet-bottom-nav-sell-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    background-color: rgb(var(--brand-primary));
+    background-image: none;
+  }
+
+  .tablet-messaging-grid {
+    grid-template-columns: minmax(240px, min(31vw, 360px)) minmax(0, 1fr);
+  }
+}
+
+/* `/for-you` uses the phone feed on tablets. Keep the server-rendered phone
+   tree out of the way only at the same wide, fine-pointer breakpoint where
+   the desktop feed takes over. */
+@media (min-width: 1280px) and (pointer: fine) {
+  .feed-mobile-shell {
+    display: none;
+  }
+
+  .desktop-feed-skeleton {
+    display: block;
+  }
 }
 
 .btn-primary {

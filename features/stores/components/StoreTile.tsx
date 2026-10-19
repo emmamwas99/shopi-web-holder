@@ -271,7 +271,7 @@ function MobileStoreCard({
         aria-label={`${store.displayName}, @${store.username} — ${store.listingCount} ${
           store.listingCount === 1 ? "listing" : "listings"
         }`}
-        className="absolute inset-0 z-10 rounded-2xl focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       />
 
       <div className="flex items-center gap-3">
@@ -307,7 +307,7 @@ function MobileStoreCard({
             disabled={followLoading}
             aria-pressed={following}
             className={cn(
-              "relative z-20 inline-flex h-8 shrink-0 items-center justify-center rounded-full px-4 text-[13px] font-bold transition-opacity active:opacity-70 disabled:opacity-60",
+              "relative z-10 inline-flex h-8 shrink-0 items-center justify-center rounded-full px-4 text-[13px] font-bold transition-opacity active:opacity-70 disabled:opacity-60",
               following
                 ? "border border-border bg-app text-main"
                 : "bg-primary text-white",
@@ -354,7 +354,7 @@ function MobileStoreCard({
           type="button"
           onClick={onShare}
           aria-label={`Share ${store.displayName}`}
-          className="relative z-20 -my-1.5 -mr-1.5 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted active:bg-surface"
+          className="relative z-10 -my-1.5 -mr-1.5 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted active:bg-surface"
         >
           <Share2 className="h-4 w-4" aria-hidden />
         </button>
@@ -445,7 +445,7 @@ function StoreTileComponent({
        * The card is a div with a stretched link over it rather than one big
        * <a>: Follow and the ⋯ menu are real buttons, and a button inside an
        * anchor is invalid HTML that navigates on click. The overlay keeps the
-       * whole card a single tap target; the controls sit above it on z-20.
+       * whole card a single tap target; the controls sit above it on z-10.
        */}
       <div
         data-scroll-anchor={store.id}
@@ -457,7 +457,7 @@ function StoreTileComponent({
           aria-label={`${store.displayName}, @${store.username} — ${store.listingCount} ${
             store.listingCount === 1 ? "listing" : "listings"
           }`}
-          className="absolute inset-0 z-10 focus:outline-none"
+          className="absolute inset-0 z-0 focus:outline-none"
         />
 
         <StoreCollage images={store.previewImages} name={store.displayName} />
@@ -531,7 +531,7 @@ function StoreTileComponent({
                 disabled={loading}
                 aria-pressed={following}
                 className={cn(
-                  "relative z-20 inline-flex h-8 flex-1 items-center justify-center rounded-full text-[13px] font-bold transition-colors disabled:opacity-60 lg:cursor-pointer",
+                  "relative z-10 inline-flex h-8 flex-1 items-center justify-center rounded-full text-[13px] font-bold transition-colors disabled:opacity-60 lg:cursor-pointer",
                   following
                     ? "border border-border bg-surface text-main hover:bg-subtle"
                     : "bg-primary text-white hover:opacity-90",
@@ -546,7 +546,7 @@ function StoreTileComponent({
                 <button
                   type="button"
                   aria-label={`More options for ${store.displayName}`}
-                  className="relative z-20 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface hover:text-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:cursor-pointer"
+                  className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface hover:text-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:cursor-pointer"
                 >
                   <MoreHorizontal className="h-4 w-4" strokeWidth={2.4} />
                 </button>

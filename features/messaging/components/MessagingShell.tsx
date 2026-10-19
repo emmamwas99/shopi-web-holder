@@ -114,7 +114,7 @@ export function MessagingShell({
           grid), so both panes overflow the viewport — the composer/list bottom
           gets cut off and the message list never scrolls internally. Pinning
           the row to the free space keeps the panes exactly viewport-high. */}
-      <div className={`${embedded ? "h-full min-h-0" : ""} md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]`}>
+      <div className={`tablet-messaging-grid ${embedded ? "h-full min-h-0" : ""} md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]`}>
         {/* ── Conversation list (left pane) ──────────────────────────── */}
         <div
           className={[
