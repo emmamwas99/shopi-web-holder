@@ -27,7 +27,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
   ];
   const mobileLinks = links.map((item) =>
     item.href === `/${lang}/explore`
-      ? { href: `/${lang}/for-you`, label: forYouLabel }
+      ? { ...item, label: sw ? "Vinjari matangazo" : "Browse listings" }
       : item,
   );
 
@@ -43,7 +43,7 @@ export function LandingNav({ lang }: { lang: Locale }) {
         </div>
         <div className="hidden shrink-0 items-center gap-2 lg:flex xl:gap-3">
           <ThemeSelect lang={lang} />
-          <Link href={`/${lang}/explore`} className="whitespace-nowrap rounded-full border border-landing-ink px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
+          <Link href={`/${lang}/for-you`} className="whitespace-nowrap rounded-full border border-landing-ink px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
           <Link href="/en/upload" onClick={trackSellClick} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sw ? "Uza bidhaa" : "Sell an item"}<ArrowUpRight size={17} aria-hidden /></Link>
         </div>
         <button type="button" className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-landing-line lg:hidden" aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>

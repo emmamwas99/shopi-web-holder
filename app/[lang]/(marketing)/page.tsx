@@ -410,10 +410,19 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   <ArrowUpRight size={18} aria-hidden />
                 </TrackedHomepageLink>
                 <TrackedHomepageLink
+                  href={`/${lang}/for-you`}
+                  buttonId="for_you"
+                  placement="hero"
+                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline hover:bg-landing-card/20 md:hidden"
+                >
+                  {lang === "sw" ? "Kwa ajili yako" : "For You"}
+                  <ArrowUpRight size={18} aria-hidden />
+                </TrackedHomepageLink>
+                <TrackedHomepageLink
                   href={`/${lang}/explore`}
                   buttonId="browse_listings"
                   placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline  hover:bg-landing-card/20"
+                  className="hidden min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline hover:bg-landing-card/20 md:inline-flex"
                 >
                   {t.browse}
                   <ArrowUpRight size={18} aria-hidden />
