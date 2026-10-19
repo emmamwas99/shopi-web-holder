@@ -15,7 +15,7 @@ import {
   LayoutGrid,
   LogOut,
   MessageCircleQuestionMark,
-  Moon,
+  Monitor,
   ShieldCheck,
   Star,
   Trash2,
@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeSelect } from "@/components/ui/ThemeSelect";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/features/messaging/hooks/usePushNotifications";
 import { useLogout } from "@/features/auth/hooks/useLogout";
@@ -384,9 +384,9 @@ export function ProfileMenu({
           />
         )}
         <MenuRow
-          icon={Moon}
-          label="Dark mode"
-          control={<ThemeToggle showIcons={false} />}
+          icon={Monitor}
+          label="Theme"
+          control={<ThemeSelect lang={lang} />}
         />
         {/* Only offered where the browser can actually do it. A dead toggle
             is worse than an absent one. */}
