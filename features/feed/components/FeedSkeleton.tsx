@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Clapperboard, MapPin, Search, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
-import { Logo } from "@/components/ui/Logo";
 import { WatchGridSkeleton } from "./WatchGridSkeleton";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
@@ -217,25 +216,29 @@ function MobileFeedHeaderSkeleton() {
     : [MapPin, Search, Clapperboard];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-app px-4" aria-hidden>
-      <div className="mx-auto flex h-14 max-w-2xl items-center justify-between">
-        <Logo
-          variant="wordmark"
-          size={44}
-          className="dark:brightness-0 dark:invert"
-        />
-        <div className="flex items-center gap-2">
-          {icons.map((Icon, index) => (
-            <div
-              key={index}
-              className="grid size-10 place-items-center rounded-full bg-surface text-foreground"
-            >
-              <Icon size={index === 0 ? 19 : 21} strokeWidth={2.1} aria-hidden />
-            </div>
-          ))}
+    <>
+      <div className="h-[57px]" aria-hidden="true" />
+      <header
+        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-white px-4 md:px-6"
+        aria-hidden
+      >
+        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3">
+          <div className="shrink-0 text-base font-bold tracking-tight text-main">
+            For you
+          </div>
+          <div className="flex items-center gap-2">
+            {icons.map((Icon, index) => (
+              <div
+                key={index}
+                className="grid size-10 place-items-center rounded-full bg-surface text-foreground"
+              >
+                <Icon size={index === 0 ? 19 : 21} strokeWidth={2.1} aria-hidden />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
 

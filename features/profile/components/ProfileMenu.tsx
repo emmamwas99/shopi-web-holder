@@ -383,7 +383,11 @@ export function ProfileMenu({
             href={settingsSubPageHref(lang, "/profile/change-password")}
           />
         )}
-        <MenuRow icon={Moon} label="Dark mode" control={<ThemeToggle />} />
+        <MenuRow
+          icon={Moon}
+          label="Dark mode"
+          control={<ThemeToggle showIcons={false} />}
+        />
         {/* Only offered where the browser can actually do it. A dead toggle
             is worse than an absent one. */}
         {push.isSupported && (
