@@ -1360,7 +1360,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           name={creatorName || "Seller"}
           mode="unseen"
           onNoStory={openCreatorProfile}
-          ringClassName="-inset-[5px]"
+          ringInsetPx={5}
           ringThickness={4.5}
           className="shrink-0 rounded-full lg:cursor-pointer"
         >
