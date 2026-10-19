@@ -552,7 +552,7 @@ body {
   }
 
   .tablet-stores-sticky {
-    top: 0;
+    top: 0 !important;
   }
 
   .tablet-bottom-padding {
