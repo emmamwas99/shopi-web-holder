@@ -256,19 +256,19 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
     return () => cancelAnimationFrame(frame);
   }, [desktop, pathname, tab]);
 
-  // If the user returns from another route with ?tab=watch, honour it. The feed
-  // stays mounted while OTHER routes are shown (MainShell), and those routes
-  // use ?tab= for their own sub-tabs (e.g. /notifications?tab=notifications) —
-  // so only sync when the feed route is actually visible, and only for values
-  // that are real feed tabs.
+  // Sync the feed view from its URL while visible. A bare /for-you URL always
+  // means For You, including when the user taps Home while Watch is open.
   useEffect(() => {
     if (!visible) return;
     const t = searchParams.get("tab");
-    if (isTab(t) && t !== tab) {
+    const nextTab: Tab = isTab(t) ? t : "for-you";
+    if (nextTab !== tab) {
       if (isMobileViewport()) subTabPositions[tab] = captureScrollPosition();
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTab(t);
-      setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
+      setTab(nextTab);
+      setOpenedTabs((prev) =>
+        prev.has(nextTab) ? prev : new Set(prev).add(nextTab),
+      );
     }
     // only re-run when the search params change, not when tab changes internally
     // eslint-disable-next-line react-hooks/exhaustive-deps
