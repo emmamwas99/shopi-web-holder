@@ -396,7 +396,7 @@ export function CreatorProfileView({
                 lang={lang}
                 name={displayName}
                 mode="any"
-                ringClassName="-inset-[6px]"
+                ringInsetPx={6}
                 ringThickness={3.4}
                 className="shrink-0 rounded-full"
               >

@@ -30,8 +30,8 @@ interface Props {
   mode: "unseen" | "any";
   /** What a tap does when there's no story to open. Omit for no action. */
   onNoStory?: () => void;
-  /** Placement of the ring around the avatar, e.g. "-inset-[5px]". */
-  ringClassName: string;
+  /** How far the ring extends beyond the avatar, in pixels. */
+  ringInsetPx: number;
   /** Ring thickness, in hundredths of the ring's width. */
   ringThickness: number;
   className?: string;
@@ -49,7 +49,7 @@ export function CreatorStoryAvatar({
   name,
   mode,
   onNoStory,
-  ringClassName,
+  ringInsetPx,
   ringThickness,
   className = "",
   children,
@@ -71,7 +71,7 @@ export function CreatorStoryAvatar({
         <StoryRingOverlay
           seen={mode === "unseen" ? [false] : active.stories.map((s) => s.seen)}
           thickness={ringThickness}
-          className={ringClassName}
+          insetPx={ringInsetPx}
         />
       )}
       {children}
@@ -112,18 +112,24 @@ export function CreatorStoryAvatar({
 function StoryRingOverlay({
   seen,
   thickness,
-  className,
+  insetPx,
 }: {
   seen: readonly boolean[];
   thickness: number;
-  className: string;
+  insetPx: number;
 }) {
   const radius = 50 - thickness / 2;
   const circumference = 2 * Math.PI * radius;
   return (
     <svg
       viewBox="0 0 100 100"
-      className={`pointer-events-none absolute ${className}`}
+      className="pointer-events-none absolute"
+      style={{
+        top: -insetPx,
+        left: -insetPx,
+        width: `calc(100% + ${insetPx * 2}px)`,
+        height: `calc(100% + ${insetPx * 2}px)`,
+      }}
       aria-hidden
     >
       {ringSegments(seen.length, circumference, thickness * 1.6).map(({ arc, rotation }, i) => (
