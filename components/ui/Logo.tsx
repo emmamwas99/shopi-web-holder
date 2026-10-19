@@ -2,10 +2,9 @@ import { cn } from "@/lib/utils";
 
 /**
  * "icon" is the square badge on its own; "lockup" is the badge plus the
- * wordmark. There used to be a third, "wordmark", but no such artwork exists,
- * and every variant rendered the badge regardless — the prop was inert.
+ * wordmark; "wordmark" renders only the Shopi lettering.
  */
-type LogoVariant = "icon" | "lockup";
+type LogoVariant = "icon" | "lockup" | "wordmark";
 
 type LogoProps = {
   variant?: LogoVariant;
@@ -24,6 +23,8 @@ const ART: Record<LogoVariant, { src: string; aspect: number }> = {
   // wholly pink, so this reads on a light or a dark surface and needs no
   // second file.
   lockup: { src: "/assets/shopi-lockup.svg", aspect: 358 / 98.06 },
+  // Cropped vector artwork containing only the Shopi lettering.
+  wordmark: { src: "/assets/shopi-wordmark.svg", aspect: 243 / 98.06 },
 };
 
 /**
