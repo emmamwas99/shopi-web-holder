@@ -18,7 +18,11 @@ export function FeedHeader({ onTabChange, onSearchOpen, lang }: Props) {
     <header className="sticky top-0 z-30 border-b border-border bg-app px-4">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between">
         <Link href={`/${lang}/for-you`} aria-label="Shopi home" className="inline-flex items-center">
-          <Logo variant="wordmark" size={44} />
+          <Logo
+            variant="wordmark"
+            size={44}
+            className="dark:brightness-0 dark:invert"
+          />
         </Link>
 
         <div className="flex items-center gap-2">
