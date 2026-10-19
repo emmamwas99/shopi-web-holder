@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RotateCcw } from "lucide-react";
-import { isAutoplayRefusal, useHlsVideo } from "@/lib/useHlsVideo";
+import { useHlsVideo } from "@/lib/useHlsVideo";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { BufferSpinner } from "../BufferSpinner";
 import { VideoProgressBar } from "../VideoProgressBar";
@@ -239,7 +239,9 @@ export function ImmersiveSlide({
   //
   // So every paginated slide came up silent no matter what the user had
   // chosen. Keeping intent on the element from the moment it mounts means the
-  // play attempt starts from the right state instead of correcting afterwards.
+  // shared HLS hook's play attempt starts from the right state. The hook owns
+  // playback retries; a second play() here races its autoplay fallback on
+  // mobile browsers.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -247,29 +249,7 @@ export function ImmersiveSlide({
     video.muted = muted;
     video.defaultMuted = muted;
     setActualMuted(video.muted);
-
-    if (active && !muted && !ended && !userPaused) {
-      // An unmuted play can still be refused — on the tap-through path the
-      // activation is sticky rather than fresh, and some browsers are stricter
-      // about that. Falling back to muted playback keeps the video moving and
-      // surfaces "Tap for sound", which the user can recover from in one tap.
-      // Leaving it paused, which is what the bare catch used to do, they
-      // cannot.
-      video.play().catch((error: unknown) => {
-        // Only a policy refusal justifies giving up the sound. A seek — the
-        // resume handoff, or the user scrubbing — also rejects this promise,
-        // and muting for that reason is what silenced the slide opened from
-        // the feed.
-        if (!isAutoplayRefusal(error)) {
-          video.play().catch(() => {});
-          return;
-        }
-        video.muted = true;
-        setActualMuted(true);
-        video.play().catch(() => {});
-      });
-    }
-  }, [muted, active, ended, userPaused, videoRef]);
+  }, [muted, videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
