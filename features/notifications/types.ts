@@ -24,6 +24,10 @@ export interface NotificationItem {
   isRead: boolean;
   readAt?: string | null;
   actionPath?: string | null;
+  /** The listings a grouped row is about (a seller's new listings, your saved posts). */
+  contentIds?: string[];
+  /** The latest listing's cover, on new-listing rows. */
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }

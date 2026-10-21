@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { useAppBack } from "@/lib/useAppBack";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -134,7 +134,17 @@ export function CreatorProfileView({
   const storefrontControlsVisibleRef = useRef(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
+  // A "new listings" notification opens the storefront at ?sort=newest, so the
+  // listings it announced come first. Read from the address on arrival rather
+  // than with useSearchParams, which would need a Suspense boundary on this
+  // ISR page; the server render (and hydration) stay on relevance.
+  const arrivedForNewest = useSyncExternalStore(
+    noSubscribe,
+    () => new URLSearchParams(window.location.search).get("sort") === "newest",
+    () => false,
+  );
+  const [chosenSort, setSort] = useState<DiscoverySort | null>(null);
+  const sort: DiscoverySort = chosenSort ?? (arrivedForNewest ? "NEWEST" : "RELEVANCE");
   const [sortOpen, setSortOpen] = useState(false);
   const storefrontRef = useRef<HTMLDivElement>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -238,7 +248,9 @@ export function CreatorProfileView({
     notifyOnNetworkStatusChange: true,
   });
 
-  const posts = data?.userPosts.posts ?? (!debouncedSearch ? initialPosts : []) ?? [];
+  // The server's first page is in relevance order; don't show it under another sort.
+  const posts =
+    data?.userPosts.posts ?? (!debouncedSearch && sort === "RELEVANCE" ? initialPosts : []) ?? [];
   const hasMore = data?.userPosts.hasMore ?? false;
   const nextCursor = data?.userPosts.nextCursor ?? undefined;
 
@@ -643,6 +655,11 @@ export function CreatorProfileView({
       <BackToTopButton />
     </div>
   );
+}
+
+/** The address doesn't change under a mounted storefront in a way that matters here. */
+function noSubscribe() {
+  return () => {};
 }
 
 const STOREFRONT_SORT_OPTIONS: Array<{ value: DiscoverySort; label: string }> = [

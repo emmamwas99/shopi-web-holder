@@ -257,6 +257,8 @@ export interface NotificationPayload {
   isRead: boolean;
   readAt?: string;
   actionPath?: string;
+  contentIds?: string[];
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
