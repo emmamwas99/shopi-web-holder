@@ -59,7 +59,10 @@ export function vehicleSpecs(specs: Spec[] | null | undefined): VehicleSpecs {
   let model = read("model");
   // Sellers put the year in the model field ("Model: 2009"), or repeat the
   // make there ("Make: Vauxhall Insignia", "Model: Insignia").
-  if (model && (YEAR.test(model) || make?.toLowerCase().includes(model.toLowerCase()))) {
+  if (
+    model &&
+    (YEAR.test(model) || make?.toLowerCase().includes(model.toLowerCase()))
+  ) {
     model = undefined;
   }
   const mileage = Number(read("mileage", "odometer")?.replace(/[^\d.]/g, ""));
@@ -83,9 +86,29 @@ export function vehicleSpecs(specs: Spec[] | null | undefined): VehicleSpecs {
 // these ("Car for sale", "Old used cars", "Vehicle s") carries no make, model
 // or year, so the specs replace it rather than being appended to it.
 const GENERIC = new Set([
-  "a", "an", "and", "available", "buy", "car", "cars", "clean", "for",
-  "hand", "my", "new", "old", "on", "s", "sale", "second", "selling", "the",
-  "used", "vehicle", "vehicles",
+  "a",
+  "an",
+  "and",
+  "available",
+  "buy",
+  "car",
+  "cars",
+  "clean",
+  "for",
+  "hand",
+  "my",
+  "new",
+  "old",
+  "on",
+  "s",
+  "h",
+  "sale",
+  "second",
+  "selling",
+  "the",
+  "used",
+  "vehicle",
+  "vehicles",
 ]);
 
 const words = (text: string) => text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
@@ -111,11 +134,17 @@ export function carListingTitle(title: string, vehicle: VehicleSpecs): string {
     words(name).every((word) => titleWords.has(word)) ||
     compact(title).includes(compact(name));
   const withYear = (text: string) =>
-    vehicle.year && !titleWords.has(vehicle.year) ? `${vehicle.year} ${text}` : text;
+    vehicle.year && !titleWords.has(vehicle.year)
+      ? `${vehicle.year} ${text}`
+      : text;
 
   if (mentionsVehicle) return withYear(title);
   // "BMW 3 Series" with model "320i" → "2009 BMW 3 Series (320i)".
-  if (vehicle.make && vehicle.model && compact(title).includes(compact(vehicle.make))) {
+  if (
+    vehicle.make &&
+    vehicle.model &&
+    compact(title).includes(compact(vehicle.make))
+  ) {
     return `${withYear(title)} (${vehicle.model})`;
   }
   const fullName = vehicle.year ? `${vehicle.year} ${name}` : name;
