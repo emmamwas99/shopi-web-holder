@@ -54,7 +54,7 @@ const POLL_GIVE_UP_MS = 20 * 60_000;
 /** An upload that sends nothing for this long has dropped. */
 const UPLOAD_STALL_MS = 45_000;
 
-type Kind = "image" | "video";
+export type Kind = "image" | "video";
 
 /** The files behind failed items, so Retry can send the same file again. */
 const retryableFiles = new Map<string, { file: File; sortOrder: number }>();
@@ -71,7 +71,7 @@ function offlineMessage(kind: Kind) {
 }
 
 /** What to tell the seller about a failed upload. */
-function sellerMessage(err: unknown, kind: Kind): string {
+export function sellerMessage(err: unknown, kind: Kind): string {
   if (err instanceof UploadError) return err.message;
   const raw = err instanceof Error ? err.message : String(err);
   if (
@@ -89,7 +89,7 @@ function sellerMessage(err: unknown, kind: Kind): string {
 }
 
 /** PUT a file to its presigned R2 URL, reporting progress; rejects on a stall. */
-function putToStorage(
+export function putToStorage(
   url: string,
   file: File,
   contentType: string,

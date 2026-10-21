@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { LogoutDocument } from "@/types/__generated__/graphql";
-import { useAuthStore } from "@/stores/auth";
+import { signOutAndLeave, useAuthStore } from "@/stores/auth";
 import { REMOVE_WEB_PUSH_SUBSCRIPTION } from "@/features/messaging/graphql/operations";
 import { detachBrowserPush } from "@/features/messaging/lib/browserPush";
 import { disableGoogleAutoSelect } from "../lib/googleIdentity";
@@ -15,35 +15,39 @@ const PUSH_DETACH_TIMEOUT_MS = 3000;
 export function useLogout(lang: string) {
   // Primitive selector — stable reference, no object allocation
   const refreshToken = useAuthStore((s) => s.refreshToken);
-  const [logoutMutation, { loading }] = useMutation(LogoutDocument, {
+  const [logoutMutation] = useMutation(LogoutDocument, {
     errorPolicy: "all",
   });
   const [removePushSubscription] = useMutation(REMOVE_WEB_PUSH_SUBSCRIPTION, {
     errorPolicy: "all",
   });
+  // Stays true from the tap until the new page replaces this one, so the
+  // button keeps saying "Logging out…" through the page load too.
+  const [leaving, setLeaving] = useState(false);
 
   const logout = useCallback(async () => {
-    // Detach this browser from the account's push first, while the session is
-    // still valid — on a shared computer the next person would otherwise keep
-    // seeing this account's message previews.
-    await Promise.race([
-      detachBrowserPush((endpoint) =>
-        removePushSubscription({ variables: { endpoint } }),
-      ),
-      new Promise((resolve) => setTimeout(resolve, PUSH_DETACH_TIMEOUT_MS)),
-    ]);
-    if (refreshToken) {
-      await logoutMutation({ variables: { refreshToken } });
+    setLeaving(true);
+    try {
+      // Detach this browser from the account's push first, while the session
+      // is still valid — on a shared computer the next person would otherwise
+      // keep seeing this account's message previews.
+      await Promise.race([
+        detachBrowserPush((endpoint) =>
+          removePushSubscription({ variables: { endpoint } }),
+        ),
+        new Promise((resolve) => setTimeout(resolve, PUSH_DETACH_TIMEOUT_MS)),
+      ]);
+      if (refreshToken) {
+        await logoutMutation({ variables: { refreshToken } });
+      }
+    } catch {
+      // Offline or the API is down: this device signs out all the same.
     }
     // Signing out on purpose: Google's auto sign-in must not undo it the next
     // time the login screen opens.
     disableGoogleAutoSelect();
-    useAuthStore.getState().clearAuth();
-    // A full reload on purpose, not router.push: it is what guarantees no
-    // cached query or socket from the signed-in session survives.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = `/${lang}/for-you`;
+    signOutAndLeave(`/${lang}/for-you`);
   }, [refreshToken, logoutMutation, removePushSubscription, lang]);
 
-  return { logout, loading };
+  return { logout, loading: leaving };
 }

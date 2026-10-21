@@ -15,6 +15,8 @@ export const MY_NOTIFICATIONS = gql`
         isRead
         readAt
         actionPath
+        contentIds
+        imageUrl
         createdAt
         updatedAt
         actors {

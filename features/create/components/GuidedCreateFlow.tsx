@@ -59,7 +59,7 @@ import {
   type GuidedAutosaveInput,
   type GuidedExtractDetails,
 } from "@/features/create/graphql/guided";
-import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
+import { CategoryPickerDrawer, isOtherCategory } from "./CategoryPickerDrawer";
 import { LocationPicker } from "./LocationPicker";
 import { PhoneInput } from "./PhoneInput";
 import { SpecsEditor } from "./SpecsEditor";
@@ -1325,7 +1325,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     // free-form, so an AI-filled subcategory has a name and no id — requiring
     // the id blocked a listing whose subcategory was visibly already set.
     const subcategoryLabel = subcategoryName || guidedInsights?.subcategory;
-    if (!subcategoryId && !subcategoryLabel?.trim()) {
+    if (!subcategoryId && !subcategoryLabel?.trim() && !isOtherCategory(categoryName)) {
       setFormError("Choose a subcategory before posting.");
       setGuidedStage("options");
       return;

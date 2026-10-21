@@ -157,6 +157,15 @@ export function NotificationList({
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1D9BF0]/10">
                         <VerifiedTick size={22} label={null} />
                       </div>
+                    ) : notification.type === "NEW_POST" && notification.imageUrl ? (
+                      // New listings lead with what was listed, not who listed it.
+                      <Image
+                        src={notification.imageUrl}
+                        alt=""
+                        fill
+                        className="rounded-[10px] object-cover"
+                        sizes="40px"
+                      />
                     ) : notification.type === "REFERRAL" && !actor ? (
                       // Rewards have no person behind them — the gift is the news.
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-highlight)))] text-white">

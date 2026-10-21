@@ -55,6 +55,7 @@ fragment ContentCardFields on Content {
     id
     username
     isVerified
+    isOfficial
     isFollowedByMe
     followerCount
     profile {

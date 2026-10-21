@@ -164,6 +164,8 @@ function DiscoverGridCardImpl({
     initialCount: post.stats?.saves ?? 0,
   });
 
+  // Shopi's own account posts announcements, not listings: no price, no save.
+  const isOfficialPost = post.creator?.isOfficial === true;
   const hasPrice = !!post.price && post.price.amount > 0;
   const priceText = hasPrice
     ? formatPrice(post.price.amount, post.price.currency)
@@ -184,8 +186,8 @@ function DiscoverGridCardImpl({
   // doesn't survive being read tile by tile.
   const ariaLabel = [
     post.title,
-    priceText,
-    negotiable ? "negotiable" : null,
+    isOfficialPost ? null : priceText,
+    negotiable && !isOfficialPost ? "negotiable" : null,
     place,
     post.creator?.isVerified ? "Verified ID" : null,
   ]
@@ -255,7 +257,7 @@ function DiscoverGridCardImpl({
             <HoverVideoPreview playbackId={playbackId} />
           )}
 
-          {showSave && (
+          {showSave && !isOfficialPost && (
             <button
               type="button"
               onClick={onSaveTap}
@@ -277,7 +279,7 @@ function DiscoverGridCardImpl({
 
           {/* A quiet chip in the empty corner rather than words beside the
               price, where a 2-up phone grid has no room for them. */}
-          {negotiable ? (
+          {negotiable && !isOfficialPost ? (
             <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold leading-none text-white backdrop-blur-md">
               Negotiable
             </span>
@@ -315,16 +317,18 @@ function DiscoverGridCardImpl({
 
         {/* ---- How much, which one, where ---------------------------------- */}
         <div className="pt-2">
-          <p
-            className={cn(
-              "truncate leading-5 tabular-nums md:leading-6",
-              hasPrice
-                ? "text-[15px] font-bold tracking-[-0.01em] text-main md:text-base"
-                : "text-[13px] font-medium text-muted md:text-[14px]",
-            )}
-          >
-            {priceText}
-          </p>
+          {!isOfficialPost && (
+            <p
+              className={cn(
+                "truncate leading-5 tabular-nums md:leading-6",
+                hasPrice
+                  ? "text-[15px] font-bold tracking-[-0.01em] text-main md:text-base"
+                  : "text-[13px] font-medium text-muted md:text-[14px]",
+              )}
+            >
+              {priceText}
+            </p>
+          )}
 
           {post.title ? (
             <p className="mt-0.5 line-clamp-2 text-[13px] leading-[18px] text-main md:text-[14px] md:leading-5 md:group-hover/post:underline">

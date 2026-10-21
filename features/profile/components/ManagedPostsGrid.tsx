@@ -53,6 +53,14 @@ import {
   type StatusFilter,
 } from "../lib/managedPost";
 import { ConfirmSheet } from "./ConfirmSheet";
+import {
+  EditPostMedia,
+  editMediaChanged,
+  editMediaFromPost,
+  editMediaInput,
+  editMediaProblem,
+  type EditMediaItem,
+} from "./EditPostMedia";
 import { InventoryControls } from "./InventoryControls";
 import { ManagedPostRow, StatusBadge } from "./ManagedPostRow";
 import { ManagedPostSheet } from "./ManagedPostSheet";
@@ -175,6 +183,7 @@ type EditFormState = {
   categoryLabel: string | null;
   subcategoryId: string | null;
   subcategory: string | null;
+  media: EditMediaItem[];
 };
 
 /**
@@ -211,6 +220,7 @@ export function ManagedPostsGrid({
 
   const {
     updatePost,
+    updateMedia,
     setHidden,
     deletePost: removePost,
     loading: mutationBusy,
@@ -311,6 +321,7 @@ export function ManagedPostsGrid({
       categoryLabel: post.category?.name ?? null,
       subcategoryId: null,
       subcategory: null,
+      media: editMediaFromPost(post),
     });
   };
 
@@ -346,13 +357,15 @@ export function ManagedPostsGrid({
   async function handleSaveEdit() {
     if (!editingPost || !editState) return;
     setEditTried(true);
+    const mediaChanged = editMediaChanged(editState.media, editingPost);
+    const mediaProblem = mediaChanged ? editMediaProblem(editState.media) : null;
     const textProblems = changedListingTextProblems(editingPost, editState);
     if (
+      mediaProblem ||
       textProblems.title ||
       textProblems.description ||
       !editState.categoryId ||
-      !editState.subcategoryId ||
-      !editState.subcategory
+      !editState.subcategory?.trim()
     ) return;
     const parsedAmount = editState.amount.trim() === "" ? 0 : Number(editState.amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
@@ -360,7 +373,16 @@ export function ManagedPostsGrid({
       return;
     }
 
+    let mediaSaved: ManagedPost | null = null;
     try {
+      // Media first: it's the part the API can still refuse (an upload it
+      // can't use), and then nothing else is half-saved either.
+      if (mediaChanged) {
+        const { data } = await updateMedia({
+          variables: { contentId: editingPost.id, items: editMediaInput(editState.media) },
+        });
+        mediaSaved = data?.updateOwnedContentMedia ?? null;
+      }
       await updatePost({
         variables: {
           contentId: editingPost.id,
@@ -377,11 +399,27 @@ export function ManagedPostsGrid({
           },
         },
       });
-      toast.success("Post updated");
+      const backInReview =
+        editingPost.status === "ACTIVE" && mediaSaved?.status === "PENDING_REVIEW";
+      toast.success(
+        "Post updated",
+        backInReview
+          ? { description: "Shopi checks the new media before it goes live again." }
+          : undefined,
+      );
       closeEdit();
       // Refreshes the category name, which the edit mutation doesn't return.
       await onRefresh();
     } catch (error) {
+      // The media went through before the details failed: edit on from what
+      // the post now holds, so trying again doesn't resend it.
+      if (mediaSaved) {
+        const saved = mediaSaved;
+        setEditingPost(saved);
+        setEditState((current) =>
+          current ? { ...current, media: editMediaFromPost(saved) } : current,
+        );
+      }
       toast.error(error instanceof Error ? error.message : "Could not update");
     }
   }
@@ -402,7 +440,8 @@ export function ManagedPostsGrid({
       editState.amount !== storedAmount ||
       editState.negotiable !== (editingPost.price.negotiable ?? false) ||
       editState.categoryId !== (editingPost.categoryId ?? null) ||
-      editState.subcategory !== (editingPost.aiClassification?.level2 ?? null)
+      editState.subcategory !== (editingPost.aiClassification?.level2 ?? null) ||
+      editMediaChanged(editState.media, editingPost)
     );
   }, [editingPost, editState]);
 
@@ -577,8 +616,9 @@ export function ManagedPostsGrid({
         open={Boolean(editingPost && editState)}
         busy={mutationBusy}
         dirty={editDirty}
+        uploading={Boolean(editState?.media.some((item) => item.status === "uploading"))}
         canSubmit={Boolean(
-          editDirty || !editState?.categoryId || !editState?.subcategoryId,
+          editDirty || !editState?.categoryId || !editState?.subcategory,
         )}
         onClose={closeEdit}
         onSubmit={() => void handleSaveEdit()}
@@ -629,6 +669,26 @@ export function ManagedPostsGrid({
                 onClick={(event) => event.stopPropagation()}
               />
             </div>
+
+            <EditPostMedia
+              items={editState.media}
+              onChange={(update) =>
+                setEditState((current) =>
+                  current ? { ...current, media: update(current.media) } : current,
+                )
+              }
+              locked={editingPost?.status === "PROCESSING"}
+              reviewNote={
+                editingPost?.status === "ACTIVE" &&
+                editState.media.some((item) => item.keepIndex === undefined)
+              }
+            />
+            {editTried && editingPost && editMediaChanged(editState.media, editingPost) &&
+            editMediaProblem(editState.media) ? (
+              <p className="-mt-3 text-[12px] font-medium text-error">
+                {editMediaProblem(editState.media)}
+              </p>
+            ) : null}
 
             <FieldBlock label="Title" hint={`${editState.title.length}/140`}>
               <Input
@@ -697,6 +757,7 @@ export function ManagedPostsGrid({
             <FieldBlock label="Subcategory">
               <CategoryPickerDrawer
                 value={editState.subcategoryId}
+                fallbackLabel={editState.subcategory}
                 parentId={editState.categoryId}
                 title="Subcategory"
                 placeholderLabel="Choose subcategory"
@@ -710,15 +771,14 @@ export function ManagedPostsGrid({
                 }
               />
             </FieldBlock>
-            {editTried && editState.categoryId && !editState.subcategoryId ? (
+            {editTried && editState.categoryId && !editState.subcategory ? (
               <p className="-mt-3 text-[12px] font-medium text-error">
                 Choose a subcategory from the list before saving.
               </p>
             ) : null}
 
             <p className="text-[12px] leading-relaxed text-muted">
-              Photos and location stay as published, so buyers always see the same item
-              and pickup point.
+              Location stays as published, so buyers always see the same pickup point.
             </p>
           </div>
         )}
@@ -774,6 +834,7 @@ function EditSurface({
   open,
   busy,
   dirty,
+  uploading,
   canSubmit,
   onClose,
   onSubmit,
@@ -784,6 +845,8 @@ function EditSurface({
   busy: boolean;
   /** Whether anything actually changed — gates Save and the discard prompt. */
   dirty: boolean;
+  /** New photos or a video are still on their way up; Save waits for them. */
+  uploading: boolean;
   /** Keep Save clickable while required fields are missing so errors can show. */
   canSubmit: boolean;
   onClose: () => void;
@@ -850,7 +913,7 @@ function EditSurface({
             <DialogHeader className="shrink-0 border-b border-default px-6 py-5 text-left">
               <DialogTitle>{title}</DialogTitle>
               <DialogDescription>
-                Price, title, description and category. Photos and location stay as
+                Price, photos, title, description and category. Location stays as
                 published.
               </DialogDescription>
             </DialogHeader>
@@ -859,9 +922,13 @@ function EditSurface({
               <Button variant="outline" onClick={requestClose} disabled={busy}>
                 Cancel
               </Button>
-              <Button className="text-white" onClick={onSubmit} disabled={busy || !canSubmit}>
-                {busy ? <InterlockingBalls size={20} /> : null}
-                Save changes
+              <Button
+                className="text-white"
+                onClick={onSubmit}
+                disabled={busy || uploading || !canSubmit}
+              >
+                {busy || uploading ? <InterlockingBalls size={20} /> : null}
+                {uploading ? "Uploading…" : "Save changes"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -882,7 +949,7 @@ function EditSurface({
             <div className="min-w-0">
               <DrawerTitle className="text-[15px] font-semibold">{title}</DrawerTitle>
               <DrawerDescription className="sr-only">
-                Update the price, title, description and category of this post
+                Update the price, photos, title, description and category of this post
               </DrawerDescription>
             </div>
             <button
@@ -906,10 +973,10 @@ function EditSurface({
             <Button
               className="h-11 w-full rounded-full text-[14px] font-semibold text-white"
               onClick={onSubmit}
-              disabled={busy || !canSubmit}
+              disabled={busy || uploading || !canSubmit}
             >
-              {busy ? <InterlockingBalls size={20} /> : null}
-              {busy ? "Saving…" : "Save changes"}
+              {busy || uploading ? <InterlockingBalls size={20} /> : null}
+              {uploading ? "Uploading…" : busy ? "Saving…" : "Save changes"}
             </Button>
           </div>
         </DrawerContent>

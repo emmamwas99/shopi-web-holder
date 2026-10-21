@@ -112,6 +112,13 @@ type UpdateOwnedContentVariables = {
   };
 };
 
+type UpdateOwnedContentMediaVariables = {
+  contentId: string;
+  /** The post's new media in order: each keeps an item (its index in the
+   *  post's current `media`) or attaches a just-uploaded MediaAsset. */
+  items: Array<{ keepIndex: number } | { mediaAssetId: string }>;
+};
+
 type SetOwnedContentHiddenVariables = {
   contentId: string;
   hidden: boolean;
@@ -236,6 +243,21 @@ export const UPDATE_OWNED_CONTENT: TypedDocumentNode<
   ${MANAGED_POST_FIELDS}
 `;
 
+export const UPDATE_OWNED_CONTENT_MEDIA: TypedDocumentNode<
+  { updateOwnedContentMedia: ManagedPost },
+  UpdateOwnedContentMediaVariables
+> = gql`
+  mutation UpdateOwnedContentMedia(
+    $contentId: String!
+    $items: [OwnedContentMediaItemInput!]!
+  ) {
+    updateOwnedContentMedia(contentId: $contentId, items: $items) {
+      ...ManagedPostFields
+    }
+  }
+  ${MANAGED_POST_FIELDS}
+`;
+
 export const SET_OWNED_CONTENT_HIDDEN: TypedDocumentNode<
   { setOwnedContentHidden: ManagedPost },
   SetOwnedContentHiddenVariables
@@ -276,14 +298,19 @@ export function useMyManagedPost(contentId: string) {
 
 export function useManagedPostMutations() {
   const [updatePost, updateState] = useMutation(UPDATE_OWNED_CONTENT);
+  const [updateMedia, mediaState] = useMutation(UPDATE_OWNED_CONTENT_MEDIA);
   const [setHidden, hiddenState] = useMutation(SET_OWNED_CONTENT_HIDDEN);
   const [deletePost, deleteState] = useMutation(DELETE_OWNED_CONTENT);
 
   return {
     updatePost,
+    updateMedia,
     setHidden,
     deletePost,
     loading:
-      updateState.loading || hiddenState.loading || deleteState.loading,
+      updateState.loading ||
+      mediaState.loading ||
+      hiddenState.loading ||
+      deleteState.loading,
   };
 }
