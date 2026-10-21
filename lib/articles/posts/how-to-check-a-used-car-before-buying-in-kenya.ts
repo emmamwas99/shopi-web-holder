@@ -21,6 +21,7 @@ export const article: Article = {
   tags: ["used-cars", "buying-tips", "ntsa", "logbook"],
   author: "shopi-team",
   publishedAt: "2026-09-24",
+  updatedAt: "2026-10-21",
   featuredImage: {
     src: "/assets/blog/used-car-check.jpg",
     alt: "A mechanic checking a car's engine with the bonnet open",
@@ -48,7 +49,7 @@ export const article: Article = {
           type: "checklist",
           items: [
             "The logbook is in the seller's name, and the name matches their national ID.",
-            "An official vehicle search with NTSA shows the same owner and no bank or car-finance company on the logbook.",
+            "The e-Logbook's QR code, or a vehicle search on eCitizen, shows the same owner and no bank or car-finance company on the record. Check it yourself; a screenshot proves nothing.",
             "The chassis number on the car matches the logbook. Ask the seller to show you where it's stamped.",
             "The number plates match the registration number on the logbook.",
             "If the car is still on a loan, the seller clears it and the lender is removed from the logbook before you pay.",
@@ -112,9 +113,9 @@ export const article: Article = {
           items: [
             "Compare the asking price with similar listings: the same model, year and engine size. [Used cars on Shopi](/for-sale/cars) is a quick place to compare.",
             "Use what the inspection found to negotiate.",
-            "Sign a sale agreement with both your ID details, the car's registration and chassis numbers, and the price.",
+            "Sign a [sale agreement](/blog/car-sale-agreement-in-kenya) with both your ID details, the car's registration and chassis numbers, and the price.",
             "For a sum this size, pay by bank transfer, ideally at the bank so the payment can be confirmed on the spot.",
-            "Complete the NTSA transfer: the seller starts it online and you accept it. Until it completes, the car is still legally the seller's.",
+            "Complete the [NTSA transfer](/blog/logbook-transfer-in-kenya): the seller starts it on eCitizen and you accept it. Until it completes, the car is still legally the seller's.",
           ],
         },
         {
@@ -156,7 +157,7 @@ export const article: Article = {
   faq: [
     {
       q: "Can I check who owns a car in Kenya?",
-      a: "Yes. NTSA offers an official motor vehicle search for a small fee. It shows the registered owner and whether a bank or lender is on the logbook.",
+      a: "Yes. Since June 2026 every logbook NTSA issues is a digital e-Logbook with a QR code you can scan to confirm the owner, and you can also run a motor vehicle search on eCitizen for a small fee. Both show the registered owner and whether a bank or lender is on the record.",
     },
     {
       q: "How long should a test drive be?",
@@ -178,8 +179,9 @@ export const article: Article = {
     { kind: "forSale", slug: "probox" },
   ],
   related: [
+    "how-to-buy-a-used-car-in-kenya",
     "toyota-vitz-price-in-kenya",
-    "how-to-sell-your-car-in-kenya-without-a-broker",
+    "logbook-transfer-in-kenya",
   ],
   cta: {
     label: "Browse used cars",

@@ -746,7 +746,7 @@ export const blogPosts: BlogPost[] = [
         label: "How to sell your car in Kenya without a broker",
         url: "/blog/how-to-sell-your-car-in-kenya-without-a-broker",
         description:
-          "For the biggest used item most people ever sell: pricing, viewings and the NTSA TIMS transfer.",
+          "For the biggest used item most people ever sell: pricing, viewings and the NTSA transfer on eCitizen.",
       },
     ],
   },
@@ -757,13 +757,13 @@ export const blogPosts: BlogPost[] = [
     title: "How to Sell Your Car in Kenya Without a Broker",
     primaryKeyword: "sell your car in Kenya",
     description:
-      "How to sell your car in Kenya without a broker: price it right, write a listing that filters time-wasters, show it safely and do the NTSA TIMS transfer.",
+      "How to sell your car in Kenya without a broker: price it right, write a listing that filters time-wasters, show it safely and do the NTSA transfer.",
     excerpt:
       "Brokers take a cut and control the conversation. Here's how to sell your car in Kenya yourself — price, list, show and transfer it — and what the trade-offs really are.",
     category: "Seller Guide",
     readTime: "12 min read",
     publishedAt: "2026-08-27",
-    updatedAt: "2026-09-15",
+    updatedAt: "2026-10-21",
     author: {
       name: "Shopi Team",
       role: "Seller Guides",
@@ -775,7 +775,7 @@ export const blogPosts: BlogPost[] = [
       "sell car without broker Kenya",
       "how to sell a car in Kenya",
       "car logbook transfer Kenya",
-      "NTSA TIMS transfer",
+      "NTSA transfer on eCitizen",
       "how much is my car worth Kenya",
       "sell car online Kenya",
     ],
@@ -796,7 +796,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "Step 2 — Get the paperwork ready before you advertise",
-        body: "Serious buyers ask about the logbook in the first or second message. If your answer is vague, they move on, because unclear ownership is the single biggest risk in a private car sale in Kenya.\n\nBefore you list, confirm the logbook is in your name with no outstanding financing, that you have your national ID and KRA PIN, and that your NTSA TIMS account is active. Ownership transfer happens through TIMS and both parties need working accounts, so a dormant account discovered on sale day will cost you the deal. Requirements and fees change, so check the current process on the NTSA TIMS portal rather than relying on what was true last year.",
+        body: "Serious buyers ask about the logbook in the first or second message. If your answer is vague, they move on, because unclear ownership is the single biggest risk in a private car sale in Kenya.\n\nBefore you list, confirm the logbook is in your name with no outstanding financing, that you have your national ID and KRA PIN, and that your eCitizen account is active. Ownership transfer happens on the NTSA service portal in eCitizen and both parties need working accounts, so a dormant account discovered on sale day will cost you the deal. Since June 2026 NTSA issues a digital e-Logbook in eCitizen instead of a paper one, and buyers can check it by its QR code, so expect to be asked for it. Requirements and fees change, so check the current process on the NTSA service portal in eCitizen rather than relying on what was true last year.",
       },
       {
         heading: "Step 3 — Write a listing that filters out time-wasters",
@@ -819,13 +819,13 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "Step 6 — Take payment and transfer ownership",
-        body: "Do not release the car until payment has actually cleared in your account. A screenshot, an SMS or a pending transfer notification is not payment. For a sum of this size, arrange to complete the transaction at a bank where the payment can be confirmed on the spot.\n\nSign a simple sale agreement recording both parties' details, the vehicle registration, the price and the date, and keep a copy. Then complete the transfer through NTSA TIMS. Until the transfer is done, the car is still legally yours — which means any offence committed in it is still your problem. Do not let this step drift.",
+        body: "Do not release the car until payment has actually cleared in your account. A screenshot, an SMS or a pending transfer notification is not payment. For a sum of this size, arrange to complete the transaction at a bank where the payment can be confirmed on the spot.\n\nSign a simple sale agreement recording both parties' details, the vehicle registration, the price and the date, and keep a copy. Then complete the transfer on the NTSA portal in eCitizen. Until the transfer is done, the car is still legally yours — which means any offence committed in it is still your problem. Do not let this step drift.",
       },
       {
         heading: "Step 7 — Tie up the loose ends after the sale",
-        body: "Most guides stop at the handover, but a private sale is not finished when the buyer drives away. A few small tasks in the following days protect you from problems that can surface weeks later.\n\nFirst, confirm the transfer has actually completed on NTSA TIMS rather than assuming the buyer accepted it. Keep your copy of the sale agreement, the payment confirmation and the transfer record together, because if the car is later involved in an accident or a traffic offence, those documents are how you show it was no longer yours. Then speak to your insurer about cancelling or adjusting your cover; a policy on a car you no longer own protects nobody, and you may be due a partial refund.\n\nBefore handover, remove everything personal: documents in the glovebox, parking cards, and any phone paired with the car's Bluetooth or infotainment system. Hand over the spare key and the service records you advertised, since both were part of what the buyer paid for. Finally, mark your listing as sold or remove it, so you are not fielding messages about a car that is gone.\n\nIt is a short list, but when you sell your car in Kenya without a broker there is nobody else to do it for you.",
+        body: "Most guides stop at the handover, but a private sale is not finished when the buyer drives away. A few small tasks in the following days protect you from problems that can surface weeks later.\n\nFirst, confirm the transfer has actually completed on eCitizen rather than assuming the buyer accepted it. Keep your copy of the sale agreement, the payment confirmation and the transfer record together, because if the car is later involved in an accident or a traffic offence, those documents are how you show it was no longer yours. Then speak to your insurer about cancelling or adjusting your cover; a policy on a car you no longer own protects nobody, and you may be due a partial refund.\n\nBefore handover, remove everything personal: documents in the glovebox, parking cards, and any phone paired with the car's Bluetooth or infotainment system. Hand over the spare key and the service records you advertised, since both were part of what the buyer paid for. Finally, mark your listing as sold or remove it, so you are not fielding messages about a car that is gone.\n\nIt is a short list, but when you sell your car in Kenya without a broker there is nobody else to do it for you.",
         list: [
-          "Confirm the NTSA TIMS transfer shows as complete",
+          "Confirm the NTSA transfer on eCitizen shows as complete",
           "Keep the sale agreement, payment proof and transfer record together",
           "Contact your insurer to cancel or adjust cover",
           "Clear personal documents, cards and paired phones from the car",
@@ -840,7 +840,7 @@ export const blogPosts: BlogPost[] = [
     faq: [
       {
         q: "Can I sell my car in Kenya without a broker?",
-        a: "Yes. You can list the car yourself, deal with buyers directly and complete the ownership transfer through NTSA TIMS. You keep the commission a broker would have taken, in exchange for handling viewings and paperwork yourself.",
+        a: "Yes. You can list the car yourself, deal with buyers directly and complete the ownership transfer on the NTSA portal in eCitizen. You keep the commission a broker would have taken, in exchange for handling viewings and paperwork yourself.",
       },
       {
         q: "How much is my car worth in Kenya?",
@@ -848,11 +848,11 @@ export const blogPosts: BlogPost[] = [
       },
       {
         q: "What documents do I need to sell a car in Kenya?",
-        a: "The logbook in your name with no outstanding financing, your national ID and KRA PIN, an active NTSA TIMS account, and a signed sale agreement. At transfer you also need copies of the buyer's ID and KRA PIN. Confirm the current requirements on the NTSA TIMS portal.",
+        a: "The logbook in your name with no outstanding financing, your national ID and KRA PIN, an active eCitizen account, and a signed sale agreement. At transfer you also need copies of the buyer's ID and KRA PIN. Confirm the current requirements on the NTSA service portal in eCitizen.",
       },
       {
         q: "How do I transfer car ownership in Kenya?",
-        a: "Ownership transfer is done through the NTSA TIMS portal. Both buyer and seller need active TIMS accounts linked to their KRA PINs. The seller initiates the transfer and the buyer accepts it. Until the transfer completes, the vehicle remains legally yours.",
+        a: "Ownership transfer is done on the NTSA service portal in eCitizen. Both buyer and seller need active eCitizen accounts. The seller starts the transfer and the buyer accepts it, and the buyer then gets a digital e-Logbook. Until the transfer completes, the vehicle remains legally yours. The full process is in our guide to logbook transfer in Kenya.",
       },
       {
         q: "How do I avoid being scammed when selling my car?",
@@ -864,7 +864,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         q: "What should I do after selling my car in Kenya?",
-        a: "Confirm the NTSA TIMS transfer has completed, keep the sale agreement and payment proof, contact your insurer about cancelling your cover, and remove your listing. Until the transfer completes, the car is still legally yours.",
+        a: "Confirm the NTSA transfer on eCitizen has completed, keep the sale agreement and payment proof, contact your insurer about cancelling your cover, and remove your listing. Until the transfer completes, the car is still legally yours.",
       },
     ],
     relatedLinks: [
@@ -872,7 +872,19 @@ export const blogPosts: BlogPost[] = [
         label: "NTSA — National Transport and Safety Authority",
         url: "https://www.ntsa.go.ke",
         description:
-          "The official source for vehicle ownership transfer, TIMS accounts and current fees in Kenya. Always confirm the process here before transferring.",
+          "The official source for vehicle ownership transfer, eCitizen accounts and current fees in Kenya. Always confirm the process here before transferring.",
+      },
+      {
+        label: "Logbook transfer in Kenya",
+        url: "/blog/logbook-transfer-in-kenya",
+        description:
+          "Step 6 in detail: what the seller and buyer each do on eCitizen, the e-Logbook, fees, and cars with a logbook loan.",
+      },
+      {
+        label: "Car sale agreement in Kenya",
+        url: "/blog/car-sale-agreement-in-kenya",
+        description:
+          "What to put in the agreement you sign with the buyer, with a template you can copy.",
       },
       {
         label: "How much is my car worth in Kenya?",
@@ -1013,7 +1025,7 @@ export const blogPosts: BlogPost[] = [
         label: "How to sell your car in Kenya without a broker",
         url: "/blog/how-to-sell-your-car-in-kenya-without-a-broker",
         description:
-          "Once the price is right, this covers the rest — the listing, viewings, negotiation and the NTSA TIMS transfer.",
+          "Once the price is right, this covers the rest — the listing, viewings, negotiation and the NTSA transfer on eCitizen.",
       },
       {
         label: "Sell a car in Kenya",
@@ -1025,7 +1037,7 @@ export const blogPosts: BlogPost[] = [
         label: "NTSA — National Transport and Safety Authority",
         url: "https://www.ntsa.go.ke",
         description:
-          "The official source for ownership transfer, TIMS accounts and current fees. Confirm the process here before transferring.",
+          "The official source for ownership transfer, eCitizen accounts and current fees. Confirm the process here before transferring.",
       },
     ],
   },
@@ -1042,6 +1054,7 @@ export const blogPosts: BlogPost[] = [
     category: "Seller Guide",
     readTime: "12 min read",
     publishedAt: "2026-09-11",
+    updatedAt: "2026-10-21",
     author: {
       name: "Shopi Team",
       role: "Seller Guides",
@@ -1125,14 +1138,14 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "What stays the same everywhere",
-        body: "Local differences change emphasis, not fundamentals. Wherever you are selling in Kenya, the same things decide whether a private sale goes well.\n\nPrice against comparable local listings rather than what you paid. Put the figure in the listing. Photograph honestly, including any damage, and add a walkaround video. Have the logbook ready in your name before you advertise, because serious buyers ask in the first or second message. Meet in a public place during daylight, verify the buyer's ID and licence before any test drive, and go along for the drive. Do not release the car until payment has genuinely cleared in your account — a screenshot is not payment. Then complete the transfer through NTSA TIMS promptly, because until it is done the car is still legally yours, and so is anything that happens in it.",
+        body: "Local differences change emphasis, not fundamentals. Wherever you are selling in Kenya, the same things decide whether a private sale goes well.\n\nPrice against comparable local listings rather than what you paid. Put the figure in the listing. Photograph honestly, including any damage, and add a walkaround video. Have the logbook ready in your name before you advertise, because serious buyers ask in the first or second message. Meet in a public place during daylight, verify the buyer's ID and licence before any test drive, and go along for the drive. Do not release the car until payment has genuinely cleared in your account — a screenshot is not payment. Then complete the transfer on the NTSA portal in eCitizen promptly, because until it is done the car is still legally yours, and so is anything that happens in it.",
         list: [
           "Price against local comparable listings, and state the price",
           "Honest photos plus a walkaround video",
           "Logbook ready in your name before you advertise",
           "Public meeting place, daylight, ID checked before any test drive",
           "Payment cleared in your account before the keys change hands",
-          "Complete the NTSA TIMS transfer without delay",
+          "Complete the NTSA transfer on eCitizen without delay",
         ],
       },
     ],
@@ -1159,7 +1172,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         q: "Can I sell my car to a buyer in another county?",
-        a: "Yes, and it happens regularly for high-value or unusual vehicles. Buyers will travel for the right car, but they need a reason to set off, so a walkaround video and a complete description do most of that persuading. Ownership transfer through NTSA TIMS is done online, so the two of you do not need to be in the same town for that step.",
+        a: "Yes, and it happens regularly for high-value or unusual vehicles. Buyers will travel for the right car, but they need a reason to set off, so a walkaround video and a complete description do most of that persuading. Ownership transfer on the NTSA portal in eCitizen is done online, so the two of you do not need to be in the same town for that step.",
       },
       {
         q: "Does Shopi charge commission when I sell my car?",
@@ -1183,7 +1196,7 @@ export const blogPosts: BlogPost[] = [
         label: "How to sell your car in Kenya without a broker",
         url: "/blog/how-to-sell-your-car-in-kenya-without-a-broker",
         description:
-          "The full private-sale process, from writing the listing to completing the NTSA TIMS transfer.",
+          "The full private-sale process, from writing the listing to completing the NTSA transfer on eCitizen.",
       },
     ],
   },

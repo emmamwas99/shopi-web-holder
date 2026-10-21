@@ -197,7 +197,7 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     },
     {
       q: "How do I sell my car on Shopi, and what paperwork do I need?",
-      a: "List the car free with photos or a walkaround video, the year, grade, mileage, price in KES and your location, then deal with buyers directly — no broker and no commission. To transfer ownership in Kenya you need the logbook in your name with no outstanding financing, your ID and KRA PIN, an active NTSA TIMS account and a signed sale agreement. Confirm current requirements on the NTSA TIMS portal, since fees and steps change.",
+      a: "List the car free with photos or a walkaround video, the year, grade, mileage, price in KES and your location, then deal with buyers directly — no broker and no commission. To transfer ownership in Kenya you need the logbook in your name with no outstanding financing, your ID and KRA PIN, an active eCitizen account and a signed sale agreement. Confirm current requirements on the NTSA service portal in eCitizen, since fees and steps change.",
     },
   ],
   sw: [
@@ -295,7 +295,7 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     },
     {
       q: "Ninauzaje gari langu kwenye Shopi, na nahitaji hati zipi?",
-      a: "Weka tangazo la gari bure likiwa na picha au video, mwaka, gredi, umbali uliosafiri, bei kwa KES na eneo lako, kisha shughulika na wanunuzi moja kwa moja — bila dalali na bila kamisheni. Ili kuhamisha umiliki Kenya unahitaji logbook kwa jina lako bila mkopo uliosalia, kitambulisho chako na KRA PIN, akaunti hai ya NTSA TIMS na mkataba wa mauzo uliosainiwa. Thibitisha mahitaji ya sasa kwenye tovuti ya NTSA TIMS, kwa kuwa ada na hatua hubadilika.",
+      a: "Weka tangazo la gari bure likiwa na picha au video, mwaka, gredi, umbali uliosafiri, bei kwa KES na eneo lako, kisha shughulika na wanunuzi moja kwa moja — bila dalali na bila kamisheni. Ili kuhamisha umiliki Kenya unahitaji logbook kwa jina lako bila mkopo uliosalia, kitambulisho chako na KRA PIN, akaunti hai ya eCitizen na mkataba wa mauzo uliosainiwa. Thibitisha mahitaji ya sasa kwenye tovuti ya NTSA ndani ya eCitizen, kwa kuwa ada na hatua hubadilika.",
     },
   ],
 };

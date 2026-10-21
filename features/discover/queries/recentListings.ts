@@ -8,8 +8,21 @@ import { query } from "@/lib/apollo/ApolloClient";
  * browse routes crawlable content and outbound links, not to render media.
  */
 const RECENT_LISTINGS = gql`
-  query SeoRecentListings($limit: Int, $county: String, $query: String) {
-    discoveryFeed(sort: NEWEST, limit: $limit, county: $county, query: $query) {
+  query SeoRecentListings(
+    $limit: Int
+    $county: String
+    $query: String
+    $subcategory: String
+    $minPrice: Float
+  ) {
+    discoveryFeed(
+      sort: NEWEST
+      limit: $limit
+      county: $county
+      query: $query
+      subcategory: $subcategory
+      minPrice: $minPrice
+    ) {
       items {
         id
         slug
@@ -36,6 +49,17 @@ export type RecentListing = {
 };
 
 /**
+ * Narrows a text search that would otherwise match too much. Search covers
+ * captions and specs, so "car" also finds car chargers and phone holders:
+ * `subcategory` (the classifier's level-2 name, e.g. "Cars") and a price floor
+ * keep a page about vehicles to vehicles.
+ */
+export type RecentListingFilters = {
+  subcategory?: string;
+  minPrice?: number;
+};
+
+/**
  * Best-effort: the browse pages must still render if the API is unreachable,
  * so a failure yields an empty list rather than throwing the route.
  */
@@ -43,11 +67,18 @@ export async function fetchRecentListings(
   limit = 24,
   county?: string,
   searchQuery?: string,
+  filters: RecentListingFilters = {},
 ): Promise<RecentListing[]> {
   try {
     const { data } = await query({
       query: RECENT_LISTINGS,
-      variables: { limit, county: county ?? null, query: searchQuery ?? null },
+      variables: {
+        limit,
+        county: county ?? null,
+        query: searchQuery ?? null,
+        subcategory: filters.subcategory ?? null,
+        minPrice: filters.minPrice ?? null,
+      },
     });
     const items = (
       data as { discoveryFeed?: { items?: RecentListing[] } } | undefined

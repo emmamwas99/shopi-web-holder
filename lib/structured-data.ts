@@ -1,4 +1,5 @@
 import { siteConfig } from "@/config/site";
+import type { VehicleSpecs } from "@/lib/seo/vehicle";
 
 /**
  * JSON-LD structured data helpers.
@@ -316,6 +317,8 @@ export function productSchema(input: {
   locationName?: string | null;
   category?: string | null;
   specs?: { key?: string | null; value?: string | null }[];
+  /** Set for car listings (see lib/seo/vehicle.ts); adds the Car type. */
+  vehicle?: VehicleSpecs | null;
 }) {
   // Only a stated price is an offer. An amount of 0 means the seller left the
   // price blank, not that the item is free (see listingPriceText in
@@ -407,9 +410,17 @@ export function productSchema(input: {
       }
     : null;
 
+  const vehicle = input.vehicle;
+  const brandName = vehicle?.make ?? spec("brand", "make", "manufacturer");
+  const modelName = vehicle ? vehicle.model : spec("model");
+  const colour = vehicle?.colour ?? spec("colour", "color");
+
   return {
     "@context": "https://schema.org",
-    "@type": "Product",
+    // Car is a Product subtype; listing both keeps Product snippet
+    // eligibility while telling engines the year, mileage and gearbox are
+    // vehicle facts, which is what "2018 Prado diesel" queries match on.
+    "@type": vehicle ? ["Product", "Car"] : "Product",
     "@id": `${input.url}#product`,
     name: input.title,
     sku: input.id,
@@ -418,16 +429,10 @@ export function productSchema(input: {
     ...(input.description ? { description: input.description } : {}),
     ...(input.images.length ? { image: input.images } : {}),
     ...(input.category ? { category: input.category } : {}),
-    ...(spec("brand", "make", "manufacturer")
-      ? {
-          brand: {
-            "@type": "Brand",
-            name: spec("brand", "make", "manufacturer"),
-          },
-        }
-      : {}),
-    ...(spec("model") ? { model: spec("model") } : {}),
-    ...(spec("colour", "color") ? { color: spec("colour", "color") } : {}),
+    ...(brandName ? { brand: { "@type": "Brand", name: brandName } } : {}),
+    ...(modelName ? { model: modelName } : {}),
+    ...(colour ? { color: colour } : {}),
+    ...(vehicle ? vehicleProperties(vehicle) : {}),
     ...(spec("material") ? { material: spec("material") } : {}),
     ...(spec("size", "dimensions") ? { size: spec("size", "dimensions") } : {}),
     ...(spec("mpn") ? { mpn: spec("mpn") } : {}),
@@ -455,6 +460,42 @@ export function productSchema(input: {
       : {}),
     ...(offer ? { offers: offer } : {}),
     isRelatedTo: { "@id": `${url}/#app` },
+  };
+}
+
+/** schema.org Car properties from a listing's specs, as the seller gave them. */
+function vehicleProperties(vehicle: VehicleSpecs) {
+  const steering = vehicle.steering?.toLowerCase() ?? "";
+  return {
+    ...(vehicle.year ? { vehicleModelDate: vehicle.year } : {}),
+    ...(vehicle.mileageKm
+      ? {
+          mileageFromOdometer: {
+            "@type": "QuantitativeValue",
+            value: vehicle.mileageKm,
+            unitCode: "KMT",
+          },
+        }
+      : {}),
+    ...(vehicle.fuelType ? { fuelType: vehicle.fuelType } : {}),
+    ...(vehicle.transmission
+      ? { vehicleTransmission: vehicle.transmission }
+      : {}),
+    ...(vehicle.bodyType ? { bodyType: vehicle.bodyType } : {}),
+    ...(vehicle.engineSize
+      ? {
+          vehicleEngine: {
+            "@type": "EngineSpecification",
+            name: vehicle.engineSize,
+          },
+        }
+      : {}),
+    ...(vehicle.drive ? { driveWheelConfiguration: vehicle.drive } : {}),
+    ...(steering.includes("right")
+      ? { steeringPosition: "https://schema.org/RightHandDriving" }
+      : steering.includes("left")
+        ? { steeringPosition: "https://schema.org/LeftHandDriving" }
+        : {}),
   };
 }
 

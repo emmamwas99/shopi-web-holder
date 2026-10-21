@@ -9,7 +9,26 @@ export type SearchIntentPage = {
   sellerTips: string[];
   keywords: string[];
   related: string[];
+  /**
+   * Narrows the live listings when a text search on `query` matches too
+   * much. Overrides are spread over `{ query }`, so `query: undefined` drops
+   * the text search entirely. See searchIntentListingFilter.
+   */
+  listings?: { query?: string; subcategory?: string; minPrice?: number };
 };
+
+/**
+ * Lowest asking price a vehicle listing can have. Search matches captions and
+ * specs, so "Toyota Premio" also finds Premio headlights and "car" finds car
+ * chargers; nothing that is actually a car is listed below this, and no
+ * accessory is listed above it. Used as a relevance filter, never shown.
+ */
+export const CAR_PRICE_FLOOR = 100_000;
+
+/** The classifier's level-2 name for passenger vehicles. */
+export const CAR_SUBCATEGORY = "Cars";
+
+const modelListings = { minPrice: CAR_PRICE_FLOOR };
 
 export const searchIntentPages = [
   // The generic car-buyer page, listed first so it is part of the site-wide
@@ -23,11 +42,11 @@ export const searchIntentPages = [
     pluralLabel: "used cars",
     category: "Cars",
     intro:
-      "Find used and second hand cars for sale in Kenya from local sellers — Toyota, Mazda, Subaru, Nissan, Isuzu and more. Compare price, year, mileage and location, then message the seller directly on Shopi, with no broker in between.",
+      "Find used and second hand cars for sale in Kenya from owners and local sellers — Toyota, Mazda, Subaru, Nissan, Mercedes-Benz and more, foreign used and Kenyan used. Compare price, year, mileage and location, then message the seller directly on Shopi, with no broker in between.",
     buyerTips: [
       "Compare the same make, model, year and grade — not just the model name — before judging a price.",
-      "Ask whether the logbook is in the seller's name with no outstanding financing, and for service records.",
-      "Inspect in daylight with a mechanic you trust, and pay only once ownership transfer through NTSA TIMS is agreed.",
+      "Ask whether the logbook is in the seller's name with no lender on it, and for service records.",
+      "Inspect in daylight with a mechanic you trust, and pay only once the NTSA transfer on eCitizen is ready to complete.",
     ],
     sellerTips: [
       "Put the make, model, year and grade in the title, and the mileage, price and location in the listing.",
@@ -40,10 +59,20 @@ export const searchIntentPages = [
       "second hand cars in Kenya",
       "second hand cars for sale in Kenya",
       "cheap cars for sale in Kenya",
-      "used car dealers in Kenya",
+      "used cars for sale in Kenya by owner",
+      "second hand cars sold by owners in Kenya",
+      "personal cars for sale in Kenya",
+      "foreign used cars Kenya",
       "car prices in Kenya",
     ],
     related: ["toyota-premio", "mazda-atenza", "toyota-vitz", "probox", "car-parts"],
+    // Every listing the classifier filed under Cars. A text search for "car"
+    // returned car chargers, phone holders and a vacuum cleaner here.
+    listings: {
+      query: undefined,
+      subcategory: CAR_SUBCATEGORY,
+      minPrice: CAR_PRICE_FLOOR,
+    },
   },
   {
     slug: "mazda-atenza",
@@ -71,6 +100,7 @@ export const searchIntentPages = [
       "mazda cars for sale Kenya",
     ],
     related: ["toyota-premio", "toyota-harrier", "probox", "land"],
+    listings: modelListings,
   },
   {
     slug: "toyota-premio",
@@ -97,6 +127,7 @@ export const searchIntentPages = [
       "premio price Kenya",
     ],
     related: ["mazda-atenza", "toyota-harrier", "probox", "phones"],
+    listings: modelListings,
   },
   {
     slug: "toyota-harrier",
@@ -123,6 +154,7 @@ export const searchIntentPages = [
       "harrier price Kenya",
     ],
     related: ["mazda-atenza", "toyota-premio", "probox", "land"],
+    listings: modelListings,
   },
   {
     slug: "probox",
@@ -149,6 +181,7 @@ export const searchIntentPages = [
       "probox price Kenya",
     ],
     related: ["mazda-atenza", "toyota-premio", "toyota-harrier", "farm-produce"],
+    listings: modelListings,
   },
   {
     slug: "land",
@@ -817,6 +850,7 @@ export const searchIntentPages = [
       "cheap cars for sale Kenya",
     ],
     related: ["toyota-axio", "nissan-note", "toyota-premio"],
+    listings: modelListings,
   },
   {
     slug: "toyota-axio",
@@ -844,6 +878,7 @@ export const searchIntentPages = [
       "toyota axio hybrid Kenya",
     ],
     related: ["toyota-fielder", "toyota-premio", "toyota-vitz"],
+    listings: modelListings,
   },
   {
     slug: "toyota-fielder",
@@ -871,6 +906,7 @@ export const searchIntentPages = [
       "station wagon for sale Kenya",
     ],
     related: ["toyota-axio", "probox", "toyota-premio"],
+    listings: modelListings,
   },
   {
     slug: "nissan-note",
@@ -898,6 +934,7 @@ export const searchIntentPages = [
       "affordable cars for sale Kenya",
     ],
     related: ["toyota-vitz", "toyota-axio", "toyota-premio"],
+    listings: modelListings,
   },
   {
     slug: "subaru-forester",
@@ -925,6 +962,7 @@ export const searchIntentPages = [
       "4wd cars for sale Kenya",
     ],
     related: ["toyota-harrier", "isuzu-d-max", "toyota-premio"],
+    listings: modelListings,
   },
   {
     slug: "isuzu-d-max",
@@ -952,6 +990,7 @@ export const searchIntentPages = [
       "isuzu d-max price Kenya",
     ],
     related: ["toyota-hiace", "probox", "subaru-forester"],
+    listings: modelListings,
   },
   {
     slug: "toyota-hiace",
@@ -979,6 +1018,7 @@ export const searchIntentPages = [
       "toyota hiace price Kenya",
     ],
     related: ["isuzu-d-max", "probox", "toyota-fielder"],
+    listings: modelListings,
   },
 ] as const satisfies SearchIntentPage[];
 
@@ -992,6 +1032,13 @@ export function searchIntentPath(slug: string) {
   return `/for-sale/${slug}` as const;
 }
 
+/** What a page's live listings are fetched with: its query, plus any narrowing. */
+export function searchIntentListingFilter(
+  page: Pick<SearchIntentPage, "query" | "listings">,
+): NonNullable<SearchIntentPage["listings"]> {
+  return { query: page.query, ...page.listings };
+}
+
 // Longest query first, so "Toyota Premio" wins over the generic "car".
 const byQuerySpecificity = [...searchIntentPages].sort(
   (a, b) => b.query.length - a.query.length,
@@ -1001,10 +1048,23 @@ const byQuerySpecificity = [...searchIntentPages].sort(
  * The /for-sale page a listing belongs under, matched on its title — e.g.
  * "2014 Toyota Premio, clean" → /for-sale/toyota-premio. Listing pages link
  * to it so the hub pages collect authority from the inventory they describe.
+ *
+ * A page that sources its listings from a subcategory only claims listings
+ * the classifier filed there (`subcategory` is the listing's level-2 name),
+ * so a "Car Charger" doesn't link to "Cars for sale in Kenya".
  */
-export function searchIntentPageForTitle(title: string) {
+export function searchIntentPageForTitle(
+  title: string,
+  subcategory?: string | null,
+) {
+  const listingSubcategory = subcategory?.trim().toLowerCase();
   return (
     byQuerySpecificity.find((page) => {
+      const required = (page as Pick<SearchIntentPage, "listings">).listings
+        ?.subcategory;
+      if (required && required.toLowerCase() !== listingSubcategory) {
+        return false;
+      }
       const query = page.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return new RegExp(`\\b${query}s?\\b`, "i").test(title);
     }) ?? null

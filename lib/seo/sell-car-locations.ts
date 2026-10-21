@@ -71,7 +71,7 @@ export const sellCarLocations = [
       "Be precise about grade and trim. With this many comparable listings, vagueness reads as something being hidden.",
     ],
     ntsaNote:
-      "Transfer is done online through the NTSA TIMS portal, so you do not need to travel for the transfer itself. Nairobi sellers who need in-person support have the widest choice of NTSA service points in the country, including Huduma Centres across the city.",
+      "Transfer is done online on the NTSA service portal in eCitizen, so you do not need to travel for the transfer itself. Nairobi sellers who need in-person support have the widest choice of NTSA service points in the country, including Huduma Centres across the city.",
     keywords: [
       "sell my car in Nairobi",
       "sell car Nairobi",
@@ -109,7 +109,7 @@ export const sellCarLocations = [
       "If the car was imported recently, put the import and registration dates in the description — coastal buyers check them.",
     ],
     ntsaNote:
-      "Transfer is completed online through NTSA TIMS. Mombasa has NTSA service points and Huduma Centre support in the county for sellers who need help with a TIMS account before the sale.",
+      "Transfer is completed online on the NTSA portal in eCitizen. Mombasa has NTSA service points and Huduma Centre support in the county for sellers who need help with an eCitizen account before the sale.",
     keywords: [
       "sell my car in Mombasa",
       "sell car Mombasa",
@@ -146,7 +146,7 @@ export const sellCarLocations = [
       "For pickups and Proboxes, lead with load capacity and mechanical condition rather than looks.",
     ],
     ntsaNote:
-      "Transfer runs through the NTSA TIMS portal online. Nakuru has NTSA and Huduma Centre support in town for sellers who need to activate or recover a TIMS account first.",
+      "Transfer runs through the NTSA service portal on eCitizen. Nakuru has NTSA and Huduma Centre support in town for sellers who need to activate or recover an eCitizen account first.",
     keywords: [
       "sell my car in Nakuru",
       "sell car Nakuru",
@@ -183,7 +183,7 @@ export const sellCarLocations = [
       "Mention that you will meet buyers travelling from Kitale, Iten or Kapsabet. It widens your audience noticeably.",
     ],
     ntsaNote:
-      "Transfer is done online through NTSA TIMS. Eldoret has NTSA service and Huduma Centre support in Uasin Gishu for TIMS account issues before a sale.",
+      "Transfer is done online on the NTSA portal in eCitizen. Eldoret has NTSA service and Huduma Centre support in Uasin Gishu for eCitizen account issues before a sale.",
     keywords: [
       "sell my car in Eldoret",
       "sell car Eldoret",
@@ -220,7 +220,7 @@ export const sellCarLocations = [
       "Be specific about recent repairs and service. Documented maintenance carries real weight in this market.",
     ],
     ntsaNote:
-      "Transfer runs through the NTSA TIMS portal online. Kisumu has NTSA and Huduma Centre support in the county for sellers who need to sort out a TIMS account first.",
+      "Transfer runs through the NTSA service portal on eCitizen. Kisumu has NTSA and Huduma Centre support in the county for sellers who need to sort out an eCitizen account first.",
     keywords: [
       "sell my car in Kisumu",
       "sell car Kisumu",
@@ -257,7 +257,7 @@ export const sellCarLocations = [
       "Weekend viewings work far better than weekday ones, because most buyers here commute into the city.",
     ],
     ntsaNote:
-      "Transfer is completed online through NTSA TIMS. Kiambu County has Huduma Centre support, and Nairobi's NTSA service points are within easy reach if in-person help is needed.",
+      "Transfer is completed online on the NTSA portal in eCitizen. Kiambu County has Huduma Centre support, and Nairobi's NTSA service points are within easy reach if in-person help is needed.",
     keywords: [
       "sell my car in Thika",
       "sell my car in Kiambu",
@@ -294,7 +294,7 @@ export const sellCarLocations = [
       "Expect fewer but more serious enquiries than in Nairobi. Answer each one properly.",
     ],
     ntsaNote:
-      "Transfer is completed online through the NTSA TIMS portal. Nyeri has Huduma Centre support in town for sellers who need help with a TIMS account before selling.",
+      "Transfer is completed online on the NTSA service portal in eCitizen. Nyeri has Huduma Centre support in town for sellers who need help with an eCitizen account before selling.",
     keywords: [
       "sell my car in Nyeri",
       "sell car Nyeri",
@@ -331,7 +331,7 @@ export const sellCarLocations = [
       "For pickups and Proboxes, photograph the load area, suspension and tyres — that is what gets checked.",
     ],
     ntsaNote:
-      "Transfer runs online through the NTSA TIMS portal. Meru has Huduma Centre support in town for sellers who need to activate a TIMS account first.",
+      "Transfer runs online on the NTSA service portal in eCitizen. Meru has Huduma Centre support in town for sellers who need to activate an eCitizen account first.",
     keywords: [
       "sell my car in Meru",
       "sell car Meru",
@@ -367,7 +367,7 @@ export const sellCarLocations = [
       "Price against Nairobi listings. Your buyers are comparing against the city, not against a smaller market.",
     ],
     ntsaNote:
-      "Transfer is completed online through NTSA TIMS. Machakos County has Huduma Centre support, and Nairobi's NTSA service points are close by along Mombasa Road.",
+      "Transfer is completed online on the NTSA portal in eCitizen. Machakos County has Huduma Centre support, and Nairobi's NTSA service points are close by along Mombasa Road.",
     keywords: [
       "sell my car in Machakos",
       "sell car Athi River",

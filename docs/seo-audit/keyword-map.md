@@ -61,3 +61,24 @@ Validate every row against Search Console queries once that access exists (see [
 | `/en/for-sale/home-appliances` (3 shown) and `/en/explore/electronics-technology/home-appliances` (99) | Same intent | Source the curated page from the taxonomy (F13). Then add the pair to `CURATED_SUBCATEGORY_PAGES`. Or 301 the curated page to the explore page. |
 | `/en/phones-electronics-kenya` and `/for-sale/phones`, `/iphone`, `/samsung`, `/tvs` | Hub and spokes | Keep the hub broad ("electronics in Kenya") and make sure it links every spoke. |
 | 15 empty `/for-sale` pages and `/property-for-sale-kenya` | Buyer intent, no inventory | Gate indexing on inventory, the same rule as browse pages (README § E2). |
+
+## Cars: what Kenyans search, October 2026
+
+Added 21 October 2026. **Source:** Google autocomplete with `gl=ke`. Seeds that name Kenya or a Kenyan town were expanded a–z, for 41 seeds and about 2,500 suggestions. Autocomplete shows what people type, not how often, so these clusters rank by breadth of variants, not by volume. Check them against Search Console's car queries once that access exists.
+
+| Cluster | What people type (examples) | Intent | Page that answers it |
+|---|---|---|---|
+| Ownership transfer | "logbook transfer kenya", "ntsa transfer fees", "ntsa transfer process", "how long does logbook transfer take", "ntsa forced transfer", "transfer logbook on ecitizen", "logbook transfer status" | Both sides; the largest cluster | `/blog/logbook-transfer-in-kenya` (**new**) |
+| Sale agreement | "car sale agreement kenya pdf", "... template", "... word doc free download", "motor vehicle sale agreement form kenya" | Both sides | `/blog/car-sale-agreement-in-kenya` (**new**, with a copyable template) |
+| Buying process | "process of buying a used car in kenya", "steps to follow when buying a car in kenya", "requirements for buying a car in kenya", "how to avoid being conned while buying a car in kenya" | Buyer | `/blog/how-to-buy-a-used-car-in-kenya` (**new**); inspection detail stays in `/blog/how-to-check-a-used-car-before-buying-in-kenya` |
+| Where to sell | "car selling sites kenya", "car buyers in kenya", "where can i sell my car in nairobi", "commission for selling a car in kenya" | Seller | `/sell-car-kenya` (FAQ now names every route), city pages, legacy city-by-city post |
+| Valuation | "car valuation kenya", "car valuation cost", "online car valuation kenya", "how much is my car worth" | Seller | Legacy post `how-much-is-my-car-worth-in-kenya`; `/sell/{model}` live comparables |
+| Edge cases | "selling a duty free car in kenya", "logbook loan", "grounded car buyers" | Seller | `/sell-car-kenya` FAQ (duty-free, logbook loan); transfer guide § logbook loans |
+| By owner | "used toyota cars for sale in kenya by owner", "second hand cars sold by owners in kenya", "personal cars for sale in kenya" | Buyer; matches how Shopi works | `/for-sale/cars` (keywords, intro and FAQ updated) |
+| Model price | "axio / premio / fielder / aqua / passo / ractis / noah / probox car price in kenya" | Buyer | Only the Vitz has a price guide. Write more only for models with ≥ 3 priced live listings (`MIN_PRICE_SAMPLE`) |
+| Budget | "cars under 500k in kenya", "second hand cars below 300k", "best cars under 1 million" | Buyer | **None.** About 4 live cars under KES 500k, so a budget page would be thin. Revisit when inventory grows |
+| Import and duty | "kra car duty calculator", "car import age limit kenya 2026", "cost of importing a car to kenya" | Buyer | None. Out of scope for a marketplace, and the figures change; don't build without a maintained source |
+| Finance | "car financing kenya", "hire purchase cars", "logbook loans", "mogo cars for sale" | Buyer | Covered briefly in the buying guide. No page; lender comparisons would need verified rates |
+| Swahili | "uza gari", "uza nunua gari", "gari za mkopo", "gari transfer fees" | Mixed | `/sw` only translates `/` and `/faq` (policy in `lib/metadata.ts`). Validate demand in Search Console first |
+
+**Facts that changed, and where they now live.** NTSA closed TIMS and moved its services to eCitizen from 2 January 2024. The e-Logbook replaced paper logbooks on 10 June 2026. Every car page used to say "NTSA TIMS portal". `SELLER_PAPERWORK` in `lib/seo/sell-car-pages.ts` is now the single list for the hub and town pages, and the source notes sit at the top of `lib/articles/posts/logbook-transfer-in-kenya.ts`. Re-check both at each content review.

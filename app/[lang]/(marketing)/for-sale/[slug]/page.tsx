@@ -23,6 +23,7 @@ import {
 } from "@/lib/structured-data";
 import {
   getSearchIntentPage,
+  searchIntentListingFilter,
   searchIntentPages,
   searchIntentPath,
 } from "@/lib/seo/search-intent-pages";
@@ -112,7 +113,14 @@ export default async function SearchIntentLandingPage({ params }: Props) {
 
   const path = searchIntentPath(page.slug);
   const pageUrl = `${siteConfig.url}/${safeLang}${path}`;
-  const listings = await fetchRecentListings(12, undefined, page.query);
+  const { query: listingQuery, ...listingFilters } =
+    searchIntentListingFilter(page);
+  const listings = await fetchRecentListings(
+    12,
+    undefined,
+    listingQuery,
+    listingFilters,
+  );
   // Non-null only for models that have a seller-intent counterpart page.
   const sellPage = getSellCarPage(page.slug);
   const guides = getArticlesLinkingTo({ kind: "forSale", slug: page.slug });
@@ -144,6 +152,29 @@ export default async function SearchIntentLandingPage({ params }: Props) {
       q: "Does Shopi handle payment or delivery?",
       a: "No. Shopi connects buyers and sellers. Payment, inspection, pickup and delivery are agreed directly between buyer and seller.",
     },
+    // What Kenyan car buyers actually ask before they message anyone. The
+    // full answers live in the buying, transfer and sale agreement guides,
+    // which GuideLinks below picks up.
+    ...(page.category === "Cars"
+      ? [
+          {
+            q: `Are these ${page.pluralLabel} sold by owners or dealers?`,
+            a: "Both. Private owners and local dealers list on Shopi, and you message whoever listed the car directly — there's no broker in between. Open a listing to see the seller's profile and their other listings.",
+          },
+          {
+            q: "What is the difference between foreign used and Kenyan used?",
+            a: "A foreign used car was imported second hand, most often from Japan, and registered in Kenya on arrival; Kenya only allows used imports up to eight years old. A Kenyan used car has already been driven in Kenya. Foreign used usually costs more; a Kenyan used car with service records can be the better buy.",
+          },
+          {
+            q: "How do I buy a used car safely in Kenya?",
+            a: "Check the e-Logbook yourself by its QR code or an eCitizen search, confirm the seller's name matches their ID and no lender is on the record, have a mechanic inspect the car, and never pay a deposit for a car you haven't seen. Sign a sale agreement and pay by bank.",
+          },
+          {
+            q: "How is ownership transferred when I buy a car?",
+            a: "The seller starts the transfer on the NTSA service portal in eCitizen and you accept it from your eCitizen notifications; the e-Logbook then shows you as the owner. You need your ID, KRA PIN and an active eCitizen account.",
+          },
+        ]
+      : []),
   ];
 
   return (

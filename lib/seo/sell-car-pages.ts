@@ -415,6 +415,20 @@ export const sellCarPages = [
   },
 ] as const satisfies SellCarPage[];
 
+/**
+ * What a private seller needs for the NTSA transfer, shown on the national
+ * and town pages. NTSA moved transfers from TIMS to eCitizen in January 2024
+ * and replaced the paper logbook with the e-Logbook on 10 June 2026.
+ */
+export const SELLER_PAPERWORK = [
+  "Logbook in your name (the e-Logbook in eCitizen, or the paper one), with no lender on it",
+  "Your national ID and KRA PIN certificate",
+  "An active eCitizen account, for the NTSA service portal",
+  "A signed car sale agreement, with both parties' details",
+  "The buyer's ID number and KRA PIN, which you enter to start the transfer",
+  "Valid inspection certificate, where the class requires one",
+] as const;
+
 export function getSellCarPage(slug: string) {
   return sellCarPages.find((page) => page.slug === slug) ?? null;
 }

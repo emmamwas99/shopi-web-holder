@@ -4,9 +4,13 @@ import { cultureCode } from "@/i18n/config";
 import { getCountyByName } from "@/lib/counties";
 import { profileHref } from "@/lib/profile-url";
 import {
+  CAR_PRICE_FLOOR,
+  CAR_SUBCATEGORY,
+  getSearchIntentPage,
   searchIntentPageForTitle,
   searchIntentPath,
 } from "@/lib/seo/search-intent-pages";
+import { isCarListing } from "@/lib/seo/vehicle";
 import type { SocialProofListing } from "@/features/social-proof/queries/socialProofSellers";
 import { fetchRelatedListings } from "../queries/relatedListings";
 
@@ -36,15 +40,26 @@ export async function ListingRelated({
       profile?: { firstName?: string | null; lastName?: string | null } | null;
     } | null;
     location?: { county?: string | null } | null;
+    aiClassification?: { level2?: string | null } | null;
   };
 }) {
-  const intent = searchIntentPageForTitle(post.title);
+  const isCar = isCarListing(post.aiClassification);
+  // A car whose title names no model we have a page for ("BMW 3 Series")
+  // still belongs under the cars hub.
+  const intent =
+    searchIntentPageForTitle(post.title, post.aiClassification?.level2) ??
+    (isCar ? getSearchIntentPage("cars") : null);
   const county = post.location?.county ? getCountyByName(post.location.county) : null;
   const { fromSeller, similar } = await fetchRelatedListings({
     id: post.id,
     sellerId: post.creatorId ?? post.creator?.id ?? null,
     categoryId: post.categoryId ?? null,
     searchQuery: intent?.query ?? null,
+    // Cars sit in Automotive beside parts and accessories; a car's
+    // "similar listings" should be other cars.
+    narrow: isCar
+      ? { subcategory: CAR_SUBCATEGORY, minPrice: CAR_PRICE_FLOOR }
+      : null,
   });
 
   const sellerName =

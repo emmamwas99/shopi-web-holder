@@ -20,6 +20,12 @@ import { canonicalUrl, localeAlternates } from "@/lib/metadata";
 import { profileHref } from "@/lib/profile-url";
 import { listingPriceText } from "@/lib/format";
 import {
+  carListingTitle,
+  isCarListing,
+  vehicleSpecs,
+  type VehicleSpecs,
+} from "@/lib/seo/vehicle";
+import {
   cleanPublicText,
   META_DESCRIPTION_MAX,
   truncateAtWord,
@@ -196,6 +202,22 @@ function priceLabel(post: Post): string | null {
   return listingPriceText(post.price);
 }
 
+/** Vehicle facts from the specs, for car listings only. */
+function carSpecs(post: Post): VehicleSpecs | null {
+  return isCarListing(post.aiClassification) ? vehicleSpecs(post.specs) : null;
+}
+
+/**
+ * The listing's name in <title>, share cards and Product markup. For cars it
+ * leads with year, make and model from the specs, because a seller's
+ * "Vehicle" or "Cars" is not what anyone searches for. The visible H1 stays
+ * the seller's own title.
+ */
+function listingName(post: Post): string {
+  const vehicle = carSpecs(post);
+  return vehicle ? carListingTitle(post.title, vehicle) : post.title;
+}
+
 function categoryLabel(post: Post): string | null {
   return (
     post.category?.name ||
@@ -247,13 +269,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const isIndexable = post.isLive !== false;
   const price = priceLabel(post);
   const loc = locationName(post);
-  const titleParts = [post.title, price, loc].filter(Boolean);
+  const name = listingName(post);
+  const titleParts = [name, price, loc].filter(Boolean);
   const title = titleParts.join(" · ");
   const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(post);
   const category = categoryLabel(post);
   const images = listingImages(post);
-  const shareAlt = [post.title, price, loc].filter(Boolean).join(" · ");
+  const shareAlt = [name, price, loc].filter(Boolean).join(" · ");
   const fallbackImage = `${siteConfig.url}/og/listing/${encodeURIComponent(post.id)}`;
   // The original listing media is deliberately first. The local image route
   // is a resilient second choice: it converts that photo to a social-safe JPEG
@@ -274,6 +297,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     keywords: [
       post.title,
+      name !== post.title ? name : null,
       ...(post.hashtags ?? []),
       loc,
       category,
@@ -350,7 +374,7 @@ export default async function ContentDetailPage({ params }: Props) {
             productSchema({
               id,
               url: canonical,
-              title: post.title,
+              title: listingName(post),
               description: buildDescription(post),
               images: listingImages(post),
               price: post.price?.amount,
@@ -365,10 +389,11 @@ export default async function ContentDetailPage({ params }: Props) {
               locationName: locationName(post),
               category: categoryLabel(post),
               specs: post.specs,
+              vehicle: carSpecs(post),
             }),
             productWebPageSchema({
               url: canonical,
-              name: post.title,
+              name: listingName(post),
               description: buildDescription(post),
               createdAt: post.createdAt
                 ? new Date(post.createdAt as string).toISOString()

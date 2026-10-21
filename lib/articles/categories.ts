@@ -11,9 +11,9 @@ export const CATEGORIES: ArticleCategory[] = [
     name: "Cars",
     title: "Car Prices and Buying Guides in Kenya",
     description:
-      "What cars cost in Kenya right now, from real Shopi listings, plus what to check before you buy a used car.",
+      "What cars cost in Kenya from real Shopi listings, how to buy a used car safely, and the paperwork: logbook transfer and the car sale agreement.",
     intro:
-      "What cars are listed for on Shopi right now, what moves the price, and what to check before you pay.",
+      "What cars are listed for on Shopi right now, what to check before you pay, and how the logbook transfer and sale agreement work.",
     marketplace: [
       { kind: "forSale", slug: "cars" },
       { kind: "county", slug: "nairobi" },

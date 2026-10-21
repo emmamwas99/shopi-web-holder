@@ -9,7 +9,11 @@ import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
 import { faqSchema, jsonLd, marketplaceSchema } from "@/lib/structured-data";
-import { sellCarPages, sellCarPath } from "@/lib/seo/sell-car-pages";
+import {
+  SELLER_PAPERWORK,
+  sellCarPages,
+  sellCarPath,
+} from "@/lib/seo/sell-car-pages";
 import {
   sellCarLocationPath,
   sellCarLocations,
@@ -20,7 +24,7 @@ type Props = { params: Promise<{ lang: string }> };
 const faq = [
   {
     q: "How do I sell my car in Kenya?",
-    a: "Price it against comparable live listings, gather your logbook, ID and KRA PIN, then post a free listing with clear photos or a walkaround video, the price in KES and your location. Buyers message you on Shopi, you arrange inspection, and you complete ownership transfer through the NTSA TIMS portal.",
+    a: "Price it against comparable live listings, gather your logbook, ID and KRA PIN, then post a free listing with clear photos or a walkaround video, the price in KES and your location. Buyers message you on Shopi, you arrange inspection, and you complete ownership transfer on the NTSA service portal in eCitizen.",
   },
   {
     q: "How much is my car worth in Kenya?",
@@ -31,8 +35,31 @@ const faq = [
     a: "Yes. Brokers take a commission or add a markup, and they sit between you and the buyer. Listing directly on Shopi is free, buyers message you themselves, and you keep the full sale price. The trade-off is that you handle viewings and the NTSA transfer yourself.",
   },
   {
+    // Kenyans search "where can I sell my car in Kenya" and "car selling
+    // sites Kenya" more than they search for any one platform. An honest
+    // answer names every route, including the ones that aren't Shopi.
+    q: "Where can I sell my car in Kenya?",
+    a: "You have four routes. List it yourself on an online marketplace such as Shopi, where listing is free and buyers contact you directly. Sell or trade it in to a car yard or dealer, which is quick but usually pays less than a private buyer. Hand it to a broker, who takes a commission or adds a markup. Or take a fast cash offer, at a discount. A private sale usually gets the best price, in exchange for handling viewings and the transfer yourself.",
+  },
+  {
     q: "What documents do I need to sell a car in Kenya?",
-    a: "The logbook in your name with no outstanding financing, your national ID and KRA PIN, an active NTSA TIMS account, and a signed sale agreement. At transfer you also need copies of the buyer's ID and KRA PIN. Confirm current requirements on the NTSA TIMS portal, since fees and steps change.",
+    a: "The logbook in your name with no lender on it (since June 2026 NTSA issues a digital e-Logbook in eCitizen), your national ID and KRA PIN, an active eCitizen account, and a signed car sale agreement. To start the transfer you also need the buyer's ID number and KRA PIN. Confirm current requirements on the NTSA service portal in eCitizen, since fees and steps change.",
+  },
+  {
+    q: "How do I transfer car ownership in Kenya?",
+    a: "On the NTSA service portal in eCitizen. The seller starts the transfer and enters the buyer's details, pays the fee (it depends on engine capacity and the portal shows it), and the buyer accepts it from their eCitizen notifications. The buyer then gets the e-Logbook. Start it only once payment has cleared.",
+  },
+  {
+    q: "Do I need a car sale agreement to sell my car?",
+    a: "It isn't legally required and doesn't transfer ownership, but it's your proof of the price, the payment and the exact time the car changed hands — after which fines and accidents are the buyer's responsibility. Record both parties' IDs and KRA PINs and the car's registration, chassis and engine numbers.",
+  },
+  {
+    q: "Can I sell my car if it has a logbook loan?",
+    a: "Yes, but the lender is on the car's record as a joint owner until the loan is cleared, so it can't be transferred to the buyer before then. Get a written settlement figure, pay off the loan (some buyers pay the lender directly), get the lender's clearance letter and wait for the lender to be removed at NTSA before you start the transfer.",
+  },
+  {
+    q: "Can I sell a duty-free car in Kenya?",
+    a: "Check with KRA first. A car imported duty-free, for example under diplomatic privileges, can become liable to import duty when it's sold, and NTSA won't transfer a vehicle while duty is unpaid. Settle what KRA says is due before you advertise it.",
   },
   {
     q: "How fast can I sell my car in Kenya?",
@@ -97,7 +124,7 @@ export default async function SellCarKenyaPage({ params }: Props) {
       {
         "@type": "HowToStep",
         name: "Complete the sale safely",
-        text: "Meet safely, verify payment and documents, then complete transfer through the official process.",
+        text: "Meet safely, sign a car sale agreement, confirm payment has cleared, then start the transfer on the NTSA service portal in eCitizen for the buyer to accept.",
       },
     ],
   };
@@ -298,21 +325,19 @@ export default async function SellCarKenyaPage({ params }: Props) {
             <h2 className="mb-5 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
               What you need to transfer ownership
             </h2>
+            {/* NTSA moved transfers from TIMS to eCitizen in January 2024 and
+                replaced the paper logbook with the e-Logbook on 10 June 2026.
+                Keep this in step with the logbook transfer guide. */}
             <p className="mb-7 max-w-150 text-[0.95rem] leading-[1.75] text-muted">
-              Ownership transfer in Kenya is done by the seller and buyer
-              through the NTSA TIMS portal — both of you need an active TIMS
-              account linked to your KRA PIN. Have this ready before you
-              advertise, because buyers ask about it in the first message.
+              Ownership transfer in Kenya is done online on the NTSA service
+              portal in eCitizen: the seller starts it and the buyer accepts
+              it, so you both need an active eCitizen account. Since June 2026
+              NTSA issues a digital e-Logbook, which a buyer can check by its QR
+              code. Have this ready before you advertise, because buyers ask
+              about it in the first message.
             </p>
             <ul className="grid list-none gap-3 p-0 sm:grid-cols-2">
-              {[
-                "Logbook in your name, with no outstanding financing",
-                "Your national ID and KRA PIN certificate",
-                "An active NTSA TIMS account",
-                "A signed sale agreement, with both parties' details",
-                "Copies of the buyer's ID and KRA PIN at transfer",
-                "Valid inspection certificate, where the class requires one",
-              ].map((item) => (
+              {SELLER_PAPERWORK.map((item) => (
                 <li
                   key={item}
                   className="rounded-md border border-border bg-elevated px-4 py-3 text-sm font-semibold text-foreground"
@@ -322,9 +347,17 @@ export default async function SellCarKenyaPage({ params }: Props) {
               ))}
             </ul>
             <p className="mt-6 text-[0.85rem] leading-[1.7] text-muted">
-              Requirements and fees change — confirm the current process on the
-              NTSA TIMS portal before you transfer. Shopi does not handle
-              payment, transfer or escrow.
+              Step by step, including fees, forced transfers and cars with a
+              logbook loan:{" "}
+              <Link
+                href={`/${safeLang}/blog/logbook-transfer-in-kenya`}
+                className="text-primary underline"
+              >
+                logbook transfer in Kenya
+              </Link>
+              . Requirements and fees change, so confirm the current process
+              on the NTSA service portal before you transfer. Shopi does not
+              handle payment, transfer or escrow.
             </p>
           </div>
         </section>
@@ -401,10 +434,12 @@ export default async function SellCarKenyaPage({ params }: Props) {
         <GuideLinks
           lang={safeLang}
           heading="Car selling guides"
-          intro="The long-form answers: pricing your car honestly, running a private sale from listing to NTSA transfer, and how buyers differ from town to town."
+          intro="The long-form answers: pricing your car honestly, running a private sale from listing to NTSA transfer, the paperwork, and how buyers differ from town to town."
           slugs={[
             "how-much-is-my-car-worth-in-kenya",
             "how-to-sell-your-car-in-kenya-without-a-broker",
+            "logbook-transfer-in-kenya",
+            "car-sale-agreement-in-kenya",
             "where-to-sell-your-car-in-kenya-city-by-city",
           ]}
         />

@@ -22,7 +22,15 @@ import {
   sellCarLocations,
   type SellCarLocationData,
 } from "@/lib/seo/sell-car-locations";
-import { sellCarPages, sellCarPath } from "@/lib/seo/sell-car-pages";
+import {
+  SELLER_PAPERWORK,
+  sellCarPages,
+  sellCarPath,
+} from "@/lib/seo/sell-car-pages";
+import {
+  CAR_PRICE_FLOOR,
+  CAR_SUBCATEGORY,
+} from "@/lib/seo/search-intent-pages";
 
 type Props = { params: Promise<{ lang: string; city: string }> };
 
@@ -96,7 +104,12 @@ export default async function SellCarLocationPage({ params }: Props) {
   // "what will mine fetch here?", and live asking prices from their own county
   // answer it better than any figure we could hardcode — and keep answering it
   // correctly as the market moves.
-  const comparables = await fetchRecentListings(8, location.county, "car");
+  // By subcategory, not a "car" text search — that matched car chargers and
+  // phone holders and showed them as what local sellers are asking.
+  const comparables = await fetchRecentListings(8, location.county, undefined, {
+    subcategory: CAR_SUBCATEGORY,
+    minPrice: CAR_PRICE_FLOOR,
+  });
   const relatedLocations = location.related
     .map((slug) => getSellCarLocation(slug))
     .filter((related): related is SellCarLocationData => Boolean(related));
@@ -104,7 +117,7 @@ export default async function SellCarLocationPage({ params }: Props) {
   const faq = [
     {
       q: `How do I sell my car in ${location.town}?`,
-      a: `List it free on Shopi with clear photos or a walkaround video, the year, grade, mileage, price in KES and your exact area within ${location.county}. Buyers in ${location.town} message you directly in the app, you arrange the viewing and inspection yourself, and you complete ownership transfer through the NTSA TIMS portal. There is no broker and no commission.`,
+      a: `List it free on Shopi with clear photos or a walkaround video, the year, grade, mileage, price in KES and your exact area within ${location.county}. Buyers in ${location.town} message you directly in the app, you arrange the viewing and inspection yourself, and you complete ownership transfer on the NTSA service portal in eCitizen. There is no broker and no commission.`,
     },
     {
       q: `Where can I sell my car in ${location.town} without a broker?`,
@@ -123,7 +136,7 @@ export default async function SellCarLocationPage({ params }: Props) {
     },
     {
       q: `How do I transfer car ownership in ${location.county}?`,
-      a: `${location.ntsaNote} Both buyer and seller need active TIMS accounts linked to their KRA PINs. Until the transfer completes the car remains legally yours, so do not let this step drift. Confirm current requirements and fees on the NTSA TIMS portal, as they change.`,
+      a: `${location.ntsaNote} Both buyer and seller need active eCitizen accounts. Until the transfer completes the car remains legally yours, so do not let this step drift. Confirm current requirements and fees on the NTSA service portal in eCitizen, as they change.`,
     },
     {
       q: `Does Shopi charge commission on a car sale in ${location.town}?`,
@@ -350,14 +363,7 @@ export default async function SellCarLocationPage({ params }: Props) {
               {location.ntsaNote}
             </p>
             <ul className="grid list-none gap-3 p-0 sm:grid-cols-2">
-              {[
-                "Logbook in your name, with no outstanding financing",
-                "Your national ID and KRA PIN certificate",
-                "An active NTSA TIMS account",
-                "A signed sale agreement, with both parties' details",
-                "Copies of the buyer's ID and KRA PIN at transfer",
-                "Valid inspection certificate, where the class requires one",
-              ].map((item) => (
+              {SELLER_PAPERWORK.map((item) => (
                 <li
                   key={item}
                   className="rounded-md border border-border bg-elevated px-4 py-3 text-sm font-semibold text-foreground"
@@ -367,7 +373,15 @@ export default async function SellCarLocationPage({ params }: Props) {
               ))}
             </ul>
             <p className="mt-6 text-[0.85rem] leading-[1.7] text-muted">
-              Requirements and fees change — confirm the current process on the{" "}
+              The full process, step by step:{" "}
+              <Link
+                href={`/${safeLang}/blog/logbook-transfer-in-kenya`}
+                className="text-primary underline"
+              >
+                logbook transfer in Kenya
+              </Link>
+              . Requirements and fees change — confirm the current process on
+              the{" "}
               <a
                 href="https://www.ntsa.go.ke"
                 rel="noopener noreferrer"
@@ -376,8 +390,8 @@ export default async function SellCarLocationPage({ params }: Props) {
               >
                 NTSA
               </a>{" "}
-              TIMS portal before you transfer. Shopi does not handle payment,
-              transfer or escrow.
+              service portal in eCitizen before you transfer. Shopi does not
+              handle payment, transfer or escrow.
             </p>
           </div>
         </section>

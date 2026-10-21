@@ -16,8 +16,21 @@ import {
  */
 
 const SIMILAR_LISTINGS = gql`
-  query RelatedSimilarListings($limit: Int, $categoryId: String, $query: String) {
-    discoveryFeed(sort: NEWEST, limit: $limit, categoryId: $categoryId, query: $query) {
+  query RelatedSimilarListings(
+    $limit: Int
+    $categoryId: String
+    $query: String
+    $subcategory: String
+    $minPrice: Float
+  ) {
+    discoveryFeed(
+      sort: NEWEST
+      limit: $limit
+      categoryId: $categoryId
+      query: $query
+      subcategory: $subcategory
+      minPrice: $minPrice
+    ) {
       items {
         id
         slug
@@ -78,8 +91,15 @@ async function fetchFromSeller(
   }
 }
 
+type SimilarFilter = {
+  categoryId?: string;
+  query?: string;
+  subcategory?: string;
+  minPrice?: number;
+};
+
 async function fetchSimilar(
-  filter: { categoryId: string } | { query: string },
+  filter: SimilarFilter,
   excludeId: string,
   sellerId: string | null,
 ): Promise<SocialProofListing[]> {
@@ -106,12 +126,22 @@ export async function fetchRelatedListings(input: {
   categoryId: string | null;
   /** Fallback filter when the listing has no category. */
   searchQuery: string | null;
+  /**
+   * Replaces the category filter with one subcategory, for categories too
+   * mixed to be useful whole: under a car, Automotive's newest items are
+   * alarms, seat covers and parts. Pass only where the subcategory has the
+   * stock to fill it.
+   */
+  narrow?: { subcategory: string; minPrice?: number } | null;
 }): Promise<{ fromSeller: SocialProofListing[]; similar: SocialProofListing[] }> {
-  const filter = input.categoryId
+  const base = input.categoryId
     ? { categoryId: input.categoryId }
     : input.searchQuery
       ? { query: input.searchQuery }
       : null;
+  // The subcategory name identifies the slice on its own, so a narrowed
+  // query doesn't depend on the listing's categoryId resolving.
+  const filter: SimilarFilter | null = input.narrow ?? base;
 
   const [fromSeller, similar] = await Promise.all([
     input.sellerId ? fetchFromSeller(input.sellerId, input.id) : [],

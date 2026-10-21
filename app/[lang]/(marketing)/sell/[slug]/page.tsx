@@ -21,7 +21,10 @@ import {
   sellCarPages,
   sellCarPath,
 } from "@/lib/seo/sell-car-pages";
-import { searchIntentPath } from "@/lib/seo/search-intent-pages";
+import {
+  CAR_PRICE_FLOOR,
+  searchIntentPath,
+} from "@/lib/seo/search-intent-pages";
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
 type SellCarPageData = NonNullable<ReturnType<typeof getSellCarPage>>;
@@ -96,7 +99,11 @@ export default async function SellCarLandingPage({ params }: Props) {
   // Live comparables are the whole conversion mechanic here. A seller's real
   // question is "what is mine worth?", and the honest answer is what comparable
   // cars are actually being asked for right now — not a number we invent.
-  const comparables = await fetchRecentListings(9, undefined, page.model);
+  // The price floor keeps "Toyota Premio headlight" out of a list of
+  // comparable cars.
+  const comparables = await fetchRecentListings(9, undefined, page.model, {
+    minPrice: CAR_PRICE_FLOOR,
+  });
   const relatedPages = page.related
     .map((relatedSlug) => getSellCarPage(relatedSlug))
     .filter((related): related is SellCarPageData => Boolean(related));
@@ -116,7 +123,7 @@ export default async function SellCarLandingPage({ params }: Props) {
     },
     {
       q: `What documents do I need to sell a car in Kenya?`,
-      a: `You need the logbook in your name, your ID and KRA PIN, and a signed sale agreement. Transfer of ownership is done through the NTSA TIMS portal, and both buyer and seller need active TIMS accounts. Clear any outstanding financing before you advertise.`,
+      a: `You need the logbook in your name, your ID and KRA PIN, and a signed sale agreement. Transfer of ownership is done on the NTSA service portal in eCitizen, and both buyer and seller need active eCitizen accounts. Clear any outstanding financing before you advertise.`,
     },
     {
       q: `How fast will my ${page.model} sell?`,
@@ -379,7 +386,7 @@ export default async function SellCarLandingPage({ params }: Props) {
                 Selling any car in Kenya
               </h3>
               <p className="mt-2 text-[0.875rem] leading-[1.6] text-muted">
-                Pricing, logbook transfer through NTSA TIMS, avoiding brokers
+                Pricing, logbook transfer on the NTSA portal in eCitizen, avoiding brokers
                 and staying safe when meeting buyers.
               </p>
             </Link>
