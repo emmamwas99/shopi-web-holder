@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { gql, type TypedDocumentNode } from "@apollo/client";
-import { useApolloClient } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import { ChartColumn, ChevronLeft, Plus, UserRound } from "lucide-react";
 import {
   useMyProfile,
@@ -40,39 +40,17 @@ interface Props {
   lang: string;
 }
 
-const MOBILE_DRAFT_COUNT = gql`
-  query MobileProfileDraftCount($limit: Int!, $afterId: String) {
-    myDrafts(limit: $limit, afterId: $afterId) {
-      id
-    }
+// Counted on the server: the menu used to page through every draft and saved
+// post, 100 at a time, just to show these two numbers.
+const MOBILE_MENU_COUNTS = gql`
+  query MobileProfileMenuCounts {
+    myDraftCount
+    mySavedContentCount
   }
 ` as TypedDocumentNode<
-  { myDrafts: Array<{ id: string }> },
-  { limit: number; afterId?: string }
+  { myDraftCount: number; mySavedContentCount: number },
+  Record<string, never>
 >;
-
-const MOBILE_SAVED_COUNT = gql`
-  query MobileProfileSavedCount($limit: Int!, $afterId: String) {
-    mySavedContent(limit: $limit, afterId: $afterId) {
-      items {
-        id
-      }
-      hasMore
-      nextCursor
-    }
-  }
-` as TypedDocumentNode<
-  {
-    mySavedContent: {
-      items: Array<{ id: string }>;
-      hasMore: boolean;
-      nextCursor: string | null;
-    };
-  },
-  { limit: number; afterId?: string }
->;
-
-const PROFILE_COUNT_PAGE_SIZE = 100;
 
 function ProfileSkeleton() {
   return (
@@ -247,7 +225,6 @@ export function ProfileView({ lang }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop();
-  const apolloClient = useApolloClient();
 
   // The open section lives in `?tab=`, read live so the browser's back button
   // moves between the menu and a section. No tab means the menu on a phone and
@@ -326,8 +303,6 @@ export function ProfileView({ lang }: Props) {
   const [postsLimit] = useState(18);
   const fetchingManagedMoreRef = useRef(false);
   const fetchingSavedMoreRef = useRef(false);
-  const [draftCount, setDraftCount] = useState<number>();
-  const [savedCount, setSavedCount] = useState<number>();
 
   const {
     data: profileData,
@@ -350,76 +325,13 @@ export function ProfileView({ lang }: Props) {
     shownTab === "analytics",
   );
 
-  useEffect(() => {
-    const userId = profileData?.me?.id;
-    let active = true;
-
-    if (isDesktop !== false || !userId) {
-      setDraftCount(undefined);
-      setSavedCount(undefined);
-      return () => {
-        active = false;
-      };
-    }
-
-    setDraftCount(undefined);
-    setSavedCount(undefined);
-
-    const loadDraftCount = async () => {
-      let count = 0;
-      let afterId: string | undefined;
-
-      while (true) {
-        const { data } = await apolloClient.query({
-          query: MOBILE_DRAFT_COUNT,
-          variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
-          fetchPolicy: "network-only",
-        });
-        if (!data) throw new Error("Draft count query returned no data");
-        const drafts = data.myDrafts;
-        count += drafts.length;
-
-        if (drafts.length < PROFILE_COUNT_PAGE_SIZE) return count;
-        const nextCursor = drafts[drafts.length - 1]?.id;
-        if (!nextCursor || nextCursor === afterId) return count;
-        afterId = nextCursor;
-      }
-    };
-
-    const loadSavedCount = async () => {
-      let count = 0;
-      let afterId: string | undefined;
-
-      while (true) {
-        const { data } = await apolloClient.query({
-          query: MOBILE_SAVED_COUNT,
-          variables: { limit: PROFILE_COUNT_PAGE_SIZE, afterId },
-          fetchPolicy: "network-only",
-        });
-        if (!data) throw new Error("Saved content count query returned no data");
-        const result = data.mySavedContent;
-        count += result.items.length;
-
-        if (!result.hasMore || !result.nextCursor || result.nextCursor === afterId) {
-          return count;
-        }
-        afterId = result.nextCursor;
-      }
-    };
-
-    void Promise.all([
-      loadDraftCount().catch(() => undefined),
-      loadSavedCount().catch(() => undefined),
-    ]).then(([drafts, saved]) => {
-      if (!active) return;
-      setDraftCount(drafts);
-      setSavedCount(saved);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [apolloClient, isDesktop, profileData?.me?.id]);
+  // Only the phone menu shows these; desktop's sidebar has no counts.
+  const { data: menuCounts } = useQuery(MOBILE_MENU_COUNTS, {
+    skip: isDesktop !== false || !profileData?.me?.id,
+    fetchPolicy: "cache-and-network",
+  });
+  const draftCount = isDesktop === false ? menuCounts?.myDraftCount : undefined;
+  const savedCount = isDesktop === false ? menuCounts?.mySavedContentCount : undefined;
 
   if (profileLoading && !profileData) return <ProfileSkeleton />;
 
