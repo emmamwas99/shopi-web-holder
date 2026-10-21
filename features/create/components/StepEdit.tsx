@@ -16,7 +16,7 @@ import { LocationPicker } from "./LocationPicker";
 import { PhoneInput } from "./PhoneInput";
 import { SpecsEditor } from "./SpecsEditor";
 import { MediaPicker } from "./MediaPicker";
-import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
+import { CategoryPickerDrawer, isOtherCategory } from "./CategoryPickerDrawer";
 import { FormIssues, FormNotice, type FormIssue } from "./FormIssues";
 import { createErrorMessage } from "./CreateErrorDialog";
 import {
@@ -308,7 +308,11 @@ export function StepEdit({
    * tapping the same value only worked because that path happens to also set an
    * id nothing reads.
    */
-  const hasSubcategory = !!(subcategoryId || subcategoryName?.trim());
+  const hasSubcategory = !!(
+    subcategoryId ||
+    subcategoryName?.trim() ||
+    isOtherCategory(categoryName)
+  );
 
   // ── What's wrong, field by field ───────────────────────────────────────────
   // The full sentence goes under the field; the short one goes in the list

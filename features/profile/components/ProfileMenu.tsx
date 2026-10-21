@@ -40,7 +40,7 @@ import {
   DeleteMyAccountDocument,
   type ProfileUserFieldsFragment,
 } from "@/types/__generated__/graphql";
-import { useAuthStore } from "@/stores/auth";
+import { signOutAndLeave } from "@/stores/auth";
 import { settingsSubPageHref } from "../lib/settingsReturn";
 import { cn } from "@/lib/utils";
 import { ReferralPausedBanner } from "@/features/referrals/components/ReferralPausedBanner";
@@ -530,9 +530,7 @@ function DeleteAccountDialog({
       // And no Google auto sign-in on the way out, which would try to sign a
       // deleted account straight back in.
       disableGoogleAutoSelect();
-      useAuthStore.getState().clearAuth();
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- the full reload explained above
-      window.location.href = `/${lang}/for-you`;
+      signOutAndLeave(`/${lang}/for-you`);
     } catch (caught) {
       setError(
         caught instanceof Error

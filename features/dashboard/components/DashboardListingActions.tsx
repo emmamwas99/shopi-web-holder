@@ -80,7 +80,7 @@ export function DashboardListingActions({
     setEditTried(true);
     const textProblems = changedListingTextProblems(post, editState);
     if (textProblems.title || textProblems.description) return;
-    if (!editState.categoryId || !editState.subcategoryId || !editState.subcategory) return;
+    if (!editState.categoryId || !editState.subcategory?.trim()) return;
     const amount = Number(editState.amount);
     if (!Number.isFinite(amount) || amount < 0) {
       toast.error("Enter a valid price");
@@ -187,6 +187,7 @@ export function DashboardListingActions({
               <Field label="Subcategory">
                 <CategoryPickerDrawer
                   value={editState.subcategoryId}
+                  fallbackLabel={editState.subcategory}
                   parentId={editState.categoryId}
                   title="Subcategory"
                   placeholderLabel="Choose subcategory"
@@ -194,7 +195,7 @@ export function DashboardListingActions({
                   onChange={(id, name) => setEditState((current) => current ? { ...current, subcategoryId: id, subcategory: name } : current)}
                 />
               </Field>
-              {editTried && editState.categoryId && !editState.subcategoryId ? <p className="-mt-3 text-[11px] font-medium text-error">Choose a subcategory from the list before saving.</p> : null}
+              {editTried && editState.categoryId && !editState.subcategory ? <p className="-mt-3 text-[11px] font-medium text-error">Choose a subcategory from the list before saving.</p> : null}
               <p className="text-[11px] leading-5 text-muted">Photos and location stay as published.</p>
             </div>
           ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { Check, ChevronRight } from "lucide-react";
 import { CategoriesDocument } from "@/types/__generated__/graphql";
@@ -27,10 +27,24 @@ import { Button } from "@/components/ui/button";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
+/**
+ * The catch-all root. Its one subcategory is "Other" too, filled in for the
+ * seller (see the API's subcategoryForLevel1).
+ */
+const OTHER = "other";
+const isOther = (name?: string | null) => name?.trim().toLowerCase() === OTHER;
+
+/** A listing in "Other" always has its subcategory: "Other". */
+export const isOtherCategory = isOther;
+
 type CategoryPickerDrawerProps = {
   value: string | null;
   fallbackLabel?: string | null;
-  onChange: (id: string, name: string) => void;
+  /**
+   * The id is null only for the "Other" subcategory filled in before it was
+   * seeded as a category of its own; the name is what gets saved.
+   */
+  onChange: (id: string | null, name: string) => void;
   /**
    * When omitted, this pickers the fixed Level-1 roots (depth 0). Pass a
    * category id to pick its Level-2 children instead (depth 1) — e.g. the
@@ -61,6 +75,10 @@ export function CategoryPickerDrawer({
     fetchPolicy: "cache-and-network",
   });
 
+  const parentIsOther =
+    isSubcategoryMode &&
+    isOther(data?.categories?.find((category) => category.id === parentId)?.name);
+
   const categories = useMemo(() => {
     const all = data?.categories ?? [];
     // The flat `categories` query returns every active category regardless
@@ -78,6 +96,20 @@ export function CategoryPickerDrawer({
   const selectedLabel =
     selected?.name ?? fallbackLabel ?? (value ? "Selected" : placeholderLabel);
 
+  // "Other" leaves nothing to choose between: its subcategory is "Other", so
+  // it's filled in, and the field just shows it.
+  const otherChildId = parentIsOther
+    ? (categories.find((category) => isOther(category.name))?.id ?? null)
+    : null;
+  const showsOther = isOther(selected?.name ?? fallbackLabel);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+  useEffect(() => {
+    if (parentIsOther && !showsOther) onChangeRef.current(otherChildId, "Other");
+  }, [parentIsOther, showsOther, otherChildId]);
+
   function selectCategory(id: string) {
     const category = categories.find((item) => item.id === id);
     if (!category) return;
@@ -90,8 +122,12 @@ export function CategoryPickerDrawer({
   const triggerButton = (
     <button
       type="button"
-      disabled={disabled}
-      className="flex min-h-13 w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      disabled={disabled || parentIsOther}
+      className={
+        parentIsOther
+          ? "flex min-h-13 w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left outline-none"
+          : "flex min-h-13 w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      }
       style={{
         backgroundColor: "rgb(var(--color-bg-subtle))",
         border: "1px solid rgb(var(--color-border))",
@@ -101,15 +137,16 @@ export function CategoryPickerDrawer({
         <span
           className="block truncate font-medium"
           style={{
-            color: value
-              ? "rgb(var(--color-text))"
-              : "rgb(var(--color-text-placeholder))",
+            color:
+              value || parentIsOther
+                ? "rgb(var(--color-text))"
+                : "rgb(var(--color-text-placeholder))",
             fontSize: "var(--text-base)",
           }}
         >
-          {disabled ? "Choose a category first" : selectedLabel}
+          {disabled ? "Choose a category first" : parentIsOther ? "Other" : selectedLabel}
         </span>
-        {value && (
+        {(value || parentIsOther) && (
           <span
             className="block truncate"
             style={{
@@ -117,14 +154,16 @@ export function CategoryPickerDrawer({
               fontSize: "var(--text-xs)",
             }}
           >
-            Selected
+            {parentIsOther ? "Set by the category" : "Selected"}
           </span>
         )}
       </span>
-      <ChevronRight
-        className="h-5 w-5 shrink-0"
-        style={{ color: "rgb(var(--color-text-muted))" }}
-      />
+      {!parentIsOther && (
+        <ChevronRight
+          className="h-5 w-5 shrink-0"
+          style={{ color: "rgb(var(--color-text-muted))" }}
+        />
+      )}
     </button>
   );
 
@@ -207,7 +246,12 @@ export function CategoryPickerDrawer({
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-        <DialogContent className="w-[min(92vw,760px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-[rgb(229_231_235)] bg-app p-0">
+        {/* Above the dialogs it's opened from (Edit post sits at z-85), which
+            otherwise covered it and left it unclickable. */}
+        <DialogContent
+          className="z-[95] w-[min(92vw,760px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-[rgb(229_231_235)] bg-app p-0"
+          overlayClassName="z-[90]"
+        >
           <DialogHeader className="border-b border-[rgb(229_231_235)] px-6 py-5 text-left">
             <DialogTitle
               style={{
