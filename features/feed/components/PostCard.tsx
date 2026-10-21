@@ -1178,6 +1178,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       : ""; // resolver hasn't arrived yet — render nothing
   // isMyContent is resolved server-side — no client-side ID comparison needed
   const isOwnPost = post.isMyContent ?? false;
+  // Shopi's own account posts announcements, not listings: no price, and none
+  // of the buying actions (Save, Contact, Share).
+  const isOfficialPost = creator?.isOfficial === true;
 
   const { following, toggle: handleFollow } = useFollow({
     userId: creator?.id ?? post.creatorId,
@@ -1197,7 +1200,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     caption.trim().length > 0 &&
     caption.trim().toLowerCase() !== (post.title ?? "").trim().toLowerCase();
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
-  const saveSummary = saveSummaryText(recentSavers, saveCount);
+  const saveSummary = isOfficialPost ? null : saveSummaryText(recentSavers, saveCount);
   const commentCount = post.stats?.comments ?? 0;
   const hasEngagement = Boolean(saveSummary) || commentCount > 0;
   const place = post.location ? shortLocation(post.location) : null;
@@ -1475,23 +1478,28 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               </button>
             )}
 
-            <div className="mx-2 my-1 h-px bg-border" />
+            {/* Shopi's own announcements aren't listings anyone needs to report. */}
+            {!isOfficialPost && (
+              <>
+                <div className="mx-2 my-1 h-px bg-border" />
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!requireAuth({ contentId: post.id })) return;
-                setMenuOpen(false);
-                void handleReport().then(() =>
-                  toast.success("Report submitted"),
-                );
-              }}
-              className="flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-main transition-colors hover:bg-surface lg:cursor-pointer"
-            >
-              <Flag className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
-              Report listing
-            </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!requireAuth({ contentId: post.id })) return;
+                    setMenuOpen(false);
+                    void handleReport().then(() =>
+                      toast.success("Report submitted"),
+                    );
+                  }}
+                  className="flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-main transition-colors hover:bg-surface lg:cursor-pointer"
+                >
+                  <Flag className="h-4 w-4 shrink-0 text-muted" strokeWidth={2} />
+                  Report listing
+                </button>
+              </>
+            )}
           </PopoverContent>
         </Popover>
       </div>
@@ -1543,26 +1551,28 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           above the media (it used to sit below the stats and actions) no
           longer applies. */}
       <div className="px-4 pt-2.5 md:pt-3">
-        <div className="flex items-baseline gap-2">
-          {hasPrice ? (
-            <span className="text-[18px] font-bold leading-6 tracking-[-0.015em] text-main tabular-nums md:text-[20px]">
-              {`${post.price!.currency} ${post.price!.amount.toLocaleString()}`}
-            </span>
-          ) : (
-            // No price is information too, but it shouldn't shout like one.
-            <span className="text-[14px] font-semibold leading-6 text-muted md:text-[15px]">
-              Price on request
-            </span>
-          )}
-          {post.price?.negotiable && hasPrice && (
-            <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-muted md:text-[12px]">
-              Negotiable
-            </span>
-          )}
-          {/* Every listing from a verified shop carries it, at the row's end
-              where it never competes with the price. */}
-          {creator?.isVerified && <VerifiedIdBadge className="ml-auto self-center" />}
-        </div>
+        {!isOfficialPost && (
+          <div className="flex items-baseline gap-2">
+            {hasPrice ? (
+              <span className="text-[18px] font-bold leading-6 tracking-[-0.015em] text-main tabular-nums md:text-[20px]">
+                {`${post.price!.currency} ${post.price!.amount.toLocaleString()}`}
+              </span>
+            ) : (
+              // No price is information too, but it shouldn't shout like one.
+              <span className="text-[14px] font-semibold leading-6 text-muted md:text-[15px]">
+                Price on request
+              </span>
+            )}
+            {post.price?.negotiable && hasPrice && (
+              <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-muted md:text-[12px]">
+                Negotiable
+              </span>
+            )}
+            {/* Every listing from a verified shop carries it, at the row's end
+                where it never competes with the price. */}
+            {creator?.isVerified && <VerifiedIdBadge className="ml-auto self-center" />}
+          </div>
+        )}
 
         <Link
           href={contentPath(lang, post)}
@@ -1659,76 +1669,83 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       {/* ── Actions ──────────────────────────────────────────────────────
           One hairline, then three equal actions with the label beside the
           icon. Save fills when active. */}
-      <div className="mx-4 mt-2.5 border-t border-border md:mt-3" />
-      <div className={cn("grid gap-1 px-2 py-1", actionGridCols)}>
-        <button
-          type="button"
-          onClick={handleSavePress}
-          aria-pressed={saved}
-          className={cn(
-            actionClass,
-            "hover:bg-surface",
-            saved ? "text-primary" : "text-muted hover:text-main",
-          )}
-        >
-          <SaveBurst key={saveBurstKey} burstKey={saveBurstKey} />
-          <Bookmark
-            className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300 md:h-5 md:w-5", saved && "scale-110")}
-            fill={saved ? "rgb(var(--brand-primary))" : "none"}
-            strokeWidth={1.9}
-          />
-          <span className="truncate">{saved ? "Saved" : "Save"}</span>
-        </button>
+      {isOfficialPost ? (
+        // No action row to close the card, so leave the room it would have.
+        <div className="h-3 md:h-4" />
+      ) : (
+        <>
+          <div className="mx-4 mt-2.5 border-t border-border md:mt-3" />
+          <div className={cn("grid gap-1 px-2 py-1", actionGridCols)}>
+            <button
+              type="button"
+              onClick={handleSavePress}
+              aria-pressed={saved}
+              className={cn(
+                actionClass,
+                "hover:bg-surface",
+                saved ? "text-primary" : "text-muted hover:text-main",
+              )}
+            >
+              <SaveBurst key={saveBurstKey} burstKey={saveBurstKey} />
+              <Bookmark
+                className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-300 md:h-5 md:w-5", saved && "scale-110")}
+                fill={saved ? "rgb(var(--brand-primary))" : "none"}
+                strokeWidth={1.9}
+              />
+              <span className="truncate">{saved ? "Saved" : "Save"}</span>
+            </button>
 
-        {!isOwnPost && (
-          <button
-            type="button"
-            // Warm the conversation route's JS so the transition paints the chat
-            // shell (loading.tsx) instantly instead of a blank frame on tap.
-            onPointerEnter={() =>
-              router.prefetch(`/${lang}/notifications/${post.id}`)
-            }
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!requireAuth({ contentId: post.id })) return;
-              // Desktop feed: open the chat inline in the right rail.
-              if (openMessage) {
-                openMessage(post.id, cardRef.current);
-                return;
-              }
-              // Paint the chat shell immediately, before the navigation, so the
-              // transition shows the chat (not a blank frame). Auto-clear in case
-              // the user returns to the feed while this card stays mounted.
-              setIsOpeningChat(true);
-              window.setTimeout(() => setIsOpeningChat(false), 2500);
-              // Go straight to the full-screen chat. `source=content` tells the
-              // chat screen to ensure (create-or-reuse) the conversation in place,
-              // so we never flash the inbox list.
-              router.push(`/${lang}/notifications/${post.id}?source=content`);
-            }}
-            className={cn(
-              actionClass,
-              "text-muted hover:bg-surface hover:text-main",
+            {!isOwnPost && (
+              <button
+                type="button"
+                // Warm the conversation route's JS so the transition paints the chat
+                // shell (loading.tsx) instantly instead of a blank frame on tap.
+                onPointerEnter={() =>
+                  router.prefetch(`/${lang}/notifications/${post.id}`)
+                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!requireAuth({ contentId: post.id })) return;
+                  // Desktop feed: open the chat inline in the right rail.
+                  if (openMessage) {
+                    openMessage(post.id, cardRef.current);
+                    return;
+                  }
+                  // Paint the chat shell immediately, before the navigation, so the
+                  // transition shows the chat (not a blank frame). Auto-clear in case
+                  // the user returns to the feed while this card stays mounted.
+                  setIsOpeningChat(true);
+                  window.setTimeout(() => setIsOpeningChat(false), 2500);
+                  // Go straight to the full-screen chat. `source=content` tells the
+                  // chat screen to ensure (create-or-reuse) the conversation in place,
+                  // so we never flash the inbox list.
+                  router.push(`/${lang}/notifications/${post.id}?source=content`);
+                }}
+                className={cn(
+                  actionClass,
+                  "text-muted hover:bg-surface hover:text-main",
+                )}
+              >
+                <MessageCircle className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
+                <span className="truncate">Contact</span>
+              </button>
             )}
-          >
-            <MessageCircle className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
-            <span className="truncate">Contact</span>
-          </button>
-        )}
 
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleShare();
-          }}
-          aria-label="Share listing"
-          className={cn(actionClass, "text-muted hover:bg-surface hover:text-main")}
-        >
-          <Forward className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
-          <span className="truncate">Share</span>
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleShare();
+              }}
+              aria-label="Share listing"
+              className={cn(actionClass, "text-muted hover:bg-surface hover:text-main")}
+            >
+              <Forward className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" strokeWidth={1.9} />
+              <span className="truncate">Share</span>
+            </button>
+          </div>
+        </>
+      )}
 
       <CommentsDrawer
         contentId={post.id}
