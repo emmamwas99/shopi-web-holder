@@ -41,13 +41,11 @@ const COPY = {
     title: "Buy and Sell Online in Kenya | Shopi",
     description:
       "Buy and sell online in Kenya with Shopi. Discover local products, create a post from a photo and get a suggested price with Shopi Agent.",
-    heroTitle: "Buy and sell anything in Kenya",
+    heroTitle: "What are you selling today?",
     heroBody:
-      "Discover products nearby. Shopi Agent finds matches, drafts your post from a photo, and suggests a price.",
+      "Add a photo and Shopi Agent drafts your post and suggests a price. Buyers across Kenya message you directly.",
     cta: "Sell an item",
     heroPost: "Sell an item",
-    heroPostNote: "Posting is free. Add a photo, price and location, then chat with buyers directly.",
-    browse: "Browse listings",
     free: "Free to post",
     commission: "No commission",
     direct: "Talk to buyers directly",
@@ -160,14 +158,11 @@ const COPY = {
     title: "Nunua na Uuze Mtandaoni Kenya | Shopi",
     description:
       "Nunua na uuze mtandaoni Kenya kupitia Shopi. Pata bidhaa za karibu, tengeneza tangazo kwa picha na upate pendekezo la bei kutoka Shopi Agent.",
-    heroTitle: "Nunua na uuze chochote Kenya",
+    heroTitle: "Unauza nini leo?",
     heroBody:
-      "Gundua bidhaa karibu nawe. Shopi Agent hutafuta bidhaa, hukusaidia kuandika tangazo kwa picha na hupendekeza bei.",
+      "Ongeza picha na Shopi Agent itaandika tangazo lako na kupendekeza bei. Wanunuzi kote Kenya wanakutumia ujumbe moja kwa moja.",
     cta: "Uza bidhaa",
     heroPost: "Uza bidhaa",
-    heroPostNote:
-      "Kuweka tangazo ni bure. Ongeza picha, bei na eneo, kisha ongea na wanunuzi moja kwa moja.",
-    browse: "Vinjari matangazo",
     free: "Kuweka tangazo ni bure",
     commission: "Hakuna kamisheni",
     direct: "Ongea na wanunuzi moja kwa moja",
@@ -409,26 +404,12 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   {t.heroPost}
                   <ArrowUpRight size={18} aria-hidden />
                 </TrackedHomepageLink>
-                <TrackedHomepageLink
-                  href={`/${lang}/for-you`}
-                  buttonId="for_you"
-                  placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline hover:bg-landing-card/20 md:hidden"
-                >
-                  {lang === "sw" ? "Kwa ajili yako" : "For You"}
-                  <ArrowUpRight size={18} aria-hidden />
-                </TrackedHomepageLink>
-                <TrackedHomepageLink
-                  href={`/${lang}/explore`}
-                  buttonId="browse_listings"
-                  placement="hero"
-                  className="hidden min-h-12 items-center justify-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline hover:bg-landing-card/20 md:inline-flex"
-                >
-                  {t.browse}
-                  <ArrowUpRight size={18} aria-hidden />
-                </TrackedHomepageLink>
               </div>
-              <p className="mt-2 text-balance text-sm text-white/75 md:mt-2">{t.heroPostNote}</p>
+              {/* One action: the question asks what you're selling. Buyers
+                  search from the bar in the nav. */}
+              <p className="mt-3 text-balance text-sm text-white/75">
+                {t.free} · {t.commission}
+              </p>
             </div>
           </div>
         </section>

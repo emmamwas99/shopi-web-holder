@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
+import { SearchHandoff } from "@/features/discover/components/SearchHandoff";
 import { fetchBrowseCards } from "@/features/discover/queries/browse.server";
 import { publicPageMetadata } from "@/lib/metadata";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,9 +36,14 @@ export default async function ExplorePage({ params, searchParams }: Props) {
   // the interactive Explore UI so users don't see the crawl hub flash before
   // hydration replaces it.
   return (
-    <Suspense fallback={<ExploreSkeleton />}>
-      <DiscoverPage lang={lang} initialPosts={initialPosts} />
-    </Suspense>
+    <>
+      <Suspense fallback={<ExploreSkeleton />}>
+        <DiscoverPage lang={lang} initialPosts={initialPosts} />
+      </Suspense>
+      {/* Opens a listing picked from the homepage's search suggestions, so
+          Back from it returns here rather than to the homepage. */}
+      <SearchHandoff />
+    </>
   );
 }
 

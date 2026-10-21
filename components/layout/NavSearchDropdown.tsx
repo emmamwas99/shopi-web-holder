@@ -7,6 +7,7 @@ import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { ArrowRight, ImageIcon, SearchX } from "lucide-react";
 import { contentPath } from "@/lib/content-url";
+import { browseSearchHref } from "@/lib/searchHandoff";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 
 const SEARCH_DEBOUNCE_MS = 280;
@@ -106,20 +107,39 @@ function ResultRow({
   item,
   lang,
   onNavigate,
+  onOpenListing,
 }: {
   item: NavSearchItem;
   lang: string;
   onNavigate: () => void;
+  onOpenListing?: (href: string) => void;
 }) {
   const thumb = getThumb(item);
   const hasPrice = !!item.price && item.price.amount > 0;
   const place = locationLabel(item.location);
+  const href = contentPath(lang, item);
 
   return (
     <Link
-      href={contentPath(lang, item)}
+      href={href}
       scroll={false}
-      onClick={onNavigate}
+      onClick={(event) => {
+        onNavigate();
+        // A plain click only: a modified or middle click still opens the
+        // listing itself in a new tab.
+        if (
+          !onOpenListing ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        onOpenListing(href);
+      }}
       className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface"
     >
       <div
@@ -194,10 +214,17 @@ export function NavSearchDropdown({
   lang,
   term,
   onNavigate,
+  onOpenListing,
 }: {
   lang: string;
   term: string;
   onNavigate: () => void;
+  /**
+   * Takes over opening a result, for a search box that wants the listing to
+   * open by way of somewhere else — the homepage opens it on top of Browse
+   * (lib/searchHandoff.ts). Without it a result is a plain link.
+   */
+  onOpenListing?: (href: string) => void;
 }) {
   const [debounced, setDebounced] = useState(term.trim());
 
@@ -245,13 +272,19 @@ export function NavSearchDropdown({
       ) : (
         <div className="flex flex-col gap-0.5">
           {items.map((item) => (
-            <ResultRow key={item.id} item={item} lang={lang} onNavigate={onNavigate} />
+            <ResultRow
+              key={item.id}
+              item={item}
+              lang={lang}
+              onNavigate={onNavigate}
+              onOpenListing={onOpenListing}
+            />
           ))}
         </div>
       )}
 
       <Link
-        href={`/${lang}/explore?q=${encodeURIComponent(term.trim())}`}
+        href={browseSearchHref(lang, term.trim())}
         onClick={onNavigate}
         className="mt-1 flex items-center justify-between rounded-xl border-t border-default px-2 pt-2.5 pb-1 text-sm font-semibold text-primary"
       >
