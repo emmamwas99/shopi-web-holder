@@ -1,4 +1,22 @@
-import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+/**
+ * The fields these helpers read. A full ContentCardFieldsFragment fits, and
+ * so does the narrower listing shape the video sitemap fetches.
+ */
+type VideoMedia = {
+  thumbnailUrl?: string | null;
+  imageUrl?: string | null;
+  muxMeta?: {
+    playbackId?: string | null;
+    thumbnailUrl?: string | null;
+    duration?: number | null;
+  } | null;
+};
+
+export type VideoSourcePost = {
+  type?: string | null;
+  tiktokEmbed?: { coverImageUrl?: string | null } | null;
+  media?: (VideoMedia | null)[] | null;
+};
 
 /**
  * Mux URL derivation, in one place.
@@ -14,40 +32,58 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
  */
 
 /** The first media item that actually has a Mux stream behind it. */
-function playableMedia(post: ContentCardFieldsFragment) {
+function playableMedia(post: VideoSourcePost) {
   return (post.media ?? []).find(
     (item) => (item?.muxMeta?.playbackId ?? "").length > 0,
   );
 }
 
-export function isPlayableVideo(post: ContentCardFieldsFragment): boolean {
+export function isPlayableVideo(post: VideoSourcePost): boolean {
   return post.type === "VIDEO" && playableMedia(post) !== undefined;
 }
 
-export function hlsUrlOf(post: ContentCardFieldsFragment): string | null {
+export function hlsUrlOf(post: VideoSourcePost): string | null {
   const playbackId = playableMedia(post)?.muxMeta?.playbackId;
   return playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
 }
 
 /**
+ * TikTok's CDN links are signed and stop working within days (403), so a
+ * TikTok import's cover is only good while the import is fresh.
+ */
+function isExpiringUrl(url: string): boolean {
+  return /tiktokcdn|[?&]x-expires=|[?&]x-signature=/i.test(url);
+}
+
+/**
  * Cover frame. Prefers a stored thumbnail, falling back to Mux's own renderer.
  * `fit_mode=smartcrop` keeps the subject centred rather than the geometry.
+ *
+ * An expiring TikTok link is used only when nothing else exists — a fresh
+ * import still transcoding. Once Mux has the video, its frame is used
+ * instead: a dead cover is a broken image in the feed and, as the watch
+ * page's VideoObject thumbnail, "Thumbnail could not be reached" in Search
+ * Console, which keeps the video out of Google's index.
  */
-export function posterOf(post: ContentCardFieldsFragment): string | null {
+export function posterOf(post: VideoSourcePost): string | null {
   const media = playableMedia(post) ?? post.media?.[0];
-  const contentPoster =
-    post.tiktokEmbed?.coverImageUrl ??
-    media?.thumbnailUrl ??
-    media?.muxMeta?.thumbnailUrl ??
-    media?.imageUrl;
-  if (contentPoster) return contentPoster;
+  const candidates = [
+    post.tiktokEmbed?.coverImageUrl,
+    media?.thumbnailUrl,
+    media?.muxMeta?.thumbnailUrl,
+    media?.imageUrl,
+  ].filter((url): url is string => Boolean(url?.trim()));
+  const stable = candidates.find((url) => !isExpiringUrl(url));
+  if (stable) return stable;
 
   const playbackId = media?.muxMeta?.playbackId;
-  if (!playbackId) return null;
-  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`;
+  if (playbackId) {
+    return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`;
+  }
+  return candidates[0] ?? null;
 }
 
 /** Runtime in seconds, when Mux has reported it. */
-export function durationOf(post: ContentCardFieldsFragment): number | null {
+export function durationOf(post: VideoSourcePost): number | null {
   return playableMedia(post)?.muxMeta?.duration ?? null;
 }

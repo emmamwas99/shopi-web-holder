@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { profileHref } from "@/lib/profile-url";
 import { listingPriceText } from "@/lib/format";
-import { slugifyContentTitle } from "@/lib/content-url";
+import { slugifyContentTitle, videoPath } from "@/lib/content-url";
+import { isPlayableVideo } from "@/features/feed/lib/videoSource";
 
 type SummaryPost = ContentCardFieldsFragment & {
   slug?: string | null;
@@ -108,6 +109,16 @@ export function ListingSeoSummary({
 
       {post.caption && (
         <p className="text-base leading-normal text-muted">{post.caption}</p>
+      )}
+
+      {/* The video's watch page is the only page Google indexes the video on,
+          and without this it was linked from nowhere but the sitemap. */}
+      {isPlayableVideo(post) && (
+        <p className="text-sm">
+          <Link href={videoPath(lang, post)} className="font-semibold text-primary">
+            Watch the video: {post.title}
+          </Link>
+        </p>
       )}
 
       {(category || specs.length > 0) && (

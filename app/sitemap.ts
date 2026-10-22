@@ -547,8 +547,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // only page Google will index its video on (the product page above stays
   // the listing's canonical). Plain <url> entries, not <video:video> ones —
   // Next writes video titles into the XML unescaped, so one "&" in a title
-  // would get the whole sitemap rejected. The page's VideoObject carries the
-  // video details instead.
+  // would get the whole sitemap rejected. The video details are in the page's
+  // VideoObject and in /video-sitemap.xml, which escapes them itself.
   const videoEntries: MetadataRoute.Sitemap = listings
     .filter(isPlayableVideoListing)
     .map((item) => {

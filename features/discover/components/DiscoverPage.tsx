@@ -1674,6 +1674,7 @@ export function DiscoverPage({
   initialCategorySlug,
   initialSubcategorySlug,
   initialPosts,
+  initialCategories,
   initialTitle,
 }: {
   lang: string;
@@ -1685,6 +1686,12 @@ export function DiscoverPage({
    * all a non-JS crawler sees — has real listings and links in it.
    */
   initialPosts?: ContentCardFieldsFragment[];
+  /**
+   * The unfiltered category facets, fetched on the server with the cards.
+   * Shown until the client's own facet query answers, while no filter
+   * narrows the counts.
+   */
+  initialCategories?: CategoryFacet[];
   /** The results heading before the client resolves the subcategory name. */
   initialTitle?: string;
 }) {
@@ -2164,13 +2171,18 @@ export function DiscoverPage({
       postedWithinDays,
     ],
   );
+  // cache-and-network: coming back to Explore shows the last counts at once
+  // and refreshes them, rather than the skeleton again.
   const { data: categoriesData, loading: categoriesLoading } = useQuery(
     DISCOVERY_CATEGORIES,
     {
       variables: categoryFacetVariables,
-      fetchPolicy: "network-only",
+      fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
+  );
+  const categoryFacetsUnfiltered = Object.values(categoryFacetVariables).every(
+    (value) => value === undefined,
   );
 
   // Location facets follow the active filters (their post counts depend on the
@@ -2654,8 +2666,15 @@ export function DiscoverPage({
     : "Choose the most precise place for these results.";
 
   const categories = useMemo(
-    () => categoriesData?.discoveryFacets?.categories ?? [],
-    [categoriesData?.discoveryFacets?.categories],
+    () =>
+      categoriesData?.discoveryFacets?.categories ??
+      (categoryFacetsUnfiltered ? initialCategories : undefined) ??
+      [],
+    [
+      categoriesData?.discoveryFacets?.categories,
+      categoryFacetsUnfiltered,
+      initialCategories,
+    ],
   );
 
   // Deep-link support: /explore?category=<slug> (e.g. from the SideNav Browse
