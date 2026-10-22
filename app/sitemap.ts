@@ -10,6 +10,7 @@ import {
 } from "@/lib/articles";
 import { locales } from "@/i18n/config";
 import { contentPath, videoPath } from "@/lib/content-url";
+import { hasVideoPicture, isPlayableVideo } from "@/features/feed/lib/videoSource";
 import { isTranslatedPath, localeAlternates } from "@/lib/metadata";
 import { COUNTIES } from "@/lib/counties";
 import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
@@ -68,7 +69,12 @@ type SitemapListing = {
     imageUrl?: string | null;
     thumbnailUrl?: string | null;
     sortOrder?: number | null;
-    muxMeta?: { thumbnailUrl?: string | null; playbackId?: string | null } | null;
+    muxMeta?: {
+      thumbnailUrl?: string | null;
+      playbackId?: string | null;
+      aspectRatio?: string | null;
+      maxStoredResolution?: string | null;
+    } | null;
     r2Variants?: { url?: string | null; variant?: string | null }[] | null;
   }[];
 };
@@ -90,12 +96,13 @@ function isXmlSafeImageUrl(url: string): boolean {
   return !/[&<>"']/.test(url);
 }
 
-/** Same rule as isPlayableVideo(): a VIDEO post with a real Mux stream. */
+/**
+ * Same rule as the watch page's `indexable`: a playable VIDEO post whose
+ * stream has a picture (see hasVideoPicture). An audio-only upload's watch
+ * page is noindex, and a sitemap shouldn't submit noindex URLs.
+ */
 function isPlayableVideoListing(item: SitemapListing): boolean {
-  return (
-    item.type === "VIDEO" &&
-    (item.media ?? []).some((media) => (media.muxMeta?.playbackId ?? "").length > 0)
-  );
+  return isPlayableVideo(item) && hasVideoPicture(item);
 }
 
 function listingImages(item: SitemapListing): string[] {
@@ -176,7 +183,7 @@ async function walkListings(
                     imageUrl
                     thumbnailUrl
                     sortOrder
-                    muxMeta { thumbnailUrl playbackId }
+                    muxMeta { thumbnailUrl playbackId aspectRatio maxStoredResolution }
                     r2Variants { url variant }
                   }
                 }
@@ -299,7 +306,7 @@ async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<Sitemap
                         imageUrl
                         thumbnailUrl
                         sortOrder
-                        muxMeta { thumbnailUrl playbackId }
+                        muxMeta { thumbnailUrl playbackId aspectRatio maxStoredResolution }
                         r2Variants { url variant }
                       }
                     }
