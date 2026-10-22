@@ -8,6 +8,7 @@ import {
 } from "@/types/__generated__/graphql";
 import {
   durationOf,
+  hasVideoPicture,
   hlsUrlOf,
   isPlayableVideo,
   posterOf,
@@ -84,8 +85,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   );
 
   // Unlisted, still-processing or image posts stay out of the index (image
-  // posts are redirected to their listing below anyway).
-  const indexable = post.isLive !== false && isPlayableVideo(post);
+  // posts are redirected to their listing below anyway), and so do audio-only
+  // uploads: they play, but there is no video for Google to index.
+  const indexable =
+    post.isLive !== false && isPlayableVideo(post) && hasVideoPicture(post);
 
   return {
     // "Watch …" keeps the title distinct from the listing page's
@@ -170,7 +173,7 @@ export default async function VideoPageRoute({ params }: Props) {
     <>
       {/* Google requires a thumbnail and an upload date; without them the
           markup would be invalid, so it is left out rather than faked. */}
-      {poster && post.createdAt && (
+      {poster && post.createdAt && hasVideoPicture(post) && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

@@ -9,6 +9,8 @@ type VideoMedia = {
     playbackId?: string | null;
     thumbnailUrl?: string | null;
     duration?: number | null;
+    aspectRatio?: string | null;
+    maxStoredResolution?: string | null;
   } | null;
 };
 
@@ -40,6 +42,21 @@ function playableMedia(post: VideoSourcePost) {
 
 export function isPlayableVideo(post: VideoSourcePost): boolean {
   return post.type === "VIDEO" && playableMedia(post) !== undefined;
+}
+
+/**
+ * Whether the stream has a picture. Mux stores an audio-only upload as a video
+ * asset too: it plays, but there is no frame — Mux won't render a thumbnail
+ * for it ("Assets without video do not support thumbnails") and Google can't
+ * index it as a video. Such assets have no aspect ratio and a
+ * maxStoredResolution of "Audio only" (4 of 506 in production, 2026-10-22).
+ *
+ * For search surfaces only — the viewer still plays these, as before.
+ */
+export function hasVideoPicture(post: VideoSourcePost): boolean {
+  const meta = playableMedia(post)?.muxMeta;
+  if (!meta || meta.maxStoredResolution === "Audio only") return false;
+  return Boolean(meta.aspectRatio || meta.maxStoredResolution);
 }
 
 export function hlsUrlOf(post: VideoSourcePost): string | null {

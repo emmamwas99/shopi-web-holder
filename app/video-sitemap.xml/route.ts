@@ -1,6 +1,7 @@
 import { siteConfig } from "@/config/site";
 import {
   durationOf,
+  hasVideoPicture,
   hlsUrlOf,
   isPlayableVideo,
   posterOf,
@@ -24,11 +25,16 @@ import { cleanPublicText, truncateAtWord } from "@/lib/seo/public-text";
  * Referenced from robots.txt; submit it in Search Console as well.
  */
 
+// Regenerated in the background once a day, so a slow walk costs nobody a
+// wait. Measured against production on 2026-10-22: 506 videos, 11 pages,
+// 17–25s, with single pages taking up to 5s. The budget leaves room for that
+// to grow; whatever is collected when it runs out still ships, newest first.
 export const revalidate = 86400;
+export const maxDuration = 60;
 
 const PAGE_SIZE = 50;
 const MAX_VIDEOS = 5000;
-const FETCH_BUDGET_MS = 20_000;
+const FETCH_BUDGET_MS = 45_000;
 /** Google's limits for <video:description> and <video:duration>. */
 const DESCRIPTION_MAX = 2048;
 const DURATION_MAX_SECONDS = 28_800;
@@ -79,7 +85,7 @@ async function fetchVideoListings(): Promise<VideoListing[]> {
                   media {
                     thumbnailUrl
                     imageUrl
-                    muxMeta { playbackId thumbnailUrl duration }
+                    muxMeta { playbackId thumbnailUrl duration aspectRatio maxStoredResolution }
                   }
                 }
                 pageInfo { hasNextPage endCursor }
@@ -130,7 +136,8 @@ function xml(text: string): string {
 }
 
 function videoEntry(item: VideoListing): string | null {
-  if (!isPlayableVideo(item)) return null;
+  // Audio-only uploads play, but have no picture to index (or thumbnail).
+  if (!isPlayableVideo(item) || !hasVideoPicture(item)) return null;
   const thumbnail = posterOf(item);
   const stream = hlsUrlOf(item);
   // Thumbnail, title and description are required; without a thumbnail the
