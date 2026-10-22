@@ -23,7 +23,8 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { resumeVideoElection, suspendVideoElection } from "@/lib/activeVideo";
 import { pruneVideoFeedCache } from "@/lib/apollo/feedCache";
-import { contentSlugSegment } from "@/lib/content-url";
+import Link from "next/link";
+import { contentPath, contentSlugSegment } from "@/lib/content-url";
 import {
   clearViewerSlide,
   rememberViewerSlide,
@@ -90,6 +91,13 @@ export type ViewerPlaceholder = {
   poster: string | null;
   /** The HLS stream. Not loaded (preload="none"); it's there to be found. */
   src: string | null;
+  /**
+   * The listing, for the seller, price, place and caption over the video —
+   * the same overlay the slide shows once it takes over. In the server HTML
+   * it is the watch page's text and its links to the listing and the seller;
+   * a watch page that was a bare video and a title was too thin to index.
+   */
+  post?: ContentCardFieldsFragment;
 };
 
 export function ImmersiveVideoViewer({ seed: seedProp, lang, placeholder }: Props) {
@@ -433,6 +441,29 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang, placeholder }: Prop
               className="absolute inset-0 h-full w-full object-contain"
             />
             <h1 className="sr-only">{placeholder.title}</h1>
+            {placeholder.post && (
+              <>
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-2/5 bg-linear-to-t from-black/85 via-black/45 to-transparent"
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4 pb-[calc(var(--immersive-bottom,16px)+2.25rem)] md:mx-auto md:max-w-md">
+                  <ImmersiveMeta
+                    post={placeholder.post}
+                    lang={lang}
+                    variant="overlay"
+                    cta={
+                      <Link
+                        href={contentPath(lang, placeholder.post)}
+                        className="pointer-events-auto mt-0.5 mb-3 flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-5 py-2.5 text-[0.8rem] font-bold text-white no-underline"
+                      >
+                        View listing
+                      </Link>
+                    }
+                  />
+                </div>
+              </>
+            )}
           </>
         )}
         <button

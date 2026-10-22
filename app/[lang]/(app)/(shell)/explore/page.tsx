@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
 import { SearchHandoff } from "@/features/discover/components/SearchHandoff";
-import { fetchBrowseCards } from "@/features/discover/queries/browse.server";
+import {
+  fetchBrowseCards,
+  fetchExploreCategories,
+} from "@/features/discover/queries/browse.server";
 import { publicPageMetadata } from "@/lib/metadata";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DiscoverGridSkeleton } from "@/features/discover/components/DiscoverGridCard";
@@ -26,11 +29,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExplorePage({ params, searchParams }: Props) {
   const [{ lang }, query] = await Promise.all([params, searchParams]);
   // The unfiltered view — the canonical /explore — gets its first page of
-  // cards from the server, so its HTML links to real listings instead of
-  // shipping a skeleton. Filtered deep links (?q=, ?category=) keep the
-  // skeleton: unfiltered cards under a filtered heading would be wrong.
-  const initialPosts =
-    Object.keys(query).length === 0 ? await fetchBrowseCards() : undefined;
+  // cards and its category shortcuts from the server, so its HTML links to
+  // real listings and the category grid paints with them instead of shipping
+  // skeletons. Filtered deep links (?q=, ?category=) keep the skeletons:
+  // unfiltered results under a filtered heading would be wrong.
+  const [initialPosts, initialCategories] =
+    Object.keys(query).length === 0
+      ? await Promise.all([fetchBrowseCards(), fetchExploreCategories()])
+      : [undefined, undefined];
   // Suspense boundary: DiscoverPage reads useSearchParams() (?category= deep
   // links), which requires one during prerender. Keep the fallback shaped like
   // the interactive Explore UI so users don't see the crawl hub flash before
@@ -38,7 +44,11 @@ export default async function ExplorePage({ params, searchParams }: Props) {
   return (
     <>
       <Suspense fallback={<ExploreSkeleton />}>
-        <DiscoverPage lang={lang} initialPosts={initialPosts} />
+        <DiscoverPage
+          lang={lang}
+          initialPosts={initialPosts}
+          initialCategories={initialCategories}
+        />
       </Suspense>
       {/* Opens a listing picked from the homepage's search suggestions, so
           Back from it returns here rather than to the homepage. */}

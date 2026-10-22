@@ -198,7 +198,7 @@ export default async function VideoPageRoute({ params }: Props) {
       <ImmersiveVideoViewer
         seed={slug}
         lang={lang}
-        placeholder={{ title, poster, src: hlsUrlOf(post) }}
+        placeholder={{ title, poster, src: hlsUrlOf(post), post }}
       />
     </>
   );

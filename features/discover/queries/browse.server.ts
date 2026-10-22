@@ -5,6 +5,7 @@ import { gql, type TypedDocumentNode } from "@apollo/client";
 import { query } from "@/lib/apollo/ApolloClient";
 import { slugifyContentTitle } from "@/lib/content-url";
 import { isIndexableBrowsePage } from "@/lib/seo/browse-pages";
+import { DISCOVERY_CATEGORIES, type CategoryFacet } from "../categories";
 import {
   CategoriesDocument,
   type ContentCardFieldsFragment,
@@ -226,6 +227,26 @@ export async function fetchBrowseCards(
     return (result.data?.discoveryFeed?.items ?? []).filter((item) => item?.id);
   } catch {
     return [];
+  }
+}
+
+/**
+ * Explore's unfiltered category shortcuts, fetched with the first page of cards
+ * so the phone grid paints with them rather than after hydration and its own
+ * round trip. The client still refreshes the counts once it loads, so ten
+ * minutes only bounds what the first paint can show. Best-effort: on failure
+ * the grid loads on the client as before.
+ */
+export async function fetchExploreCategories(): Promise<CategoryFacet[] | undefined> {
+  try {
+    const result = await query({
+      query: DISCOVERY_CATEGORIES,
+      variables: {},
+      context: { fetchOptions: { next: { revalidate: 600 } } },
+    });
+    return result.data?.discoveryFacets?.categories ?? undefined;
+  } catch {
+    return undefined;
   }
 }
 
