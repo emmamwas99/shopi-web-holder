@@ -347,7 +347,7 @@ export function DesktopCreateFlow({
                         key={opt.label}
                         onClick={opt.onClick}
                         disabled={creating}
-                        className={`group ${opt.hidden ? "flex" : "flex"} flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50`}
+                        className={`group ${opt.hidden ? "hidden" : "flex"} flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50`}
                         style={{
                           backgroundColor: "rgb(var(--color-bg-elevated))",
                           border: "1px solid rgb(var(--color-border))",
