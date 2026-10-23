@@ -66,12 +66,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    135deg,
-    rgb(var(--brand-primary)),
-    rgb(var(--brand-highlight))
-  );
-  box-shadow: 0 10px 36px rgb(var(--brand-primary) / 0.45);
+  background: rgb(var(--brand-primary));
   transform: scale(0);
   animation: badgePop 0.55s cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards;
 }
@@ -81,7 +76,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 3px solid rgb(var(--brand-primary) / 0.5);
+  border: 2px solid rgb(var(--brand-primary) / 0.4);
   transform: scale(0.7);
   opacity: 0.8;
   animation: burst 0.8s ease-out 0.2s forwards;

@@ -32,9 +32,7 @@ import { previousAppUrl } from "@/lib/appHistory";
 import { useUiStore } from "@/stores/ui";
 import { isTabletViewportNow, TABLET_QUERY } from "@/hooks/useIsTablet";
 
-// "tiktok" is not in the menu, so it is hidden from the UI, but
-// TiktokImportPanel and its render branch below are kept intact.
-type Tab = ProfileSection | "tiktok";
+type Tab = ProfileSection;
 
 interface Props {
   lang: string;
@@ -215,10 +213,7 @@ function ProfileUnavailable({
 }
 
 function isTab(value: string | null): value is Tab {
-  return (
-    value === "tiktok" ||
-    (!!value && Object.hasOwn(PROFILE_SECTION_LABELS, value))
-  );
+  return !!value && Object.hasOwn(PROFILE_SECTION_LABELS, value);
 }
 
 export function ProfileView({ lang }: Props) {
@@ -397,8 +392,7 @@ export function ProfileView({ lang }: Props) {
       });
   }
 
-  const sectionTitle =
-    tab && tab !== "tiktok" ? PROFILE_SECTION_LABELS[tab] : "TikTok import";
+  const sectionTitle = tab ? PROFILE_SECTION_LABELS[tab] : "";
 
   return (
     <div
@@ -441,7 +435,7 @@ export function ProfileView({ lang }: Props) {
           <ProfileMenu
             lang={lang}
             user={user}
-            active={shownTab === "tiktok" ? null : shownTab}
+            active={shownTab}
             onSelect={selectTab}
             draftCount={draftCount}
             savedCount={savedCount}

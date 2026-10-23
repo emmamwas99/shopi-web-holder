@@ -316,13 +316,13 @@ export default async function TiktokDownloaderPage({ params }: Props) {
                 Selling on TikTok already? Skip the download.
               </h3>
               <p className="mb-5 text-[0.98rem] leading-[1.7] text-muted">
-                Shopi imports your TikTok videos straight into a listing, and
-                buyers near you message you directly. It&apos;s free to post and
-                there&apos;s no commission on the sale.
+                Connect your TikTok account and choose one of your videos while
+                creating a listing. Buyers near you can message you directly.
+                It&apos;s free to post and there&apos;s no commission on the sale.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href={`/${lang}/upload/tiktok`}
+                  href={`/${lang}/upload`}
                   className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline"
                 >
                   Import from TikTok

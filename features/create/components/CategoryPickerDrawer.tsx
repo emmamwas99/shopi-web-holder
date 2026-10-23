@@ -114,7 +114,6 @@ export function CategoryPickerDrawer({
     const category = categories.find((item) => item.id === id);
     if (!category) return;
     onChange(category.id, category.name);
-    setOpen(false);
   }
 
   const disabled = isSubcategoryMode && !parentId;
@@ -184,7 +183,7 @@ export function CategoryPickerDrawer({
       <div
         role="radiogroup"
         aria-label={title}
-        className="flex flex-col gap-2 pb-2"
+        className="flex flex-col pb-2"
       >
         {categories.map((category) => {
           const checked = category.id === selected?.id;
@@ -198,15 +197,7 @@ export function CategoryPickerDrawer({
               role="radio"
               aria-checked={checked}
               onClick={() => selectCategory(category.id)}
-              className="flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left"
-              style={{
-                backgroundColor: checked
-                  ? "rgb(var(--brand-primary) / 0.1)"
-                  : "rgb(var(--color-bg-subtle))",
-                border: checked
-                  ? "1px solid rgb(var(--brand-primary) / 0.35)"
-                  : "1px solid rgb(var(--color-border))",
-              }}
+              className={`flex ${isSubcategoryMode ? "min-h-12 py-2" : "min-h-16 py-4"} w-full cursor-pointer items-center gap-3 px-2 text-left transition-opacity active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
             >
               <span className="min-w-0 flex-1">
                 <span
@@ -230,10 +221,16 @@ export function CategoryPickerDrawer({
                   </span>
                 )}
               </span>
-              {checked && (
+              {checked ? (
                 <Check
                   className="h-4 w-4 shrink-0"
                   style={{ color: "rgb(var(--brand-primary))" }}
+                />
+              ) : (
+                <ChevronRight
+                  aria-hidden="true"
+                  className="h-5 w-5 shrink-0"
+                  style={{ color: "rgb(var(--color-text-muted))" }}
                 />
               )}
             </button>

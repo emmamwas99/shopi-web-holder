@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Star,
   Trash2,
+  Tv2,
   UserPen,
   Users,
 } from "lucide-react";
@@ -71,7 +72,8 @@ export type ProfileSection =
   | "drafts"
   | "saved"
   | "analytics"
-  | "invite";
+  | "invite"
+  | "tiktok";
 
 export const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   posts: "My posts",
@@ -79,6 +81,7 @@ export const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   saved: "Saved",
   analytics: "Analytics",
   invite: "Referrals",
+  tiktok: "My TikTok videos",
 };
 
 type Icon = ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -338,6 +341,7 @@ export function ProfileMenu({
 
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}
+        {section("tiktok", Tv2)}
         {section(
           "drafts",
           FileEdit,

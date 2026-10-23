@@ -24,6 +24,7 @@ import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import { DesktopCreateFlow, CreateBanner } from "./DesktopCreateFlow";
 import { CreateFlow } from "./CreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
+import { TikTokAccountPicker } from "./TikTokAccountPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import {
   Dialog,
@@ -31,7 +32,10 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
+import {
+  SHOW_CONNECTED_TIKTOK_IMPORT,
+  SHOW_TIKTOK_CREATE_OPTIONS,
+} from "@/features/create/utils/tiktokAvailability";
 import {
   SHOPI_AGENT_AVAILABLE,
   SHOPI_AGENT_PAUSED_LABEL,
@@ -168,7 +172,9 @@ function MediaTypePicker({
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
-  const [view, setView] = useState<"pick" | "tiktok">("pick");
+  const [view, setView] = useState<
+    "pick" | "tiktok" | "connected-tiktok"
+  >("pick");
   const [createError, setCreateError] = useState<string | null>(null);
   const { setDraftId, setContentType, setStep, setError } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
@@ -229,7 +235,46 @@ function MediaTypePicker({
       onClick: () => setView("tiktok"),
       hidden: !SHOW_TIKTOK_CREATE_OPTIONS,
     },
+    {
+      label: "My TikTok videos",
+      description: "Connect your account and choose a video.",
+      icon: Music2,
+      onClick: () => setView("connected-tiktok"),
+      hidden: !SHOW_CONNECTED_TIKTOK_IMPORT,
+    },
   ];
+
+  if (view === "connected-tiktok") {
+    return (
+      <div className="fixed inset-0 z-60 flex flex-col overflow-hidden bg-app">
+        <CreateErrorDialog
+          message={createError}
+          onClose={() => setCreateError(null)}
+        />
+        <header className="shrink-0 border-b border-border bg-app">
+          <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
+            <button
+              onClick={() => setView("pick")}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+              aria-label="Back"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <h1 className="text-base font-semibold text-foreground">
+              My TikTok videos
+            </h1>
+          </div>
+        </header>
+        <TikTokAccountPicker
+          lang={lang}
+          onUsed={() => {
+            if (!manualRoute) router.push(`/${lang}/upload/create-manual`);
+          }}
+          onError={(message) => setCreateError(message)}
+        />
+      </div>
+    );
+  }
 
   if (view === "tiktok") {
     return (
