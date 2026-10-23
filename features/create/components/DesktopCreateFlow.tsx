@@ -18,9 +18,13 @@ import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { CreateFlow } from "./CreateFlow";
 import { CreatePreviewPanel } from "./CreatePreviewPanel";
 import { TikTokPicker } from "./TikTokPicker";
+import { TikTokAccountPicker } from "./TikTokAccountPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import { useDraftRequestKeys } from "@/features/create/utils/draftRequestKeys";
-import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
+import {
+  SHOW_CONNECTED_TIKTOK_IMPORT,
+  SHOW_TIKTOK_CREATE_OPTIONS,
+} from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackPostJourney } from "@/lib/analytics";
 import { goBackOr } from "@/lib/useAppBack";
@@ -175,12 +179,14 @@ export function DesktopCreateFlow({
       onClick: () => handlePickType("image"),
     },
     {
-      label: "TikTok Import",
-      description: "Bring a video from your TikTok",
+      label: SHOW_TIKTOK_CREATE_OPTIONS ? "Import from TikTok" : "My TikTok videos",
+      description: SHOW_TIKTOK_CREATE_OPTIONS
+        ? "Paste a TikTok link or reuse a saved video"
+        : "Connect your account and choose a video",
       icon: <TikTokIcon size={26} className="" />,
       // Inline in this dialog, like the other types — no route hop.
       onClick: () => setTiktokOpen(true),
-      hidden: !SHOW_TIKTOK_CREATE_OPTIONS,
+      hidden: !SHOW_CONNECTED_TIKTOK_IMPORT && !SHOW_TIKTOK_CREATE_OPTIONS,
     },
   ];
 
@@ -293,7 +299,7 @@ export function DesktopCreateFlow({
                         color: "rgb(var(--color-text))",
                       }}
                     >
-                      Add from TikTok
+                      {SHOW_TIKTOK_CREATE_OPTIONS ? "Import from TikTok" : "My TikTok videos"}
                     </h2>
                     <p
                       className="mt-0.5"
@@ -302,20 +308,28 @@ export function DesktopCreateFlow({
                         color: "rgb(var(--color-text-muted))",
                       }}
                     >
-                      Paste a TikTok link, or reuse a video you&apos;ve
-                      already saved.
+                      {SHOW_TIKTOK_CREATE_OPTIONS
+                        ? "Paste a TikTok link or reuse a video you already downloaded."
+                        : "Connect your TikTok account and choose one of your videos."}
                     </p>
                   </div>
-                  <TikTokPicker
-                    lang={lang}
-                    // The store is already on the edit step; just close the
-                    // inline picker so the dialog shows the details form.
-                    onUsed={() => setTiktokOpen(false)}
-                    // Route draft-creation failures (e.g. "Maximum active
-                    // drafts reached") through the same dialog as the other
-                    // create-flow entry points, instead of an inline banner.
-                    onError={(message) => setCreateError(message)}
-                  />
+                  {SHOW_TIKTOK_CREATE_OPTIONS ? (
+                    <TikTokPicker
+                      lang={lang}
+                      onUsed={() => setTiktokOpen(false)}
+                      onError={(message) => setCreateError(message)}
+                    />
+                  ) : (
+                    <TikTokAccountPicker
+                      lang={lang}
+                      // The store is already on the edit step; just close the
+                      // inline picker so the dialog shows the details form.
+                      onUsed={() => setTiktokOpen(false)}
+                      // Route draft-creation failures through the same dialog
+                      // as the other create-flow entry points.
+                      onError={(message) => setCreateError(message)}
+                    />
+                  )}
                 </div>
               ) : step === "pick" ? (
                 <div className="flex flex-1 flex-col justify-center gap-6 overflow-y-auto px-10 py-8">

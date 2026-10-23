@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ChevronLeft,
   Download,
+  Hd,
   FilePen,
   Globe,
   ImageIcon,
@@ -17,7 +18,6 @@ import {
   Play,
   Send,
   ShieldCheck,
-  Sparkles,
   Tag,
   Users,
   type LucideIcon,
@@ -25,7 +25,11 @@ import {
 import { useRouter } from "next/navigation";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { useCreateStore, type MediaItem, type TiktokEmbed } from "@/stores/create";
+import {
+  useCreateStore,
+  type MediaItem,
+  type TiktokEmbed,
+} from "@/stores/create";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { listingPriceText } from "@/lib/format";
 import {
@@ -127,7 +131,11 @@ function toVisibilityMode(mode: Visibility): VisibilityMode {
   }
 }
 
-export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps) {
+export function StepOptions({
+  lang,
+  embedded = false,
+  onExit,
+}: StepOptionsProps) {
   const {
     draftId,
     price,
@@ -159,6 +167,12 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
+  const [tiktokPostError, setTiktokPostError] = useState<string | null>(null);
+  const [tiktokPostQueued, setTiktokPostQueued] = useState(false);
+  const [publishedContentId, setPublishedContentId] = useState<string | null>(
+    null,
+  );
+  const [retryingTiktokPost, setRetryingTiktokPost] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
 
   function exitAfterCreate() {
@@ -177,6 +191,56 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
   const [publishDraftNow] = useMutation(PUBLISH_DRAFT_NOW);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
+
+  async function queueTikTokPost(contentId: string) {
+    setTiktokPostError(null);
+    setTiktokReconnectNeeded(false);
+    try {
+      const result = await postToTiktok({ variables: { contentId } });
+      const messages = [
+        ...(result?.errors ?? []).map(
+          (item: { message?: string }) => item.message ?? "",
+        ),
+        ...(result?.error?.graphQLErrors ?? []).map(
+          (item: { message?: string }) => item.message ?? "",
+        ),
+      ];
+      if (
+        messages.some((message: string) =>
+          message.includes("TIKTOK_RECONNECT_REQUIRED"),
+        )
+      ) {
+        setTiktokReconnectNeeded(true);
+        return;
+      }
+      if (result?.error) throw result.error;
+      if (result?.data?.postToTiktok !== true) {
+        throw new Error(
+          "TikTok did not accept the video for posting. Please try again.",
+        );
+      }
+      setTiktokPostQueued(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("TIKTOK_RECONNECT_REQUIRED")) {
+        setTiktokReconnectNeeded(true);
+      } else {
+        setTiktokPostError(
+          message || "TikTok could not queue this video. Please try again.",
+        );
+      }
+    }
+  }
+
+  async function retryTikTokPost() {
+    if (!publishedContentId || retryingTiktokPost) return;
+    setRetryingTiktokPost(true);
+    try {
+      await queueTikTokPost(publishedContentId);
+    } finally {
+      setRetryingTiktokPost(false);
+    }
+  }
 
   const queueAutosave = useCallback(
     (input: {
@@ -326,31 +390,27 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
 
       const contentId = pubData.publishDraftNow.id;
       didPublish = true;
+      setPublishedContentId(contentId);
       setPublished(true);
       trackPostPublished("create", { category: categoryName, contentType });
 
       // 4. Optional TikTok cross-post
-      if (SHOW_TIKTOK_CROSSPOST && postOnTiktok && contentId) {
-        try {
-          const tiktokResult = await postToTiktok({ variables: { contentId } });
-          const tiktokErrors = tiktokResult?.errors ?? [];
-          const needsReconnect = tiktokErrors.some((e: { message?: string }) =>
-            (e.message ?? "").includes("TIKTOK_RECONNECT_REQUIRED"),
-          );
-          if (needsReconnect) {
-            setTiktokReconnectNeeded(true);
-            return; // hold on the success screen so user can reconnect
-          }
-        } catch {
-          // network error — user still lands on the success screen
-        }
+      if (
+        SHOW_TIKTOK_CROSSPOST &&
+        contentType === "video" &&
+        postOnTiktok &&
+        contentId
+      ) {
+        await queueTikTokPost(contentId);
       }
 
       // No auto-redirect — the success screen stays up until the user taps
       // "Go to For You". The post is already submitted and will appear once it
       // clears automated review in the background.
     } catch (err) {
-      setError(timeout.timedOut() ? PUBLISH_TIMEOUT_MESSAGE : createErrorMessage(err));
+      setError(
+        timeout.timedOut() ? PUBLISH_TIMEOUT_MESSAGE : createErrorMessage(err),
+      );
     } finally {
       timeout.done();
       setPublishing(false);
@@ -403,7 +463,9 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
         }
       }
       if (!ready) {
-        setError("Complete the required post details before saving this draft.");
+        setError(
+          "Complete the required post details before saving this draft.",
+        );
         return;
       }
 
@@ -446,7 +508,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
             </p>
             <p className="mb-3 text-xs text-muted">
               Your TikTok connection needs the posting permission. Reconnect
-              once and it will work automatically next time.
+              and we’ll retry posting this video.
             </p>
             <button
               onClick={async () => {
@@ -455,12 +517,24 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
                     variables: { returnUrl: undefined },
                   });
                   const url = urlData?.tiktokConnectUrl;
-                  if (url)
-                    window.open(
-                      url,
-                      "tiktok-connect",
-                      "width=520,height=680",
-                    );
+                  if (!url) return;
+                  const popup = window.open(
+                    url,
+                    "tiktok-connect",
+                    "width=520,height=680",
+                  );
+                  if (!popup) return;
+                  const poll = window.setInterval(async () => {
+                    if (!popup.closed) return;
+                    window.clearInterval(poll);
+                    const { data: fresh } = await refetchMe();
+                    if (
+                      fresh?.me?.authProviders?.tiktok &&
+                      publishedContentId
+                    ) {
+                      await queueTikTokPost(publishedContentId);
+                    }
+                  }, 800);
                 } catch {
                   /* ignore */
                 }
@@ -476,6 +550,29 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
               className="mx-auto mt-2 block text-xs font-medium text-muted"
             >
               {onExit ? "Back to listings" : "Go to For You"}
+            </button>
+          </div>
+        )}
+
+        {tiktokPostQueued && !tiktokReconnectNeeded && (
+          <p className="max-w-xs text-center text-sm text-muted">
+            Your video is queued for posting to TikTok.
+          </p>
+        )}
+
+        {tiktokPostError && (
+          <div className="w-full max-w-xs rounded-2xl border border-border bg-elevated px-4 py-3 text-center">
+            <p className="text-sm text-foreground">
+              TikTok could not queue your video.
+            </p>
+            <p className="mt-1 text-xs text-muted">{tiktokPostError}</p>
+            <button
+              type="button"
+              onClick={() => void retryTikTokPost()}
+              disabled={retryingTiktokPost}
+              className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+            >
+              {retryingTiktokPost ? "Retrying…" : "Retry TikTok post"}
             </button>
           </div>
         )}
@@ -496,7 +593,9 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
           >
             <ChevronLeft size={23} strokeWidth={2.2} />
           </button>
-          <h2 className="text-lg font-semibold text-foreground">Review and post</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Review and post
+          </h2>
           <span aria-hidden className="w-10 shrink-0" />
         </div>
       )}
@@ -530,7 +629,9 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
               price={price}
               currency={currency}
               negotiable={negotiable}
-              category={[categoryName, subcategoryName].filter(Boolean).join(" · ")}
+              category={[categoryName, subcategoryName]
+                .filter(Boolean)
+                .join(" · ")}
               place={location?.placeName}
             />
           </section>
@@ -561,8 +662,12 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
                     <Icon size={18} aria-hidden />
                   </IconTile>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-medium text-main">{opt.label}</span>
-                    <span className="block text-[13px] text-muted">{opt.desc}</span>
+                    <span className="block text-[15px] font-medium text-main">
+                      {opt.label}
+                    </span>
+                    <span className="block text-[13px] text-muted">
+                      {opt.desc}
+                    </span>
                   </span>
                   <RadioDot active={active} />
                 </button>
@@ -582,7 +687,7 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
               onChange={setAllowDownload}
             />
             <ToggleRow
-              icon={<Sparkles size={18} aria-hidden />}
+              icon={<Hd size={18} aria-hidden />}
               label="HD quality"
               description="Show your media in high definition"
               value={hdEnabled}
@@ -610,7 +715,11 @@ export function StepOptions({ lang, embedded = false, onExit }: StepOptionsProps
         </section>
 
         <p className="flex items-start gap-2.5 px-1 text-[13px] leading-5 text-muted">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
+          <ShieldCheck
+            size={16}
+            className="mt-0.5 shrink-0 text-primary"
+            aria-hidden
+          />
           <span>
             The Shopi team checks every post before it appears in the feed.
             Drafts stay on your profile until you post them.
@@ -724,18 +833,26 @@ function ListingSummary({
   category: string;
   place?: string;
 }) {
-  const priceText = listingPriceText(price ? { amount: price, currency } : null);
+  const priceText = listingPriceText(
+    price ? { amount: price, currency } : null,
+  );
   // A video picked on this device previews from its own file; a restored one
   // comes back with a poster frame.
   const localVideo =
-    cover?.type === "video" && !cover.thumbnailUrl && cover.localUri?.startsWith("blob:");
+    cover?.type === "video" &&
+    !cover.thumbnailUrl &&
+    cover.localUri?.startsWith("blob:");
   const coverSrc = cover?.thumbnailUrl || getMediaPreviewSrc(cover);
 
   return (
     <div className="flex gap-3 rounded-[14px] border border-border bg-elevated p-3">
       <div className="relative size-20 shrink-0 overflow-hidden rounded-[10px] border border-border bg-surface">
         {tiktokEmbed ? (
-          <TikTokCreatePreview embed={tiktokEmbed} className="size-full" sizes="80px" />
+          <TikTokCreatePreview
+            embed={tiktokEmbed}
+            className="size-full"
+            sizes="80px"
+          />
         ) : localVideo ? (
           <video
             src={cover.localUri}
@@ -746,7 +863,11 @@ function ListingSummary({
           />
         ) : coverSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverSrc} alt="" className="absolute inset-0 size-full object-cover" />
+          <img
+            src={coverSrc}
+            alt=""
+            className="absolute inset-0 size-full object-cover"
+          />
         ) : (
           <span className="flex size-full items-center justify-center text-muted">
             <ImageIcon size={20} aria-hidden />
@@ -754,7 +875,13 @@ function ListingSummary({
         )}
         {cover?.type === "video" ? (
           <span className="absolute bottom-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white">
-            <Play size={10} fill="currentColor" strokeWidth={0} className="ml-px" aria-hidden />
+            <Play
+              size={10}
+              fill="currentColor"
+              strokeWidth={0}
+              className="ml-px"
+              aria-hidden
+            />
           </span>
         ) : mediaCount > 1 ? (
           <span className="absolute bottom-1 right-1 flex h-5 items-center gap-1 rounded-full bg-black/60 px-1.5 text-[11px] font-semibold text-white">
@@ -774,14 +901,24 @@ function ListingSummary({
             <span className="font-normal text-muted"> · Negotiable</span>
           )}
         </p>
-        {category && <MetaLine icon={<Tag size={13} aria-hidden />}>{category}</MetaLine>}
-        {place && <MetaLine icon={<MapPin size={13} aria-hidden />}>{place}</MetaLine>}
+        {category && (
+          <MetaLine icon={<Tag size={13} aria-hidden />}>{category}</MetaLine>
+        )}
+        {place && (
+          <MetaLine icon={<MapPin size={13} aria-hidden />}>{place}</MetaLine>
+        )}
       </div>
     </div>
   );
 }
 
-function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function MetaLine({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted">
       <span className="shrink-0">{icon}</span>
@@ -790,7 +927,13 @@ function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.R
   );
 }
 
-function IconTile({ active, children }: { active?: boolean; children: React.ReactNode }) {
+function IconTile({
+  active,
+  children,
+}: {
+  active?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={`flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors ${

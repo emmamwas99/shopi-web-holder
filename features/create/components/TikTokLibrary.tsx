@@ -33,17 +33,16 @@ type Status =
   | { kind: "opening"; key: string | null };
 
 /**
- * TikTok import surface: paste a link to download a video (through
- * /api/tiktok-save, the same endpoint as /tiktok-downloader), or reuse one
- * already downloaded on this device - no link, no second download.
- *
- * `onSelect` receives the video as a File, ready for the normal upload flow
- * (which handles processing in the background). Errors are the caller's to report.
+ * Shared TikTok import surface. A standalone host can download to a local File
+ * through /api/tiktok-save; create-flow hosts pass `onSelectUrl` so the API can
+ * reuse its Mux-backed import without sending the video through the browser.
  */
 export function TikTokLibrary({
   onSelect,
+  onSelectUrl,
 }: {
-  onSelect: (file: File) => void | Promise<void>;
+  onSelect?: (file: File) => void | Promise<void>;
+  onSelectUrl?: (url: string) => void | Promise<void>;
 }) {
   const { user } = useAuthSession();
   const userId = user?.id ?? null;
@@ -71,7 +70,16 @@ export function TikTokLibrary({
   async function handOff(file: File, key: string | null) {
     setStatus({ kind: "opening", key });
     try {
-      await onSelect(file);
+      await onSelect?.(file);
+    } catch {
+      // The caller reports its own failures; just release the UI.
+    }
+  }
+
+  async function handOffUrl(url: string, key: string | null) {
+    setStatus({ kind: "opening", key });
+    try {
+      await onSelectUrl?.(url);
     } catch {
       // The caller reports its own failures; just release the UI.
     }
@@ -83,6 +91,10 @@ export function TikTokLibrary({
     setLinkError(null);
     setStatus({ kind: "opening", key: video.key });
     try {
+      if (onSelectUrl) {
+        await handOffUrl(video.originalUrl, video.key);
+        return;
+      }
       const file = await getSavedTiktokFile(video);
       if (!file) {
         void remove(video.key);
@@ -112,6 +124,19 @@ export function TikTokLibrary({
     if (existing) {
       setLink("");
       await selectSaved(existing);
+      return;
+    }
+
+    if (onSelectUrl) {
+      busyRef.current = true;
+      setStatus({ kind: "opening", key: null });
+      try {
+        await handOffUrl(url, null);
+        setLink("");
+      } finally {
+        busyRef.current = false;
+        if (aliveRef.current) setStatus({ kind: "idle" });
+      }
       return;
     }
 
@@ -218,7 +243,7 @@ export function TikTokLibrary({
           <div className="flex items-center gap-3">
             <InterlockingBalls size={18} className="shrink-0" />
             <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
-              {downloading ? "Downloading from TikTok..." : "Adding to your post..."}
+              {downloading ? "Downloading from TikTok..." : "Preparing video..."}
             </p>
             {downloading ? (
               <button

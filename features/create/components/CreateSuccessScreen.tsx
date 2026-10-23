@@ -12,12 +12,11 @@ export function CreateSuccessScreen({ children }: { children: ReactNode }) {
           <SuccessBadge />
 
           <div className={celebrationStyles.celebrateText}>
-            <h2 className="mb-2 text-2xl font-bold text-foreground">
-              Posted
+            <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground">
+              Your post is in
             </h2>
             <p className="text-[15px] leading-relaxed text-muted">
-              The Shopi team is giving it a quick check. It shows up in the feed
-              as soon as it’s approved.
+              We’re reviewing it now. Once it’s approved, buyers will see.
             </p>
           </div>
 
@@ -39,7 +38,7 @@ export function CreateSuccessPrimaryAction({
     <button
       type="button"
       onClick={onClick}
-      className={`${celebrationStyles.celebrateCta} mt-1 h-11 rounded-full bg-primary px-6 text-base font-semibold text-white shadow-[0_8px_24px_rgb(var(--brand-primary)/0.4)] transition-transform active:scale-[0.97]`}
+      className={`${celebrationStyles.celebrateCta} mt-2 h-12 w-full max-w-xs rounded-full bg-primary px-6 text-base font-semibold text-white transition-transform active:scale-[0.97]`}
     >
       {children}
     </button>

@@ -2,7 +2,7 @@
 
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import { useQuery, useMutation } from "@apollo/client/react";
 import {
@@ -13,7 +13,17 @@ import {
 import type { GetMyTiktokVideosQuery } from "@/types/__generated__/graphql";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, Eye, Heart, RefreshCw, Tv2, Video } from "lucide-react";
+import {
+  ChevronRight,
+  ExternalLink,
+  RefreshCw,
+  Tv2,
+  Video,
+} from "lucide-react";
+import { downloadTiktokVideo } from "@/features/create/utils/tiktokDownload";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useBackDismiss } from "@/hooks/useBackDismiss";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,7 +59,8 @@ function ConnectGate({ lang }: { lang: string }) {
   const [getConnectUrl, { loading }] = useMutation(GetTiktokConnectUrlDocument);
 
   async function handleConnect() {
-    const returnUrl = `${window.location.origin}/${lang}/profile`;
+    const returnPath = window.location.pathname || `/${lang}/profile`;
+    const returnUrl = `${window.location.origin}${returnPath}${window.location.search}`;
     const { data } = await getConnectUrl({ variables: { returnUrl } });
     if (data?.tiktokConnectUrl) {
       window.open(
@@ -117,96 +128,56 @@ function ConnectGate({ lang }: { lang: string }) {
   );
 }
 
-function VideoCard({ video }: { video: TiktokVideo }) {
-  return (
-    <div
-      className="overflow-hidden rounded-xl border"
-      style={{
-        borderColor: "rgb(var(--color-border))",
-        backgroundColor: "rgb(var(--color-bg-elevated))",
-      }}
-    >
-      {/* Thumbnail */}
-      <div className="relative aspect-9/10">
-        <Image
-          src={video.coverImageUrl}
-          alt={video.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 430px) 50vw, 215px"
-          unoptimized
-        />
-        {/* Duration pill */}
-        <div
-          className="absolute bottom-1.5 right-1.5 rounded-md px-1.5 py-0.5 text-white"
-          style={{
-            fontSize: "var(--text-xs)",
-            backgroundColor: "rgba(0,0,0,0.65)",
-            fontWeight: 600,
-          }}
-        >
-          {formatDuration(video.duration)}
-        </div>
-      </div>
-
-      {/* Meta */}
-      <div className="p-2.5">
-        {video.title && (
-          <p
-            className="line-clamp-2 leading-tight"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text))",
-              fontWeight: 500,
-            }}
-          >
-            {video.title}
-          </p>
-        )}
-
-        {/* Stats row — only render counts the API returned */}
-        {(video.viewCount != null || video.likeCount != null) && (
-          <div
-            className="mt-1 flex items-center gap-3"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            {video.viewCount != null && (
-              <span className="flex items-center gap-1">
-                <Eye size={12} /> {formatCount(video.viewCount)}
-              </span>
-            )}
-            {video.likeCount != null && (
-              <span className="flex items-center gap-1">
-                <Heart size={12} /> {formatCount(video.likeCount)}
-              </span>
-            )}
-          </div>
-        )}
-
-        <p
-          className="mt-1"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {formatDate(video.createTime)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 interface Props {
   lang: string;
+  /** Local-file selection for flows that upload the selected video. */
+  onSelectVideo?: (video: TiktokVideo, file: File) => void | Promise<void>;
+  /** API-backed selection for flows that can reuse an existing Mux import. */
+  onUseSelectedVideo?: (video: TiktokVideo) => void | Promise<void>;
 }
 
-export function TiktokImportPanel({ lang }: Props) {
+export function TiktokImportPanel({
+  lang,
+  onSelectVideo,
+  onUseSelectedVideo,
+}: Props) {
+  const [selectingVideoId, setSelectingVideoId] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<TiktokVideo | null>(null);
+  const { requestClose: closePreview } = useBackDismiss(
+    Boolean(previewVideo),
+    () => setPreviewVideo(null),
+  );
+
+  async function selectVideo() {
+    const selectedVideo = allVideos.find(
+      (item) => item.id === selectedVideoId,
+    );
+    if ((!onSelectVideo && !onUseSelectedVideo) || !selectedVideo || selectingVideoId) return;
+    setSelectionError(null);
+    setSelectingVideoId(selectedVideo.id);
+    try {
+      if (onUseSelectedVideo) {
+        await onUseSelectedVideo(selectedVideo);
+      } else if (onSelectVideo) {
+        const { blob } = await downloadTiktokVideo(selectedVideo.shareUrl);
+        const file = new File([blob], `shopi-tiktok-${selectedVideo.id}.mp4`, {
+          type: blob.type || "video/mp4",
+        });
+        await onSelectVideo(selectedVideo, file);
+      }
+    } catch {
+      setSelectionError(
+        "Couldn't add that TikTok video. Check your connection and try again.",
+      );
+    } finally {
+      setSelectingVideoId(null);
+    }
+  }
+
   // ── Auth / connect status ──────────────────────────────────────────────────
   const {
     data: statusData,
@@ -293,25 +264,23 @@ export function TiktokImportPanel({ lang }: Props) {
           </div>
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
-        <div className="grid grid-cols-2 gap-2 px-4">
+        <ul className="divide-y divide-border px-4" aria-label="Loading TikTok videos">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className="rounded-xl"
-              style={{ aspectRatio: "9/16" }}
-            />
+            <li key={i} className="flex min-h-[76px] items-center gap-3 py-2.5">
+              <Skeleton className="size-12 shrink-0 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-3/4 rounded" />
+                <Skeleton className="h-3 w-1/2 rounded" />
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     );
   }
 
   if (!isTiktokConnected) {
-    return (
-      <div className="p-4">
-        <ConnectGate lang={lang} />
-      </div>
-    );
+    return <ConnectGate lang={lang} />;
   }
 
   return (
@@ -334,9 +303,11 @@ export function TiktokImportPanel({ lang }: Props) {
               color: "rgb(var(--color-text-muted))",
             }}
           >
-            {allVideos.length > 0
-              ? `${allVideos.length} video${allVideos.length !== 1 ? "s" : ""}`
-              : "Browse your videos"}
+            {onSelectVideo
+              ? "Select one video for your post"
+              : allVideos.length > 0
+                ? `${allVideos.length} video${allVideos.length !== 1 ? "s" : ""}`
+                : "Browse your videos"}
           </p>
         </div>
         <button
@@ -358,17 +329,32 @@ export function TiktokImportPanel({ lang }: Props) {
         </button>
       </div>
 
-      {/* ── Video grid (2-up) ───────────────────────────────────────────── */}
+      {selectionError && (
+        <p
+          role="alert"
+          className="mx-4 mb-2 rounded-lg px-3 py-2 text-sm"
+          style={{
+            backgroundColor: "rgb(var(--color-error) / 0.08)",
+            color: "rgb(var(--color-error))",
+          }}
+        >
+          {selectionError}
+        </p>
+      )}
+
+      {/* ── Compact video list ──────────────────────────────────────────── */}
       {videosLoading && allVideos.length === 0 ? (
-        <div className="grid grid-cols-2 gap-2 px-4">
+        <ul className="divide-y divide-border px-4" aria-label="Loading TikTok videos">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className="rounded-xl"
-              style={{ aspectRatio: "9/16" }}
-            />
+            <li key={i} className="flex min-h-[76px] items-center gap-3 py-2.5">
+              <Skeleton className="size-12 shrink-0 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-3/4 rounded" />
+                <Skeleton className="h-3 w-1/2 rounded" />
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : allVideos.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-14 text-center px-6">
           <Video
@@ -393,13 +379,81 @@ export function TiktokImportPanel({ lang }: Props) {
             Your TikTok videos will appear here once loaded.
           </p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 px-4">
-          {allVideos.map((video) => (
-            <VideoCard key={video.id} video={video} />
-          ))}
-        </div>
-      )}
+      ) : onSelectVideo ? (
+          <RadioGroup
+            value={selectedVideoId ?? ""}
+            onValueChange={setSelectedVideoId}
+            aria-label="Choose a TikTok video"
+            className="w-full gap-0 divide-y divide-border px-4"
+          >
+            {allVideos.map((video) => (
+              <div key={video.id} className="flex min-h-[76px] items-center gap-3 py-2.5">
+                <RadioGroupItem
+                  value={video.id}
+                  aria-label={`Select ${video.title || "TikTok video"}`}
+                  disabled={Boolean(selectingVideoId)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setPreviewVideo(video)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left active:bg-surface"
+                  aria-label={`Preview ${video.title || "TikTok video"}`}
+                >
+                  <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
+                    <Image
+                      src={video.coverImageUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                      unoptimized
+                    />
+                    <span className="absolute bottom-0.5 right-0.5 rounded bg-black/65 px-1 text-[10px] font-semibold text-white">
+                      {formatDuration(video.duration)}
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-main">
+                      {video.title || "TikTok video"}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted">
+                      {formatDate(video.createTime)}
+                      {video.viewCount != null && ` · ${formatCount(video.viewCount)} views`}
+                      {video.likeCount != null && ` · ${formatCount(video.likeCount)} likes`}
+                    </span>
+                  </span>
+                  <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
+                </button>
+              </div>
+            ))}
+          </RadioGroup>
+        ) : (
+          <ul className="divide-y divide-border px-4" aria-label="TikTok videos">
+            {allVideos.map((video) => (
+              <li key={video.id}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewVideo(video)}
+                  className="flex min-h-[76px] w-full items-center gap-3 py-2.5 text-left active:bg-surface"
+                  aria-label={`Preview ${video.title || "TikTok video"}`}
+                >
+                  <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
+                    <Image src={video.coverImageUrl} alt="" fill sizes="48px" unoptimized className="object-cover" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-main">{video.title || "TikTok video"}</span>
+                    <span className="mt-0.5 block truncate text-xs text-muted">
+                      {formatDate(video.createTime)}
+                      {video.viewCount != null && ` · ${formatCount(video.viewCount)} views`}
+                      {video.likeCount != null && ` · ${formatCount(video.likeCount)} likes`}
+                    </span>
+                  </span>
+                  <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
       {/* Infinite scroll sentinel */}
       <div ref={videosSentinelRef} className="h-px" />
@@ -408,6 +462,53 @@ export function TiktokImportPanel({ lang }: Props) {
           <InterlockingBalls size={18} />
         </div>
       )}
+
+      {(onSelectVideo || onUseSelectedVideo) && isTiktokConnected && allVideos.length > 0 && (
+        <div className="sticky bottom-0 z-10 mt-auto border-t border-border bg-app px-4 py-3">
+          <Button
+            type="button"
+            className="w-full text-white"
+            onClick={() => void selectVideo()}
+            disabled={!selectedVideoId || Boolean(selectingVideoId)}
+          >
+            {selectingVideoId ? <InterlockingBalls size={15} /> : null}
+            {selectingVideoId ? "Preparing video…" : "Use selected video"}
+          </Button>
+        </div>
+      )}
+
+      <Dialog
+        open={Boolean(previewVideo)}
+        onOpenChange={(open) => {
+          if (!open) closePreview();
+        }}
+      >
+        <DialogContent
+          className="z-[95] max-w-md overflow-hidden p-0"
+          overlayClassName="z-[90]"
+        >
+          <DialogTitle className="sr-only">
+            {previewVideo?.title || "TikTok video preview"}
+          </DialogTitle>
+          <div className="border-b border-border px-4 py-3">
+            <p className="truncate pr-3 text-sm font-semibold text-main">
+              {previewVideo?.title || "TikTok video"}
+            </p>
+          </div>
+          {previewVideo && (
+            <div className="mx-auto aspect-[9/16] w-full max-w-[360px] bg-black">
+              <iframe
+                key={previewVideo.id}
+                src={`https://www.tiktok.com/player/v1/${previewVideo.id}?autoplay=1`}
+                title={previewVideo.title || "TikTok video"}
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                allowFullScreen
+                className="size-full border-0"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

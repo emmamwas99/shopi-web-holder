@@ -38,6 +38,7 @@ import {
   SuggestedPostLocationDocument,
 } from "@/types/__generated__/graphql";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import {
   useCreateStore,
   type DraftLocation,
@@ -91,7 +92,13 @@ import {
 } from "./CreateSuccessScreen";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { OrDivider } from "./OrDivider";
+import { TikTokAccountDrawer } from "./TikTokAccountDrawer";
 import { TikTokImportDrawer } from "./TikTokImportDrawer";
+import { createDraftFromTiktokShareUrl } from "@/features/create/utils/createDraftFromTiktokImport";
+import {
+  SHOW_CONNECTED_TIKTOK_IMPORT,
+  SHOW_TIKTOK_CREATE_OPTIONS,
+} from "@/features/create/utils/tiktokAvailability";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { useDraftRequestKeys } from "@/features/create/utils/draftRequestKeys";
 import { createErrorMessage } from "./CreateErrorDialog";
@@ -316,7 +323,8 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     const offDelta = onSocketEvent<AgentStreamDeltaPayload>(
       WS_EVENTS.AGENT_STREAM_DELTA,
       (payload) => {
-        if (payload.channel !== "seller" || !isCurrentDraft(payload.draftId)) return;
+        if (payload.channel !== "seller" || !isCurrentDraft(payload.draftId))
+          return;
         streamingTextRef.current += payload.delta;
         setStreamingText(streamingTextRef.current);
       },
@@ -341,7 +349,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   const { data: suggestedLocationData } = useQuery(
     SuggestedPostLocationDocument,
-    { fetchPolicy: "cache-first" },
+    { fetchPolicy: "network-only" },
   );
   const { data: myPhoneData } = useQuery(MyContactPhoneDocument, {
     fetchPolicy: "cache-first",
@@ -418,7 +426,13 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [guidedStage, mediaItems.length, agentMessages.length, agentAsk, agentThinking]);
+  }, [
+    guidedStage,
+    mediaItems.length,
+    agentMessages.length,
+    agentAsk,
+    agentThinking,
+  ]);
 
   // Legacy resilience: a session persisted mid-flow under the old fixed stages
   // ("description"/"price"/"location") resumes in the new conversation stage.
@@ -468,10 +482,69 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     void startWithFiles(picked);
   }
 
-  /** TikTok import hands over the downloaded (or saved) video as a plain File. */
-  function handleTiktokSelect(file: File) {
-    setTiktokOpen(false);
-    return startWithFiles([file], { isTiktokImport: true });
+  /** Reuse the API's Mux-backed import, then resume the guided analysis. */
+  async function handleTiktokSelect(shareUrl: string) {
+    const previousState = useCreateStore.getState();
+    const replacingMedia =
+      Boolean(previousState.draftId) || previousState.mediaItems.length > 0;
+    draftSetupInFlightRef.current = true;
+    setFormError(null);
+    setAnalysisError(null);
+
+    try {
+      if (replacingMedia) {
+        if (previousState.draftId) {
+          const response = await discardDraft({
+            variables: { id: previousState.draftId },
+          });
+          if (response.error || !response.data?.discardDraft) {
+            throw new Error(
+              response.error?.message ?? "Could not replace the current media",
+            );
+          }
+        }
+
+        previousState.mediaItems.forEach((item) => {
+          if (item.localUri?.startsWith("blob:")) {
+            URL.revokeObjectURL(item.localUri);
+          }
+        });
+
+        reset();
+        locationAutofilledRef.current = false;
+        phoneAutofilledRef.current = false;
+        setCreationMode("ai");
+        setGuidedIntent(previousState.guidedIntent);
+        setIntentInput(previousState.guidedIntent);
+        setPriceInput("");
+        if (previousState.location) setLocation(previousState.location);
+        if (previousState.contactPhone) {
+          setContactPhone(previousState.contactPhone);
+        }
+      }
+
+      const importedDraftId = await createDraftFromTiktokShareUrl(
+        apolloClient,
+        shareUrl,
+      );
+      setDraftId(importedDraftId);
+      setContentType("video");
+      setStep("edit");
+      if (previousState.guidedIntent) {
+        await saveDraft(importedDraftId, {
+          caption: previousState.guidedIntent,
+        });
+      }
+      setTiktokOpen(false);
+      setGuidedStage("analyzing");
+    } catch (error) {
+      if (getSuspendedAccountMessage(error)) return;
+      setTiktokOpen(false);
+      setFormError(createErrorMessage(error));
+      setGuidedStage("media");
+    } finally {
+      draftSetupInFlightRef.current = false;
+    }
   }
 
   async function startWithFiles(
@@ -683,9 +756,17 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         setCaption(draft.caption ?? "");
         setHashtags(draft.hashtags ?? []);
         setCategory(draft.categoryId ?? null);
-        setSpecs((draft.specs ?? []).map((spec) => ({ key: spec.key, value: spec.value })));
+        setSpecs(
+          (draft.specs ?? []).map((spec) => ({
+            key: spec.key,
+            value: spec.value,
+          })),
+        );
         setVisibilityMode(
-          (draft.visibilityMode.toLowerCase() as "public" | "friends_only" | "private") ?? "public",
+          (draft.visibilityMode.toLowerCase() as
+            | "public"
+            | "friends_only"
+            | "private") ?? "public",
         );
         setAllowDownload(draft.allowDownload);
         setHdEnabled(draft.hdEnabled);
@@ -707,39 +788,63 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
         const type = draft.type === "VIDEO" ? "video" : "image";
         setContentType(type);
-        const currentIds = new Set(useCreateStore.getState().mediaItems.map((item) => item.id));
-        await Promise.all((draft.mediaAssetIds ?? []).filter((assetId) => !currentIds.has(assetId)).map(async (assetId) => {
-          try {
-            const assetResult = await apolloClient.query({
-              query: GetMediaAssetDocument,
-              variables: { id: assetId },
-              fetchPolicy: "network-only",
-            });
-            const asset = assetResult.data?.mediaAsset;
-            if (!asset || useCreateStore.getState().draftId !== id) return;
-            const preview = asset.muxMeta?.thumbnailUrl
-              ?? (asset.muxMeta?.playbackId
-                ? `https://image.mux.com/${asset.muxMeta.playbackId}/thumbnail.jpg?time=0`
-                : undefined)
-              ?? asset.r2Variants?.find((variant) => variant.variant === "original")?.url
-              ?? asset.r2Variants?.find((variant) => variant.variant === "large")?.url
-              ?? asset.r2Variants?.[0]?.url
-              ?? asset.thumbnailUrl
-              ?? "";
-            useCreateStore.getState().addMediaItem({
-              id: assetId,
-              localUri: preview,
-              type: asset.type === "VIDEO" ? "video" : asset.type === "IMAGE" ? "image" : type,
-              status: asset.status === "READY" ? "ready" : asset.status === "FAILED" ? "error" : "processing",
-              thumbnailUrl: asset.muxMeta?.thumbnailUrl ?? asset.thumbnailUrl ?? undefined,
-              r2Variants: asset.r2Variants ?? undefined,
-              muxPlaybackId: asset.muxMeta?.playbackId ?? undefined,
-              errorMessage: asset.errorMessage ?? undefined,
-            });
-          } catch {
-            // The extraction retry loop below still uses the server-side draft media.
-          }
-        }));
+        const currentIds = new Set(
+          useCreateStore.getState().mediaItems.map((item) => item.id),
+        );
+        await Promise.all(
+          (draft.mediaAssetIds ?? [])
+            .filter((assetId) => !currentIds.has(assetId))
+            .map(async (assetId) => {
+              try {
+                const assetResult = await apolloClient.query({
+                  query: GetMediaAssetDocument,
+                  variables: { id: assetId },
+                  fetchPolicy: "network-only",
+                });
+                const asset = assetResult.data?.mediaAsset;
+                if (!asset || useCreateStore.getState().draftId !== id) return;
+                const preview =
+                  asset.muxMeta?.thumbnailUrl ??
+                  (asset.muxMeta?.playbackId
+                    ? `https://image.mux.com/${asset.muxMeta.playbackId}/thumbnail.jpg?time=0`
+                    : undefined) ??
+                  asset.r2Variants?.find(
+                    (variant) => variant.variant === "original",
+                  )?.url ??
+                  asset.r2Variants?.find(
+                    (variant) => variant.variant === "large",
+                  )?.url ??
+                  asset.r2Variants?.[0]?.url ??
+                  asset.thumbnailUrl ??
+                  "";
+                useCreateStore.getState().addMediaItem({
+                  id: assetId,
+                  localUri: preview,
+                  type:
+                    asset.type === "VIDEO"
+                      ? "video"
+                      : asset.type === "IMAGE"
+                        ? "image"
+                        : type,
+                  status:
+                    asset.status === "READY"
+                      ? "ready"
+                      : asset.status === "FAILED"
+                        ? "error"
+                        : "processing",
+                  thumbnailUrl:
+                    asset.muxMeta?.thumbnailUrl ??
+                    asset.thumbnailUrl ??
+                    undefined,
+                  r2Variants: asset.r2Variants ?? undefined,
+                  muxPlaybackId: asset.muxMeta?.playbackId ?? undefined,
+                  errorMessage: asset.errorMessage ?? undefined,
+                });
+              } catch {
+                // The extraction retry loop below still uses the server-side draft media.
+              }
+            }),
+        );
 
         // Once analysis has already been saved, reopening the draft should not
         // spend tokens on another classification pass.
@@ -834,8 +939,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     const cleanSpecs = result.specs
       .map((spec) => ({ key: spec.key.trim(), value: spec.value.trim() }))
       .filter((spec) => spec.key && spec.value);
-    const nextSpecs = currentDraft?.specs.length ? currentDraft.specs : cleanSpecs;
-    const initialPrice = currentDraft?.price ?? result.price ?? result.suggestedPrice;
+    const nextSpecs = currentDraft?.specs.length
+      ? currentDraft.specs
+      : cleanSpecs;
+    const initialPrice =
+      currentDraft?.price ?? result.price ?? result.suggestedPrice;
     const hasPreparedDetails =
       Boolean(nextDescription.trim()) ||
       nextSpecs.length > 0 ||
@@ -1055,7 +1163,8 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       }
       // No real model call behind this turn — hold the "thinking" beat so it
       // doesn't feel like a different (broken) UI from the AI-driven turns.
-      if (!turn.aiUsed) await ensureMinElapsed(turnStartedAt, SIMULATED_THINKING_MS);
+      if (!turn.aiUsed)
+        await ensureMinElapsed(turnStartedAt, SIMULATED_THINKING_MS);
     } catch {
       // The mutation itself failed (network / not deployed). Persist any pending
       // scalar answer ourselves, then continue with the deterministic essentials
@@ -1101,8 +1210,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         target: "TITLE",
         kind: "TEXT",
         specKey: null,
-        label: s.title.trim() ? "Add a detail to the title" : "What are you selling?",
-        helper: "At least 2 words: brand, model, colour or size, e.g. “Black leather shoes”.",
+        label: s.title.trim()
+          ? "Add a detail to the title"
+          : "What are you selling?",
+        helper:
+          "At least 2 words: brand, model, colour or size, e.g. “Black leather shoes”.",
         placeholder: "e.g. Mazda CX-5 2018, Petrol",
         options: [],
         prefill: s.title.trim() || null,
@@ -1115,7 +1227,8 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         kind: "LONGTEXT",
         specKey: null,
         label: "Describe your item",
-        helper: "Condition, useful features and what comes with it. At least 30 characters.",
+        helper:
+          "Condition, useful features and what comes with it. At least 30 characters.",
         placeholder: "Describe the condition, features and what is included.",
         options: [],
         prefill: s.caption.trim() || null,
@@ -1210,7 +1323,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       setSpecs(next);
     }
 
-    addAgentMessage({ id: messageId(), role: "user", text: value || "Skipped" });
+    addAgentMessage({
+      id: messageId(),
+      role: "user",
+      text: value || "Skipped",
+    });
     setAgentAsk(null);
     await runAgentTurn({
       answer: value,
@@ -1306,7 +1423,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   async function handlePublish() {
     if (savingDraft) return;
     if (!draftId) {
-      setFormError("Your draft is still being set up. Wait a moment and try again.");
+      setFormError(
+        "Your draft is still being set up. Wait a moment and try again.",
+      );
       return;
     }
     if (!categoryId || !location || !contactPhone) {
@@ -1325,7 +1444,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     // free-form, so an AI-filled subcategory has a name and no id — requiring
     // the id blocked a listing whose subcategory was visibly already set.
     const subcategoryLabel = subcategoryName || guidedInsights?.subcategory;
-    if (!subcategoryId && !subcategoryLabel?.trim() && !isOtherCategory(categoryName)) {
+    if (
+      !subcategoryId &&
+      !subcategoryLabel?.trim() &&
+      !isOtherCategory(categoryName)
+    ) {
       setFormError("Choose a subcategory before posting.");
       setGuidedStage("options");
       return;
@@ -1503,7 +1626,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     return (
       <CreateSuccessScreen>
         <CreateSuccessPrimaryAction
-          onClick={() => router.replace(`/${lang}/for-you`)}
+          onClick={() => router.push(`/${lang}/for-you`)}
         >
           Go to For You
         </CreateSuccessPrimaryAction>
@@ -1642,7 +1765,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                 >
                   <CategoryPickerDrawer
                     value={subcategoryId}
-                    fallbackLabel={subcategoryName ?? guidedInsights?.subcategory}
+                    fallbackLabel={
+                      subcategoryName ?? guidedInsights?.subcategory
+                    }
                     parentId={categoryId}
                     title="Subcategory"
                     placeholderLabel="Choose subcategory"
@@ -1807,10 +1932,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold text-foreground">
-                        Import from TikTok
+                        {SHOW_TIKTOK_CREATE_OPTIONS
+                          ? "Import from TikTok"
+                          : "My TikTok videos"}
                       </span>
                       <span className="mt-0.5 block text-xs text-muted">
-                        Paste a link or reuse a saved video
+                        {SHOW_TIKTOK_CREATE_OPTIONS
+                          ? "Paste a link or reuse a saved video"
+                          : "Connect your account and choose a video"}
                       </span>
                     </span>
                     <ChevronRight size={18} className="shrink-0 text-muted" />
@@ -1868,11 +1997,20 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         </div>
       </main>
 
-      <TikTokImportDrawer
-        open={tiktokOpen}
-        onOpenChange={setTiktokOpen}
-        onSelect={handleTiktokSelect}
-      />
+      {SHOW_TIKTOK_CREATE_OPTIONS ? (
+        <TikTokImportDrawer
+          open={tiktokOpen}
+          onOpenChange={setTiktokOpen}
+          onSelect={handleTiktokSelect}
+        />
+      ) : SHOW_CONNECTED_TIKTOK_IMPORT ? (
+        <TikTokAccountDrawer
+          open={tiktokOpen}
+          onOpenChange={setTiktokOpen}
+          onSelect={handleTiktokSelect}
+          lang={lang}
+        />
+      ) : null}
 
       {guidedStage === "intro" ? (
         <div className="shrink-0 border-t border-border bg-elevated px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 sm:px-5 md:px-6">
@@ -2188,7 +2326,10 @@ function AskPrimaryButton({
 
 function AskError({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="-mt-1 flex items-start gap-1.5 text-xs font-medium text-error">
+    <p
+      role="alert"
+      className="-mt-1 flex items-start gap-1.5 text-xs font-medium text-error"
+    >
       <AlertCircle size={14} className="mt-px shrink-0" aria-hidden />
       <span>{children}</span>
     </p>
@@ -2388,7 +2529,9 @@ function AgentAskControl({
           onClear={() => setLocation(null)}
         />
         {tried && !location ? (
-          <AskError>Choose where the item is, so nearby buyers find it.</AskError>
+          <AskError>
+            Choose where the item is, so nearby buyers find it.
+          </AskError>
         ) : null}
         <AskPrimaryButton
           label="Continue"
@@ -2408,7 +2551,11 @@ function AgentAskControl({
         <PhoneInput
           value={contactPhone}
           onChange={setContactPhone}
-          error={tried && !contactPhone ? "Add a phone number so buyers can call you." : null}
+          error={
+            tried && !contactPhone
+              ? "Add a phone number so buyers can call you."
+              : null
+          }
         />
         <AskPrimaryButton
           label="Continue"

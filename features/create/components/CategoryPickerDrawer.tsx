@@ -8,22 +8,18 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
@@ -184,7 +180,7 @@ export function CategoryPickerDrawer({
       <div
         role="radiogroup"
         aria-label={title}
-        className="flex flex-col gap-2 pb-2"
+        className="flex flex-col pb-2"
       >
         {categories.map((category) => {
           const checked = category.id === selected?.id;
@@ -198,15 +194,7 @@ export function CategoryPickerDrawer({
               role="radio"
               aria-checked={checked}
               onClick={() => selectCategory(category.id)}
-              className="flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left"
-              style={{
-                backgroundColor: checked
-                  ? "rgb(var(--brand-primary) / 0.1)"
-                  : "rgb(var(--color-bg-subtle))",
-                border: checked
-                  ? "1px solid rgb(var(--brand-primary) / 0.35)"
-                  : "1px solid rgb(var(--color-border))",
-              }}
+              className={`flex ${isSubcategoryMode ? "min-h-12 py-2" : "min-h-16 py-4"} w-full cursor-pointer items-center gap-3 px-2 text-left transition-opacity active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
             >
               <span className="min-w-0 flex-1">
                 <span
@@ -230,10 +218,16 @@ export function CategoryPickerDrawer({
                   </span>
                 )}
               </span>
-              {checked && (
+              {checked ? (
                 <Check
                   className="h-4 w-4 shrink-0"
                   style={{ color: "rgb(var(--brand-primary))" }}
+                />
+              ) : (
+                <ChevronRight
+                  aria-hidden="true"
+                  className="h-5 w-5 shrink-0"
+                  style={{ color: "rgb(var(--color-text-muted))" }}
                 />
               )}
             </button>
@@ -269,17 +263,6 @@ export function CategoryPickerDrawer({
           <div className="max-h-[min(68svh,560px)] overflow-y-auto px-6 py-4">
             {pickerList}
           </div>
-
-          <DialogFooter className="border-t border-[rgb(229_231_235)] px-6 py-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => setOpen(false)}
-            >
-              Done
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
@@ -320,18 +303,6 @@ export function CategoryPickerDrawer({
         >
           {pickerList}
         </div>
-
-        <DrawerFooter
-          data-vaul-no-drag
-          className="shrink-0 px-5"
-          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-        >
-          <DrawerClose asChild>
-            <Button variant="outline" className="w-full">
-              Done
-            </Button>
-          </DrawerClose>
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

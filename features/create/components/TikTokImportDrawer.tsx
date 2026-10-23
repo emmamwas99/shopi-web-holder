@@ -21,7 +21,7 @@ export function TikTokImportDrawer({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (file: File) => void | Promise<void>;
+  onSelect: (shareUrl: string) => void | Promise<void>;
 }) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -36,7 +36,7 @@ export function TikTokImportDrawer({
           data-vaul-no-drag
           className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         >
-          <TikTokLibrary onSelect={onSelect} />
+          <TikTokLibrary onSelectUrl={onSelect} />
         </div>
       </DrawerContent>
     </Drawer>
