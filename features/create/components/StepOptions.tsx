@@ -454,7 +454,7 @@ export function StepOptions({
           variables: { id: draftId },
         });
         if (stepError) {
-          setError(stepError.message ?? "Could not save draft");
+          setError(stepError.message ?? "Could not save.. draft");
           return;
         }
         if (data?.advanceDraftStep?.currentStep === "READY") {
@@ -507,8 +507,8 @@ export function StepOptions({
               TikTok cross-post needs reconnect
             </p>
             <p className="mb-3 text-xs text-muted">
-              Your TikTok connection needs the posting permission. Reconnect
-              and we’ll retry posting this video.
+              Your TikTok connection needs the posting permission. Reconnect and
+              we’ll retry posting this video.
             </p>
             <button
               onClick={async () => {
