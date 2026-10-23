@@ -38,6 +38,7 @@ import {
   SuggestedPostLocationDocument,
 } from "@/types/__generated__/graphql";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import {
   useCreateStore,
   type DraftLocation,
@@ -93,6 +94,7 @@ import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { OrDivider } from "./OrDivider";
 import { TikTokAccountDrawer } from "./TikTokAccountDrawer";
 import { TikTokImportDrawer } from "./TikTokImportDrawer";
+import { createDraftFromTiktokShareUrl } from "@/features/create/utils/createDraftFromTiktokImport";
 import {
   SHOW_CONNECTED_TIKTOK_IMPORT,
   SHOW_TIKTOK_CREATE_OPTIONS,
@@ -347,7 +349,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   const { data: suggestedLocationData } = useQuery(
     SuggestedPostLocationDocument,
-    { fetchPolicy: "cache-first" },
+    { fetchPolicy: "network-only" },
   );
   const { data: myPhoneData } = useQuery(MyContactPhoneDocument, {
     fetchPolicy: "cache-first",
@@ -480,10 +482,69 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     void startWithFiles(picked);
   }
 
-  /** TikTok import hands over the downloaded (or saved) video as a plain File. */
-  function handleTiktokSelect(file: File) {
-    setTiktokOpen(false);
-    return startWithFiles([file], { isTiktokImport: true });
+  /** Reuse the API's Mux-backed import, then resume the guided analysis. */
+  async function handleTiktokSelect(shareUrl: string) {
+    const previousState = useCreateStore.getState();
+    const replacingMedia =
+      Boolean(previousState.draftId) || previousState.mediaItems.length > 0;
+    draftSetupInFlightRef.current = true;
+    setFormError(null);
+    setAnalysisError(null);
+
+    try {
+      if (replacingMedia) {
+        if (previousState.draftId) {
+          const response = await discardDraft({
+            variables: { id: previousState.draftId },
+          });
+          if (response.error || !response.data?.discardDraft) {
+            throw new Error(
+              response.error?.message ?? "Could not replace the current media",
+            );
+          }
+        }
+
+        previousState.mediaItems.forEach((item) => {
+          if (item.localUri?.startsWith("blob:")) {
+            URL.revokeObjectURL(item.localUri);
+          }
+        });
+
+        reset();
+        locationAutofilledRef.current = false;
+        phoneAutofilledRef.current = false;
+        setCreationMode("ai");
+        setGuidedIntent(previousState.guidedIntent);
+        setIntentInput(previousState.guidedIntent);
+        setPriceInput("");
+        if (previousState.location) setLocation(previousState.location);
+        if (previousState.contactPhone) {
+          setContactPhone(previousState.contactPhone);
+        }
+      }
+
+      const importedDraftId = await createDraftFromTiktokShareUrl(
+        apolloClient,
+        shareUrl,
+      );
+      setDraftId(importedDraftId);
+      setContentType("video");
+      setStep("edit");
+      if (previousState.guidedIntent) {
+        await saveDraft(importedDraftId, {
+          caption: previousState.guidedIntent,
+        });
+      }
+      setTiktokOpen(false);
+      setGuidedStage("analyzing");
+    } catch (error) {
+      if (getSuspendedAccountMessage(error)) return;
+      setTiktokOpen(false);
+      setFormError(createErrorMessage(error));
+      setGuidedStage("media");
+    } finally {
+      draftSetupInFlightRef.current = false;
+    }
   }
 
   async function startWithFiles(

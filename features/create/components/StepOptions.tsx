@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ChevronLeft,
   Download,
+  Hd,
   FilePen,
   Globe,
   ImageIcon,
@@ -17,7 +18,6 @@ import {
   Play,
   Send,
   ShieldCheck,
-  Sparkles,
   Tag,
   Users,
   type LucideIcon,
@@ -167,6 +167,12 @@ export function StepOptions({
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
+  const [tiktokPostError, setTiktokPostError] = useState<string | null>(null);
+  const [tiktokPostQueued, setTiktokPostQueued] = useState(false);
+  const [publishedContentId, setPublishedContentId] = useState<string | null>(
+    null,
+  );
+  const [retryingTiktokPost, setRetryingTiktokPost] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
 
   function exitAfterCreate() {
@@ -185,6 +191,56 @@ export function StepOptions({
   const [publishDraftNow] = useMutation(PUBLISH_DRAFT_NOW);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
+
+  async function queueTikTokPost(contentId: string) {
+    setTiktokPostError(null);
+    setTiktokReconnectNeeded(false);
+    try {
+      const result = await postToTiktok({ variables: { contentId } });
+      const messages = [
+        ...(result?.errors ?? []).map(
+          (item: { message?: string }) => item.message ?? "",
+        ),
+        ...(result?.error?.graphQLErrors ?? []).map(
+          (item: { message?: string }) => item.message ?? "",
+        ),
+      ];
+      if (
+        messages.some((message: string) =>
+          message.includes("TIKTOK_RECONNECT_REQUIRED"),
+        )
+      ) {
+        setTiktokReconnectNeeded(true);
+        return;
+      }
+      if (result?.error) throw result.error;
+      if (result?.data?.postToTiktok !== true) {
+        throw new Error(
+          "TikTok did not accept the video for posting. Please try again.",
+        );
+      }
+      setTiktokPostQueued(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("TIKTOK_RECONNECT_REQUIRED")) {
+        setTiktokReconnectNeeded(true);
+      } else {
+        setTiktokPostError(
+          message || "TikTok could not queue this video. Please try again.",
+        );
+      }
+    }
+  }
+
+  async function retryTikTokPost() {
+    if (!publishedContentId || retryingTiktokPost) return;
+    setRetryingTiktokPost(true);
+    try {
+      await queueTikTokPost(publishedContentId);
+    } finally {
+      setRetryingTiktokPost(false);
+    }
+  }
 
   const queueAutosave = useCallback(
     (input: {
@@ -334,24 +390,18 @@ export function StepOptions({
 
       const contentId = pubData.publishDraftNow.id;
       didPublish = true;
+      setPublishedContentId(contentId);
       setPublished(true);
       trackPostPublished("create", { category: categoryName, contentType });
 
       // 4. Optional TikTok cross-post
-      if (SHOW_TIKTOK_CROSSPOST && postOnTiktok && contentId) {
-        try {
-          const tiktokResult = await postToTiktok({ variables: { contentId } });
-          const tiktokErrors = tiktokResult?.errors ?? [];
-          const needsReconnect = tiktokErrors.some((e: { message?: string }) =>
-            (e.message ?? "").includes("TIKTOK_RECONNECT_REQUIRED"),
-          );
-          if (needsReconnect) {
-            setTiktokReconnectNeeded(true);
-            return; // hold on the success screen so user can reconnect
-          }
-        } catch {
-          // network error — user still lands on the success screen
-        }
+      if (
+        SHOW_TIKTOK_CROSSPOST &&
+        contentType === "video" &&
+        postOnTiktok &&
+        contentId
+      ) {
+        await queueTikTokPost(contentId);
       }
 
       // No auto-redirect — the success screen stays up until the user taps
@@ -458,7 +508,7 @@ export function StepOptions({
             </p>
             <p className="mb-3 text-xs text-muted">
               Your TikTok connection needs the posting permission. Reconnect
-              once and it will work automatically next time.
+              and we’ll retry posting this video.
             </p>
             <button
               onClick={async () => {
@@ -467,8 +517,24 @@ export function StepOptions({
                     variables: { returnUrl: undefined },
                   });
                   const url = urlData?.tiktokConnectUrl;
-                  if (url)
-                    window.open(url, "tiktok-connect", "width=520,height=680");
+                  if (!url) return;
+                  const popup = window.open(
+                    url,
+                    "tiktok-connect",
+                    "width=520,height=680",
+                  );
+                  if (!popup) return;
+                  const poll = window.setInterval(async () => {
+                    if (!popup.closed) return;
+                    window.clearInterval(poll);
+                    const { data: fresh } = await refetchMe();
+                    if (
+                      fresh?.me?.authProviders?.tiktok &&
+                      publishedContentId
+                    ) {
+                      await queueTikTokPost(publishedContentId);
+                    }
+                  }, 800);
                 } catch {
                   /* ignore */
                 }
@@ -484,6 +550,29 @@ export function StepOptions({
               className="mx-auto mt-2 block text-xs font-medium text-muted"
             >
               {onExit ? "Back to listings" : "Go to For You"}
+            </button>
+          </div>
+        )}
+
+        {tiktokPostQueued && !tiktokReconnectNeeded && (
+          <p className="max-w-xs text-center text-sm text-muted">
+            Your video is queued for posting to TikTok.
+          </p>
+        )}
+
+        {tiktokPostError && (
+          <div className="w-full max-w-xs rounded-2xl border border-border bg-elevated px-4 py-3 text-center">
+            <p className="text-sm text-foreground">
+              TikTok could not queue your video.
+            </p>
+            <p className="mt-1 text-xs text-muted">{tiktokPostError}</p>
+            <button
+              type="button"
+              onClick={() => void retryTikTokPost()}
+              disabled={retryingTiktokPost}
+              className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+            >
+              {retryingTiktokPost ? "Retrying…" : "Retry TikTok post"}
             </button>
           </div>
         )}
@@ -598,7 +687,7 @@ export function StepOptions({
               onChange={setAllowDownload}
             />
             <ToggleRow
-              icon={<Sparkles size={18} aria-hidden />}
+              icon={<Hd size={18} aria-hidden />}
               label="HD quality"
               description="Show your media in high definition"
               value={hdEnabled}

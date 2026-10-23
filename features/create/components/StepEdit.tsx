@@ -185,7 +185,7 @@ export function StepEdit({
   const locationAutofilledRef = useRef(false);
   const { data: suggestedLocationData } = useQuery(
     SuggestedPostLocationDocument,
-    { fetchPolicy: "cache-first" },
+    { fetchPolicy: "network-only" },
   );
   useEffect(() => {
     if (locationAutofilledRef.current) return;

@@ -17,7 +17,7 @@ export function TikTokAccountDrawer({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (file: File) => void | Promise<void>;
+  onSelect: (shareUrl: string) => void | Promise<void>;
   lang: string;
 }) {
   return (
@@ -35,7 +35,7 @@ export function TikTokAccountDrawer({
         >
           <TiktokImportPanel
             lang={lang}
-            onSelectVideo={(_video, file) => onSelect(file)}
+            onUseSelectedVideo={(video) => onSelect(video.shareUrl)}
           />
         </div>
       </DrawerContent>

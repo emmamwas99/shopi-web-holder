@@ -8,22 +8,18 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
@@ -114,6 +110,7 @@ export function CategoryPickerDrawer({
     const category = categories.find((item) => item.id === id);
     if (!category) return;
     onChange(category.id, category.name);
+    setOpen(false);
   }
 
   const disabled = isSubcategoryMode && !parentId;
@@ -266,17 +263,6 @@ export function CategoryPickerDrawer({
           <div className="max-h-[min(68svh,560px)] overflow-y-auto px-6 py-4">
             {pickerList}
           </div>
-
-          <DialogFooter className="border-t border-[rgb(229_231_235)] px-6 py-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => setOpen(false)}
-            >
-              Done
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
@@ -317,18 +303,6 @@ export function CategoryPickerDrawer({
         >
           {pickerList}
         </div>
-
-        <DrawerFooter
-          data-vaul-no-drag
-          className="shrink-0 px-5"
-          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-        >
-          <DrawerClose asChild>
-            <Button variant="outline" className="w-full">
-              Done
-            </Button>
-          </DrawerClose>
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

@@ -132,11 +132,17 @@ function ConnectGate({ lang }: { lang: string }) {
 
 interface Props {
   lang: string;
-  /** When supplied, videos can be downloaded and handed to the post flow. */
+  /** Local-file selection for flows that upload the selected video. */
   onSelectVideo?: (video: TiktokVideo, file: File) => void | Promise<void>;
+  /** API-backed selection for flows that can reuse an existing Mux import. */
+  onUseSelectedVideo?: (video: TiktokVideo) => void | Promise<void>;
 }
 
-export function TiktokImportPanel({ lang, onSelectVideo }: Props) {
+export function TiktokImportPanel({
+  lang,
+  onSelectVideo,
+  onUseSelectedVideo,
+}: Props) {
   const [selectingVideoId, setSelectingVideoId] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
@@ -150,15 +156,19 @@ export function TiktokImportPanel({ lang, onSelectVideo }: Props) {
     const selectedVideo = allVideos.find(
       (item) => item.id === selectedVideoId,
     );
-    if (!onSelectVideo || !selectedVideo || selectingVideoId) return;
+    if ((!onSelectVideo && !onUseSelectedVideo) || !selectedVideo || selectingVideoId) return;
     setSelectionError(null);
     setSelectingVideoId(selectedVideo.id);
     try {
-      const { blob } = await downloadTiktokVideo(selectedVideo.shareUrl);
-      const file = new File([blob], `shopi-tiktok-${selectedVideo.id}.mp4`, {
-        type: blob.type || "video/mp4",
-      });
-      await onSelectVideo(selectedVideo, file);
+      if (onUseSelectedVideo) {
+        await onUseSelectedVideo(selectedVideo);
+      } else if (onSelectVideo) {
+        const { blob } = await downloadTiktokVideo(selectedVideo.shareUrl);
+        const file = new File([blob], `shopi-tiktok-${selectedVideo.id}.mp4`, {
+          type: blob.type || "video/mp4",
+        });
+        await onSelectVideo(selectedVideo, file);
+      }
     } catch {
       setSelectionError(
         "Couldn't add that TikTok video. Check your connection and try again.",
@@ -453,7 +463,7 @@ export function TiktokImportPanel({ lang, onSelectVideo }: Props) {
         </div>
       )}
 
-      {onSelectVideo && isTiktokConnected && allVideos.length > 0 && (
+      {(onSelectVideo || onUseSelectedVideo) && isTiktokConnected && allVideos.length > 0 && (
         <div className="sticky bottom-0 z-10 mt-auto border-t border-border bg-app px-4 py-3">
           <Button
             type="button"
@@ -462,7 +472,7 @@ export function TiktokImportPanel({ lang, onSelectVideo }: Props) {
             disabled={!selectedVideoId || Boolean(selectingVideoId)}
           >
             {selectingVideoId ? <InterlockingBalls size={15} /> : null}
-            {selectingVideoId ? "Adding video…" : "Use selected video"}
+            {selectingVideoId ? "Preparing video…" : "Use selected video"}
           </Button>
         </div>
       )}
