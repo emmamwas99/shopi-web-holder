@@ -19,8 +19,16 @@ import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import { TEAM_THREAD_PATH } from "@/features/team-messages/types";
 import { useShopVerificationActions } from "../hooks/useShopVerification";
-import type { MyShopVerification, ShopVerificationDocument, ShopVerificationLocation } from "../api";
+import type { MyShopVerification, ShopVerification, ShopVerificationDocument } from "../api";
 import { BENEFITS } from "../copy";
+import {
+  ShopLocationFields,
+  isLocationComplete,
+  locationLabel,
+  toLocationInput,
+  withAreaName,
+  type ShopLocationValue,
+} from "./ShopLocationFields";
 
 function formatDay(value?: string | null): string | null {
   if (!value) return null;
@@ -28,13 +36,6 @@ function formatDay(value?: string | null): string | null {
   return Number.isNaN(date.getTime())
     ? null
     : date.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function placeText(location?: ShopVerificationLocation | null): string {
-  if (!location) return "";
-  return [location.placeName, location.subregion, location.county]
-    .filter((part, index, all) => part && all.indexOf(part) === index)
-    .join(", ");
 }
 
 function DocumentThumb({ document, label }: { document?: ShopVerificationDocument | null; label: string }) {
@@ -142,7 +143,7 @@ export function VerificationPending({ verification }: { verification: MyShopVeri
         <dl className="mt-2 rounded-xl border border-border bg-elevated px-3">
           <SummaryRow label="Business name">{application.businessName}</SummaryRow>
           <SummaryRow label="Shop location">
-            {placeText(application.location)}
+            {locationLabel(application.location)}
             {application.location?.addressLine ? (
               <span className="block text-[13px] text-muted">{application.location.addressLine}</span>
             ) : null}
@@ -210,7 +211,12 @@ export function VerificationApproved({ lang, verification }: { lang: string; ver
     "Your shop";
   const avatar = user?.profile?.avatar;
   const since = formatDay(application?.verifiedAt);
-  const place = application?.location?.subregion || application?.location?.county || "Your area";
+  // The seller's own area name, not the sub-county the map pin resolved to.
+  const place =
+    application?.location?.placeName ||
+    application?.location?.subregion ||
+    application?.location?.county ||
+    "Your area";
 
   return (
     <div className="flex flex-col">
@@ -282,19 +288,7 @@ export function VerificationApproved({ lang, verification }: { lang: string; ver
           </h3>
           <dl className="mt-2 rounded-xl border border-border bg-elevated px-3">
             {application?.businessName ? <SummaryRow label="Business name">{application.businessName}</SummaryRow> : null}
-            {application?.location ? (
-              <SummaryRow label="Shop location">
-                <span className="flex items-start gap-1.5">
-                  <MapPin size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-muted" aria-hidden />
-                  <span>
-                    {placeText(application.location)}
-                    {application.location.addressLine ? (
-                      <span className="block text-[13px] text-muted">{application.location.addressLine}</span>
-                    ) : null}
-                  </span>
-                </span>
-              </SummaryRow>
-            ) : null}
+            {application?.location ? <VerifiedLocationRow application={application} /> : null}
           </dl>
         </section>
       ) : null}
@@ -305,10 +299,101 @@ export function VerificationApproved({ lang, verification }: { lang: string; ver
       >
         <MessageCircleQuestionMark size={18} strokeWidth={1.9} className="shrink-0" aria-hidden />
         <span>
-          <span className="font-semibold">Business details changed?</span>{" "}
+          <span className="font-semibold">Business name or permit changed?</span>{" "}
           Message the Shopi team and we&rsquo;ll update your verification.
         </span>
       </Link>
+    </div>
+  );
+}
+
+/**
+ * The verified shop's location, editable in place. Moving the shop or renaming
+ * its area ("Ngong Road" rather than "Kajiado North") keeps the tick, so this
+ * doesn't need the Shopi team.
+ */
+function VerifiedLocationRow({ application }: { application: ShopVerification }) {
+  const { updateVerifiedLocation, updatingLocation } = useShopVerificationActions();
+  const [draft, setDraft] = useState<ShopLocationValue | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const location = application.location;
+
+  function startEditing() {
+    setError(null);
+    setDraft({ location: withAreaName(location ?? null), addressLine: location?.addressLine ?? "" });
+  }
+
+  async function save() {
+    if (!draft) return;
+    setError(null);
+    try {
+      await updateVerifiedLocation({
+        variables: { location: toLocationInput(draft.location, draft.addressLine) },
+      });
+      setDraft(null);
+      toast.success("Shop location updated.");
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "We couldn't save that. Please try again.");
+    }
+  }
+
+  if (draft) {
+    const complete = isLocationComplete(draft.location, draft.addressLine);
+    return (
+      <div className="flex flex-col gap-0.5 border-b border-border py-3 last:border-b-0">
+        <dt className="text-[12px] text-muted">Shop location</dt>
+        <dd className="mt-2">
+          <ShopLocationFields value={draft} onChange={(next) => setDraft(next)} />
+          {error ? (
+            <p role="alert" className="mt-3 text-[13px] leading-5 text-rose-600 dark:text-rose-400">
+              {error}
+            </p>
+          ) : !complete ? (
+            <p className="mt-3 text-[12px] leading-4 text-muted">
+              Add your area name, plus a map pin or the building and street.
+            </p>
+          ) : null}
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDraft(null)}
+              className="h-10 rounded-full border border-border px-4 text-sm font-semibold text-main transition-colors hover:bg-surface"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={!complete || updatingLocation}
+              className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-45"
+            >
+              {updatingLocation ? "Saving…" : "Save location"}
+            </button>
+          </div>
+        </dd>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5 border-b border-border py-3 last:border-b-0">
+      <dt className="text-[12px] text-muted">Shop location</dt>
+      <dd className="flex items-start gap-1.5 text-[14px] leading-5 text-main">
+        <MapPin size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+        <span className="min-w-0 flex-1">
+          {locationLabel(location)}
+          {location?.addressLine ? (
+            <span className="block text-[13px] text-muted">{location.addressLine}</span>
+          ) : null}
+        </span>
+        <button
+          type="button"
+          onClick={startEditing}
+          className="-my-1.5 h-8 shrink-0 rounded-full px-3 text-[13px] font-semibold text-main transition-colors hover:bg-subtle"
+        >
+          Edit
+        </button>
+      </dd>
     </div>
   );
 }

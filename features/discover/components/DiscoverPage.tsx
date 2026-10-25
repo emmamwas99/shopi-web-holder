@@ -279,6 +279,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
             county
             subregion
             placeName
+            displayAddress
           }
           ranking {
             rankScore

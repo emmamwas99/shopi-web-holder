@@ -43,6 +43,7 @@ fragment ProfilePostFields on Content {
     county
     subregion
     placeName
+    displayAddress
   }
   stats {
     views

@@ -64,6 +64,7 @@ import { CategoryPickerDrawer, isOtherCategory } from "./CategoryPickerDrawer";
 import { LocationPicker } from "./LocationPicker";
 import { PhoneInput } from "./PhoneInput";
 import { SpecsEditor } from "./SpecsEditor";
+import { AutoGrowTextarea } from "./AutoGrowTextarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -1751,6 +1752,22 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                   />
                 </Field>
 
+                <Field label="Description">
+                  <AutoGrowTextarea
+                    value={caption}
+                    maxLength={2000}
+                    rows={3}
+                    onChange={(event) => setCaption(event.target.value)}
+                    placeholder="Condition, size and what comes with it."
+                    className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
+                  />
+                  {descriptionProgressHint(caption) ? (
+                    <p className="mt-1.5 text-xs text-muted">
+                      {descriptionProgressHint(caption)}
+                    </p>
+                  ) : null}
+                </Field>
+
                 <Field label="Category">
                   <CategoryPickerDrawer
                     value={categoryId}
@@ -2611,14 +2628,41 @@ function AgentAskControl({
           submitText();
         }}
       >
-        <input
-          type={ask.kind === "NUMBER" ? "number" : "text"}
-          value={text}
-          autoFocus
-          onChange={(event) => setText(event.target.value)}
-          placeholder={ask.placeholder ?? "Type your answer…"}
-          className="h-12 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-base text-foreground outline-none focus:border-primary"
-        />
+        {ask.kind === "NUMBER" ? (
+          <input
+            type="number"
+            value={text}
+            autoFocus
+            onChange={(event) => setText(event.target.value)}
+            placeholder={ask.placeholder ?? "Type your answer…"}
+            className="h-12 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-base text-foreground outline-none focus:border-primary"
+          />
+        ) : (
+          // Grows with the answer so a long one (a list of key features)
+          // stays readable. Enter still sends, like the single-line field it
+          // replaces.
+          <AutoGrowTextarea
+            value={text}
+            rows={1}
+            autoFocus
+            enterKeyHint="send"
+            onChange={(event) =>
+              setText(event.target.value.replace(/\s*\n+\s*/g, " "))
+            }
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
+                submitText();
+              }
+            }}
+            placeholder={ask.placeholder ?? "Type your answer…"}
+            className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-border bg-surface px-3 py-3 text-base leading-6 text-foreground outline-none focus:border-primary"
+          />
+        )}
         <button
           type="submit"
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition-transform active:scale-95"

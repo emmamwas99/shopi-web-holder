@@ -36,6 +36,7 @@ import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { listingPlace } from "@/lib/listingPlace";
 import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
   ShareContentDocument,
@@ -1265,7 +1266,7 @@ export function ContentDetail({
           ))}
         </div>
       )}
-      {post.location?.placeName && (
+      {listingPlace(post.location) && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <svg
             className="w-3.5 h-3.5 shrink-0"
@@ -1278,8 +1279,7 @@ export function ContentDetail({
               clipRule="evenodd"
             />
           </svg>
-          {post.location.placeName}
-          {post.location.county && `, ${post.location.county}`}
+          {listingPlace(post.location)}
         </div>
       )}
     </div>
@@ -1298,14 +1298,7 @@ export function ContentDetail({
     post.category?.name ||
     "";
   const specs = (post.specs ?? []).filter((spec) => spec.key && spec.value);
-  const fullLocation = [
-    post.location?.placeName,
-    post.location?.subregion,
-    post.location?.county,
-    post.location?.country,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const fullLocation = listingPlace(post.location) ?? "";
 
   const DetailMeta = (categoryLabel || fullLocation || specs.length > 0) && (
     <div className="border-b border-default px-4 py-4">
@@ -1831,10 +1824,10 @@ export function ContentDetail({
                     </div>
                   )}
                   <h1 className="font-display text-2xl font-extrabold leading-tight tracking-tight text-default xl:text-3xl">{post.title}</h1>
-                  {post.location && (post.location.placeName || post.location.county) && (
+                  {listingPlace(post.location) && (
                     <p className="mt-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                      {[post.location.placeName, post.location.county].filter(Boolean).join(", ")}
+                      {listingPlace(post.location)}
                     </p>
                   )}
                   {caption && (
@@ -1926,13 +1919,7 @@ export function ContentDetail({
         const priceText = hasPrice
           ? `${post.price!.currency} ${post.price!.amount.toLocaleString()}`
           : "Price on request";
-        // Area + county for the summary line; the full address is in Details.
-        const place = [
-          post.location?.subregion || post.location?.placeName,
-          post.location?.county,
-        ]
-          .filter((part, i, all): part is string => Boolean(part) && all.indexOf(part) === i)
-          .join(", ");
+        const place = listingPlace(post.location) ?? "";
         const memberSince = (postCreator as { createdAt?: string | null } | null | undefined)?.createdAt;
         const followerCount = postCreator?.followerCount ?? 0;
         const detailRows = [

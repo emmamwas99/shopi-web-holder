@@ -18,6 +18,7 @@ import {
   useHoverPreview,
 } from "@/features/video/components/HoverVideoPreview";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { listingPlace } from "@/lib/listingPlace";
 
 /**
  * The post tile. One component for phone and desktop — only the column count
@@ -69,25 +70,6 @@ function formatDuration(seconds: number) {
   const mins = Math.floor(total / 60);
   const secs = total % 60;
   return `${mins}:${String(secs).padStart(2, "0")}`;
-}
-
-/**
- * "Nyandarua, Mairo-Inya" — county first, then the more specific area. County
- * leads because it is the unit a buyer recognises and filters on; the area
- * after it answers "where exactly". De-duped, so a listing whose area equals
- * its county reads "Nairobi", never "Nairobi, Nairobi".
- */
-function locationLabel(loc: {
-  placeName?: string | null;
-  subregion?: string | null;
-  county?: string | null;
-}): string | null {
-  const county = loc.county?.trim() || null;
-  const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
-  const parts = [county, area].filter(
-    (p, i, arr): p is string => Boolean(p) && arr.indexOf(p) === i,
-  );
-  return parts.length ? parts.join(", ") : null;
 }
 
 function sellerName(
@@ -171,7 +153,7 @@ function DiscoverGridCardImpl({
     ? formatPrice(post.price.amount, post.price.currency)
     : "Price on request";
   const negotiable = hasPrice && Boolean(post.price?.negotiable);
-  const place = post.location ? locationLabel(post.location) : null;
+  const place = listingPlace(post.location);
   const creator = post.creator;
   const seller = showSeller && creator ? sellerName(creator) : null;
 

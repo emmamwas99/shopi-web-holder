@@ -84,6 +84,7 @@ fragment ContentCardFields on Content {
     subregion
     placeName
     formattedAddress
+    displayAddress
   }
   ranking {
     rankScore

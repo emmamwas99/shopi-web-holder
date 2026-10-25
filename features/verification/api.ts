@@ -224,3 +224,15 @@ export const WITHDRAW_SHOP_VERIFICATION = gql`
   }
   ${SHOP_VERIFICATION_FIELDS}
 ` as TypedDocumentNode<{ withdrawShopVerification: ShopVerification }, Record<string, never>>;
+
+export const UPDATE_VERIFIED_SHOP_LOCATION = gql`
+  mutation UpdateVerifiedShopLocation($location: ShopVerificationLocationInput!) {
+    updateVerifiedShopLocation(location: $location) {
+      ...ShopVerificationFields
+    }
+  }
+  ${SHOP_VERIFICATION_FIELDS}
+` as TypedDocumentNode<
+  { updateVerifiedShopLocation: ShopVerification },
+  { location: ShopVerificationLocationInput }
+>;

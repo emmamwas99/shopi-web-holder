@@ -124,6 +124,7 @@ const BROWSE_CARDS: TypedDocumentNode<
           county
           subregion
           placeName
+          displayAddress
         }
         ranking {
           rankScore

@@ -105,6 +105,7 @@ export const ContentDetailDocument = gql`
         subregion
         placeName
         formattedAddress
+        displayAddress
       }
       ranking {
         rankScore

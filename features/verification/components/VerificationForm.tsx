@@ -10,15 +10,11 @@ import {
   ExternalLink,
   FileText,
   ImagePlus,
-  MapPin,
-  Navigation,
   RotateCcw,
   X,
 } from "lucide-react";
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LocationPickerDrawer } from "@/features/create/components/LocationPickerDrawer";
-import type { DraftLocation } from "@/stores/create";
 import { cn } from "@/lib/utils";
 import { MAX_UPLOAD_BYTES, useShopVerificationActions } from "../hooks/useShopVerification";
 import type {
@@ -29,47 +25,20 @@ import type {
   ShopVerificationGuidanceFile,
   ShopVerificationIssueDetail,
   ShopVerificationLocation,
-  ShopVerificationLocationInput,
   ShopVerificationRequirement,
 } from "../api";
 import { ORDER, STEP_COPY } from "../copy";
+import {
+  ShopLocationFields,
+  hasPin,
+  isLocationComplete,
+  toLocationInput,
+  withAreaName,
+  type ShopLocationValue,
+} from "./ShopLocationFields";
 
 const NAME_MAX = 120;
-const ADDRESS_MAX = 200;
 const AUTOSAVE_MS = 700;
-
-function hasPin(location: ShopVerificationLocation | null): boolean {
-  return typeof location?.latitude === "number" && typeof location?.longitude === "number";
-}
-
-function hasArea(location: ShopVerificationLocation | null): boolean {
-  return Boolean(location && (location.placeName || location.subregion || location.county));
-}
-
-function toInput(location: ShopVerificationLocation | null, addressLine: string): ShopVerificationLocationInput {
-  return {
-    county: location?.county ?? null,
-    subregion: location?.subregion ?? null,
-    placeName: location?.placeName ?? null,
-    formattedAddress: location?.formattedAddress ?? null,
-    placeId: location?.placeId ?? null,
-    latitude: location?.latitude ?? null,
-    longitude: location?.longitude ?? null,
-    addressLine: addressLine.trim() || null,
-  };
-}
-
-function fromPicker(picked: DraftLocation): ShopVerificationLocation {
-  return {
-    placeName: picked.placeName || null,
-    formattedAddress: picked.formattedAddress || null,
-    placeId: picked.placeId || null,
-    latitude: picked.latitude ?? null,
-    longitude: picked.longitude ?? null,
-    county: picked.county ?? null,
-    subregion: picked.subregion ?? null,
-  };
-}
 
 function fileSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -477,10 +446,11 @@ export function VerificationForm({
 
   const suggested = !application?.location && verification.suggestedLocation ? verification.suggestedLocation : null;
   const [businessName, setBusinessName] = useState(application?.businessName ?? "");
-  const [location, setLocation] = useState<ShopVerificationLocation | null>(application?.location ?? suggested);
+  const [location, setLocation] = useState<ShopVerificationLocation | null>(() =>
+    withAreaName(application?.location ?? suggested),
+  );
   const [addressLine, setAddressLine] = useState(application?.location?.addressLine ?? "");
   const [locationIsSuggestion, setLocationIsSuggestion] = useState(Boolean(suggested));
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadingDocuments, setUploadingDocuments] = useState<Set<ShopVerificationDocumentKind>>(new Set());
@@ -489,7 +459,7 @@ export function VerificationForm({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [changed, setChanged] = useState<Set<ShopVerificationRequirement>>(new Set());
   const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const addressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const locationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
   const status = application?.status;
@@ -500,7 +470,7 @@ export function VerificationForm({
   useEffect(
     () => () => {
       if (nameTimer.current) clearTimeout(nameTimer.current);
-      if (addressTimer.current) clearTimeout(addressTimer.current);
+      if (locationTimer.current) clearTimeout(locationTimer.current);
     },
     [],
   );
@@ -509,7 +479,7 @@ export function VerificationForm({
     BUSINESS_NAME: businessName.trim().length >= 2,
     PERMIT: Boolean(application?.permit),
     SHOP_PHOTO: Boolean(application?.shopPhoto),
-    LOCATION: hasArea(location) && (hasPin(location) || addressLine.trim().length > 0),
+    LOCATION: isLocationComplete(location, addressLine),
   };
   const doneCount = ORDER.filter((requirement) => done[requirement]).length;
   const complete = doneCount === ORDER.length;
@@ -534,14 +504,16 @@ export function VerificationForm({
     }
   }
 
-  async function save(input: SaveShopVerificationInput) {
+  async function save(input: SaveShopVerificationInput): Promise<ShopVerificationLocation | null> {
     setSaveState("saving");
     try {
-      await saveDraft({ variables: { input } });
+      const { data } = await saveDraft({ variables: { input } });
       setSaveState("saved");
+      return data?.saveShopVerificationDraft.location ?? null;
     } catch (err) {
       setSaveState("failed");
       toast.error(errorMessage(err, "We couldn't save that. Check your connection."));
+      return null;
     }
   }
 
@@ -552,19 +524,28 @@ export function VerificationForm({
     nameTimer.current = setTimeout(() => void save({ businessName: value.trim() }), AUTOSAVE_MS);
   }
 
-  function handlePicked(picked: DraftLocation) {
-    const next = fromPicker(picked);
-    setLocation(next);
-    setLocationIsSuggestion(false);
+  // A map pick (or removing it) saves at once; typing waits for a pause.
+  function handleLocationChange(next: ShopLocationValue, how: "pick" | "type") {
+    setLocation(next.location);
+    setAddressLine(next.addressLine);
+    if (how === "pick") setLocationIsSuggestion(false);
     markChanged("LOCATION");
-    void save({ location: toInput(next, addressLine) });
+    if (locationTimer.current) clearTimeout(locationTimer.current);
+    const input = { location: toLocationInput(next.location, next.addressLine) };
+    if (how === "pick") void save(input).then(adoptServerHierarchy);
+    else locationTimer.current = setTimeout(() => void save(input), AUTOSAVE_MS);
   }
 
-  function handleAddressChange(value: string) {
-    setAddressLine(value);
-    markChanged("LOCATION");
-    if (addressTimer.current) clearTimeout(addressTimer.current);
-    addressTimer.current = setTimeout(() => void save({ location: toInput(location, value) }), AUTOSAVE_MS);
+  // The API reads the county and sub-county off the pin, which beats the
+  // picker's guess from the address. Take them, unless the seller has picked
+  // somewhere else since.
+  function adoptServerHierarchy(saved: ShopVerificationLocation | null) {
+    if (!saved || !hasPin(saved)) return;
+    setLocation((current) =>
+      current && current.latitude === saved.latitude && current.longitude === saved.longitude
+        ? { ...current, county: saved.county, subregion: saved.subregion, wardName: saved.wardName }
+        : current,
+    );
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -572,13 +553,13 @@ export function VerificationForm({
     if (!complete || !confirmed || submitting || uploadingDocuments.size > 0 || failedDocumentUploads.size > 0) return;
     setSubmitError(null);
     if (nameTimer.current) clearTimeout(nameTimer.current);
-    if (addressTimer.current) clearTimeout(addressTimer.current);
+    if (locationTimer.current) clearTimeout(locationTimer.current);
     try {
       await submit({
         variables: {
           input: {
             businessName: businessName.trim(),
-            location: toInput(location, addressLine),
+            location: toLocationInput(location, addressLine),
             confirmed: true,
           },
         },
@@ -589,9 +570,6 @@ export function VerificationForm({
       setSubmitError(errorMessage(err, "We couldn't submit your application. Please try again."));
     }
   }
-
-  const placeTitle = location?.placeName || location?.subregion || location?.county || "";
-  const placeRegion = [location?.subregion, location?.county].filter((part) => part && part !== placeTitle).join(", ");
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
@@ -766,74 +744,15 @@ export function VerificationForm({
         issue={issueFor("LOCATION")}
         resolved={changed.has("LOCATION")}
       >
-        {location && hasArea(location) ? (
-          <div className="flex items-center gap-3 rounded-xl border border-border p-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-subtle text-main">
-              <MapPin size={18} strokeWidth={1.9} aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-main">{placeTitle}</p>
-              {placeRegion ? <p className="truncate text-[12px] text-muted">{placeRegion}</p> : null}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(true)}
-              className="h-9 shrink-0 rounded-full px-3 text-[13px] font-semibold text-main transition-colors hover:bg-subtle"
-            >
-              Change
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="flex w-full items-center gap-3 rounded-xl border border-dashed border-[rgb(var(--color-border-strong))] px-4 py-4 text-left transition-colors hover:bg-subtle active:bg-subtle"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-subtle text-main">
-              <MapPin size={19} strokeWidth={1.8} aria-hidden />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[14px] font-semibold text-main">Choose your shop&rsquo;s area</span>
-              <span className="block text-[12px] text-muted">Use your current location or search</span>
-            </span>
-          </button>
-        )}
-
-        {location && hasArea(location) ? (
-          <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted">
-            {hasPin(location) ? (
-              <>
-                <Navigation size={12} strokeWidth={2.2} className="text-[#1D9BF0]" aria-hidden />
-                Map pin added
-                {locationIsSuggestion
-                  ? ` · from your ${verification.suggestedLocationSource === "PROFILE" ? "profile" : "latest listing"}`
-                  : ""}
-              </>
-            ) : locationIsSuggestion ? (
-              `From your ${verification.suggestedLocationSource === "PROFILE" ? "profile" : "latest listing"} — change it if your shop is elsewhere`
-            ) : (
-              "No map pin — add the building and street below"
-            )}
-          </p>
-        ) : null}
-
-        <div className="mt-4">
-          <label htmlFor="address-line" className="text-[13px] font-semibold text-main">
-            Building, street or landmark
-            {hasPin(location) ? <span className="font-normal text-muted"> · optional</span> : null}
-          </label>
-          <input
-            id="address-line"
-            value={addressLine}
-            maxLength={ADDRESS_MAX}
-            autoComplete="street-address"
-            onChange={(event) => handleAddressChange(event.target.value)}
-            placeholder="e.g. Bazaar Plaza, 2nd floor, shop B12"
-            className="mt-1.5 h-11 w-full rounded-lg border border-border bg-app px-3 text-[14px] text-main outline-none transition-colors placeholder:text-[14px] focus:border-[#1D9BF0]"
-          />
-        </div>
-
-        <LocationPickerDrawer open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handlePicked} />
+        <ShopLocationFields
+          value={{ location, addressLine }}
+          onChange={handleLocationChange}
+          sourceNote={
+            locationIsSuggestion
+              ? `from your ${verification.suggestedLocationSource === "PROFILE" ? "profile" : "latest listing"}`
+              : null
+          }
+        />
       </StepCard>
 
       <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-elevated p-3">

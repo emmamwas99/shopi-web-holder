@@ -9,6 +9,7 @@ import { avatarGradient, idInitials } from "@/lib/avatar";
 import { profileHref } from "@/lib/profile-url";
 import { PriceTag, priceLabel } from "../PriceTag";
 import { cn } from "@/lib/utils";
+import { listingPlace } from "@/lib/listingPlace";
 
 /**
  * Who posted it and what it is — the text half of the viewer's chrome.
@@ -52,14 +53,7 @@ export function ImmersiveMeta({
   // to show. It does NOT mean free — PriceTag's "Free" label is for surfaces
   // that want it; here a blank space is the honest answer.
   const hasPrice = (post.price?.amount ?? 0) > 0;
-  // De-duplicated, so a listing whose area and county carry the same name
-  // reads "Kiambu" rather than "Kiambu, Kiambu".
-  const place = [post.location?.subregion, post.location?.county]
-    .map((part) => part?.trim())
-    .filter((part, index, parts): part is string =>
-      Boolean(part) && parts.indexOf(part) === index,
-    )
-    .join(", ");
+  const place = listingPlace(post.location) ?? "";
 
   if (overlay) {
     return (

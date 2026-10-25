@@ -14,6 +14,7 @@ import {
   REMOVE_SHOP_VERIFICATION_DOCUMENT,
   SAVE_SHOP_VERIFICATION_DRAFT,
   SUBMIT_SHOP_VERIFICATION,
+  UPDATE_VERIFIED_SHOP_LOCATION,
   WITHDRAW_SHOP_VERIFICATION,
   type MyShopVerification,
   type ShopVerification,
@@ -149,6 +150,9 @@ export function useShopVerificationActions() {
   const [withdraw, withdrawState] = useMutation(WITHDRAW_SHOP_VERIFICATION, {
     update: (cache, { data }) => data && writeApplication(cache, data.withdrawShopVerification),
   });
+  const [updateVerifiedLocation, updateLocationState] = useMutation(UPDATE_VERIFIED_SHOP_LOCATION, {
+    update: (cache, { data }) => data && writeApplication(cache, data.updateVerifiedShopLocation),
+  });
 
   const upload = useCallback(
     async (
@@ -186,10 +190,12 @@ export function useShopVerificationActions() {
     removeDocument,
     submit,
     withdraw,
+    updateVerifiedLocation,
     upload,
     saving: saveState.loading,
     removing: removeState.loading,
     submitting: submitState.loading,
     withdrawing: withdrawState.loading,
+    updatingLocation: updateLocationState.loading,
   };
 }

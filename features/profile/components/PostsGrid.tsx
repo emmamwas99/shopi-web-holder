@@ -14,6 +14,7 @@ import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { cn } from "@/lib/utils";
 import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { listingPlace } from "@/lib/listingPlace";
 
 /**
  * The profile's Saved tab.
@@ -61,9 +62,7 @@ function SavedPostRow({
     media?.url ??
     media?.imageUrl ??
     null;
-  const location = [post.location?.county, post.location?.placeName ?? post.location?.subregion]
-    .filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index)
-    .join(", ");
+  const location = listingPlace(post.location) ?? "";
   const price =
     post.price.amount > 0
       ? `${post.price.currency} ${Math.round(post.price.amount).toLocaleString("en-KE")}`

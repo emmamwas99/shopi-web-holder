@@ -2,6 +2,7 @@
 
 import { Plus, Sparkles, X } from "lucide-react";
 import type { Spec } from "@/stores/create";
+import { AutoGrowTextarea } from "./AutoGrowTextarea";
 
 interface Props {
   specs: Spec[];
@@ -68,7 +69,7 @@ export function SpecsEditor({ specs, onChange, aiGenerated }: Props) {
 
       <div className="flex flex-col gap-2">
         {specs.map((spec, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={i} className="flex items-start gap-2">
             <input
               value={spec.key}
               onChange={(e) => updateRow(i, { key: e.target.value })}
@@ -83,13 +84,26 @@ export function SpecsEditor({ specs, onChange, aiGenerated }: Props) {
                 caretColor: "rgb(var(--brand-primary))",
               }}
             />
-            <input
+            {/* Values like "Key Features" run long, so this one wraps and
+                grows rather than scrolling out of sight. */}
+            <AutoGrowTextarea
               value={spec.value}
-              onChange={(e) => updateRow(i, { value: e.target.value })}
+              rows={1}
+              onChange={(e) =>
+                updateRow(i, {
+                  value: e.target.value.replace(/\s*\n+\s*/g, " "),
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.preventDefault();
+              }}
               placeholder="Value (e.g. Mazda)"
-              className="min-w-0 flex-1 rounded-xl px-3 outline-none"
+              className="min-w-0 flex-1 resize-none rounded-xl px-3 outline-none"
               style={{
-                height: 44,
+                minHeight: 44,
+                paddingTop: 9,
+                paddingBottom: 9,
+                lineHeight: "24px",
                 fontSize: "var(--text-base)",
                 color: "rgb(var(--color-text))",
                 backgroundColor: "rgb(var(--color-bg-subtle))",
@@ -100,7 +114,7 @@ export function SpecsEditor({ specs, onChange, aiGenerated }: Props) {
             <button
               type="button"
               onClick={() => removeRow(i)}
-              className="flex shrink-0 items-center justify-center rounded-full"
+              className="mt-1 flex shrink-0 items-center justify-center rounded-full"
               style={{
                 width: 36,
                 height: 36,

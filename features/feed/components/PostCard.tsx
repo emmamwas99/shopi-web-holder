@@ -33,6 +33,7 @@ import Shimmer, {
   SHIMMER_AVATAR,
   SHIMMER_PORTRAIT,
 } from "@/lib/shimmer";
+import { listingPlace } from "@/lib/listingPlace";
 import { pauseAllVideos, registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
@@ -114,65 +115,6 @@ type FeedPostSocialPreview = ContentCardFieldsFragment & {
 // ── helpers ──────────────────────────────────────────────────────────────────
 // fmt, initials, and the avatar gradient palette are shared from @/lib
 // (imported above) so they don't drift across the feed components.
-
-/**
- * Strip Google plus-codes (Open Location Codes) like "PVR+ER" or
- * "X3W4+H9G" out of a place string — they're machine codes, not human place
- * names, and can appear standalone OR prefixed to a real name (e.g.
- * "X3W4+H9G Baraka Shopping Center" → "Baraka Shopping Center"). Returns the
- * cleaned, trimmed remainder (empty string if the whole value was a code).
- */
-function stripPlusCode(value: string): string {
-  return value
-    .replace(/\b[0-9A-Z]{2,}\+[0-9A-Z]+\b/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-/**
- * Broad → specific location trail for a card, e.g. "Nyandarua › Nyahururu ›
- * Sudav Apartments": county, then the town (first segment of formattedAddress,
- * dropping the trailing country), then the place name. Blanks, duplicates, and
- * embedded plus-codes (e.g. "X3W4+H9G Baraka …") are removed so we never repeat,
- * show empty separators, or surface a machine code.
- */
-function locationTrail(loc: {
-  county?: string | null;
-  placeName?: string | null;
-  formattedAddress?: string | null;
-}): string | null {
-  // "Nyahururu, Kenya" → "Nyahururu" (first part, minus the country tail).
-  const town = loc.formattedAddress?.split(",")[0]?.trim() || null;
-  const seen = new Set<string>();
-  const parts = [loc.county, town, loc.placeName]
-    .map((p) => stripPlusCode(p?.trim() || ""))
-    .filter((p) => {
-      const key = p.toLowerCase();
-      if (!p || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  return parts.length ? parts.join(" › ") : null;
-}
-
-/**
- * The header's place, short enough to share a line with the time: the most
- * specific human place plus the county ("Nyahururu, Nyandarua"). The full
- * trail lives on the listing page.
- */
-function shortLocation(loc: {
-  county?: string | null;
-  placeName?: string | null;
-  formattedAddress?: string | null;
-}): string | null {
-  const town = stripPlusCode(loc.formattedAddress?.split(",")[0]?.trim() || "");
-  const place = stripPlusCode(loc.placeName?.trim() || "");
-  const county = stripPlusCode(loc.county?.trim() || "");
-  const local = town || place;
-  const parts = [local, county].filter(Boolean);
-  const unique = parts.filter((p, i) => parts.findIndex((q) => q.toLowerCase() === p.toLowerCase()) === i);
-  return unique.length ? unique.join(", ") : null;
-}
 
 function userDisplayName(user?: FeedSocialUser | null): string {
   if (!user) return "";
@@ -1203,7 +1145,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const saveSummary = isOfficialPost ? null : saveSummaryText(recentSavers, saveCount);
   const commentCount = post.stats?.comments ?? 0;
   const hasEngagement = Boolean(saveSummary) || commentCount > 0;
-  const place = post.location ? shortLocation(post.location) : null;
+  const place = listingPlace(post.location);
   const hasPrice = Boolean(post.price && post.price.amount > 0);
 
   function handleSavePress() {
@@ -1411,7 +1353,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           )}
           <p
             className="mt-0.5 truncate text-[12px] leading-4 text-muted md:text-[13px]"
-            title={post.location ? (locationTrail(post.location) ?? undefined) : undefined}
+            title={place ?? undefined}
           >
             {place ? `${place} · ` : ""}
             {timeAgo(post.createdAt)}
