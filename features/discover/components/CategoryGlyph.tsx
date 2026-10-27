@@ -13,7 +13,7 @@ import {
   Shirt,
   Smartphone,
   Sofa,
-  Sparkles,
+  SoapDispenserDroplet,
   Tag,
   Ticket,
   UtensilsCrossed,
@@ -31,7 +31,8 @@ import {
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "electronics-technology": Smartphone,
   "fashion-apparel": Shirt,
-  "health-beauty": Sparkles,
+  // A cosmetics bottle rather than sparkles, which didn't read as the category.
+  "health-beauty": SoapDispenserDroplet,
   "home-living": Sofa,
   "agriculture-fresh-produce": Carrot,
   "food-beverages": UtensilsCrossed,
