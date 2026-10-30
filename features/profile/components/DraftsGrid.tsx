@@ -510,6 +510,9 @@ function DraftSheet({
 }) {
   const router = useRouter();
   const open = Boolean(draft);
+  // The More menu portals into the sheet: on body, the sheet's modal
+  // pointer-events lock makes "Discard draft" untappable.
+  const [menuPortalContainer, setMenuPortalContainer] = useState<HTMLDivElement | null>(null);
   // Keep showing the last draft while the sheet animates closed.
   const [shown, setShown] = useState(draft);
   if (draft && draft !== shown) setShown(draft);
@@ -541,6 +544,7 @@ function DraftSheet({
       desktop={desktop}
       title={draftTitle(shown)}
       subtitle={`Draft · started ${timeAgoLong(shown.createdAt)}`}
+      contentRef={setMenuPortalContainer}
       onRequestClose={requestClose}
     >
       <div className="space-y-5">
@@ -601,6 +605,7 @@ function DraftSheet({
             )}
             <MoreMenu
               disabled={busy}
+              container={menuPortalContainer}
               actions={[
                 {
                   key: "discard",
