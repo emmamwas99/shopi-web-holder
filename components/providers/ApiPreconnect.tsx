@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-
 function apiOrigin() {
   const value = process.env.NEXT_PUBLIC_API_URL;
   if (!value) return null;
@@ -22,23 +20,30 @@ function apiOrigin() {
  * and issue an API request immediately on hydration, so for them the same hint
  * is worth real time.
  *
+ * The signed-in check runs in the browser, while the HTML is still parsing.
+ * It used to read the `shopi-auth-hint` cookie on the server with cookies(),
+ * but this renders in the (shell) layout, so that one call made every route
+ * under it — listings, videos, explore — dynamic: rendered by a Vercel
+ * Function on every hit instead of served from the ISR cache. That burned the
+ * Fluid Active CPU allowance and paused deployments (Oct 2026).
+ *
  * `dns-prefetch` stays unconditional: it is a DNS lookup, not a connection, so
  * it costs essentially nothing and still helps the anonymous case as soon as
  * the user interacts.
  */
-export async function ApiPreconnect() {
+export function ApiPreconnect() {
   const origin = apiOrigin();
   if (!origin) return null;
 
-  const cookieStore = await cookies();
-  const willQueryOnLoad = cookieStore.has("shopi-auth-hint");
+  const preconnectWhenSignedIn = `if(/(?:^|; )shopi-auth-hint=[^;]/.test(document.cookie)){var l=document.createElement("link");l.rel="preconnect";l.href=${JSON.stringify(origin)};l.crossOrigin="anonymous";document.head.appendChild(l)}`;
 
   return (
     <>
       <link rel="dns-prefetch" href={origin} />
-      {willQueryOnLoad && (
-        <link rel="preconnect" href={origin} crossOrigin="anonymous" />
-      )}
+      <script
+        id="api-preconnect"
+        dangerouslySetInnerHTML={{ __html: preconnectWhenSignedIn }}
+      />
     </>
   );
 }

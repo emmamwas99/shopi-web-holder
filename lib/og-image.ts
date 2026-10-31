@@ -70,11 +70,13 @@ const MAX_SOURCE_BYTES = 12 * 1024 * 1024;
 /** Fetch an image's bytes, or null when it is missing, slow or too large. */
 async function fetchImageBytes(url: string): Promise<Buffer | null> {
   try {
+    // No `cache` option: the default fetches once per render without storing
+    // the bytes, and the card itself is cached on its route's revalidate.
+    // `cache: "no-store"` must not come back — it sets the whole route's
+    // revalidate to 0, so every request served a stale card and redrew it
+    // (satori + sharp) in the background, which defeats the ISR cache.
     const response = await fetch(url, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      // The card is regenerated on its own revalidate cadence, so there is
-      // nothing to gain from Next caching the upstream bytes as well.
-      cache: "no-store",
     });
     if (!response.ok) return null;
 

@@ -167,11 +167,43 @@ export function proxy(request: NextRequest) {
   return NextResponse.redirect(newUrl);
 }
 
+// Proxy runs on the Node.js runtime, so on Vercel every matched request is a
+// Fluid function invocation billed for Active CPU. It used to match every page
+// — every crawler hit on a static or ISR page and every client navigation paid
+// for a function that then did nothing. Match only the requests the proxy can
+// actually act on; the cookie conditions skip it when the auth state means it
+// would pass the request through anyway. Keep these in sync with the path
+// lists at the top of this file.
 export const config = {
   matcher: [
-    // Match all paths including root "/", skip Next.js internals and static files.
-    // /og/* are locale-free share-image routes; prefixing them with /en 404s.
     "/",
-    "/((?!_next|api|og/|favicon.ico|manifest.json|og-default.png|robots.txt|sitemap.xml|.*\\..*).*)",
+    // No locale prefix → redirect to /en. Skips Next.js internals, static
+    // files, and /og/* (locale-free share-image routes; prefixing them 404s).
+    "/((?!(?:en|sw)(?:/|$)|_next|api|og/|favicon.ico|manifest.json|og-default.png|robots.txt|sitemap.xml|.*\\..*).*)",
+    // Old /feed URLs → /for-you.
+    "/:lang(en|sw)/feed/:path*",
+    // Signed in: the homepage and the auth flows send you into the app.
+    {
+      source: "/:lang(en|sw)",
+      has: [{ type: "cookie", key: "shopi-auth-hint" }],
+    },
+    {
+      source: "/:lang(en|sw)/auth/:path*",
+      has: [{ type: "cookie", key: "shopi-auth-hint" }],
+    },
+    // Signed out: protected routes go to sign-in.
+    {
+      source: "/:lang(en|sw)/(upload|notifications|settings)/:path*",
+      missing: [{ type: "cookie", key: "shopi-auth-hint" }],
+    },
+    {
+      source: "/:lang(en|sw)/profile",
+      missing: [{ type: "cookie", key: "shopi-auth-hint" }],
+    },
+    {
+      source:
+        "/:lang(en|sw)/profile/(edit|followers|visitors|posts|change-password|rate|verification)/:path*",
+      missing: [{ type: "cookie", key: "shopi-auth-hint" }],
+    },
   ],
 };

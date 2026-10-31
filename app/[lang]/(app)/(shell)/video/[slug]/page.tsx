@@ -44,6 +44,12 @@ type Props = { params: Promise<{ lang: string; slug: string }> };
 // on the client, so an hour of metadata staleness is a fair trade.
 export const revalidate = 3600;
 
+// Rendered on first visit, then served from the ISR cache — see the same
+// export on content/[id]/page.tsx.
+export function generateStaticParams() {
+  return [];
+}
+
 async function getPost(
   idOrSlug: string,
 ): Promise<ContentCardFieldsFragment | null> {

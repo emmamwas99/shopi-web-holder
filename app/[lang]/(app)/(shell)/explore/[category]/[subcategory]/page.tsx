@@ -30,6 +30,12 @@ type Props = {
   }>;
 };
 
+// Rendered on first visit, then served from the ISR cache (refreshed on the
+// shortest fetch revalidate) — see the same export on content/[id]/page.tsx.
+export function generateStaticParams() {
+  return [];
+}
+
 /**
  * A subcategory of Explore, e.g. /en/explore/electronics-technology/phones.
  *

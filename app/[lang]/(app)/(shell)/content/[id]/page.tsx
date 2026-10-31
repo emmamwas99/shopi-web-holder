@@ -37,6 +37,14 @@ type Props = { params: Promise<{ lang: string; id: string }> };
 // and crawled metadata stay reasonably fresh without re-rendering every hit.
 export const revalidate = 3600;
 
+// No listings at build time; each one is rendered on its first visit and then
+// served from the ISR cache. Without generateStaticParams (even an empty one)
+// `revalidate` only caches the fetches and the page is server-rendered on
+// every request, which is what exhausted the Fluid Active CPU allowance.
+export function generateStaticParams() {
+  return [];
+}
+
 // ── Server-side fetch + SEO field derivation ────────────────────────────────
 
 type Post = ContentCardFieldsFragment & {

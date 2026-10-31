@@ -59,6 +59,12 @@ const PROFILE_REVALIDATE_SECONDS = 3600;
 // Next statically analyzes route config exports, so keep this value literal.
 export const revalidate = 3600;
 
+// Rendered on first visit, then served from the ISR cache — see the same
+// export on content/[id]/page.tsx.
+export function generateStaticParams() {
+  return [];
+}
+
 type Profile = ProfileUserFieldsFragment;
 
 // cache(): generateMetadata and the page both need these, once per request.
