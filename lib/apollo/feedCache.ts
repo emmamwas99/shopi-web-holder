@@ -1,9 +1,9 @@
 import type { ApolloCache } from "@apollo/client";
 
 /**
- * Home refreshes stale results when visible near the top. Publishing also
+ * Home checks for new listings on return/focus/reconnect and refreshes on request. Publishing also
  * invalidates saved feed/profile windows so returning immediately fetches a
- * fresh first page, even inside the normal Home refresh interval.
+ * fresh first page.
  */
 export function invalidatePublishedContentCache(cache: ApolloCache): void {
   cache.evict({ fieldName: "forYouFeed" });

@@ -23,6 +23,7 @@ import {
   FEED_LOAD_MORE_SIZE,
 } from "@/features/feed/constants";
 import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
+import { useFeedFreshness } from "./useFeedFreshness";
 
 // The first page is deliberately small (it is server-rendered and hydrated
 // before the feed is interactive); later pages are larger because they mount
@@ -106,7 +107,8 @@ function nextVisitSeed(): string {
  */
 export function useForYouFeed({
   serverRendered = false,
-}: { serverRendered?: boolean } = {}) {
+  active = true,
+}: { serverRendered?: boolean; active?: boolean } = {}) {
   // Reuse the same permission/caching flow the Nearby tab already owns: this
   // never itself prompts for permission (no `requestLocation()` call here) —
   // it only picks up a fix the user already granted elsewhere, so ranking
@@ -196,6 +198,24 @@ export function useForYouFeed({
 
   const items = data?.forYouFeed?.items ?? [];
   const pageInfo = data?.forYouFeed?.pageInfo;
+  const applyFreshHead = useCallback((nextSeed: string) => {
+    visitSeed = nextSeed;
+    startTransition(() => setSeed(nextSeed));
+  }, []);
+  const freshness = useFeedFreshness({
+    active, seed, latitude, longitude, items, onRefresh: applyFreshHead,
+  });
+
+  const previousWindow = useRef({ seed, latitude, longitude });
+  useEffect(() => {
+    const previous = previousWindow.current;
+    previousWindow.current = { seed, latitude, longitude };
+    if (previous.seed !== seed) {
+      // The new stream has committed; release the replaced list, keeping its
+      // normalized listings for profile/detail caches that still reference them.
+      apollo.cache.evict({ fieldName: "forYouFeed", args: previous });
+    }
+  }, [apollo, seed, latitude, longitude]);
 
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
@@ -206,7 +226,7 @@ export function useForYouFeed({
   // pagination spinner never showed). Track "in flight" ourselves instead.
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMore = useCallback(() => {
-    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
+    if (freshness.isRefreshing || !pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
     guard(cursor, itemCount, () => {
@@ -219,7 +239,7 @@ export function useForYouFeed({
       });
       return request;
     });
-  }, [fetchMore, pageInfo, guard, itemCount, seed]);
+  }, [fetchMore, pageInfo, guard, itemCount, seed, freshness.isRefreshing]);
 
   return {
     items,
@@ -229,6 +249,7 @@ export function useForYouFeed({
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
+    ...freshness,
   };
 }
 

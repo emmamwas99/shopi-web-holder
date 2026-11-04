@@ -35,6 +35,8 @@
  * fallback for browsers without the Navigation API.
  */
 
+import { FOR_YOU_REFRESH_EVENT } from "./feedFreshness";
+
 export type ScrollAnchor = {
   /** The `data-scroll-anchor` value of the item that was on screen. */
   k: string;
@@ -843,6 +845,13 @@ export function installScrollTracking(): () => void {
       // back to the profile, as a tab bar does from deeper in its stack.
       event.preventDefault();
       scrollToTopLikeNative();
+      if (
+        link.getAttribute(NAV_TAB_ATTR) === "feed" &&
+        FEED_PATH.test(url.pathname) &&
+        !url.searchParams.has("tab")
+      ) {
+        window.dispatchEvent(new Event(FOR_YOU_REFRESH_EVENT));
+      }
       return;
     }
 

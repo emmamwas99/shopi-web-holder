@@ -25,6 +25,19 @@ The homepage is the source of truth for Shopi's three core brand colors. They ar
 
 Orange (`highlight`) and purple (`accent`) are supporting illustration and data-visualization colors. Semantic success, warning, and error colors remain separate because they communicate product state.
 
+## For You feed freshness
+
+Home checks for new listings when returning to Home, when the browser regains
+focus, or on reconnection. There are no timed or periodic feed checks.
+Checks use a separate request, preserving the cards,
+scroll position and pagination cursor. A floating "New listings available"
+button lets the reader choose when to update. Refresh, or tapping the active Home
+tab again, loads a fresh stream at the top. Returning from a listing restores
+the existing stream. Checks are skipped when Home or the browser tab is hidden.
+
+Freshness timings and new-listing detection live in `lib/feedFreshness.ts`.
+Run the focused checks with `npm run test:feed`.
+
 ## Getting Started
 
 First, run the development server:

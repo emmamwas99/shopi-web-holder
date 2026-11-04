@@ -11,6 +11,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ShoppingBag } from "lucide-react";
 import { useForYouFeed } from "../hooks/useFeed";
+import { FeedRefreshControl } from "./FeedRefreshControl";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { FeedPaginationSkeleton, PostCardSkeleton } from "./FeedSkeleton";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
@@ -109,11 +110,15 @@ function DesktopPostCard({
   );
 }
 
-function ForYouColumn({ lang }: { lang: string }) {
-  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
+function ForYouColumn({ lang, active }: { lang: string; active: boolean }) {
+  const {
+    items, loading, loadingMore, hasMore, loadMore,
+    hasNewListings, isRefreshing, refresh,
+  } = useForYouFeed({ active });
   const { sentinelRef } = useInfiniteScroll({
+    enabled: active,
     hasMore,
-    loading: loading || loadingMore,
+    loading: loading || loadingMore || isRefreshing,
     onLoadMore: loadMore,
   });
 
@@ -121,16 +126,20 @@ function ForYouColumn({ lang }: { lang: string }) {
 
   if (!loading && items.length === 0) {
     return (
-      <EmptyState
-        title="Your feed is empty"
-        body="Follow sellers or explore categories to see content here."
-      />
+      <>
+        <FeedRefreshControl active={active} hasNewListings={hasNewListings} isRefreshing={isRefreshing} onRefresh={refresh} />
+        <EmptyState
+          title="Your feed is empty"
+          body="Follow sellers or explore categories to see content here."
+        />
+      </>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
       <LocationPermissionBanner />
+      <FeedRefreshControl active={active} hasNewListings={hasNewListings} isRefreshing={isRefreshing} onRefresh={refresh} />
       {items.map((post, i) => (
         <DesktopPostCard
           key={post.id}
@@ -142,9 +151,17 @@ function ForYouColumn({ lang }: { lang: string }) {
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && <FeedPaginationSkeleton />}
       {!hasMore && items.length > 0 && (
-        <p className="py-6 text-center text-xs text-muted">
+        <div className="py-6 text-center text-xs text-muted">
           You&apos;re all caught up
-        </p>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={isRefreshing}
+            className="mx-auto mt-2 block min-h-11 px-3 font-semibold text-primary disabled:opacity-60"
+          >
+            {isRefreshing ? "Refreshing…" : "Refresh for more listings"}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -229,7 +246,7 @@ export default function DesktopFeed({
           <section className="min-w-0">
             <div className={tab === "for-you" ? undefined : "hidden"}>
               <StoriesBar lang={lang} variant="desktop" />
-              <ForYouColumn lang={lang} />
+              <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
             </div>
           </section>
 

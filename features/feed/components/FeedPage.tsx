@@ -35,6 +35,7 @@ import {
   type ScrollPosition,
 } from "@/lib/scrollRestoration";
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
+import { FOR_YOU_REFRESH_EVENT } from "@/lib/feedFreshness";
 import { useUiStore } from "@/stores/ui";
 import { isTabletViewportNow, TABLET_QUERY } from "@/hooks/useIsTablet";
 import {
@@ -296,7 +297,10 @@ export function FeedPage({
   }, [searchParams, visible]);
 
   function handleTabChange(next: Tab) {
-    if (next === tab) return;
+    if (next === tab) {
+      if (next === "for-you") window.dispatchEvent(new Event(FOR_YOU_REFRESH_EVENT));
+      return;
+    }
     // Remember where we are on the tab we're leaving, before it gets hidden.
     if (isMobileViewport()) subTabPositions[tab] = captureScrollPosition();
     setTab(next);
@@ -369,20 +373,21 @@ export function FeedPage({
                     <>
                       <StoriesBar lang={lang} />
                       <LocationPermissionBanner />
+                      <div className="min-h-11" aria-hidden />
                       <FeedCardsSkeleton />
                     </>
                   }
                 >
                   <DeferredFeedGrid
                     lang={lang}
-                    active={visible && tab === "for-you"}
+                    active={visible && tab === "for-you" && !mobileSearchOpen}
                     initialItemsPromise={initialItemsPromise}
                   />
                 </Suspense>
               ) : (
                 <FeedGrid
                   lang={lang}
-                  active={visible && tab === "for-you"}
+                  active={visible && tab === "for-you" && !mobileSearchOpen}
                   initialItems={initialItems}
                 />
               )}
