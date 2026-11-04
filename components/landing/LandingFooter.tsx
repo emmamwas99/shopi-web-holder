@@ -129,9 +129,11 @@ export function LandingFooter({
               links: [
                 { label: "Features", href: `/${lang}#features` },
                 { label: "How It Works", href: `/${lang}#how-it-works` },
-                { label: "The Feed", href: `/${lang}#dive-feed` },
+                // Real pages: the #dive-feed and #creators sections these used
+                // to jump to are gone from the homepage.
+                { label: "The Feed", href: `/${lang}/for-you` },
                 { label: "Shopi Agent", href: `/${lang}/shopi-agent` },
-                { label: "Sell on Shopi", href: `/${lang}#creators` },
+                { label: "Sell on Shopi", href: `/${lang}/sell-in-kenya` },
                 {
                   label: "TikTok video downloader",
                   href: `/${lang}/tiktok-downloader`,

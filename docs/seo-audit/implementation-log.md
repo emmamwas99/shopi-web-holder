@@ -154,3 +154,19 @@ Done on 4 November 2026 on `main` (uncommitted). The research behind every page 
 
 - **Jumia/Kilimall "how to sell" guides**: queries are large, but Kilimall's seller terms aren't published where they could be verified, and Jumia's rates vary by category.
 - **Search Console**: none of this has been checked against real query data. Baseline the new URLs after deploy (monitoring-plan.md).
+
+### 5. Homepage revision (owner request, 4 Nov 2026)
+
+Asked for: simpler, shorter copy for Kenyan readers; a For You button in the mobile hero next to Sell; headings, metadata and structured data checked; more traffic into the app.
+
+| Change | Detail |
+|---|---|
+| Title / description | EN "Shopi — Kenya's Free Online Marketplace \| Buy & Sell Near You" (brand-led, so it stops competing with `/buy-and-sell-in-kenya` for "buy and sell in Kenya" — keyword-map merge decision). SW equivalent. Descriptions 136 / 146 chars. |
+| H1 | "What are you selling today?" (no search words) → "Kenya's free marketplace. Buy and sell near you." / "Soko la bure Kenya. Nunua na uza karibu nawe." |
+| Hero | Two full-width 48px buttons on phones: **Browse For You** (primary) and Sell an item; one row from md. |
+| New rows | `HomeCategories` (8 inventory-backed category tiles → landing pages) and `HomeListings` (10 real listings, swipe row on phones ending in a For You tile, grid from md). Server components, plain `<img>`, no Apollo on the homepage. Listings need a stable thumbnail (`lib/listingImage.ts`, never an expiring TikTok cover), a real title, and cars priced under KES 100k are dropped as typos. Fixes **F17**. |
+| How it works | One 3-step section (find/post, chat, meet & pay) with a safety line linking `/safety-centre`, replacing three overlapping sell blocks ("Post it. Talk to buyers.", the features strip and the dark "Post something…" block). `#how-it-works` and `#features` anchors kept for the nav and footer. |
+| Kept | Side-hustle hook, seller counts, paths (retitled "How do you want to sell?"), cars (body shortened; model chips now link to `/sell/{model}`), Shopi Agent, bulk upload, verified shops. |
+| FAQ | 7 questions phrased as people ask them, incl. "How do I buy something on Shopi?", "How do I stay safe?", "Is Shopi like Jiji?". |
+| Structured data | + `WebPage` node and an `ItemList` of the listings shown; Organization, WebSite, WebApplication and FAQPage unchanged. |
+| Footer | "The Feed" and "Sell on Shopi" pointed at `#dive-feed` / `#creators`, sections the homepage no longer has; now `/for-you` and `/sell-in-kenya`. |

@@ -84,13 +84,18 @@ export const whereToSellPath = (slug: WhereToSellSlug) => `/where-to-sell/${slug
 /** Test posts and placeholder titles: "test two", "rrrr", "500". */
 const PLACEHOLDER_TITLE = /^\s*(test\b.*|[a-z]{1,2}|(.)\2{2,}|[\d\s.,]+)\s*$/i;
 
+/** Whether a listing title is a test post or a placeholder, not a real item. */
+export function isPlaceholderListingTitle(title: string | null | undefined): boolean {
+  return !title?.trim() || PLACEHOLDER_TITLE.test(title);
+}
+
 /** Whether a live listing belongs on the page, by its title and price. */
 export function isRelevantLiveListing(
   live: WhereToSellPage["live"],
   listing: { title?: string | null; price?: { amount: number } | null },
 ): boolean {
   const title = (listing.title ?? "").toLowerCase();
-  if (!title.trim() || PLACEHOLDER_TITLE.test(title)) return false;
+  if (isPlaceholderListingTitle(title)) return false;
   if (live.titleIncludes && !live.titleIncludes.some((word) => title.includes(word))) {
     return false;
   }

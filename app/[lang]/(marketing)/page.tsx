@@ -4,15 +4,18 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   BadgeCheck,
-  Camera,
   Car,
   Check,
+  Compass,
   FileSpreadsheet,
+  Handshake,
   Lock,
   MessageCircle,
   Package,
+  Plus,
+  Search,
+  ShieldCheck,
   TrendingUp,
-  Wallet,
 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isValidLocale, locales, type Locale } from "@/i18n/config";
@@ -20,53 +23,93 @@ import { siteConfig } from "@/config/site";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
+import { HomeCategories } from "@/components/landing/HomeCategories";
+import { HomeListings, type HomeListing } from "@/components/landing/HomeListings";
 import { SellersIllustration } from "@/components/landing/SellersIllustration";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
+import { fetchBrowseCards } from "@/features/discover/queries/browse.server";
 import {
   countLabel,
   fetchMarketplaceCounts,
 } from "@/features/social-proof/queries/marketplaceCounts";
 import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
+import { contentPath } from "@/lib/content-url";
+import { stableListingThumb } from "@/lib/listingImage";
+import { CAR_PRICE_FLOOR } from "@/lib/seo/search-intent-pages";
+import { isPlaceholderListingTitle } from "@/lib/seo/where-to-sell";
 import {
   organizationSchema,
   websiteSchema,
   marketplaceSchema,
   faqSchema,
   jsonLd,
+  listingItemListSchema,
 } from "@/lib/structured-data";
 
+/**
+ * Homepage copy, English and Kiswahili (the homepage is one of the two
+ * translated pages — TRANSLATED_PATHS in lib/metadata.ts).
+ *
+ * Written for people reading on a phone, often in their second language:
+ * short sentences, everyday words, one idea per line. ~94% of visitors are on
+ * phones, so every section is checked at 390px first.
+ *
+ * Search: the homepage owns the brand and the broad "online marketplace in
+ * Kenya" / "free marketplace" searches; "buy and sell in Kenya" belongs to
+ * /buy-and-sell-in-kenya and "sell online in Kenya" to /sell-in-kenya, so the
+ * title leads with the brand rather than repeating their head terms
+ * (docs/seo-audit/keyword-map.md). The H1 and the H2s carry the plain words
+ * people search with: free, marketplace, Kenya, buy, sell, near you.
+ */
 const COPY = {
   en: {
-    title: "Buy and Sell Online in Kenya | Shopi",
+    title: "Shopi — Kenya's Free Online Marketplace | Buy & Sell Near You",
     description:
-      "Buy and sell online in Kenya with Shopi. Discover local products, create a post from a photo and get a suggested price with Shopi Agent.",
-    heroTitle: "What are you selling today?",
+      "Buy and sell near you on Shopi, Kenya's free online marketplace. Phones, cars, furniture, fashion and more. Free to post, no commission.",
+    heroTitle: "Kenya's free marketplace. Buy and sell near you.",
     heroBody:
-      "Add a photo and Shopi Agent drafts your post and suggests a price. Buyers across Kenya message you directly.",
-    cta: "Sell an item",
-    heroPost: "Sell an item",
-    free: "Free to post",
-    commission: "No commission",
-    direct: "Talk to buyers directly",
-    categoriesEyebrow: "For car sellers",
-    categoriesTitle: "Selling a car? Reach buyers across Kenya.",
-    carsTitle: "Sell your car in Kenya",
-    carsBody:
-      "Car dealers and private owners can post used cars for free. Add the make, model, year, price, location and clear photos so interested buyers can contact you directly — no broker, listing fee or commission.",
-    carsBrowse: "See cars for sale",
-    carsSell: "Post your car free",
-    carExamplesLabel: "Popular models to list",
-    carsSearches: ["Toyota Vitz", "Toyota Probox", "Toyota Fielder", "Toyota Premio"],
-    howTitle: "Post it. Talk to buyers.",
-    howBody:
-      "Add a photo, set your price and share where you are. Your post appears on Shopi for people to find.",
-    agentTitle: "One photo. Shopi helps with the rest.",
-    agentBody:
-      "Shopi Agent can draft your listing and suggest a price from a photo. Buyers can describe what they want to find matches.",
-    agentLink: "More about Shopi Agent",
+      "Find phones, cars, furniture and more from people near you, or sell yours free. No commission.",
+    heroBrowse: "Browse For You",
+    heroSell: "Sell an item",
+    trust: ["Free to post", "No commission", "Chat directly"],
+    categoriesTitle: "Browse by category",
+    categories: {
+      phones: "Phones",
+      electronics: "Electronics",
+      fashion: "Fashion",
+      furniture: "Furniture",
+      cars: "Cars",
+      beauty: "Beauty",
+      appliances: "Appliances",
+      more: "See all",
+    },
+    listings: {
+      // Short enough to sit on one line beside "See all" on a 360px phone.
+      title: "See what's for sale",
+      all: "See all",
+      more: "See more on For You",
+      priceOnRequest: "Price on request",
+    },
+    howTitle: "How Shopi works",
+    howSteps: [
+      {
+        title: "Find it or post it",
+        body: "Browse items near you, or post yours with one photo.",
+      },
+      {
+        title: "Chat with the seller",
+        body: "Ask questions and agree on a price, right in the app.",
+      },
+      {
+        title: "Meet and pay directly",
+        body: "Check the item, then pay the seller. Shopi takes no cut.",
+      },
+    ],
+    howSafety: "Stay safe: meet in public and check the item before you pay.",
+    howSafetyLink: "Safety tips",
     hookEyebrow: "Free guide · 3-minute read",
-    hookTitle: "How Kenyans earn online in 2026 — with zero stock.",
+    hookTitle: "How Kenyans earn online in 2026, with zero stock.",
     hookBody: "No shop. No capital. Just your phone and one simple method.",
     hookLink: "See the method",
     hookCard: "The method",
@@ -79,7 +122,7 @@ const COPY = {
     sellersBody: "Phones, fashion, furniture, cars and more. Free to join.",
     sellersCta: "Join them free",
     sellersLink: "See their shops",
-    pathsTitle: "Pick your path.",
+    pathsTitle: "How do you want to sell?",
     pathsBadge: "Recommended",
     paths: [
       {
@@ -101,6 +144,28 @@ const COPY = {
         cta: "Get verified",
       },
     ],
+    carsEyebrow: "For car sellers",
+    carsSectionTitle: "Selling a car? Reach buyers across Kenya.",
+    carsTitle: "Sell your car in Kenya",
+    carsBody:
+      "Post your car free with clear photos, the year, mileage and price. Buyers contact you directly. No broker, no commission.",
+    carsBrowse: "See cars for sale",
+    carsSell: "Post your car free",
+    carExamplesLabel: "Selling one of these?",
+    agentTitle: "One photo. Shopi helps with the rest.",
+    agentBody:
+      "Snap a photo and Shopi Agent writes your listing and suggests a price. Buyers can simply describe what they want.",
+    agentLink: "More about Shopi Agent",
+    agentImageAlt: "A phone listed for sale on Shopi",
+    bulkEyebrowDesktop: "New: AI bulk upload",
+    bulkEyebrowMobile: "New: AI bulk upload",
+    bulkTitle: "Bulk upload from Excel.",
+    bulkBodyDesktop:
+      "Type title and price. Shopi Agent adds category and specs from your photos. Check, then publish. Free.",
+    bulkBodyMobile:
+      "Type title and price. Shopi Agent adds the rest. Works on a computer.",
+    bulkCta: "Open bulk upload",
+    bulkPreview: "Bulk upload preview",
     verifiedEyebrow: "Verified shops",
     verifiedTitle: "The blue tick is free. For now.",
     verifiedBody: "Only registered businesses qualify. Buyers see it on every listing.",
@@ -108,82 +173,86 @@ const COPY = {
     verifiedShop: "Your shop",
     verifiedHandle: "@yourshop",
     verifiedChecks: ["Business permit", "Shop photo", "Shop location"],
-    bulkEyebrowDesktop: "New: AI bulk upload",
-    bulkEyebrowMobile: "New: AI bulk upload",
-    bulkTitle: "Bulk upload from Excel.",
-    bulkBodyDesktop:
-      "Type title and price. Shopi Agent adds category and specs from your photos. Check, then publish. Free.",
-    bulkBodyMobile:
-      "Type title and price. Shopi Agent adds the rest. Works on desktop.",
-    bulkCta: "Open bulk upload",
-    bulkPreview: "Bulk upload preview",
-    postEyebrow: "Sell on Shopi",
-    postTitle: "Post something people can buy today.",
-    postBody:
-      "Take one clear photo, add the price and location, and Shopi helps buyers nearby discover what you are selling. There is no posting fee and no commission.",
-    postSteps: [
-      "Upload a photo",
-      "Add price and location",
-      "Chat directly with buyers",
-    ],
-    postCta: "Sell an item",
-    postLink: "Browse listings",
-    closingTitle: "Ready to sell something?",
-    closingBody: "Sign in, create a post and start hearing from buyers.",
-    questions: "Good to know",
+    faqTitle: "Questions about Shopi",
     faq: [
       {
         q: "What is Shopi?",
-        a: "Shopi is a social discovery marketplace in Kenya. Browse products, post what you sell and message people directly. Shopi Agent helps you find products and create listings.",
+        a: "Shopi is a free online marketplace in Kenya. You buy and sell phones, cars, furniture, fashion and more with people near you, and chat with them directly.",
       },
       {
-        q: "Does it cost anything to post?",
-        a: "No. Posting is free, and Shopi does not take a commission when you sell.",
+        q: "Is it free to sell on Shopi?",
+        a: "Yes. Posting is free, and Shopi takes no commission when you sell.",
       },
       {
-        q: "How do buyers reach me?",
-        a: "Buyers can message you on Shopi. You agree on payment and pickup or delivery directly with them.",
+        q: "How do I buy something on Shopi?",
+        a: "Find the item, message the seller on Shopi, then meet, check it and pay the seller directly. Shopi doesn't handle payments.",
+      },
+      {
+        q: "How do I stay safe?",
+        a: "Meet in a busy public place, check the item before you pay, and keep the chat on Shopi. Never send money for something you haven't seen.",
       },
       {
         q: "Do I need an account?",
-        a: "You can browse without signing in. To create a post, you need to sign in.",
+        a: "Not to browse. To post or chat, sign in free with Google, Apple or email.",
+      },
+      {
+        q: "Is Shopi like Jiji?",
+        a: "Shopi is a free Kenyan marketplace like Jiji, built around photo and video posts from people near you. Posting is free with no commission, and you can list on both.",
       },
       {
         q: "Can I upload many listings at once?",
-        a: "Yes. On desktop, add up to 500 items to our Excel template, upload it and add photos. Shopi Agent fills in category and specs. You check, then publish.",
+        a: "Yes. On a computer, add up to 500 items to our Excel template, upload it and add photos. Shopi Agent fills in the category and specs. You check, then publish.",
       },
     ],
+    closingTitle: "Ready to start?",
+    closingBody: "Find a good deal near you, or sell something today. It's free.",
   },
   sw: {
-    title: "Nunua na Uuze Mtandaoni Kenya | Shopi",
+    title: "Shopi — Soko la Bure la Mtandaoni Kenya | Nunua na Uza",
     description:
-      "Nunua na uuze mtandaoni Kenya kupitia Shopi. Pata bidhaa za karibu, tengeneza tangazo kwa picha na upate pendekezo la bei kutoka Shopi Agent.",
-    heroTitle: "Unauza nini leo?",
+      "Nunua na uza karibu nawe kwenye Shopi, soko la bure la mtandaoni Kenya. Simu, magari, fanicha, mavazi na zaidi. Weka tangazo bure, bila kamisheni.",
+    heroTitle: "Soko la bure Kenya. Nunua na uza karibu nawe.",
     heroBody:
-      "Ongeza picha na Shopi Agent itaandika tangazo lako na kupendekeza bei. Wanunuzi kote Kenya wanakutumia ujumbe moja kwa moja.",
-    cta: "Uza bidhaa",
-    heroPost: "Uza bidhaa",
-    free: "Kuweka tangazo ni bure",
-    commission: "Hakuna kamisheni",
-    direct: "Ongea na wanunuzi moja kwa moja",
-    categoriesEyebrow: "Kwa wauzaji wa magari",
-    categoriesTitle: "Unauza gari? Wafikie wanunuzi kote Kenya.",
-    carsTitle: "Uza gari lako Kenya",
-    carsBody:
-      "Wauzaji wa magari na wamiliki binafsi wanaweza kutangaza magari bure. Ongeza aina, modeli, mwaka, bei, eneo na picha wazi ili wanunuzi wakufikie moja kwa moja bila dalali, ada wala kamisheni.",
-    carsBrowse: "Angalia magari yaliyotangazwa",
-    carsSell: "Tangaza gari lako bure",
-    carExamplesLabel: "Modeli maarufu za kutangaza",
-    carsSearches: ["Toyota Vitz", "Toyota Probox", "Toyota Fielder", "Toyota Premio"],
-    howTitle: "Weka tangazo. Ongea na wanunuzi.",
-    howBody:
-      "Ongeza picha, weka bei na eneo lako. Tangazo lako litaonekana kwenye Shopi ili watu walipate.",
-    agentTitle: "Picha moja. Shopi itakusaidia na mengine.",
-    agentBody:
-      "Shopi Agent inaweza kukuandikia tangazo na kupendekeza bei kutokana na picha. Wanunuzi wanaweza kueleza wanachotafuta ili wapate bidhaa zinazofaa.",
-    agentLink: "Zaidi kuhusu Shopi Agent",
+      "Pata simu, magari, fanicha na zaidi kutoka kwa watu wa karibu nawe, au uza zako bure. Hakuna kamisheni.",
+    heroBrowse: "Angalia For You",
+    heroSell: "Uza bidhaa",
+    trust: ["Kuweka tangazo ni bure", "Hakuna kamisheni", "Ongea moja kwa moja"],
+    categoriesTitle: "Vinjari kwa kategoria",
+    categories: {
+      phones: "Simu",
+      electronics: "Elektroniki",
+      fashion: "Mavazi",
+      furniture: "Fanicha",
+      cars: "Magari",
+      beauty: "Urembo",
+      appliances: "Vifaa vya nyumbani",
+      more: "Ona zote",
+    },
+    listings: {
+      title: "Ona vinavyouzwa",
+      all: "Ona zote",
+      more: "Ona zaidi kwenye For You",
+      priceOnRequest: "Uliza bei",
+    },
+    howTitle: "Shopi inavyofanya kazi",
+    howSteps: [
+      {
+        title: "Tafuta au weka tangazo",
+        body: "Angalia bidhaa za karibu nawe, au weka yako kwa picha moja.",
+      },
+      {
+        title: "Ongea na muuzaji",
+        body: "Uliza maswali na mkubaliane bei, hapo hapo kwenye Shopi.",
+      },
+      {
+        title: "Kutana na ulipe moja kwa moja",
+        body: "Kagua bidhaa, kisha mlipe muuzaji. Shopi haichukui chochote.",
+      },
+    ],
+    howSafety: "Kuwa salama: kutana mahali pa wazi na kagua bidhaa kabla ya kulipa.",
+    howSafetyLink: "Vidokezo vya usalama",
     hookEyebrow: "Mwongozo wa bure · dakika 3",
-    hookTitle: "Jinsi Wakenya wanavyopata pesa mtandaoni 2026 — bila stoki.",
+    hookTitle: "Jinsi Wakenya wanavyopata pesa mtandaoni 2026, bila stoki.",
     hookBody: "Bila duka. Bila mtaji. Simu yako na mbinu moja rahisi tu.",
     hookLink: "Ona mbinu",
     hookCard: "Mbinu",
@@ -196,7 +265,7 @@ const COPY = {
     sellersBody: "Simu, mavazi, fanicha, magari na zaidi. Kujiunga ni bure.",
     sellersCta: "Jiunge nao bure",
     sellersLink: "Ona maduka yao",
-    pathsTitle: "Chagua njia yako.",
+    pathsTitle: "Unataka kuuza vipi?",
     pathsBadge: "Inapendekezwa",
     paths: [
       {
@@ -218,14 +287,19 @@ const COPY = {
         cta: "Thibitisha duka",
       },
     ],
-    verifiedEyebrow: "Maduka yaliyothibitishwa",
-    verifiedTitle: "Tiki ya bluu ni bure. Kwa sasa.",
-    verifiedBody:
-      "Ni kwa biashara zilizosajiliwa tu. Wanunuzi huiona kwenye kila tangazo.",
-    verifiedCta: "Pata tiki ya bluu",
-    verifiedShop: "Duka lako",
-    verifiedHandle: "@dukalako",
-    verifiedChecks: ["Leseni ya biashara", "Picha ya duka", "Mahali duka lilipo"],
+    carsEyebrow: "Kwa wauzaji wa magari",
+    carsSectionTitle: "Unauza gari? Wafikie wanunuzi kote Kenya.",
+    carsTitle: "Uza gari lako Kenya",
+    carsBody:
+      "Tangaza gari lako bure kwa picha wazi, mwaka, kilomita na bei. Wanunuzi wanakufikia moja kwa moja. Bila dalali, bila kamisheni.",
+    carsBrowse: "Angalia magari yanayouzwa",
+    carsSell: "Tangaza gari lako bure",
+    carExamplesLabel: "Unauza mojawapo ya haya?",
+    agentTitle: "Picha moja. Shopi itakusaidia na mengine.",
+    agentBody:
+      "Piga picha na Shopi Agent itaandika tangazo lako na kupendekeza bei. Wanunuzi wanaweza kueleza tu wanachotaka.",
+    agentLink: "Zaidi kuhusu Shopi Agent",
+    agentImageAlt: "Simu inayouzwa kwenye Shopi",
     bulkEyebrowDesktop: "Mpya: upakiaji wa bidhaa nyingi kwa AI",
     bulkEyebrowMobile: "Mpya: upakiaji wa bidhaa nyingi kwa AI",
     bulkTitle: "Pakia bidhaa nyingi kutoka Excel.",
@@ -235,45 +309,57 @@ const COPY = {
       "Andika jina na bei. Shopi Agent itamalizia. Inapatikana kwenye kompyuta.",
     bulkCta: "Fungua upakiaji wa matangazo mengi",
     bulkPreview: "Muonekano wa upakiaji wa bidhaa nyingi",
-    postEyebrow: "Uza kwenye Shopi",
-    postTitle: "Weka bidhaa ambayo mtu anaweza kununua leo.",
-    postBody:
-      "Piga picha iliyo wazi, ongeza bei na eneo, kisha Shopi iwasaidie wanunuzi wa karibu kupata unachouza. Hakuna malipo ya kuweka tangazo wala kamisheni.",
-    postSteps: [
-      "Pakia picha",
-      "Ongeza bei na eneo",
-      "Ongea na wanunuzi moja kwa moja",
-    ],
-    postCta: "Uza bidhaa",
-    postLink: "Vinjari matangazo",
-    closingTitle: "Uko tayari kuuza?",
-    closingBody:
-      "Ingia, weka tangazo na uanze kupata ujumbe kutoka kwa wanunuzi.",
-    questions: "Mambo ya kujua",
+    verifiedEyebrow: "Maduka yaliyothibitishwa",
+    verifiedTitle: "Tiki ya bluu ni bure. Kwa sasa.",
+    verifiedBody:
+      "Ni kwa biashara zilizosajiliwa tu. Wanunuzi huiona kwenye kila tangazo.",
+    verifiedCta: "Pata tiki ya bluu",
+    verifiedShop: "Duka lako",
+    verifiedHandle: "@dukalako",
+    verifiedChecks: ["Leseni ya biashara", "Picha ya duka", "Mahali duka lilipo"],
+    faqTitle: "Maswali kuhusu Shopi",
     faq: [
       {
         q: "Shopi ni nini?",
-        a: "Shopi ni soko la kijamii la kugundua bidhaa Kenya. Unaweza kuangalia bidhaa, kuweka tangazo na kutumiana ujumbe moja kwa moja. Shopi Agent inakusaidia kupata bidhaa na kuandika matangazo.",
+        a: "Shopi ni soko la bure la mtandaoni Kenya. Unanunua na kuuza simu, magari, fanicha, mavazi na zaidi na watu wa karibu nawe, na mnaongea moja kwa moja.",
       },
       {
-        q: "Je, kuweka tangazo kunalipiwa?",
-        a: "Hapana. Kuweka tangazo ni bure na Shopi haichukui kamisheni ukiuza.",
+        q: "Je, kuuza kwenye Shopi ni bure?",
+        a: "Ndiyo. Kuweka tangazo ni bure, na Shopi haichukui kamisheni ukiuza.",
       },
       {
-        q: "Wanunuzi watawasiliana nami vipi?",
-        a: "Wanunuzi wanaweza kukutumia ujumbe kwenye Shopi. Mnakubaliana kuhusu malipo na jinsi ya kupata bidhaa moja kwa moja.",
+        q: "Nanunuaje kitu kwenye Shopi?",
+        a: "Tafuta bidhaa, mtumie muuzaji ujumbe kwenye Shopi, kisha kutana naye, kagua bidhaa na umlipe moja kwa moja. Shopi haishughulikii malipo.",
+      },
+      {
+        q: "Nitakuwaje salama?",
+        a: "Kutaneni mahali penye watu wengi, kagua bidhaa kabla ya kulipa, na ongeeni kupitia Shopi. Usitume pesa kwa kitu ambacho hujakiona.",
       },
       {
         q: "Je, ninahitaji akaunti?",
-        a: "Unaweza kuangalia bidhaa bila kuingia. Ili kuweka tangazo, unahitaji kuingia.",
+        a: "Si ili kuangalia bidhaa. Ili kuweka tangazo au kuongea na muuzaji, ingia bure kwa Google, Apple au barua pepe.",
+      },
+      {
+        q: "Je, Shopi ni kama Jiji?",
+        a: "Shopi ni soko la bure la Kenya kama Jiji, lakini bidhaa zinaonyeshwa kwa picha na video za watu wa karibu nawe. Kuweka tangazo ni bure, bila kamisheni, na unaweza kutangaza kwenye zote mbili.",
       },
       {
         q: "Je, naweza kupakia matangazo mengi kwa mara moja?",
         a: "Ndiyo. Kwenye kompyuta, weka hadi bidhaa 500 kwenye kiolezo cha Excel, kipakie na uongeze picha. Shopi Agent itajaza kategoria na sifa. Kagua, kisha chapisha.",
       },
     ],
+    closingTitle: "Uko tayari kuanza?",
+    closingBody: "Pata bei nzuri karibu nawe, au uza kitu leo. Ni bure.",
   },
 } as const;
+
+/** Car models with their own "sell my …" pages, linked from the car section. */
+const CAR_MODELS = [
+  { label: "Toyota Vitz", slug: "toyota-vitz" },
+  { label: "Toyota Probox", slug: "probox" },
+  { label: "Toyota Fielder", slug: "toyota-fielder" },
+  { label: "Toyota Premio", slug: "toyota-premio" },
+] as const;
 
 export async function generateMetadata({
   params,
@@ -311,20 +397,60 @@ export async function generateMetadata({
   };
 }
 
-// Matches SOCIAL_PROOF_REVALIDATE_SECONDS, the marketplace-count fetch below.
+// Matches SOCIAL_PROOF_REVALIDATE_SECONDS and the API client's daily default,
+// so the listings row and the counts refresh together, once a day.
 export const revalidate = 86400;
 
 /** Below these, a figure reads as weak proof rather than strong, so it's left out. */
 const MIN_SELLERS_SHOWN = 50;
 const MIN_LISTINGS_SHOWN = 100;
+/** The listings row: enough to swipe through, few enough to stay light. */
+const LISTINGS_SHOWN = 10;
 
 const PATH_ICONS = { own: Package, resell: TrendingUp, verified: BadgeCheck };
+const HOW_ICONS = [Search, MessageCircle, Handshake];
+
+/** Car makes and models common in Kenya, for the price sanity check below. */
+const CAR_TITLE =
+  /\b(toyota|nissan|mazda|subaru|honda|mitsubishi|isuzu|bmw|mercedes|benz|audi|volkswagen|vw|land ?rover|range ?rover|lexus|suzuki|prado|probox|vitz|fielder|premio|harrier|axio|noah|voxy|hiace)\b/i;
+
+/**
+ * Listings for the homepage row: real photos only (a stable thumbnail, never
+ * an expiring TikTok cover), no test posts or one-word titles, priced ones
+ * first. The row is the first thing a new visitor judges Shopi by, so a car
+ * "priced" under the car floor is left out: it's nearly always a typo (a BMW
+ * X6 at KES 255 for 2.55 million) and reads as a broken site.
+ */
+function pickHomeListings(
+  posts: Awaited<ReturnType<typeof fetchBrowseCards>>,
+): HomeListing[] {
+  const usable = posts.flatMap((post) => {
+    const title = post.title?.trim() ?? "";
+    const amount = post.price?.amount ?? 0;
+    const thumb = stableListingThumb(post);
+    const implausibleCar = CAR_TITLE.test(title) && amount > 0 && amount < CAR_PRICE_FLOOR;
+    return thumb &&
+      !isPlaceholderListingTitle(title) &&
+      title.split(/\s+/).length >= 2 &&
+      !implausibleCar
+      ? [{ post, thumb }]
+      : [];
+  });
+  const priced = usable.filter(({ post }) => (post.price?.amount ?? 0) > 0);
+  const unpriced = usable.filter(({ post }) => !((post.price?.amount ?? 0) > 0));
+  return [...priced, ...unpriced].slice(0, LISTINGS_SHOWN);
+}
 
 export default async function HomePage({ params }: PageProps<"/[lang]">) {
   const { lang } = await params;
   if (!isValidLocale(lang)) notFound();
   const t = COPY[lang];
-  const counts = await fetchMarketplaceCounts();
+  const [counts, posts] = await Promise.all([
+    fetchMarketplaceCounts(),
+    // Best-effort: on failure the row is simply left out.
+    fetchBrowseCards({}, 24),
+  ]);
+  const listings = pickHomeListings(posts);
   const stats = [
     { label: t.sellersStat, value: counts.sellers, min: MIN_SELLERS_SHOWN },
     { label: t.listingsStat, value: counts.listings, min: MIN_LISTINGS_SHOWN },
@@ -343,6 +469,20 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   };
   const pathButtonIds = { own: "sell_item", resell: "open_shop", verified: "get_verified" };
 
+  const pageUrl = `${siteConfig.url}/${lang}`;
+  const webPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: t.title,
+    description: t.description,
+    inLanguage: lang === "sw" ? "sw-KE" : "en-KE",
+    isPartOf: { "@id": `${siteConfig.url}/#website` },
+    about: { "@id": `${siteConfig.url}/#organization` },
+    primaryImageOfPage: `${siteConfig.url}/${lang}/opengraph-image`,
+  };
+
   return (
     <div id="top" className="bg-landing-page text-landing-ink">
       <script
@@ -352,17 +492,33 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             organizationSchema,
             websiteSchema,
             marketplaceSchema,
+            webPageSchema,
+            // Only the listings the HTML actually shows.
+            ...(listings.length
+              ? [
+                  listingItemListSchema({
+                    id: `${pageUrl}#listings`,
+                    name: t.listings.title,
+                    items: listings.map(({ post }) => ({
+                      name: post.title ?? "",
+                      url: `${siteConfig.url}${contentPath("en", post)}`,
+                    })),
+                  }),
+                ]
+              : []),
             faqSchema([...t.faq]),
           ),
         }}
       />
       <LandingNav lang={lang} />
       <main>
+        {/* ── Hero: both jobs, buy and sell, one tap each ───────────── */}
         <section
+          id="hero"
           aria-labelledby="home-title"
-          className="px-4 pb-8 md:px-8 md:pb-14"
+          className="px-4 pb-4 md:px-8 md:pb-10"
         >
-          <div className="relative mx-auto flex min-h-[min(700px,72vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-0 md:items-center">
+          <div className="relative mx-auto flex min-h-[min(640px,70vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-0 md:items-center">
             <picture className="absolute inset-0 block h-full w-full overflow-hidden">
               <source
                 media="(max-width: 767px)"
@@ -384,33 +540,101 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-linear-to-r md:from-black/45 md:via-black/10 md:to-transparent"
               aria-hidden
             />
-            <div className="relative z-10 w-full max-w-7xl px-6 py-10 text-center text-white md:mx-auto md:px-12 md:py-5 md:text-left lg:py-12">
+            <div className="relative z-10 w-full max-w-7xl px-5 py-8 text-center text-white md:mx-auto md:px-12 md:py-5 md:text-left lg:py-12">
               <h1
                 id="home-title"
-                className="mx-auto max-w-3xl text-balance font-display text-[2rem] font-semibold leading-[1.1] md:mx-0 md:text-[clamp(2rem,4.5vw,4.25rem)]"
+                className="mx-auto max-w-3xl text-balance font-display text-[1.875rem] font-semibold leading-[1.12] md:mx-0 md:text-[clamp(2rem,4.5vw,4.25rem)]"
               >
                 {t.heroTitle}
               </h1>
-              <p className="mx-auto mt-4 max-w-xl text-base leading-snug md:mx-0 md:mt-4 md:text-base lg:mt-5 lg:text-lg">
+              <p className="mx-auto mt-3 max-w-xl text-balance text-[0.9375rem] leading-snug text-white/90 md:mx-0 md:mt-4 md:text-base lg:mt-5 lg:text-lg">
                 {t.heroBody}
               </p>
-              <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 md:mx-0 md:mt-6 md:max-w-none md:flex-row md:flex-wrap lg:mt-8">
+              {/* Phones: two full-width buttons, browse first — most people
+                  arriving from search came to look. From md: one row. */}
+              <div className="mx-auto mt-6 grid w-full max-w-sm gap-3 md:mx-0 md:mt-6 md:flex md:max-w-none md:flex-wrap lg:mt-8">
+                <TrackedHomepageLink
+                  href={`/${lang}/for-you`}
+                  buttonId="browse_for_you"
+                  placement="hero"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[0.9375rem] font-semibold text-white no-underline hover:opacity-90"
+                >
+                  <Compass size={18} aria-hidden />
+                  {t.heroBrowse}
+                </TrackedHomepageLink>
                 <TrackedHomepageLink
                   href={`/${lang}/upload`}
                   buttonId="sell_item"
                   placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.9375rem] font-semibold text-[#18282a] no-underline hover:bg-white/90"
                 >
-                  {t.heroPost}
-                  <ArrowUpRight size={18} aria-hidden />
+                  <Plus size={18} aria-hidden />
+                  {t.heroSell}
                 </TrackedHomepageLink>
               </div>
-              {/* One action: the question asks what you're selling. Buyers
-                  search from the bar in the nav. */}
-              <p className="mt-3 text-balance text-sm text-white/75">
-                {t.free} · {t.commission}
+              <p className="mt-3 text-balance text-[0.8125rem] text-white/80">
+                {t.trust.join(" · ")}
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* ── Straight into the marketplace ────────────────────────── */}
+        <HomeCategories lang={lang} title={t.categoriesTitle} labels={t.categories} />
+        <HomeListings lang={lang} listings={listings} t={t.listings} />
+
+        {/* ── How it works: three steps, buyers and sellers alike ───── */}
+        <section
+          id="how-it-works"
+          aria-labelledby="how-title"
+          className="px-4 py-10 md:px-8 md:py-16"
+        >
+          <div className="mx-auto max-w-7xl">
+            <h2
+              id="how-title"
+              className="font-display text-[1.75rem] font-semibold leading-tight md:text-[2.75rem]"
+            >
+              {t.howTitle}
+            </h2>
+            {/* #features: the footer's "Features" link lands here. */}
+            <ol
+              id="features"
+              className="mt-6 grid list-none gap-3 p-0 md:mt-8 md:grid-cols-3 md:gap-5"
+            >
+              {t.howSteps.map((step, i) => {
+                const Icon = HOW_ICONS[i];
+                return (
+                  <li
+                    key={step.title}
+                    className="flex gap-4 rounded-2xl border border-landing-line bg-landing-surface p-4 md:flex-col md:p-6"
+                  >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-landing-card text-primary">
+                      <Icon className="size-5" aria-hidden />
+                    </span>
+                    <div>
+                      <h3 className="font-display text-lg font-semibold leading-snug">
+                        {i + 1}. {step.title}
+                      </h3>
+                      <p className="mt-1 text-[0.9375rem] leading-relaxed text-landing-body">
+                        {step.body}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="mt-5 flex items-start gap-2 text-sm leading-relaxed text-landing-body">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+              <span>
+                {t.howSafety}{" "}
+                <Link
+                  href={`/${lang}/safety-centre`}
+                  className="font-semibold whitespace-nowrap text-primary underline underline-offset-2"
+                >
+                  {t.howSafetyLink}
+                </Link>
+              </span>
+            </p>
           </div>
         </section>
 
@@ -617,18 +841,19 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
 
         <section
-          aria-labelledby="popular-categories-title"
+          id="sell-a-car"
+          aria-labelledby="sell-a-car-title"
           className="px-5 py-14 md:px-8 md:py-20"
         >
           <div className="mx-auto max-w-7xl">
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">
-              {t.categoriesEyebrow}
+              {t.carsEyebrow}
             </p>
             <h2
-              id="popular-categories-title"
+              id="sell-a-car-title"
               className="mt-2 max-w-3xl font-display text-[1.8rem] font-semibold leading-tight md:text-[2.75rem]"
             >
-              {t.categoriesTitle}
+              {t.carsSectionTitle}
             </h2>
             <div className="mt-7 grid gap-5">
               <article className="rounded-md border border-landing-line bg-landing-surface p-6 md:p-8">
@@ -646,10 +871,16 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 <p className="mt-5 text-sm font-semibold text-landing-body">
                   {t.carExamplesLabel}
                 </p>
-                <ul className="mt-2 flex flex-wrap gap-2 p-0">
-                  {t.carsSearches.map((model) => (
-                    <li key={model} className="rounded-full border border-landing-line bg-landing-card px-3 py-1.5 text-sm font-medium text-landing-ink">
-                      {model}
+                {/* Each model has a "sell my …" page with live asking prices. */}
+                <ul className="mt-2 flex list-none flex-wrap gap-2 p-0">
+                  {CAR_MODELS.map((model) => (
+                    <li key={model.slug}>
+                      <Link
+                        href={`/${lang}/sell/${model.slug}`}
+                        className="inline-flex rounded-full border border-landing-line bg-landing-card px-3 py-1.5 text-sm font-medium text-landing-ink no-underline hover:border-landing-line-strong"
+                      >
+                        {model.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -667,67 +898,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
 
         <section
-          id="features"
-          aria-label={lang === "sw" ? "Faida za Shopi" : "Why sell on Shopi"}
-          className="border-y border-landing-line bg-landing-surface px-5 py-7 md:px-8 md:py-9"
-        >
-          <ul className="mx-auto grid max-w-7xl gap-5 p-0 text-sm font-semibold sm:grid-cols-3 md:text-base">
-            <li className="flex items-center gap-3">
-              <Camera className="size-5 shrink-0 text-primary" aria-hidden />
-              {t.free}
-            </li>
-            <li className="flex items-center gap-3">
-              <Wallet className="size-5 shrink-0 text-primary" aria-hidden />
-              {t.commission}
-            </li>
-            <li className="flex items-center gap-3">
-              <MessageCircle
-                className="size-5 shrink-0 text-primary"
-                aria-hidden
-              />
-              {t.direct}
-            </li>
-          </ul>
-        </section>
-
-        <section
-          id="how-it-works"
-          className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-16 md:grid-cols-2 md:gap-16 md:px-8 md:py-24"
-        >
-          <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-landing-tint">
-            <Image
-              src="/assets/blog/mazda-cx5-shopi-plate.png"
-              alt={
-                lang === "sw"
-                  ? "Mazda CX-5 inayouzwa Nairobi, Kenya"
-                  : "Mazda CX-5 listed for sale in Nairobi, Kenya"
-              }
-              fill
-              sizes="(max-width: 768px) 100vw, 600px"
-              className="object-cover"
-            />
-          </div>
-          <div className="max-w-lg">
-            <h2 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
-              {t.howTitle}
-            </h2>
-            <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
-              {t.howBody}
-            </p>
-            <TrackedHomepageLink
-              href={`/${lang}/upload`}
-              buttonId="sell_item"
-              placement="how_it_works"
-              className="mt-7 inline-flex items-center gap-2 border-b-2 border-primary pb-1 font-semibold text-landing-ink no-underline"
-            >
-              {t.cta}
-              <ArrowUpRight size={18} aria-hidden />
-            </TrackedHomepageLink>
-          </div>
-        </section>
-
-        <section
           id="shopi-agent"
+          aria-labelledby="shopi-agent-title"
           className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
@@ -735,7 +907,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <p className="mb-3 text-sm font-semibold text-primary">
                 Shopi Agent
               </p>
-              <h2 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
+              <h2
+                id="shopi-agent-title"
+                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+              >
                 {t.agentTitle}
               </h2>
               <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
@@ -754,7 +929,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <div className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint md:order-2">
               <Image
                 src="/assets/blog/iphone-13.jpg"
-                alt="Phone shown as a product for sale"
+                alt={t.agentImageAlt}
                 fill
                 sizes="(max-width: 768px) 100vw, 600px"
                 className="object-cover"
@@ -897,67 +1072,15 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
 
         <section
-          id="post"
-          aria-labelledby="post-title"
-          className="px-4 pt-16 md:px-8 md:pt-24"
+          id="faq"
+          aria-labelledby="faq-title"
+          className="mx-auto max-w-4xl px-5 py-16 md:px-8 md:py-22"
         >
-          <div className="mx-auto grid max-w-7xl gap-8 rounded-md bg-[#18282a] px-6 py-10 text-white md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-16 md:px-12 md:py-16">
-            <div>
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/80">
-                <Camera className="size-4 text-primary" aria-hidden />
-                {t.postEyebrow}
-              </p>
-              <h2
-                id="post-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
-              >
-                {t.postTitle}
-              </h2>
-              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/80 md:text-lg">
-                {t.postBody}
-              </p>
-              <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <TrackedHomepageLink
-                  href={`/${lang}/upload`}
-                  buttonId="sell_item"
-                  placement="sell_section"
-                  className="inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
-                >
-                  {t.postCta}
-                  <ArrowUpRight size={18} aria-hidden />
-                </TrackedHomepageLink>
-                <TrackedHomepageLink
-                  href={`/${lang}/explore`}
-                  buttonId="browse_listings"
-                  placement="sell_section"
-                  className="font-semibold text-white underline underline-offset-4"
-                >
-                  {t.postLink}
-                </TrackedHomepageLink>
-              </div>
-            </div>
-            <ol className="grid gap-3 p-0">
-              {t.postSteps.map((step, i) => (
-                <li
-                  key={step}
-                  className="flex items-center gap-4 rounded-md border border-white/15 bg-white/5 px-5 py-4 text-base font-semibold"
-                >
-                  <span
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm"
-                    aria-hidden
-                  >
-                    {i + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-4xl px-5 py-16 md:px-8 md:py-22">
-          <h2 className="font-display text-[1.9rem] font-semibold md:text-[2.6rem]">
-            {t.questions}
+          <h2
+            id="faq-title"
+            className="font-display text-[1.9rem] font-semibold md:text-[2.6rem]"
+          >
+            {t.faqTitle}
           </h2>
           <div className="mt-6 border-t border-landing-line">
             {t.faq.map(({ q, a }) => (
@@ -965,7 +1088,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 <summary className="cursor-pointer pr-5 text-base font-semibold marker:text-primary md:text-lg">
                   {q}
                 </summary>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-landing-body md:text-base">
+                <p className="mt-3 max-w-2xl text-[0.9375rem] leading-relaxed text-landing-body md:text-base">
                   {a}
                 </p>
               </details>
@@ -973,22 +1096,39 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           </div>
         </section>
 
-        <section className="bg-tertiary px-5 py-16 text-center dark:bg-landing-surface md:px-8 md:py-22">
-          <h2 className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]">
+        <section
+          aria-labelledby="closing-title"
+          className="bg-tertiary px-5 py-16 text-center dark:bg-landing-surface md:px-8 md:py-22"
+        >
+          <h2
+            id="closing-title"
+            className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]"
+          >
             {t.closingTitle}
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-base text-landing-body md:text-lg">
             {t.closingBody}
           </p>
-          <TrackedHomepageLink
-            href={`/${lang}/upload`}
-            buttonId="sell_item"
-            placement="closing_section"
-            className="mt-7 inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-7 py-3 text-base font-semibold text-white no-underline hover:opacity-90"
-          >
-            {t.cta}
-            <ArrowUpRight size={19} aria-hidden />
-          </TrackedHomepageLink>
+          <div className="mx-auto mt-7 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:justify-center">
+            <TrackedHomepageLink
+              href={`/${lang}/for-you`}
+              buttonId="browse_for_you"
+              placement="closing_section"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-semibold text-white no-underline hover:opacity-90"
+            >
+              <Compass size={19} aria-hidden />
+              {t.heroBrowse}
+            </TrackedHomepageLink>
+            <TrackedHomepageLink
+              href={`/${lang}/upload`}
+              buttonId="sell_item"
+              placement="closing_section"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-landing-line-strong bg-landing-card px-7 py-3 text-base font-semibold text-landing-ink no-underline hover:bg-landing-surface"
+            >
+              <Plus size={19} aria-hidden />
+              {t.heroSell}
+            </TrackedHomepageLink>
+          </div>
         </section>
       </main>
       <LandingFooter lang={lang} homeOnly />
