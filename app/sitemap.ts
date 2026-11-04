@@ -49,14 +49,20 @@ const LISTING_SITEMAP_PAGE = 50;
 // browse surfaces, the sitemap is how engines find most of them.
 const LISTING_SITEMAP_MAX = 5000;
 
-// …but each page is a sequential round trip, so bound the walk by wall clock
-// too. Whatever has been collected when the budget runs out still ships; the
-// next daily revalidate picks up from a fresh NEWEST ordering.
-const LISTING_FETCH_BUDGET_MS = 20_000;
+// …but each page is a sequential round trip (the API caps a page at 50), so
+// bound the walk by wall clock too. Whatever has been collected when the
+// budget runs out still ships; the next daily revalidate picks up from a fresh
+// NEWEST ordering. 45s, like /video-sitemap.xml: the sitemap regenerates in the
+// background once a day and spends the time waiting on the API, not on CPU.
+const LISTING_FETCH_BUDGET_MS = 45_000;
 
-// Pages of the all-categories NEWEST walk that run alongside the per-category
-// walks — enough to keep the freshest listings in however long the category
-// walks take, and to catch anything filed without a category.
+// Room for the walk plus the other fetches. The same limit the video sitemap
+// runs under in production.
+export const maxDuration = 60;
+
+// Pages of the unfiltered NEWEST walk that runs alongside the type and
+// category walks — enough to catch the newest listing of any content type the
+// two type walks don't ask for.
 const NEWEST_SAFETY_PAGES = 2;
 
 type SitemapListing = {
@@ -155,6 +161,7 @@ async function walkListings(
   categoryId: string | null,
   deadline: number,
   maxPages = Number.POSITIVE_INFINITY,
+  type: "VIDEO" | "IMAGE" | null = null,
 ): Promise<SitemapListing[]> {
   const listings: SitemapListing[] = [];
   let after: string | null = null;
@@ -171,8 +178,8 @@ async function walkListings(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: `
-            query SitemapListings($limit: Int, $after: String, $categoryId: String) {
-              discoveryFeed(sort: NEWEST, limit: $limit, after: $after, categoryId: $categoryId) {
+            query SitemapListings($limit: Int, $after: String, $categoryId: String, $type: ContentType) {
+              discoveryFeed(sort: NEWEST, limit: $limit, after: $after, categoryId: $categoryId, type: $type) {
                 items {
                   id
                   slug
@@ -193,7 +200,7 @@ async function walkListings(
               }
             }
           `,
-          variables: { limit: LISTING_SITEMAP_PAGE, after, categoryId },
+          variables: { limit: LISTING_SITEMAP_PAGE, after, categoryId, type },
         }),
         // Refresh the listing set daily: listings are posted a few dozen times
         // a day, and engines don't refetch a sitemap more often than that.
@@ -225,16 +232,21 @@ async function walkListings(
 }
 
 /**
- * The public listings to submit, gathered by walking every top-level category
- * in parallel.
+ * The public listings to submit: two newest-first walks, one per content type
+ * (VIDEO, IMAGE), side by side with one walk per top-level category.
  *
  * A single newest-first walk is sequential — each page needs the previous
- * page's cursor — so at ~1s a page the 20s budget stopped near 1,000
+ * page's cursor — so at ~1s a page the old 20s budget stopped near 1,000
  * listings: measured against the live data on 2026-10-16, it reached 978 of
- * 1,520, and every older listing silently dropped out of the sitemap. Every
- * listing belongs to a top-level category, so walking the categories side by
- * side covers the same set with the wall time of the largest one. If the
- * taxonomy can't be fetched, this falls back to the single walk.
+ * 1,520, and every older listing silently dropped out of the sitemap. The
+ * category walks fixed that by running in parallel, but they only reach a
+ * listing whose categoryId is a current top-level category: on 2026-11-04,
+ * against the development database, they reached 143 of 1,682 listings and
+ * the sitemap held 731 (docs/seo-audit/implementation-log.md). The type walks
+ * reach every listing whatever its category (1,682 of 1,682 in that test, in
+ * 48s at ~2s a page), and the category walks still split the work once the
+ * type walks alone outgrow the budget. If the taxonomy can't be fetched, the
+ * type walks still run.
  */
 async function fetchRecentListings(): Promise<SitemapListing[]> {
   const api = process.env.NEXT_PUBLIC_API_URL;
@@ -242,13 +254,13 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
 
   const deadline = Date.now() + LISTING_FETCH_BUDGET_MS;
   const categoryIds = await fetchTopLevelCategoryIds(api);
+  // Type walks first: they're newest-first over everything, so if the list
+  // is ever capped, the freshest listings are the ones kept.
   const walks = await Promise.all([
-    walkListings(
-      api,
-      null,
-      deadline,
-      categoryIds.length ? NEWEST_SAFETY_PAGES : undefined,
-    ),
+    walkListings(api, null, deadline, undefined, "VIDEO"),
+    walkListings(api, null, deadline, undefined, "IMAGE"),
+    // Any listing of another type, newest first.
+    walkListings(api, null, deadline, NEWEST_SAFETY_PAGES),
     ...categoryIds.map((id) => walkListings(api, id, deadline)),
   ]);
 
@@ -602,38 +614,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-  // Sellers the team selected in admin → Social proof are the profiles we
-  // most want crawled, so they are always listed, at a higher priority, even
-  // when none of their listings fell inside this snapshot.
-  const featuredUsernames = new Set(featuredSellers.map((s) => s.username));
-
-  // A profile's lastmod is its newest listing; a featured seller with none in
-  // this snapshot gets no date rather than the generation time.
-  const sellerLastModified = new Map<string, Date | undefined>();
-  for (const seller of featuredSellers) sellerLastModified.set(seller.username, undefined);
-  for (const item of listings) {
-    const username = item.creator?.username?.trim();
-    if (!username) continue;
-    const stamp = item.updatedAt ?? item.createdAt;
-    const modified = stamp ? new Date(stamp) : undefined;
-    const previous = sellerLastModified.get(username);
-    if (!previous || (modified && modified > previous))
-      sellerLastModified.set(username, modified ?? previous);
-  }
-  const sellerEntries: MetadataRoute.Sitemap = [...sellerLastModified].map(
-    ([username, lastModified]) => {
-      // The canonical profile URL. /profile/{username} is a legacy address that
-      // permanently redirects here, and engines skip redirecting sitemap URLs.
-      const path = `/@${username}`;
-      return {
-        url: langs("en", path),
-        lastModified,
-        changeFrequency: "daily" as const,
-        priority: featuredUsernames.has(username) ? 0.8 : 0.6,
-        alternates: alternates(path),
-      };
-    },
-  );
+  // Seller profiles (/@{username}) are not listed here: /sellers/sitemap.xml
+  // lists every seller with a live listing, dated by their last listing. They
+  // used to be in both, each with a different lastmod for the same URL (audit
+  // F29: 26 of 26 disagreed on 2026-11-04), which tells engines neither date
+  // can be trusted. Featured sellers' listings are still walked above.
 
   return [
     ...staticEntries,
@@ -645,7 +630,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...tiktokToolEntries,
     ...browseEntries,
     ...blogEntries,
-    ...sellerEntries,
     ...listingEntries,
     ...videoEntries,
   ];

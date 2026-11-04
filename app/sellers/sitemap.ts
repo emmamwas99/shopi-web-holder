@@ -9,14 +9,18 @@ const FETCH_BUDGET_MS = 20_000;
 type PublicSeller = { username?: string | null; lastListedAt?: string | null };
 
 /**
- * A dedicated sitemap for public seller shops. Keeping these URLs in their own
- * file lets the main Shopi sitemap retain its existing URL set and size.
+ * A dedicated sitemap for public seller shops: every seller with a visible
+ * listing (the same set as the /stores directory and its `total`), dated by
+ * their last listing. The main sitemap no longer lists profiles, so this is
+ * the only place they're submitted and each URL has one lastmod.
  */
 export default async function sellerSitemap(): Promise<MetadataRoute.Sitemap> {
   const api = process.env.NEXT_PUBLIC_API_URL;
   if (!api) return [];
 
-  const sellers = new Map<string, Date>();
+  // A missing or invalid lastListedAt leaves the entry undated: a generation
+  // time stamped on it would claim a change that didn't happen.
+  const sellers = new Map<string, Date | undefined>();
   const deadline = Date.now() + FETCH_BUDGET_MS;
   let after: string | null = null;
 
@@ -56,8 +60,8 @@ export default async function sellerSitemap(): Promise<MetadataRoute.Sitemap> {
       for (const seller of page.stores) {
         const username = seller.username?.trim().toLowerCase();
         if (!username || !/^[a-z0-9._-]{1,40}$/.test(username)) continue;
-        const modified = seller.lastListedAt ? new Date(seller.lastListedAt) : new Date();
-        sellers.set(username, Number.isNaN(modified.getTime()) ? new Date() : modified);
+        const modified = seller.lastListedAt ? new Date(seller.lastListedAt) : undefined;
+        sellers.set(username, modified && !Number.isNaN(modified.getTime()) ? modified : undefined);
       }
 
       if (!page.hasMore || !page.nextCursor) break;

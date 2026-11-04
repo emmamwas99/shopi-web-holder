@@ -90,7 +90,7 @@ async function checkRobots() {
   for (const g of groups.filter((g) => g.agent !== "*" && g.blocksAll))
     warn(`${g.agent} is disallowed site-wide — confirm that is the intended policy`);
 
-  for (const sitemap of ["/sitemap.xml", "/sellers/sitemap.xml"]) {
+  for (const sitemap of ["/sitemap.xml", "/sellers/sitemap.xml", "/video-sitemap.xml"]) {
     if (body.includes(`Sitemap: ${base}${sitemap}`)) pass(`lists ${sitemap}`);
     else warn(`doesn't list ${base}${sitemap} (expected when testing a non-production URL)`);
   }
@@ -122,7 +122,91 @@ async function checkSitemap() {
   const stamped = entries.filter((e) => e.hasLastmod && !undated.test(pathOf(e.loc)));
   if (stamped.length)
     warn(`${stamped.length} non-listing URLs carry a lastmod — is it a real modification date?`);
+  // Profiles belong to /sellers/sitemap.xml alone: listed in both, each file
+  // gave the same URL a different lastmod (audit F29).
+  if (count(/\/@/)) fail(`lists ${count(/\/@/)} profiles; they belong in /sellers/sitemap.xml only`);
   return entries.map((e) => e.loc);
+}
+
+/**
+ * Whether the sitemap reaches every listing: the homepage shows the live
+ * listing count rounded down ("1.6k+"), so a complete sitemap lists at least
+ * that many. The listing walk can drop listings silently (a time budget, a
+ * category filter), and this is the only place that would show it.
+ */
+async function checkListingCoverage(urls) {
+  const { res, body } = await get("/en");
+  if (res.status !== 200) return;
+  const shown = /<dt[^>]*>live listings<\/dt><dd[^>]*>([\d.]+)(k|m)?\+?<\/dd>/i.exec(body);
+  if (!shown) return warn("homepage shows no live-listing count to compare the sitemap with");
+  const floor = Number(shown[1]) * (shown[2] === "k" ? 1_000 : shown[2] === "m" ? 1_000_000 : 1);
+  const listed = urls.filter((url) => url.includes("/content/")).length;
+  if (listed >= floor * 0.9) pass(`${listed} listings in the sitemap, homepage shows ${shown[0].match(/>([^<]*)<\/dd>/)[1]}`);
+  else fail(`only ${listed} listings in the sitemap, but the homepage counts at least ${floor} live listings`);
+}
+
+async function checkSellersSitemap() {
+  console.log("sellers/sitemap.xml");
+  const { res, body } = await get("/sellers/sitemap.xml");
+  if (res.status !== 200 || !body.includes("<urlset"))
+    return fail(`sellers/sitemap.xml answered ${res.status}`);
+  const locs = [...body.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]);
+  const notProfiles = locs.filter((loc) => !/\/@[^/]+$/.test(loc));
+  report(`${locs.length} seller profiles`, [
+    notProfiles.length > 0 && `includes ${notProfiles.length} URLs that aren't /@{username} profiles`,
+  ]);
+  if (locs[0]) {
+    const { res: page } = await get(pathOf(locs[0]));
+    if (page.status !== 200) fail(`${pathOf(locs[0])} answered ${page.status}`);
+  }
+}
+
+/** What Google needs from each video entry, and that the watch pages and thumbnails are really there. */
+async function checkVideoSitemap() {
+  console.log("video-sitemap.xml");
+  const { res, body } = await get("/video-sitemap.xml");
+  if (res.status !== 200 || !body.includes("<urlset") || !body.includes("sitemap-video/1.1"))
+    return fail(`video-sitemap.xml answered ${res.status} or isn't a video sitemap`);
+  const entries = [...body.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => {
+    const tag = (name) => new RegExp(`<video:${name}>([\\s\\S]*?)</video:${name}>`).exec(m[1])?.[1];
+    return {
+      loc: /<loc>([^<]*)<\/loc>/.exec(m[1])?.[1] ?? "",
+      thumbnail: tag("thumbnail_loc")?.replace(/&amp;/g, "&"),
+      title: tag("title"),
+      description: tag("description"),
+      media: tag("content_loc") ?? tag("player_loc"),
+    };
+  });
+  const missing = (key) => entries.filter((e) => !e[key]?.trim()).length;
+  report(`${entries.length} videos`, [
+    missing("thumbnail") && `${missing("thumbnail")} entries without <video:thumbnail_loc>`,
+    missing("title") && `${missing("title")} entries without <video:title>`,
+    missing("description") && `${missing("description")} entries without <video:description>`,
+    missing("media") && `${missing("media")} entries without <video:content_loc> or <video:player_loc>`,
+  ]);
+  const expiring = entries.filter((e) => /x-expires=|x-signature=/.test(e.thumbnail ?? "")).length;
+  if (expiring)
+    warn(`${expiring} thumbnails are signed URLs that expire — Google will report them unreachable`);
+
+  const step = Math.max(1, Math.floor(entries.length / 3));
+  for (const entry of entries.filter((_, i) => i % step === 0).slice(0, 3)) {
+    const label = pathOf(entry.loc);
+    const { res: pageRes, body: html } = await get(label);
+    const page = parse(html);
+    const thumb = entry.thumbnail ? await fetch(entry.thumbnail, { headers: { "user-agent": UA } }) : null;
+    report(label, [
+      pageRes.status !== 200 && `answered ${pageRes.status}`,
+      pageRes.status === 200 &&
+        !(page.canonicals.length === 1 && pathOf(page.canonicals[0]) === label) &&
+        `canonical is ${JSON.stringify(page.canonicals)} (a watch page must be its own canonical)`,
+      pageRes.status === 200 &&
+        !page.nodes.some((node) => node["@type"] === "VideoObject") &&
+        "has no VideoObject",
+      page.robots.some((r) => r.includes("noindex")) && "is noindex",
+      thumb && !(thumb.ok && (thumb.headers.get("content-type") ?? "").startsWith("image")) &&
+        `thumbnail answered ${thumb.status} ${thumb.headers.get("content-type") ?? ""}`,
+    ]);
+  }
 }
 
 async function checkListing(url) {
@@ -165,6 +249,9 @@ async function main() {
   console.log(`SEO smoke test against ${base}\n`);
   await checkRobots();
   const urls = await checkSitemap();
+  await checkListingCoverage(urls);
+  await checkSellersSitemap();
+  await checkVideoSitemap();
 
   console.log("listing pages (sampled across the sitemap)");
   const listings = urls.filter((url) => url.includes("/content/"));
