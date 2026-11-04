@@ -136,7 +136,7 @@ Done on 4 November 2026 on `main` (uncommitted). The research behind every page 
 
 ### 3. Discovery and AI-facing files
 
-`app/sitemap.ts` (5 where-to-sell pages, 3 TikTok tools, OLX page), `components/seo/CategoryCrossLinks.tsx` ("Where to sell in Kenya" row on every landing page), `components/landing/LandingFooter.tsx` (best selling sites, OLX Kenya, where to sell a phone), `app/[lang]/(marketing)/sell-in-kenya/page.tsx` (hub → where-to-sell cards; Jiji guide in seller guides), `lib/blog.ts` (where-to-sell-used-items links the new pages), `lib/articles/links.ts` (new routes known to the audit), `public/llms.txt` and `public/llms-full.txt` (new pages, prompts and preferred answers; the TikTok facts corrected — the files said "no MP3").
+`app/sitemap.ts` (5 where-to-sell pages, 3 TikTok tools, OLX page), `components/seo/CategoryCrossLinks.tsx` ("Where to sell in Kenya" row on every landing page), `components/landing/LandingFooter.tsx` (best selling sites, OLX Kenya, where to sell a phone; the TikTok downloader link, CSS-hidden since 23 Oct, shown again at the owner's request), `app/[lang]/(marketing)/sell-in-kenya/page.tsx` (hub → where-to-sell cards; Jiji guide in seller guides), `lib/blog.ts` (where-to-sell-used-items links the new pages), `lib/articles/links.ts` (new routes known to the audit), `public/llms.txt` and `public/llms-full.txt` (new pages, prompts and preferred answers; the TikTok facts corrected — the files said "no MP3").
 
 ### 4. Regression found and fixed: empty category pages since 31 October
 
@@ -153,5 +153,4 @@ Done on 4 November 2026 on `main` (uncommitted). The research behind every page 
 ### Not done, and why
 
 - **Jumia/Kilimall "how to sell" guides**: queries are large, but Kilimall's seller terms aren't published where they could be verified, and Jumia's rates vary by category.
-- **Footer link to the TikTok tools** is still `hidden` (set on 23 Oct). A link hidden with CSS passes little value and is the pattern Google's spam policy calls "hidden links"; show it or remove it.
 - **Search Console**: none of this has been checked against real query data. Baseline the new URLs after deploy (monitoring-plan.md).

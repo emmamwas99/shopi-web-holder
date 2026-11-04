@@ -28,7 +28,7 @@ export function LandingFooter({
           { label: label("The feed", "Bidhaa zinazouzwa"), href: "/en/for-you" },
           { label: "Shopi Agent", href: "/en/shopi-agent" },
           { label: label("Sell on Shopi", "Uza kwenye Shopi"), href: "/en/upload" },
-          { label: label("TikTok video downloader", "Pakua video za TikTok"), href: "/en/tiktok-downloader", hidden: true },
+          { label: label("TikTok video downloader", "Pakua video za TikTok"), href: "/en/tiktok-downloader" },
         ],
       },
       {
@@ -88,7 +88,7 @@ export function LandingFooter({
             {homeLinks.map(({ heading, links }) => <div key={heading} className="min-w-0">
               <h3 className="mb-4 text-sm font-semibold text-white">{heading}</h3>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {links.map((item) => <li key={item.href + item.label} className={"hidden" in item && item.hidden ? "hidden" : undefined}><Link href={item.href} className="text-sm leading-snug text-white/75 no-underline hover:text-white">{item.label}</Link></li>)}
+                {links.map((item) => <li key={item.href + item.label}><Link href={item.href} className="text-sm leading-snug text-white/75 no-underline hover:text-white">{item.label}</Link></li>)}
               </ul>
             </div>)}
           </div>
@@ -135,7 +135,6 @@ export function LandingFooter({
                 {
                   label: "TikTok video downloader",
                   href: `/${lang}/tiktok-downloader`,
-                  hidden: true,
                 },
               ],
             },
@@ -229,7 +228,7 @@ export function LandingFooter({
               </h3>
               <ul className="m-0 flex list-none flex-col gap-1 p-0 md:gap-2.5">
                 {links.map((item) => (
-                  <li key={item.label} className={"hidden" in item && item.hidden ? "hidden" : undefined}>
+                  <li key={item.label}>
                     <Link
                       href={item.href}
                       className="inline-block py-1 text-[0.8125rem] text-muted no-underline transition-colors duration-150 hover:text-foreground md:py-0 md:text-sm"
