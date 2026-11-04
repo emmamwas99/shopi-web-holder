@@ -104,9 +104,13 @@ export function LandingNav({ lang }: { lang: Locale }) {
           action={browsePath}
           method="get"
           onSubmit={submitSearch}
-          className="relative order-last flex h-11 w-full min-w-0 items-center gap-2 rounded-full border border-transparent bg-landing-surface pl-3.5 pr-2 transition-colors focus-within:border-primary focus-within:bg-landing-page md:order-none md:max-w-xl md:flex-1"
+          // A filled grey pill on the white header read as background, not
+          // as a field (owner feedback, 4 Nov 2026): a white field with a
+          // visible border and a soft shadow, and a pink border and glow
+          // while typing.
+          className="relative order-last flex h-11 w-full min-w-0 items-center gap-2.5 rounded-full border border-landing-line-strong bg-landing-card pl-4 pr-2 shadow-sm transition-[border-color,box-shadow] focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15 md:order-none md:max-w-xl md:flex-1"
         >
-          <Search size={16} className="shrink-0 text-landing-muted" aria-hidden />
+          <Search size={18} strokeWidth={2.2} className="shrink-0 text-landing-body" aria-hidden />
           {/* 16px text: iOS zooms the page into any focused field set smaller. */}
           <input
             ref={inputRef}
