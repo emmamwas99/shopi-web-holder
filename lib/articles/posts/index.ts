@@ -4,6 +4,7 @@ import { article as carSaleAgreement } from "./car-sale-agreement-in-kenya.ts";
 import { article as dropshippingInKenya } from "./dropshipping-in-kenya.ts";
 import { article as howToBuyAUsedCar } from "./how-to-buy-a-used-car-in-kenya.ts";
 import { article as howToCheckAUsedCar } from "./how-to-check-a-used-car-before-buying-in-kenya.ts";
+import { article as howToSellOnJiji } from "./how-to-sell-on-jiji-kenya.ts";
 import { article as makeMoneyOnline } from "./how-to-make-money-online-in-kenya-without-investment.ts";
 import { article as iphone13Price } from "./iphone-13-price-in-kenya.ts";
 import { article as logbookTransfer } from "./logbook-transfer-in-kenya.ts";
@@ -32,4 +33,5 @@ export const POSTS: Article[] = [
   makeMoneyOnline,
   referAndEarn,
   dropshippingInKenya,
+  howToSellOnJiji,
 ];

@@ -8,6 +8,7 @@ import { GuideLinks } from "@/components/seo/GuideLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
+import { whereToSellPages, whereToSellPath } from "@/lib/seo/where-to-sell";
 import { faqSchema, jsonLd, marketplaceSchema } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ lang: string }> };
@@ -254,13 +255,52 @@ export default async function SellInKenyaPage({ params }: Props) {
           </div>
         </section>
 
+        {/* Hub → spokes: this page is the breadcrumb parent of every
+            /where-to-sell/{item} page. */}
+        <section className="bg-surface px-5 py-16">
+          <div className="mx-auto max-w-190">
+            <p className="mb-3 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
+              Where to sell
+            </p>
+            <h2 className="mb-5 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
+              Where to sell, item by item
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {whereToSellPages.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={`/${safeLang}${whereToSellPath(item.slug)}`}
+                  className="rounded-lg border border-border bg-elevated p-4 no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+                >
+                  <span className="block font-semibold text-foreground">{item.h1}</span>
+                  <span className="mt-1 block text-[0.88rem] leading-[1.6] text-muted">
+                    {item.cardLine}
+                  </span>
+                </Link>
+              ))}
+              <Link
+                href={`/${safeLang}/marketplace-alternatives-kenya`}
+                className="rounded-lg border border-border bg-elevated p-4 no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+              >
+                <span className="block font-semibold text-foreground">
+                  Best online selling sites in Kenya
+                </span>
+                <span className="mt-1 block text-[0.88rem] leading-[1.6] text-muted">
+                  Jiji, PigiaMe, Facebook Marketplace, Jumia, Kilimall and Shopi compared.
+                </span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <GuideLinks
           lang={safeLang}
           heading="Seller guides"
-          intro="Go deeper before you post: where each kind of used item sells best in Kenya, and every step of selling on Shopi from first listing to first sale."
+          intro="Go deeper before you post: where each kind of used item sells best in Kenya, every step of selling on Shopi from first listing to first sale, and how selling on Jiji works if you list there too."
           slugs={[
             "where-to-sell-used-items-in-kenya",
             "how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
+            "how-to-sell-on-jiji-kenya",
             "how-nairobi-local-sellers-are-winning-online-with-short-videos",
           ]}
         />

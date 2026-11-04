@@ -10,7 +10,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "seo:audit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seo-content-audit.mjs",
-    "seo:smoke": "node scripts/seo-smoke.mjs"
+    "seo:smoke": "node scripts/seo-smoke.mjs",
+    "seo:keywords": "node scripts/seo-autocomplete.mjs"
   },
   "dependencies": {
     "@apollo/client": "^4.2.0",

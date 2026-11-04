@@ -105,3 +105,53 @@ Smoke-test notes:
 | `/en/explore/not-a-category/nothing` | **200**, indexable | **404** |
 | `/en/stores` | 2 H1s, 1.33 MB HTML | 1 H1, 0.68 MB HTML |
 | `/sitemap.xml` | 1,261 URLs; 978 of 1,520 listings; `/for-you` listed; about 140 generation-time `lastmod`s | 2,015 URLs; 1,520 of 1,520 listings; 43 category pages; no `/for-you`; `lastmod` only on dated content |
+
+---
+
+# November 2026: marketplace, "where to sell" and TikTok tools
+
+Done on 4 November 2026 on `main` (uncommitted). The research behind every page is in [keyword-map.md](keyword-map.md) § "Marketplaces, competitors and 'where to sell'" and § "TikTok tools", with the evidence in [keywords-2026-11.csv](keywords-2026-11.csv).
+
+### 1. Comparison, competitor and seller pages
+
+| File | Change |
+|---|---|
+| `lib/seo/marketplace-platforms.ts` | **New.** Sourced facts (checked 4 Nov 2026) for Shopi, Jiji, PigiaMe, Facebook Marketplace, Jumia, Kilimall and WhatsApp/social selling, plus the OLX Kenya history. No prices or commission rates; audience-size and quality claims are banned in the header. |
+| `app/[lang]/(marketing)/marketplace-alternatives-kenya/page.tsx` | Rewritten as **"Best Online Selling Sites & Marketplaces in Kenya (2026)"**: answer-first intro, quick picks, comparison table, platform cards with sources, free-ads, apps-like-Jiji/Jumia, Facebook Marketplace and OLX sections, 10-question FAQ, `ItemList` of the platforms. URL kept. |
+| `lib/seo/competitor-alternatives.ts`, `components/seo/CompetitorAlternativePage.tsx` | Jiji page retitled "Apps & Sites Like Jiji in Kenya"; Jiji and PigiaMe facts re-checked (Jiji's free-ad limit and **Safe Deal** are new); "is Jiji free / legit", "how does PigiaMe work / is it legit" answered factually; new "Other apps like…" section; canonical and breadcrumbs now use `canonicalUrl()` (they built `/sw` URLs by hand). The "Shopi has no jobs" lines were removed: the taxonomy has a Jobs & Gigs category. |
+| `lib/articles/posts/how-to-sell-on-jiji-kenya.ts` | **New guide** (selling-guide, 1,527 words) from Jiji's own help pages, linked as sources. Passes `npm run seo:audit`. |
+| `app/[lang]/(marketing)/olx-kenya-alternative/page.tsx` | **New.** What happened to OLX Kenya, where each category goes now, live listings. ISR, daily. |
+| `lib/seo/where-to-sell.ts`, `app/[lang]/(marketing)/where-to-sell/[item]/page.tsx` | **New** `/where-to-sell/{phones, laptops, electronics, furniture, farm-produce}`: channels compared (Shopi included, with when others are better), prepare/wipe/price steps, getting paid safely, FAQ, live listings filtered for relevance (misfiled and test listings dropped by title and price). ISR, daily. |
+| `features/discover/queries/recentListings.ts` | `fetchRecentListingsAcross()` — newest listings over several subcategories, interleaved and de-duplicated. |
+
+### 2. TikTok tools
+
+| File | Change |
+|---|---|
+| `app/api/tiktok-save/route.ts`, `lib/tiktokSaver.ts` | Lookup returns `kind` (video/photo), the H.264 video, the HEVC "HD" video when it differs, the sound as MP3 and photo-mode images; `?download=video|hd|audio|image&i=` streams one file as a fallback. **Bug fixed:** photo posts used to "download" their soundtrack as a `.mp4`; the composer's `download=1` now answers 422 for them instead of creating a picture-less audio post (its contract is otherwise unchanged, including 502 on every lookup failure, which it retries). "Post not found" is now a 404 for the tool, with its own message. |
+| `components/tools/TiktokSaverTool.tsx`, `components/tools/saverDownloads.ts` | Modes (video / MP3 / photos), Paste button and auto-lookup on paste, share text with a link in it accepted, specific errors, progress, MP4 + HD + MP3, photo grid with per-photo save and **ZIP of all photos** (dependency-free STORE writer, verified with `unzip -t` and byte comparison). **Downloads go browser → TikTok CDN directly** (CORS `*`), so file bytes no longer stream through a Vercel function; the API stream is only the fallback. Native URL validation turned off (it rejected pasted share text). |
+| `next.config.ts` | CSP `connect-src` allows TikTok's CDN hosts (and tikwm, whose relative paths redirect there). Locale-free redirects for the new routes. |
+| `lib/seo/tiktok-tools.ts`, `components/tools/TiktokToolPage.tsx`, `components/tools/tiktokToolOgImage.tsx` | The three tool pages from one data module and one layout, each with its own steps, sections, FAQ, HowTo/WebApplication/FAQ schema and OG card. **New:** `/tiktok-mp3-downloader`, `/tiktok-photo-downloader`. `/tiktok-downloader` retitled for HD, with an MP4-vs-HD table, "why won't it download", and "is it safe". |
+| `lib/analytics.ts` | `trackTiktokSaver()` — `tiktok_saver_lookup` and `tiktok_saver_download` events (mode, kind, asset, outcome, error) to GA4 via the dataLayer. |
+
+### 3. Discovery and AI-facing files
+
+`app/sitemap.ts` (5 where-to-sell pages, 3 TikTok tools, OLX page), `components/seo/CategoryCrossLinks.tsx` ("Where to sell in Kenya" row on every landing page), `components/landing/LandingFooter.tsx` (best selling sites, OLX Kenya, where to sell a phone), `app/[lang]/(marketing)/sell-in-kenya/page.tsx` (hub → where-to-sell cards; Jiji guide in seller guides), `lib/blog.ts` (where-to-sell-used-items links the new pages), `lib/articles/links.ts` (new routes known to the audit), `public/llms.txt` and `public/llms-full.txt` (new pages, prompts and preferred answers; the TikTok facts corrected — the files said "no MP3").
+
+### 4. Regression found and fixed: empty category pages since 31 October
+
+`/explore/{category}/{subcategory}` became ISR on 31 Oct (`generateStaticParams` returning `[]`, commit `30fd269`, the Vercel CPU fix). `DiscoverPage` reads `useSearchParams()`, so a static render bails out to the Suspense fallback — and the fallback was a bare skeleton. Production HTML for every category page therefore had **no H1 and no listing links** (`npm run seo:smoke` failed on `/en/explore/home-living/sofas`), undoing F03/F04. The dev server didn't show it because it renders per request. The fallback now renders the same H1 and the server-fetched cards (`DiscoverGridCard`), keeping ISR and its CPU savings.
+
+### Validation
+
+- `tsc` clean; ESLint 0 errors on every changed file; `npm run seo:audit` 0 errors (5 warnings, all pre-existing).
+- `next build`: every new or changed page is ● (prerendered; seller and OLX pages ISR 1 day). No new ƒ page routes. The OG image routes are ƒ, like every OG card on the site.
+- Rendered HTML (production build): one H1, self-canonical (`/sw` → `/en`), valid JSON-LD, FAQ in schema matches the page; seller pages carry live listing links; `/en/where-to-sell/nope` → 404; all new URLs in a well-formed sitemap.
+- TikTok API against real posts: video (MP4 + HEVC HD + MP3), photo post (8 JPEGs + MP3), composer contract (`download=1` → video with `X-Tiktok-Meta`; photo → 422), fallbacks per asset, 400/404 errors.
+- Browser at 390×844 (`agent-browser`): lookup from pasted share text, result card, photo grid; direct CDN fetches succeed under the real CSP header (2.9 MB MP4, 2.0 MB HD, 87 KB MP3, 3 JPEGs), no console errors.
+
+### Not done, and why
+
+- **Jumia/Kilimall "how to sell" guides**: queries are large, but Kilimall's seller terms aren't published where they could be verified, and Jumia's rates vary by category.
+- **Footer link to the TikTok tools** is still `hidden` (set on 23 Oct). A link hidden with CSS passes little value and is the pattern Google's spam policy calls "hidden links"; show it or remove it.
+- **Search Console**: none of this has been checked against real query data. Baseline the new URLs after deploy (monitoring-plan.md).

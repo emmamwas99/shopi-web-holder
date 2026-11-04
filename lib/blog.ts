@@ -731,6 +731,18 @@ export const blogPosts: BlogPost[] = [
     ],
     relatedLinks: [
       {
+        label: "Where to sell your phone in Kenya",
+        url: "/where-to-sell/phones",
+        description:
+          "Marketplaces, phone shops, trade-ins and repairers compared, and how to wipe the phone before you sell.",
+      },
+      {
+        label: "Best online selling sites in Kenya",
+        url: "/marketplace-alternatives-kenya",
+        description:
+          "Jiji, PigiaMe, Facebook Marketplace, Jumia, Kilimall and Shopi side by side: free ads, fees and who each suits.",
+      },
+      {
         label: "Sell online in Kenya",
         url: "/sell-in-kenya",
         description:

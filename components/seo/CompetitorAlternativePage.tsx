@@ -4,6 +4,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
 import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
+import { canonicalUrl } from "@/lib/metadata";
 import {
   breadcrumbSchema,
   faqSchema,
@@ -33,7 +34,7 @@ export function CompetitorAlternativePage({
   lang: string;
   dict: Dictionary;
 }) {
-  const canonical = `${siteConfig.url}/${lang}/${page.slug}`;
+  const canonical = canonicalUrl(lang, `/${page.slug}`);
   const checked = new Date(page.checkedOn).toLocaleDateString("en-KE", {
     day: "numeric",
     month: "long",
@@ -71,10 +72,10 @@ export function CompetitorAlternativePage({
             webPageSchema,
             marketplaceSchema,
             breadcrumbSchema([
-              { name: "Home", url: `${siteConfig.url}/${lang}` },
+              { name: "Home", url: canonicalUrl(lang, "") },
               {
-                name: "Online marketplaces in Kenya",
-                url: `${siteConfig.url}/${lang}/marketplace-alternatives-kenya`,
+                name: "Best online selling sites in Kenya",
+                url: canonicalUrl(lang, "/marketplace-alternatives-kenya"),
               },
               { name: `${page.competitor} alternative`, url: canonical },
             ]),
@@ -165,6 +166,33 @@ export function CompetitorAlternativePage({
           </section>
 
           <section className="mb-14">
+            <h2 className="mb-5 font-display text-[1.5rem] font-bold text-foreground">
+              {page.otherOptions.heading}
+            </h2>
+            <ul className="flex flex-col gap-3">
+              {page.otherOptions.items.map((item) => (
+                <li key={item.name} className="rounded-lg border border-border bg-elevated p-4">
+                  <h3 className="mb-1 font-semibold text-foreground">
+                    {item.path ? (
+                      <Link href={`/${lang}${item.path}`} className="text-foreground underline">
+                        {item.name}
+                      </Link>
+                    ) : (
+                      item.name
+                    )}
+                  </h3>
+                  <p className="text-[0.95rem] leading-[1.65] text-muted">{item.body}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-[0.98rem]">
+              <Link href={`/${lang}/marketplace-alternatives-kenya`} className="text-primary underline">
+                Every option side by side: the best online selling sites in Kenya
+              </Link>
+            </p>
+          </section>
+
+          <section className="mb-14">
             <h2 className="mb-6 font-display text-[1.5rem] font-bold text-foreground">
               {page.steps.heading}
             </h2>
@@ -209,12 +237,29 @@ export function CompetitorAlternativePage({
                   </Link>
                 </li>
               ))}
+              {page.guide ? (
+                <li>
+                  <Link href={`/${lang}${page.guide.path}`} className="text-primary underline">
+                    {page.guide.label}
+                  </Link>
+                </li>
+              ) : null}
               <li>
                 <Link
                   href={`/${lang}/marketplace-alternatives-kenya`}
                   className="text-primary underline"
                 >
-                  All the ways Kenyans buy and sell online, compared
+                  Best online selling sites in Kenya, compared
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/olx-kenya-alternative`} className="text-primary underline">
+                  What happened to OLX Kenya
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/where-to-sell/phones`} className="text-primary underline">
+                  Where to sell your phone in Kenya
                 </Link>
               </li>
               <li>

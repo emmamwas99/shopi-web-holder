@@ -134,3 +134,26 @@ export function trackPostPublished(
   trackEvent("post_published", properties);
   metaPixel("trackCustom", "PostPublished", { surface });
 }
+
+/**
+ * TikTok saver usage on the TikTok tool pages. `mode` is the page the visitor
+ * is on (video, MP3 or photos); `asset` is what they downloaded. Lookups that
+ * fail carry the error kind, so a spike in "unavailable" or "busy" shows up
+ * before anyone reports it.
+ */
+export function trackTiktokSaver(
+  event: "tiktok_saver_lookup" | "tiktok_saver_download",
+  properties: {
+    mode: string;
+    kind?: string;
+    asset?: string;
+    outcome: "success" | "error";
+    error?: string;
+  },
+) {
+  const clean: AnalyticsProperties = {};
+  for (const [key, value] of Object.entries(properties)) {
+    if (value !== undefined) clean[key] = value;
+  }
+  trackEvent(event, clean);
+}

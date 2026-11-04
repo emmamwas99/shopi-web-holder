@@ -3,6 +3,7 @@ import { categoryPages } from "../seo/category-hubs.ts";
 import { searchIntentPages } from "../seo/search-intent-pages.ts";
 import { sellCarLocations } from "../seo/sell-car-locations.ts";
 import { sellCarPages } from "../seo/sell-car-pages.ts";
+import { whereToSellPages } from "../seo/where-to-sell.ts";
 import { CATEGORIES } from "./categories.ts";
 import { ALL_ARTICLES } from "./registry.ts";
 import type { LinkTarget } from "./types.ts";
@@ -38,6 +39,7 @@ const STATIC_PATHS = new Set<string>([
   "/for-you",
   "/jiji-alternative-kenya",
   "/marketplace-alternatives-kenya",
+  "/olx-kenya-alternative",
   "/online-selling-jobs-kenya",
   "/phones-electronics-kenya",
   "/pigiame-alternative-kenya",
@@ -55,6 +57,8 @@ const STATIC_PATHS = new Set<string>([
   "/shopi-agent",
   "/stores",
   "/tiktok-downloader",
+  "/tiktok-mp3-downloader",
+  "/tiktok-photo-downloader",
   "/upload",
 ]);
 
@@ -91,6 +95,8 @@ export function isKnownInternalPath(path: string): boolean {
       return sellCarLocations.some((location) => location.slug === slug);
     case "marketplace":
       return COUNTIES.some((county) => county.slug === slug);
+    case "where-to-sell":
+      return whereToSellPages.some((page) => page.slug === slug);
     default:
       return false;
   }

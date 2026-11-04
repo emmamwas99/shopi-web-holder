@@ -88,3 +88,33 @@ export async function fetchRecentListings(
     return [];
   }
 }
+
+/**
+ * Newest listings across several subcategories, interleaved so one busy
+ * subcategory can't fill the list, and de-duplicated. For seller pages whose
+ * item spans several level-2 categories (furniture, electronics, produce).
+ */
+export async function fetchRecentListingsAcross(
+  subcategories: string[],
+  total = 8,
+): Promise<RecentListing[]> {
+  if (subcategories.length === 0) return [];
+  const perSub = Math.max(3, Math.ceil((total * 1.5) / subcategories.length));
+  const batches = await Promise.all(
+    subcategories.map((subcategory) =>
+      fetchRecentListings(perSub, undefined, undefined, { subcategory }),
+    ),
+  );
+  const seen = new Set<string>();
+  const merged: RecentListing[] = [];
+  for (let i = 0; i < perSub; i++) {
+    for (const batch of batches) {
+      const listing = batch[i];
+      if (listing && !seen.has(listing.id)) {
+        seen.add(listing.id);
+        merged.push(listing);
+      }
+    }
+  }
+  return merged.slice(0, total);
+}

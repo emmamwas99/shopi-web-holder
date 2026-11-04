@@ -39,6 +39,7 @@ export function LandingFooter({
           { label: label("Search", "Tafuta"), href: "/en/search" },
           { label: label("Sell in Kenya", "Uza Kenya"), href: "/en/sell-in-kenya" },
           { label: label("Sell a car", "Uza gari"), href: "/en/sell-car-kenya" },
+          { label: label("Where to sell a phone", "Mahali pa kuuza simu"), href: "/en/where-to-sell/phones" },
           { label: label("Property", "Ardhi na nyumba"), href: "/en/property-for-sale-kenya" },
           { label: label("Beauty & cosmetics", "Urembo"), href: "/en/beauty-cosmetics-kenya" },
           { label: label("Phones & electronics", "Simu na vifaa vya elektroniki"), href: "/en/phones-electronics-kenya" },
@@ -54,9 +55,10 @@ export function LandingFooter({
         links: [
           { label: label("About", "Kutuhusu"), href: "/en/about" },
           { label: label("FAQ", "Maswali"), href: "/en/faq" },
-          { label: label("Compare marketplaces", "Linganisha masoko"), href: "/en/marketplace-alternatives-kenya" },
+          { label: label("Best selling sites in Kenya", "Tovuti bora za kuuza Kenya"), href: "/en/marketplace-alternatives-kenya" },
           { label: "Jiji alternative", href: "/en/jiji-alternative-kenya" },
           { label: "PigiaMe alternative", href: "/en/pigiame-alternative-kenya" },
+          { label: "OLX Kenya", href: "/en/olx-kenya-alternative" },
           { label: "Blog", href: "/en/blog" },
           { label: label("Online selling jobs", "Kazi za kuuza mtandaoni"), href: "/en/online-selling-jobs-kenya" },
         ],
@@ -146,6 +148,10 @@ export function LandingFooter({
                 { label: "Sell in Kenya", href: `/${lang}/sell-in-kenya` },
                 { label: "Sell a car", href: `/${lang}/sell-car-kenya` },
                 {
+                  label: "Where to sell a phone",
+                  href: `/${lang}/where-to-sell/phones`,
+                },
+                {
                   label: "Property",
                   href: `/${lang}/property-for-sale-kenya`,
                 },
@@ -177,7 +183,7 @@ export function LandingFooter({
                 { label: "About", href: `/${lang}/about` },
                 { label: "FAQ", href: `/${lang}/faq` },
                 {
-                  label: "Compare marketplaces",
+                  label: "Best selling sites in Kenya",
                   href: `/${lang}/marketplace-alternatives-kenya`,
                 },
                 {
@@ -188,6 +194,7 @@ export function LandingFooter({
                   label: "PigiaMe alternative",
                   href: `/${lang}/pigiame-alternative-kenya`,
                 },
+                { label: "OLX Kenya", href: `/${lang}/olx-kenya-alternative` },
                 { label: "Blog", href: `/${lang}/blog` },
                 {
                   label: "Online selling jobs",

@@ -78,6 +78,20 @@ const connectSrc = [
   // reports a CSP violation on every page view.
   "https://static.cloudflareinsights.com",
   "https://cloudflareinsights.com",
+  // TikTok tool pages: the saver downloads videos, sounds and photos straight
+  // from TikTok's CDN (CORS *, checked 4 Nov 2026) so the bytes never pass
+  // through a billed function. tikwm's relative media paths 302 to the CDN,
+  // and CSP checks every redirect hop. A host missing from this list isn't
+  // fatal: the tool falls back to streaming through /api/tiktok-save.
+  "https://*.tiktokcdn.com",
+  "https://*.tiktokcdn-us.com",
+  "https://*.tiktokcdn-eu.com",
+  "https://*.tiktokv.com",
+  "https://*.tiktokv.us",
+  "https://*.tiktokv.eu",
+  "https://*.ibyteimg.com",
+  "https://*.byteoversea.com",
+  "https://*.tikwm.com",
 ]
   .filter(Boolean)
   .join(" ");
@@ -221,6 +235,8 @@ const nextConfig: NextConfig = {
       "marketplace/:county",
       "jiji-alternative-kenya",
       "pigiame-alternative-kenya",
+      "olx-kenya-alternative",
+      "where-to-sell/:item",
       "sell-in-kenya",
       "sell-car-kenya",
       "sell-car-kenya/:city",
@@ -230,6 +246,8 @@ const nextConfig: NextConfig = {
       "beauty-cosmetics-kenya",
       "phones-electronics-kenya",
       "tiktok-downloader",
+      "tiktok-mp3-downloader",
+      "tiktok-photo-downloader",
       "privacy-policy",
       "terms-and-conditions",
       "cookies",

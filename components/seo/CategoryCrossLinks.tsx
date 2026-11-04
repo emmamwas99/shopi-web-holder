@@ -4,6 +4,7 @@ import {
   searchIntentPath,
   topSearchIntentPages,
 } from "@/lib/seo/search-intent-pages";
+import { whereToSellPages, whereToSellPath } from "@/lib/seo/where-to-sell";
 
 // Re-exported so existing imports (BrowseHub) keep working; the data itself
 // lives in lib/seo/category-hubs.ts, where the blog's link resolver reads it.
@@ -67,6 +68,24 @@ export function CategoryCrossLinks({
               {page.label} for sale
             </Link>
           ))}
+        </div>
+        {/* Seller pages: the other half of the marketplace. Without this
+            row they'd be reachable only from the sitemap and each other. */}
+        <h2 className="mt-12 mb-5 font-display text-[clamp(1.25rem,2.4vw,1.7rem)] font-bold tracking-normal text-foreground">
+          Where to sell in Kenya
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          {whereToSellPages
+            .filter((page) => whereToSellPath(page.slug) !== currentPath)
+            .map((page) => (
+              <Link
+                key={page.slug}
+                href={`/${lang}${whereToSellPath(page.slug)}`}
+                className="rounded-full border border-border bg-elevated px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+              >
+                {page.h1.replace(/ in Kenya$/, "")}
+              </Link>
+            ))}
         </div>
       </div>
     </section>

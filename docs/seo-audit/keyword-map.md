@@ -82,3 +82,39 @@ Added 21 October 2026. **Source:** Google autocomplete with `gl=ke`. Seeds that 
 | Swahili | "uza gari", "uza nunua gari", "gari za mkopo", "gari transfer fees" | Mixed | `/sw` only translates `/` and `/faq` (policy in `lib/metadata.ts`). Validate demand in Search Console first |
 
 **Facts that changed, and where they now live.** NTSA closed TIMS and moved its services to eCitizen from 2 January 2024. The e-Logbook replaced paper logbooks on 10 June 2026. Every car page used to say "NTSA TIMS portal". `SELLER_PAPERWORK` in `lib/seo/sell-car-pages.ts` is now the single list for the hub and town pages, and the source notes sit at the top of `lib/articles/posts/logbook-transfer-in-kenya.ts`. Re-check both at each content review.
+
+## Marketplaces, competitors and "where to sell": what Kenyans type, November 2026
+
+Added 4 November 2026. **Source:** Google autocomplete with `gl=ke`, 55 seeds expanded a–z (1,485 queries, 8,335 distinct suggestions), seeds in [`seeds/marketplace.txt`](seeds/marketplace.txt), clustered evidence in [`keywords-2026-11.csv`](keywords-2026-11.csv). Re-run with `npm run seo:keywords -- docs/seo-audit/seeds/marketplace.txt out.json`. **Breadth** below is how many of the queries surfaced a suggestion: a measure of how many ways people reach it, not search volume.
+
+| Cluster | What people type (examples, breadth) | Page that answers it |
+|---|---|---|
+| Which site is best | "best online marketplace in kenya" (21), "best online selling sites / platforms in kenya" (15 each), "best selling platform in kenya" (15), "best marketplace in kenya" (13), "best selling websites in kenya" (12), "best online selling apps in kenya" (9) | `/marketplace-alternatives-kenya`, now **"Best Online Selling Sites & Marketplaces in Kenya (2026)"**: a sourced comparison of Jiji, PigiaMe, Facebook Marketplace, Jumia, Kilimall, WhatsApp/social and Shopi with a table, quick picks and an ItemList. URL kept for its existing links. |
+| Free ads | "free ads sites in kenya" (17), "free advertising sites in kenya" (14), "free classifieds kenya" (11), "free adverts kenya" (10) | Same page, § Free classified ads sites in Kenya |
+| Apps like… | "apps like jiji kenya" (19), "apps like jumia in kenya" (15), "apps like jiji" (14), "sites like jiji kenya" (6), "jiji alternative in kenya" (5) | `/jiji-alternative-kenya`, retitled **"Apps & Sites Like Jiji in Kenya"** (people type "apps like" more than "alternative"); "apps like Jumia" is a section of the comparison page |
+| Selling on Jiji | "how to sell on jiji kenya" (23), "… for free" (22), "how to sell things in jiji" (20), "how to post on jiji kenya" (19), "how much does it cost to post on jiji" (16), "how to become a seller on jiji" (16) | **New** guide `/blog/how-to-sell-on-jiji-kenya`, written from Jiji's own help pages (steps, the per-category free-ad limit, TOP/Boost/Pro Sales, Safe Deal, Verified ID) |
+| Trust | "is jiji legit" (19), "is jiji kenya legit" (15), "is jiji safe" (13), "is jiji free" (8), "is pigiame legit" (4) | Factual answers on the Jiji and PigiaMe pages and in the Jiji guide (established company; took over OLX Kenya in 2019; risk comes from individual users) — no safety or quality judgments |
+| OLX | "olx kenya app" (14), "olx kenya phones" (10), "olx kenya cars for sale" (8), "olx kenya furniture" (7), "olx kenya jobs" (7) | **New** `/olx-kenya-alternative`: what happened (office closed 2018, sold to Jiji 2019, olx.co.ke → olx.com), where each category goes now, live listings |
+| Facebook Marketplace | "is facebook marketplace available in kenya" (21), "facebook marketplace kenya cars" (9) | Comparison page § Is Facebook Marketplace available in Kenya? (yes, rolled out from 2020) |
+| Selling on Jumia / Kilimall | "how to sell on jumia kenya" (25), "how to sell on jumia for free" (20), "is selling on jumia profitable" (15), "how to sell on kilimall kenya" (13) | Covered by the comparison page (requirements, commission, who handles delivery). **No dedicated guides**: Kilimall's seller fees and requirements aren't published where we could verify them |
+| Where to sell an item | phones lead ("where to sell my phone in kenya", "… in nairobi", "used / second hand / dead / broken phones"), then laptops ("… my laptop in nairobi", "dead / old laptops", Kisumu, Eldoret), a long farm tail (hass avocado, chillies, honey, eggs, rabbits, broilers, kienyeji chicken, maize, dorper sheep, pigs…), used furniture and electronics in Nairobi | **New** `/where-to-sell/{phones, laptops, electronics, furniture, farm-produce}`: every channel compared (Shopi included, and when another channel is better), how to prepare and price the item, getting paid safely, live asking prices |
+| Generic how-to | "how to sell online in kenya" (49), "how to sell products / goods / things online in kenya" (13/12/10) | `/sell-in-kenya` (title unchanged: it was set from Search Console evidence; it now links every where-to-sell page) |
+
+**Left out on purpose:** gold, silver, old coins, gemstones, scrap metal and the like ("where to sell gold in kenya") — regulated or not something Shopi can honestly help sell. Swahili seeds ("uza", "jinsi ya kuuza", "soko la") returned almost nothing commercial; the `/sw` policy in `lib/metadata.ts` stays.
+
+**Facts and their sources** live in `lib/seo/marketplace-platforms.ts` and `lib/seo/competitor-alternatives.ts` (checked 4 Nov 2026). Notable change since September: Jiji now runs **Safe Deal** (buyer pays through Jiji; held until 24 h after delivery; sellers need an active Boost Package), so no page may say Jiji has no payment protection.
+
+## TikTok tools: what people type, November 2026
+
+Same method, 27 seeds (729 queries, 6,198 suggestions), seeds in [`seeds/tiktok.txt`](seeds/tiktok.txt). Kenya-specific and Swahili queries are tiny ("tiktok download kenya" 4, "pakua video za tiktok" 2); the searches are global in shape.
+
+| Cluster | Variants / breadth | Examples | Page |
+|---|---|---|---|
+| Video without watermark, HD, MP4 | 1,984 / 2,691 | "tiktok downloader without watermark", "download tiktok video without watermark hd", "tiktok video link downloader" | `/tiktok-downloader` — retitled for HD; MP4 + HEVC HD + MP3 |
+| MP3, audio, sound | 574 / 890 | "tiktok to mp3 converter", "how to download tiktok to mp3", "how do i download a tiktok sound", "tiktok audio download for ringtone" | **New** `/tiktok-mp3-downloader` |
+| Photos, slideshows | 509 / 642 | "tiktok slideshow downloads" (15), "tiktok picture download", "download tiktok photos", "tiktok photo download without watermark hd" | **New** `/tiktok-photo-downloader` (JPGs one by one or as a ZIP, plus the sound) |
+| Device | 308 / 388 | "tiktok videos download without watermark iphone", "download tiktok videos on pc", "save to gallery without posting" | Device sections and FAQs on each page |
+| Safety, "why not downloading" | 55 / 97 | "why is tiktok not downloading" (17), "is it safe to download tiktok videos", "is musicallydown safe" | Sections on the video page (creator turned off downloads, private, wrong link, slideshow) and "is it safe" lists |
+| Competitor brands | 851 / 1,054 | "tikmate", "musicallydown", "ssstik" | Not targeted: navigational. No comparison pages naming them |
+
+**Tool facts behind the copy** (checked 4 Nov 2026 against the lookup service): `play` is H.264 (576×1024 in the test), `hdplay` is HEVC (720×1280), the MP3 is 64 kbps as TikTok serves it, photo posts return 1080–1440 px JPEGs, and every media URL sends `Access-Control-Allow-Origin: *`. Don't claim "320 kbps", "1080p" or "4K".

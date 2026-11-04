@@ -25,6 +25,8 @@ import {
   sellCarLocationPath,
   sellCarLocations,
 } from "@/lib/seo/sell-car-locations";
+import { tiktokToolPages, tiktokToolPath } from "@/lib/seo/tiktok-tools";
+import { whereToSellPages, whereToSellPath } from "@/lib/seo/where-to-sell";
 
 /**
  * The app is served under /[lang], but only some pages are translated (see
@@ -381,6 +383,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     { path: "/jiji-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
     { path: "/pigiame-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
+    // People still search "olx kenya" years after it left (keyword-map.md).
+    { path: "/olx-kenya-alternative", changeFrequency: "monthly", priority: 0.75 },
     { path: "/about", changeFrequency: "monthly", priority: 0.7 },
     // Not /for-you: it's a personalised feed, and every desktop user agent —
     // Bingbot and Googlebot's desktop crawler included — is redirected from it
@@ -409,7 +413,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
-    { path: "/tiktok-downloader", changeFrequency: "monthly", priority: 0.7 },
+    // The TikTok tools (video, MP3, photos) come from tiktokToolPages below.
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/privacy-policy", changeFrequency: "yearly", priority: 0.3 },
     { path: "/terms-and-conditions", changeFrequency: "yearly", priority: 0.3 },
@@ -458,6 +462,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: langs("en", path),
       changeFrequency: "weekly",
       priority: 0.88,
+      alternates: alternates(path),
+    };
+  });
+
+  // "Where to sell {item}" seller pages. Seller intent, like the car pages:
+  // a seller converting creates the supply the buyer pages need.
+  const whereToSellEntries: MetadataRoute.Sitemap = whereToSellPages.map((page) => {
+    const path = whereToSellPath(page.slug);
+    return {
+      url: langs("en", path),
+      changeFrequency: "weekly",
+      priority: 0.88,
+      alternates: alternates(path),
+    };
+  });
+
+  // One entry per TikTok tool page; each does a different job (video, MP3,
+  // photos) and targets its own searches (lib/seo/tiktok-tools.ts).
+  const tiktokToolEntries: MetadataRoute.Sitemap = tiktokToolPages.map((page) => {
+    const path = tiktokToolPath(page.slug);
+    return {
+      url: langs("en", path),
+      changeFrequency: "monthly",
+      priority: 0.7,
       alternates: alternates(path),
     };
   });
@@ -613,6 +641,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...searchIntentEntries,
     ...sellCarEntries,
     ...sellCarLocationEntries,
+    ...whereToSellEntries,
+    ...tiktokToolEntries,
     ...browseEntries,
     ...blogEntries,
     ...sellerEntries,

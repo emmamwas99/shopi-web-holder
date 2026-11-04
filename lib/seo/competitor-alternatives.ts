@@ -3,18 +3,23 @@
  *
  * People who type "jiji alternative" or "sites like pigiame" are comparing, not
  * browsing — the generic /marketplace-alternatives-kenya hub can't rank for
- * each named query, so each gets its own page from this data.
+ * each named query, so each gets its own page from this data. Google
+ * autocomplete for Kenya (gl=ke, 4 Nov 2026) shows "apps like jiji" is typed
+ * more than "jiji alternative", and that people also ask "is jiji free" and
+ * "is jiji legit", so the Jiji page leads with the first and answers both.
  *
  * Rules for everything written about a competitor, because a wrong claim is a
  * legal problem and a credibility problem at once:
- * - Only what the competitor says about itself on its own site, with the page
- *   linked in `sources` and the date it was checked. No prices (they change),
- *   no claims about safety, audience size or quality.
+ * - Only what the competitor says about itself on its own site (or, for
+ *   company history, a named news source), with the page linked in `sources`
+ *   and the date it was checked. No prices (they change), no claims about
+ *   safety, audience size or quality.
  * - Every comparative point is a fact about Shopi, checkable on Shopi.
  * - Say plainly when the competitor is the better fit. It is true, it builds
  *   trust, and answer engines quote balanced sources over sales copy.
  * Names are used descriptively only; no logos. Re-check `checkedOn` sources
- * when refreshing the page (see README "Blog content: SEO checks").
+ * when refreshing the page (see README "Blog content: SEO checks"), together
+ * with lib/seo/marketplace-platforms.ts, which states the same facts.
  */
 
 export type CompetitorAlternative = {
@@ -32,8 +37,15 @@ export type CompetitorAlternative = {
   differencesHeading: string;
   differences: { title: string; body: string }[];
   whenCompetitorFits: { heading: string; points: string[]; closing: string };
+  /** Other places people compare against, for "apps like X" searches. */
+  otherOptions: {
+    heading: string;
+    items: { name: string; body: string; path?: string }[];
+  };
   steps: { heading: string; items: { title: string; body: string }[] };
   faq: { q: string; a: string }[];
+  /** A how-to guide about selling on the competitor, when there is one. */
+  guide?: { label: string; path: string };
   keywords: string[];
 };
 
@@ -41,21 +53,23 @@ const JIJI: CompetitorAlternative = {
   slug: "jiji-alternative-kenya",
   competitor: "Jiji",
   competitorUrl: "https://jiji.co.ke",
-  checkedOn: "2026-09-15",
-  title: "Jiji Alternative in Kenya: Sell Free, No Commission",
+  checkedOn: "2026-11-04",
+  title: "Apps & Sites Like Jiji in Kenya — Free Jiji Alternative",
   metaDescription:
-    "Looking for a Jiji alternative in Kenya? Post free on Shopi from one photo, reach buyers near you and chat directly. No commission, no listing fees.",
+    "Apps and sites like Jiji in Kenya: PigiaMe, Facebook Marketplace and Shopi, a free alternative with no commission and no cap on free listings.",
   eyebrow: "Jiji alternative",
-  h1: "A Jiji alternative for selling in Kenya",
+  h1: "Apps and sites like Jiji in Kenya",
   intro:
-    "If you want somewhere to sell besides Jiji, Shopi is a free Kenyan marketplace built around a local discovery feed. You post from one photo, buyers near you come across the listing while they scroll, and they message you directly. Shopi takes no commission and charges no listing fees — and you can keep your Jiji ads running at the same time.",
+    "The main apps and sites like Jiji in Kenya are PigiaMe, Facebook Marketplace and Shopi. Shopi is a free Kenyan marketplace built around a local discovery feed: you post from one photo or a short video, buyers near you come across it while they scroll, and they message you directly. Shopi takes no commission, charges no listing fees and doesn't cap free listings per category, and you can keep your Jiji ads running at the same time.",
   about: {
     heading: "What Jiji is, in brief",
-    body: "Jiji is one of Kenya's best-known online classifieds sites, with categories from vehicles and property to phones, fashion and jobs. Buyers mostly find ads by searching or browsing those categories. Alongside regular ads, Jiji sells optional Premium Services to promote them: TOP packages that place an ad at the top of search results for 7 or 30 days, Boost packages that show ads more often for one to twelve months, and a pay-per-click Pro Sales tool that comes with Boost.",
+    body: "Jiji is one of Kenya's best-known online classifieds sites, with categories from vehicles and property to phones, fashion and jobs. Every ad is reviewed before it goes live. Posting is free up to a limit of ads in each category; to post more, or to promote ads, Jiji sells TOP placements and Boost packages, with a pay-per-click Pro Sales tool included in Boost. On eligible ads buyers can also pay through Jiji's Safe Deal checkout, which holds the payment until delivery; sellers need an active Boost Package to receive those orders.",
   },
   sources: [
-    { label: "Jiji — types of Premium Services", url: "https://jiji.co.ke/faq/48" },
-    { label: "Jiji — categories (homepage)", url: "https://jiji.co.ke/" },
+    { label: "Jiji — How can I sell on Jiji?", url: "https://jiji.co.ke/faq/8" },
+    { label: "Jiji — What does \"ads limit\" mean?", url: "https://jiji.co.ke/faq/113" },
+    { label: "Jiji — Types of Premium Services", url: "https://jiji.co.ke/faq/48" },
+    { label: "Jiji — Safe Deal for sellers", url: "https://jiji.co.ke/faq/185" },
   ],
   differencesHeading: "What's different about selling on Shopi",
   differences: [
@@ -68,12 +82,12 @@ const JIJI: CompetitorAlternative = {
       body: "Upload a photo and Shopi Agent drafts the title, description, category and specifications. You check and edit everything before it goes live, so posting a lot of stock doesn't mean filling in the same form again and again.",
     },
     {
-      title: "No commission and no listing fees",
-      body: "Posting is free and Shopi has no paid tier today. Shopi never takes payment or holds money, so there is nothing to deduct: the price you agree with the buyer is what you receive.",
+      title: "Free, with no ad cap and no commission",
+      body: "Posting is free, Shopi doesn't cap free listings per category, and there's no paid placement today, so every post competes on what it is and where it is. Shopi never takes payment or holds money: the price you agree with the buyer is what you receive.",
     },
     {
       title: "Video-first, with TikTok built in",
-      body: "Post a short video of the item, or import the TikTok videos you've already made instead of filming again. A clip that shows the item working answers the questions photos leave open.",
+      body: "Post a short video of the item, or bring in the TikTok videos you've already made instead of filming again. A clip that shows the item working answers the questions photos leave open.",
     },
     {
       title: "Local first, across all 47 counties",
@@ -83,12 +97,36 @@ const JIJI: CompetitorAlternative = {
   whenCompetitorFits: {
     heading: "When Jiji may suit you better",
     points: [
-      "You're hiring or looking for work — Jiji lists jobs and CVs; Shopi doesn't.",
-      "You want to pay for placement at the top of search results — Jiji sells that through its Premium Services.",
+      "You're hiring or job hunting. Jiji has long-established jobs and CV sections.",
+      "You want buyers to pay through the platform. Jiji's Safe Deal holds the buyer's payment until delivery on eligible ads (you'll need a Boost Package); Shopi doesn't handle payments.",
+      "You want to pay for placement at the top of search results. Jiji sells that through TOP and Boost.",
       "You're selling in a category where buyers habitually start on Jiji and search for an exact model.",
     ],
     closing:
       "You don't have to choose. Many sellers keep their Jiji ads and post the same items on Shopi to reach buyers who browse rather than search.",
+  },
+  otherOptions: {
+    heading: "Other apps like Jiji in Kenya",
+    items: [
+      {
+        name: "PigiaMe",
+        body: "A long-running Kenyan classifieds site for cars, property, electronics and jobs, with free ads and paid upgrades.",
+        path: "/pigiame-alternative-kenya",
+      },
+      {
+        name: "Facebook Marketplace",
+        body: "Free local listings inside Facebook, available in Kenya since 2020; best for furniture and household items.",
+      },
+      {
+        name: "Jumia and Kilimall",
+        body: "Online stores rather than classifieds: they handle checkout and delivery for new products and set their own seller fees.",
+      },
+      {
+        name: "OLX",
+        body: "Closed in Kenya. Its Kenyan business went to Jiji in 2019.",
+        path: "/olx-kenya-alternative",
+      },
+    ],
   },
   steps: {
     heading: "How to put your Jiji items on Shopi",
@@ -109,8 +147,20 @@ const JIJI: CompetitorAlternative = {
   },
   faq: [
     {
+      q: "What apps are like Jiji in Kenya?",
+      a: "PigiaMe, Facebook Marketplace and Shopi are the closest: all let you post items for sale free and deal with buyers directly. Jumia and Kilimall are online stores with their own checkout and delivery, rather than classifieds.",
+    },
+    {
       q: "What is the best alternative to Jiji in Kenya?",
-      a: "It depends on what you sell. For everyday items — phones, electronics, furniture, fashion, beauty, property and cars — Shopi is a free alternative: listing is free, there is no commission, buyers near you find your post in a local feed, and they message you directly. For jobs and CVs, Shopi isn't an option.",
+      a: "It depends on what you sell. For everyday items — phones, electronics, furniture, fashion, beauty, property and cars — Shopi is a free alternative: listing is free, there's no commission and no cap on free listings, buyers near you find your post in a local feed, and they message you directly.",
+    },
+    {
+      q: "Is Jiji free?",
+      a: "Up to a point. Jiji lets you post a number of free ads in each category, and you need a paid package to post more or to promote your ads. Shopi is free with no per-category cap.",
+    },
+    {
+      q: "Is Jiji legit?",
+      a: "Jiji is a legitimate, established classifieds company: it took over OLX's Kenyan business in 2019. As on any classifieds site, the risk comes from individual users, so inspect items before paying and never send a deposit to a stranger.",
     },
     {
       q: "Is there a free app like Jiji in Kenya?",
@@ -133,13 +183,16 @@ const JIJI: CompetitorAlternative = {
       a: "No. Shopi is an independent Kenyan marketplace, founded in Nairobi in 2025, and is not affiliated with Jiji.",
     },
   ],
+  guide: { label: "How to sell on Jiji Kenya, step by step", path: "/blog/how-to-sell-on-jiji-kenya" },
   keywords: [
+    "apps like Jiji",
+    "apps like Jiji Kenya",
+    "sites like Jiji Kenya",
     "Jiji alternative",
     "Jiji alternative Kenya",
-    "sites like Jiji",
-    "apps like Jiji Kenya",
+    "is Jiji free",
+    "is Jiji legit",
     "free marketplace Kenya",
-    "sell online Kenya",
   ],
 };
 
@@ -147,7 +200,7 @@ const PIGIAME: CompetitorAlternative = {
   slug: "pigiame-alternative-kenya",
   competitor: "PigiaMe",
   competitorUrl: "https://www.pigiame.co.ke",
-  checkedOn: "2026-09-15",
+  checkedOn: "2026-11-04",
   title: "PigiaMe Alternative in Kenya: Sell Free on Shopi",
   metaDescription:
     "Looking for a PigiaMe alternative? Shopi is a free Kenyan marketplace: post from a photo or video, get found nearby, chat directly. No commission.",
@@ -157,7 +210,7 @@ const PIGIAME: CompetitorAlternative = {
     "Shopi is a free Kenyan marketplace you can use instead of, or as well as, PigiaMe. Post an item from one photo or a short video, get found by buyers near you in a local feed, and chat with them directly. There's no commission and no listing fee.",
   about: {
     heading: "What PigiaMe is, in brief",
-    body: "PigiaMe is a long-running Kenyan classifieds site where you can post a free ad in categories including vehicles, electronics, property rentals and sales, jobs, and fashion and beauty. It offers paid Premium Ads, including a GOLD upgrade for extra visibility, and highlights verified sellers who have passed its checks.",
+    body: "PigiaMe is a long-running Kenyan classifieds site covering cars, property, electronics and jobs, where you can post a free ad. It sells Premium Ads and a Gold upgrade for extra visibility, and highlights verified sellers who have passed its checks.",
   },
   sources: [{ label: "PigiaMe — homepage", url: "https://www.pigiame.co.ke/" }],
   differencesHeading: "What's different about Shopi",
@@ -168,7 +221,7 @@ const PIGIAME: CompetitorAlternative = {
     },
     {
       title: "Photos and video, not just a form",
-      body: "Posts lead with photos or a short video that shows the item working. Already sell on TikTok? Import those videos into Shopi listings instead of filming again.",
+      body: "Posts lead with photos or a short video that shows the item working. Already sell on TikTok? Bring those videos into Shopi listings instead of filming again.",
     },
     {
       title: "Shopi Agent writes the listing",
@@ -182,12 +235,31 @@ const PIGIAME: CompetitorAlternative = {
   whenCompetitorFits: {
     heading: "When PigiaMe may suit you better",
     points: [
-      "You're posting or looking for jobs — PigiaMe has a jobs category; Shopi doesn't.",
-      "You want a paid upgrade for extra visibility — PigiaMe offers GOLD Premium Ads.",
+      "You're posting or looking for jobs. PigiaMe has a jobs section.",
+      "You want a paid upgrade for extra visibility. PigiaMe offers Premium Ads and a Gold upgrade.",
       "You prefer a classic classifieds layout where buyers browse by category first.",
     ],
     closing:
       "Plenty of sellers use both: a PigiaMe ad for buyers who search categories, and a Shopi post for buyers who discover things while scrolling.",
+  },
+  otherOptions: {
+    heading: "Other sites like PigiaMe in Kenya",
+    items: [
+      {
+        name: "Jiji",
+        body: "One of Kenya's best-known classifieds sites; free up to a limit of ads per category, with paid TOP and Boost packages.",
+        path: "/jiji-alternative-kenya",
+      },
+      {
+        name: "Facebook Marketplace",
+        body: "Free local listings inside Facebook, available in Kenya since 2020.",
+      },
+      {
+        name: "OLX",
+        body: "Closed in Kenya. Its Kenyan business went to Jiji in 2019.",
+        path: "/olx-kenya-alternative",
+      },
+    ],
   },
   steps: {
     heading: "How to list your PigiaMe items on Shopi",
@@ -209,7 +281,15 @@ const PIGIAME: CompetitorAlternative = {
   faq: [
     {
       q: "What is a good alternative to PigiaMe in Kenya?",
-      a: "Shopi is a free alternative for selling everyday items, cars and property in Kenya. Listing is free with no commission, buyers near you find posts in a local discovery feed, Shopi Agent writes listings from a photo, and buyers message sellers directly. For job listings, Shopi isn't an option.",
+      a: "Shopi is a free alternative for selling everyday items, cars and property in Kenya. Listing is free with no commission, buyers near you find posts in a local discovery feed, Shopi Agent writes listings from a photo, and buyers message sellers directly.",
+    },
+    {
+      q: "How does PigiaMe work?",
+      a: "You post a free ad with photos, a price and your location in a category such as cars, property or electronics. Buyers contact you, and you agree payment and pickup directly. Premium Ads and a Gold upgrade cost extra.",
+    },
+    {
+      q: "Is PigiaMe legit?",
+      a: "PigiaMe is a long-running, established Kenyan classifieds site, and it marks verified sellers who have passed its checks. As on any classifieds site, inspect the item and meet somewhere public before you pay.",
     },
     {
       q: "Is it free to sell on Shopi?",
@@ -236,9 +316,10 @@ const PIGIAME: CompetitorAlternative = {
     "PigiaMe alternative",
     "PigiaMe alternative Kenya",
     "sites like PigiaMe",
+    "is PigiaMe legit",
+    "how does PigiaMe work",
     "free classifieds Kenya",
     "free marketplace Kenya",
-    "sell online Kenya",
   ],
 };
 
