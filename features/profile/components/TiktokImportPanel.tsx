@@ -153,10 +153,13 @@ export function TiktokImportPanel({
   );
 
   async function selectVideo() {
-    const selectedVideo = allVideos.find(
-      (item) => item.id === selectedVideoId,
-    );
-    if ((!onSelectVideo && !onUseSelectedVideo) || !selectedVideo || selectingVideoId) return;
+    const selectedVideo = allVideos.find((item) => item.id === selectedVideoId);
+    if (
+      (!onSelectVideo && !onUseSelectedVideo) ||
+      !selectedVideo ||
+      selectingVideoId
+    )
+      return;
     setSelectionError(null);
     setSelectingVideoId(selectedVideo.id);
     try {
@@ -264,7 +267,10 @@ export function TiktokImportPanel({
           </div>
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
-        <ul className="divide-y divide-border px-4" aria-label="Loading TikTok videos">
+        <ul
+          className="divide-y divide-border px-4"
+          aria-label="Loading TikTok videos"
+        >
           {Array.from({ length: 6 }).map((_, i) => (
             <li key={i} className="flex min-h-[76px] items-center gap-3 py-2.5">
               <Skeleton className="size-12 shrink-0 rounded-lg" />
@@ -286,7 +292,7 @@ export function TiktokImportPanel({
   return (
     <div className="flex flex-col gap-0">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+      <div className="hidden items-center justify-between px-4 pt-4 pb-3">
         <div>
           <p
             className="font-bold"
@@ -344,7 +350,10 @@ export function TiktokImportPanel({
 
       {/* ── Compact video list ──────────────────────────────────────────── */}
       {videosLoading && allVideos.length === 0 ? (
-        <ul className="divide-y divide-border px-4" aria-label="Loading TikTok videos">
+        <ul
+          className="divide-y divide-border px-4"
+          aria-label="Loading TikTok videos"
+        >
           {Array.from({ length: 6 }).map((_, i) => (
             <li key={i} className="flex min-h-[76px] items-center gap-3 py-2.5">
               <Skeleton className="size-12 shrink-0 rounded-lg" />
@@ -380,80 +389,104 @@ export function TiktokImportPanel({
           </p>
         </div>
       ) : onSelectVideo ? (
-          <RadioGroup
-            value={selectedVideoId ?? ""}
-            onValueChange={setSelectedVideoId}
-            aria-label="Choose a TikTok video"
-            className="w-full gap-0 divide-y divide-border px-4"
-          >
-            {allVideos.map((video) => (
-              <div key={video.id} className="flex min-h-[76px] items-center gap-3 py-2.5">
-                <RadioGroupItem
-                  value={video.id}
-                  aria-label={`Select ${video.title || "TikTok video"}`}
-                  disabled={Boolean(selectingVideoId)}
+        <RadioGroup
+          value={selectedVideoId ?? ""}
+          onValueChange={setSelectedVideoId}
+          aria-label="Choose a TikTok video"
+          className="w-full gap-0 divide-y divide-border px-4"
+        >
+          {allVideos.map((video) => (
+            <div
+              key={video.id}
+              className="flex min-h-[76px] items-center gap-3 py-2.5"
+            >
+              <RadioGroupItem
+                value={video.id}
+                aria-label={`Select ${video.title || "TikTok video"}`}
+                disabled={Boolean(selectingVideoId)}
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewVideo(video)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left active:bg-surface"
+                aria-label={`Preview ${video.title || "TikTok video"}`}
+              >
+                <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
+                  <Image
+                    src={video.coverImageUrl}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                    unoptimized
+                  />
+                  <span className="absolute bottom-0.5 right-0.5 rounded bg-black/65 px-1 text-[10px] font-semibold text-white">
+                    {formatDuration(video.duration)}
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-main">
+                    {video.title || "TikTok video"}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">
+                    {formatDate(video.createTime)}
+                    {video.viewCount != null &&
+                      ` · ${formatCount(video.viewCount)} views`}
+                    {video.likeCount != null &&
+                      ` · ${formatCount(video.likeCount)} likes`}
+                  </span>
+                </span>
+                <ChevronRight
+                  size={18}
+                  className="shrink-0 text-muted"
+                  aria-hidden
                 />
-                <button
-                  type="button"
-                  onClick={() => setPreviewVideo(video)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left active:bg-surface"
-                  aria-label={`Preview ${video.title || "TikTok video"}`}
-                >
-                  <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
-                    <Image
-                      src={video.coverImageUrl}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="48px"
-                      unoptimized
-                    />
-                    <span className="absolute bottom-0.5 right-0.5 rounded bg-black/65 px-1 text-[10px] font-semibold text-white">
-                      {formatDuration(video.duration)}
-                    </span>
+              </button>
+            </div>
+          ))}
+        </RadioGroup>
+      ) : (
+        <ul className="divide-y divide-border px-4" aria-label="TikTok videos">
+          {allVideos.map((video) => (
+            <li key={video.id}>
+              <button
+                type="button"
+                onClick={() => setPreviewVideo(video)}
+                className="flex min-h-[76px] w-full items-center gap-3 py-2.5 text-left active:bg-surface"
+                aria-label={`Preview ${video.title || "TikTok video"}`}
+              >
+                <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
+                  <Image
+                    src={video.coverImageUrl}
+                    alt=""
+                    fill
+                    sizes="48px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-main">
+                    {video.title || "TikTok video"}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-main">
-                      {video.title || "TikTok video"}
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs text-muted">
-                      {formatDate(video.createTime)}
-                      {video.viewCount != null && ` · ${formatCount(video.viewCount)} views`}
-                      {video.likeCount != null && ` · ${formatCount(video.likeCount)} likes`}
-                    </span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">
+                    {formatDate(video.createTime)}
+                    {video.viewCount != null &&
+                      ` · ${formatCount(video.viewCount)} views`}
+                    {video.likeCount != null &&
+                      ` · ${formatCount(video.likeCount)} likes`}
                   </span>
-                  <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
-                </button>
-              </div>
-            ))}
-          </RadioGroup>
-        ) : (
-          <ul className="divide-y divide-border px-4" aria-label="TikTok videos">
-            {allVideos.map((video) => (
-              <li key={video.id}>
-                <button
-                  type="button"
-                  onClick={() => setPreviewVideo(video)}
-                  className="flex min-h-[76px] w-full items-center gap-3 py-2.5 text-left active:bg-surface"
-                  aria-label={`Preview ${video.title || "TikTok video"}`}
-                >
-                  <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
-                    <Image src={video.coverImageUrl} alt="" fill sizes="48px" unoptimized className="object-cover" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-main">{video.title || "TikTok video"}</span>
-                    <span className="mt-0.5 block truncate text-xs text-muted">
-                      {formatDate(video.createTime)}
-                      {video.viewCount != null && ` · ${formatCount(video.viewCount)} views`}
-                      {video.likeCount != null && ` · ${formatCount(video.likeCount)} likes`}
-                    </span>
-                  </span>
-                  <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                </span>
+                <ChevronRight
+                  size={18}
+                  className="shrink-0 text-muted"
+                  aria-hidden
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* Infinite scroll sentinel */}
       <div ref={videosSentinelRef} className="h-px" />
@@ -463,19 +496,21 @@ export function TiktokImportPanel({
         </div>
       )}
 
-      {(onSelectVideo || onUseSelectedVideo) && isTiktokConnected && allVideos.length > 0 && (
-        <div className="sticky bottom-0 z-10 mt-auto border-t border-border bg-app px-4 py-3">
-          <Button
-            type="button"
-            className="w-full text-white"
-            onClick={() => void selectVideo()}
-            disabled={!selectedVideoId || Boolean(selectingVideoId)}
-          >
-            {selectingVideoId ? <InterlockingBalls size={15} /> : null}
-            {selectingVideoId ? "Preparing video…" : "Use selected video"}
-          </Button>
-        </div>
-      )}
+      {(onSelectVideo || onUseSelectedVideo) &&
+        isTiktokConnected &&
+        allVideos.length > 0 && (
+          <div className="sticky bottom-0 z-10 mt-auto border-t border-border bg-app px-4 py-3">
+            <Button
+              type="button"
+              className="w-full text-white"
+              onClick={() => void selectVideo()}
+              disabled={!selectedVideoId || Boolean(selectingVideoId)}
+            >
+              {selectingVideoId ? <InterlockingBalls size={15} /> : null}
+              {selectingVideoId ? "Preparing video…" : "Use selected video"}
+            </Button>
+          </div>
+        )}
 
       <Dialog
         open={Boolean(previewVideo)}
