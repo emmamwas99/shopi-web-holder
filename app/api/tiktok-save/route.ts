@@ -5,6 +5,7 @@ import {
   type TiktokAsset,
   type TiktokPostInfo,
   type TiktokSaverError,
+  type ViewerGeo,
 } from "@/lib/tiktokSaver";
 
 export const runtime = "nodejs";
@@ -208,6 +209,25 @@ async function streamFile(
 
 const ASSETS = new Set<TiktokAsset>(["video", "hd", "audio", "image"]);
 
+/**
+ * The visitor's country and city from Vercel's edge headers, returned with a
+ * lookup so the tool's analytics can say where downloads come from without
+ * the API geolocating anyone's IP. Nothing here is stored by this route.
+ */
+function viewerGeo(request: NextRequest): ViewerGeo | null {
+  const country = request.headers.get("x-vercel-ip-country");
+  const rawCity = request.headers.get("x-vercel-ip-city");
+  let city: string | null = null;
+  if (rawCity) {
+    try {
+      city = decodeURIComponent(rawCity);
+    } catch {
+      city = rawCity;
+    }
+  }
+  return country || city ? { country: country || null, city } : null;
+}
+
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const url = (params.get("url") ?? "").trim();
@@ -221,8 +241,13 @@ export async function GET(request: NextRequest) {
   if (!result.ok) {
     // The composer retries on 502 and only on 502, so its path keeps the old
     // status for every lookup failure.
-    const status = download === "1" ? 502 : result.status;
-    return NextResponse.json({ error: result.error }, { status });
+    if (download === "1") {
+      return NextResponse.json({ error: result.error }, { status: 502 });
+    }
+    return NextResponse.json(
+      { error: result.error, ...(download ? {} : { geo: viewerGeo(request) }) },
+      { status: result.status },
+    );
   }
   const info = toPostInfo(result.data);
 
@@ -249,7 +274,10 @@ export async function GET(request: NextRequest) {
   }
 
   if (!download) {
-    return NextResponse.json(info, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { ...info, geo: viewerGeo(request) },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   // ── Fallback download of one asset for the saver tool ──

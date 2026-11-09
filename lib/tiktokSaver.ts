@@ -44,7 +44,15 @@ export type TiktokPostInfo = {
   audio: TiktokAudio | null;
   /** Photo-mode images in order (JPEG). Empty for video posts. */
   images: string[];
+  /**
+   * Where the visitor is, from the host's edge geo headers (Vercel). Only for
+   * the tool's own analytics; null off Vercel (local dev).
+   */
+  geo?: ViewerGeo | null;
 };
+
+/** ISO country code and city of the visitor, as the edge network saw them. */
+export type ViewerGeo = { country: string | null; city: string | null };
 
 /** What a fallback download through /api/tiktok-save asks for. */
 export type TiktokAsset = "video" | "hd" | "audio" | "image";

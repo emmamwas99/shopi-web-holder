@@ -38,23 +38,31 @@ async function fetchBlob(url: string, onProgress?: Progress): Promise<Blob> {
   return new Blob(chunks, { type });
 }
 
+/**
+ * How the file arrived: straight from TikTok's CDN, or streamed through our
+ * function (which spends Vercel bandwidth — worth watching in analytics).
+ */
+export type SaverDelivery = "direct" | "proxy";
+
 /** Direct from the CDN first, then through our API. Throws when both fail. */
 export async function fetchWithFallback(
   directUrl: string,
   fallbackUrl: string,
   onProgress?: Progress,
-): Promise<Blob> {
+): Promise<{ blob: Blob; delivery: SaverDelivery }> {
   let blob: Blob | null = null;
+  let delivery: SaverDelivery = "direct";
   try {
     blob = await fetchBlob(directUrl, onProgress);
   } catch {
     blob = null;
   }
   if (!blob || blob.size === 0) {
+    delivery = "proxy";
     blob = await fetchBlob(fallbackUrl, onProgress);
   }
   if (blob.size === 0) throw new Error("empty_download");
-  return blob;
+  return { blob, delivery };
 }
 
 export function saveBlob(blob: Blob, filename: string) {

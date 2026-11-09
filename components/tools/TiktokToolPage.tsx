@@ -3,6 +3,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
 import { TiktokSaverTool } from "@/components/tools/TiktokSaverTool";
+import { TiktokToolCtaLink } from "@/components/tools/TiktokToolCtaLink";
 import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { canonicalUrl } from "@/lib/metadata";
@@ -205,13 +206,15 @@ export function TiktokToolPage({
           {/* ── Other modes, right under the tool ───────────────────── */}
           <nav aria-label="More TikTok tools" className="mt-5 mb-12 flex flex-wrap gap-2">
             {others.map((other) => (
-              <Link
+              <TiktokToolCtaLink
                 key={other.slug}
                 href={`/${lang}${tiktokToolPath(other.slug)}`}
+                cta={`tool:${other.slug}`}
+                mode={page.mode}
                 className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground no-underline"
               >
                 {other.shortName}
-              </Link>
+              </TiktokToolCtaLink>
             ))}
           </nav>
 
@@ -247,18 +250,22 @@ export function TiktokToolPage({
               about the item directly. Posting is free and there&apos;s no commission on the sale.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link
+              <TiktokToolCtaLink
                 href={`/${lang}/upload`}
+                cta="upload"
+                mode={page.mode}
                 className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline"
               >
                 List an item from TikTok
-              </Link>
-              <Link
+              </TiktokToolCtaLink>
+              <TiktokToolCtaLink
                 href={`/${lang}/sell-in-kenya`}
+                cta="sell-in-kenya"
+                mode={page.mode}
                 className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground no-underline"
               >
                 How selling on Shopi works
-              </Link>
+              </TiktokToolCtaLink>
             </div>
           </section>
 

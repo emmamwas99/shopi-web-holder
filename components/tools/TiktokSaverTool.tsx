@@ -12,6 +12,7 @@ import {
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { trackTiktokSaver } from "@/lib/analytics";
+import { recordTiktokSaverEvent, rememberViewerGeo } from "@/lib/tiktok-saver-analytics";
 import {
   extractTiktokUrl,
   formatBytes,
@@ -21,8 +22,9 @@ import {
   type TiktokPostInfo,
   type TiktokSaverError,
   type TiktokSaverMode,
+  type ViewerGeo,
 } from "@/lib/tiktokSaver";
-import { fetchWithFallback, saveBlob, zipFiles } from "./saverDownloads";
+import { fetchWithFallback, saveBlob, zipFiles, type SaverDelivery } from "./saverDownloads";
 
 type Strings = Dictionary["tiktokSaver"];
 type Status = "idle" | "loading" | "ready" | "error";
@@ -86,6 +88,8 @@ export function TiktokSaverTool({
         outcome: "error",
         error: "invalid_url",
       });
+      // What was pasted isn't a TikTok link, so it isn't sent anywhere.
+      recordTiktokSaverEvent({ type: "LOOKUP", mode, outcome: "error", error: "invalid_url" });
       return;
     }
 
@@ -105,6 +109,8 @@ export function TiktokSaverTool({
         res = await fetch(endpoint);
       }
       if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { geo?: ViewerGeo } | null;
+        rememberViewerGeo(body?.geo);
         throw res.status === 400
           ? "invalid_url"
           : res.status === 404
@@ -112,6 +118,7 @@ export function TiktokSaverTool({
             : "fetch_failed";
       }
       const data = (await res.json()) as TiktokPostInfo;
+      rememberViewerGeo(data.geo);
       setInfo(data);
       setPostUrl(link);
       setStatus("ready");
@@ -120,12 +127,14 @@ export function TiktokSaverTool({
         kind: data.kind,
         outcome: "success",
       });
+      recordTiktokSaverEvent({ type: "LOOKUP", mode, url: link, post: data });
     } catch (caught) {
       const kind: TiktokSaverError =
         typeof caught === "string" ? (caught as TiktokSaverError) : "fetch_failed";
       setStatus("error");
       setError(kind);
       trackTiktokSaver("tiktok_saver_lookup", { mode, outcome: "error", error: kind });
+      recordTiktokSaverEvent({ type: "LOOKUP", mode, outcome: "error", error: kind, url: link });
     }
   }
 
@@ -176,7 +185,11 @@ export function TiktokSaverTool({
     setProgress(null);
     setNotice(null);
     try {
-      const blob = await fetchWithFallback(directUrl, fallbackUrl(asset, index), setProgress);
+      const { blob, delivery } = await fetchWithFallback(
+        directUrl,
+        fallbackUrl(asset, index),
+        setProgress,
+      );
       saveBlob(blob, tiktokFileName(info.id, asset, index, blob.type));
       setNotice({ text: t.saved, ok: true });
       trackTiktokSaver("tiktok_saver_download", {
@@ -185,6 +198,15 @@ export function TiktokSaverTool({
         asset,
         outcome: "success",
       });
+      recordTiktokSaverEvent({
+        type: "DOWNLOAD",
+        mode,
+        asset,
+        index,
+        delivery,
+        url: postUrl,
+        post: info,
+      });
     } catch {
       setNotice({ text: t.errorSave, ok: false });
       trackTiktokSaver("tiktok_saver_download", {
@@ -192,6 +214,16 @@ export function TiktokSaverTool({
         kind: info.kind,
         asset,
         outcome: "error",
+      });
+      recordTiktokSaverEvent({
+        type: "DOWNLOAD",
+        mode,
+        outcome: "error",
+        error: "save_failed",
+        asset,
+        index,
+        url: postUrl,
+        post: info,
       });
     } finally {
       setBusy(null);
@@ -206,8 +238,11 @@ export function TiktokSaverTool({
     setNotice(null);
     try {
       const files: { name: string; blob: Blob }[] = [];
+      let delivery: SaverDelivery = "direct";
       for (let i = 0; i < info.images.length; i++) {
-        const blob = await fetchWithFallback(info.images[i], fallbackUrl("image", i));
+        const file = await fetchWithFallback(info.images[i], fallbackUrl("image", i));
+        if (file.delivery === "proxy") delivery = "proxy";
+        const { blob } = file;
         files.push({ name: tiktokFileName(info.id, "image", i, blob.type), blob });
         setProgress((i + 1) / info.images.length);
       }
@@ -219,6 +254,14 @@ export function TiktokSaverTool({
         asset: "zip",
         outcome: "success",
       });
+      recordTiktokSaverEvent({
+        type: "DOWNLOAD",
+        mode,
+        asset: "zip",
+        delivery,
+        url: postUrl,
+        post: info,
+      });
     } catch {
       setNotice({ text: t.errorSave, ok: false });
       trackTiktokSaver("tiktok_saver_download", {
@@ -226,6 +269,15 @@ export function TiktokSaverTool({
         kind: info.kind,
         asset: "zip",
         outcome: "error",
+      });
+      recordTiktokSaverEvent({
+        type: "DOWNLOAD",
+        mode,
+        outcome: "error",
+        error: "save_failed",
+        asset: "zip",
+        url: postUrl,
+        post: info,
       });
     } finally {
       setBusy(null);
