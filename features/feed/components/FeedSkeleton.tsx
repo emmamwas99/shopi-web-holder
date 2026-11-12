@@ -129,13 +129,13 @@ export function FeedSkeleton() {
           (DesktopFeed), so its placeholder is that grid alone. */}
       {activeTab === "watch" ? (
         <div className="desktop-feed-skeleton min-h-svh bg-app">
-          <div className="mx-auto w-full max-w-[1560px] px-2 md:px-5 lg:px-8">
+          <div className="mx-auto w-full max-w-[1560px] px-2 pt-6 md:px-5 lg:px-8">
             <WatchGridSkeleton desktopLayout />
           </div>
         </div>
       ) : (
       <div className="desktop-feed-skeleton min-h-svh bg-app">
-        <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 md:px-6 xl:px-8">
+        <div className="mx-auto w-full max-w-[1680px] px-4 pt-6 md:px-6 xl:px-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
             <div className="mx-auto w-full min-w-0 max-w-[780px] pb-4 md:pb-6 xl:mx-0 xl:max-w-none">
               {(
