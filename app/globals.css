@@ -97,6 +97,96 @@
   }
 }
 
+/* The wide, fine-pointer app header has one clear reading order: destination,
+   category, search, then account actions. Touch/tablet navigation is unchanged. */
+@media (min-width: 1280px) and (pointer: fine) {
+  .desktop-navbar-brand {
+    width: 172px;
+  }
+
+  .desktop-navbar-content {
+    gap: 12px;
+  }
+
+  .desktop-navbar-tabs {
+    gap: 2px;
+  }
+
+  .desktop-navbar-tabs > a {
+    min-width: 0;
+    padding-inline: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .desktop-navbar-category {
+    flex: none;
+    margin-left: 2px;
+    border-left: 1px solid rgb(var(--color-border));
+    padding-left: 14px;
+  }
+
+  .desktop-navbar-category > button {
+    height: 38px;
+    width: 146px;
+    max-width: 146px;
+    border-radius: 9px;
+    background: rgb(var(--color-bg-subtle));
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .desktop-navbar-category-placeholder {
+    display: block;
+    width: 146px;
+    height: 38px;
+  }
+
+  .desktop-navbar-search {
+    min-width: 180px;
+    max-width: 400px;
+    margin-left: auto;
+  }
+
+  .desktop-navbar-search form {
+    height: 40px;
+    border-radius: 10px;
+    border-color: rgb(var(--color-border));
+    background: rgb(var(--color-bg-subtle));
+  }
+
+  .desktop-navbar-search form:focus-within {
+    border-color: rgb(var(--brand-primary));
+  }
+
+  .desktop-navbar-actions {
+    gap: 8px;
+  }
+
+  .desktop-navbar-sell {
+    height: 38px;
+    border-radius: 9px;
+    background: rgb(var(--brand-primary));
+    color: white;
+  }
+
+  .desktop-navbar-sell:hover {
+    background: rgb(var(--brand-primary) / 0.88);
+  }
+
+  .desktop-navbar-dashboard {
+    height: 38px;
+    border-radius: 9px;
+    background: transparent;
+  }
+
+  .desktop-navbar-dashboard:hover,
+  .desktop-navbar-dashboard[aria-current="page"] {
+    background: rgb(var(--color-bg-subtle));
+  }
+}
+
 /* Give portrait tablets more room for the page beside the persistent rail. */
 @media (min-width: 768px) and (max-width: 1023.98px) {
   :root {

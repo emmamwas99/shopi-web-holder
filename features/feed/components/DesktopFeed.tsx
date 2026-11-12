@@ -238,11 +238,11 @@ export default function DesktopFeed({
   return (
     <div className="min-h-svh bg-app">
       {tab === "watch" ? (
-        <div className="mx-auto w-full max-w-[1560px] px-2 md:px-5 lg:px-8">
+        <div className="mx-auto w-full max-w-[1560px] px-2 pt-6 md:px-5 lg:px-8">
           <WatchGrid lang={lang} active={visible} desktopLayout />
         </div>
       ) : (
-        <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+        <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 pb-0 pt-6 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
           <section className="min-w-0">
             <div className={tab === "for-you" ? undefined : "hidden"}>
               <StoriesBar lang={lang} variant="desktop" />

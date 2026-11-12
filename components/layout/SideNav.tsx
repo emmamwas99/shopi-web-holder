@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   LogOut,
   MapPin,
-  Menu,
   Play,
   Plus,
   Search,
@@ -116,22 +115,17 @@ export function SideNav({ lang = "en" }: { lang: string }) {
           {/* Align the logo with the PDP and the sidebar's inner edge. */}
           <Link
             href={homeHref(lang)}
-            className="flex h-full shrink-0 items-center xl:w-[calc(var(--side-nav-width)-2rem)]"
+            className="desktop-navbar-brand flex h-full shrink-0 items-center"
             aria-label="Shopi home"
           >
-            {/* The full lockup, so the wordmark is the real artwork rather than
-                live text set beside the badge.
-
-                The artwork is 358 x 98.06 and its badge is 96 of that height,
-                so `size` 60 paints the box 43px tall — a 42px badge, the same
-                as the mark-only logo had here — and 157px wide, well inside the
-                232px this column leaves after its padding. */}
+            {/* Keep the artwork at its established size inside the compact
+                desktop brand slot. */}
             <Logo variant="lockup" size={60} className="hidden lg:inline-block" />
             <Logo variant="icon" size={52} className="hidden md:inline-block lg:hidden" />
           </Link>
 
-          <div className="flex h-full min-w-0 flex-1 items-center gap-2 xl:gap-5">
-            <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
+          <div className="desktop-navbar-content flex h-full min-w-0 flex-1 items-center gap-2">
+            <nav className="desktop-navbar-tabs flex shrink-0 items-center gap-1 text-[13px] font-bold" aria-label="Primary">
               <TopNavLink
                 href={forYouHref}
                 navTab="feed"
@@ -139,15 +133,12 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               >
                 For You
               </TopNavLink>
-              {(forYouActive || browseActive || watchActive) && isDesktop ? (
-                <AllCategoriesPicker lang={lang} watchMode={watchActive} />
-              ) : null}
               <TopNavLink
                 href={browseHref}
                 navTab="explore"
                 active={browseActive}
               >
-                Browse
+                Market
               </TopNavLink>
               <TopNavLink
                 href={watchHref}
@@ -167,16 +158,25 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               </TopNavLink>
             </nav>
 
+            <div className="desktop-navbar-category">
+              {isDesktop ? (
+                <AllCategoriesPicker lang={lang} watchMode={watchActive} />
+              ) : (
+                <span className="desktop-navbar-category-placeholder" aria-hidden />
+              )}
+            </div>
+
             {/* The wrapper keeps the flex-1 slot at every width even though the
               field itself only appears at lg. Below lg DiscoverPage renders its
               own sticky search bar, so showing this one too would put two
               search boxes on /explore and /search — the thing it replaced. The
               slot still has to grow, or the whole right-hand cluster collapses
                   back against the Browse link. */}
-            <div className="flex min-w-0 flex-1 items-center">
+            <div className="desktop-navbar-search flex min-w-0 flex-1 items-center">
               <NavSearch lang={lang} className="hidden w-full lg:flex" />
             </div>
 
+            <div className="desktop-navbar-actions flex shrink-0 items-center gap-2">
             {/* Present on every desktop route, the feed included. Posting is
                 the one action the whole app exists for, and hiding it on the
                 busiest page meant the nav changed shape as you moved around. */}
@@ -184,7 +184,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
+                  className="desktop-navbar-sell inline-flex shrink-0 items-center justify-center px-4 text-[13px] font-bold transition-colors"
                 >
                   Sell item
                 </button>
@@ -211,8 +211,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             <Link
               href={`/${lang}/dashboard`}
               scroll={false}
+              aria-current={pathname.startsWith(`/${lang}/dashboard`) ? "page" : undefined}
               aria-label={`Dashboard${inboxUnreadCount > 0 ? `, ${inboxUnreadCount} unread messages and notifications` : ""}`}
-              className="relative inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
+              className="desktop-navbar-dashboard relative inline-flex h-9 shrink-0 items-center justify-center px-4 text-[13px] font-bold text-main transition-colors"
             >
               Dashboard
               {inboxUnreadCount > 0 ? (
@@ -278,6 +279,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                 Log in
               </Link>
             )}
+            </div>
           </div>
         </div>
       </header>
@@ -559,10 +561,10 @@ function AllCategoriesPicker({
             }
           }}
           onBlur={closeIfFocusLeaves}
-          className="inline-flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-bold text-main transition-colors hover:bg-surface md:max-lg:max-w-40 md:max-lg:gap-1 md:max-lg:px-2"
+          title={selectedCategoryName}
+          className="inline-flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-bold text-main outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/60 md:max-lg:max-w-40 md:max-lg:gap-1 md:max-lg:px-2"
         >
-          <Menu className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="max-w-44 truncate">{selectedCategoryName}</span>
+          <span className="min-w-0 flex-1 truncate text-left">{selectedCategoryName}</span>
           <ChevronDown className="h-3.5 w-3.5" aria-hidden />
         </button>
       </PopoverTrigger>
