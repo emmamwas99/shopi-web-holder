@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   Star,
   Trash2,
-  Tv2,
   UserPen,
   Users,
 } from "lucide-react";
@@ -44,7 +43,6 @@ import {
 import { signOutAndLeave } from "@/stores/auth";
 import { settingsSubPageHref } from "../lib/settingsReturn";
 import { cn } from "@/lib/utils";
-import { ReferralPausedBanner } from "@/features/referrals/components/ReferralPausedBanner";
 import { useTeamThread } from "@/features/team-messages/hooks/useTeamThread";
 import { TEAM_THREAD_PATH } from "@/features/team-messages/types";
 import { VerifiedTick } from "@/components/verification/VerifiedTick";
@@ -71,17 +69,13 @@ export type ProfileSection =
   | "posts"
   | "drafts"
   | "saved"
-  | "analytics"
-  | "invite"
-  | "tiktok";
+  | "analytics";
 
 export const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   posts: "My posts",
   drafts: "Drafts",
   saved: "Saved",
   analytics: "Analytics",
-  invite: "Referrals",
-  tiktok: "My TikTok videos",
 };
 
 type Icon = ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -331,17 +325,8 @@ export function ProfileMenu({
 
   return (
     <nav aria-label="Profile menu" className="flex flex-col gap-6 md:gap-7">
-      {/* Stands in for the "Earn" group while referral rewards are paused, and
-          still opens the section where referrers see what they are owed. */}
-      <ReferralPausedBanner
-        compact
-        onOpen={() => onSelect("invite")}
-        active={active === "invite"}
-      />
-
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}
-        {section("tiktok", Tv2)}
         {section(
           "drafts",
           FileEdit,

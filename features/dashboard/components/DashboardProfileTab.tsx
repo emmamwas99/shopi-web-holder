@@ -5,7 +5,6 @@ import { ChartColumn } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalyticsPanel } from "@/features/profile/components/AnalyticsPanel";
 import { EditProfileScreen } from "@/features/profile/components/EditProfileScreen";
-import { ReferralPausedPanel } from "@/features/referrals/components/ReferralPausedPanel";
 import { DraftsGrid } from "@/features/profile/components/DraftsGrid";
 import { PostsGrid } from "@/features/profile/components/PostsGrid";
 import { ProfileFollowersView } from "@/features/profile/components/ProfileFollowersView";
@@ -19,7 +18,6 @@ export type DashboardProfileSection =
   | "analytics"
   | "followers"
   | "visitors"
-  | "invite"
   | "settings";
 
 const sectionCopy: Record<DashboardProfileSection, { title: string; description: string }> = {
@@ -28,7 +26,6 @@ const sectionCopy: Record<DashboardProfileSection, { title: string; description:
   analytics: { title: "Analytics", description: "See how people discover and engage with your posts." },
   followers: { title: "Followers", description: "People who follow your Shopi profile." },
   visitors: { title: "Profile visitors", description: "People who have recently viewed your profile." },
-  invite: { title: "Referrals", description: "Your referral rewards and invitation activity." },
   settings: { title: "Account settings", description: "Update your profile details and photo." },
 };
 
@@ -84,8 +81,6 @@ export function DashboardProfileTab({
       >
         {section === "drafts" ? (
           <DraftsGrid lang={lang} hideHeading />
-        ) : section === "invite" ? (
-          <ReferralPausedPanel dashboard />
         ) : section === "settings" ? (
           <EditProfileScreen lang={lang} embedded />
         ) : section === "saved" ? (

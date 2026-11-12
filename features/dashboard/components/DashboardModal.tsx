@@ -11,7 +11,6 @@ import {
   ChartColumn,
   Eye,
   FileEdit,
-  Gift,
   LayoutDashboard,
   MessageCircle,
   Moon,
@@ -60,7 +59,8 @@ export function DashboardModal({
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(forceOpen);
   const isActiveRoute = pathname === `/${lang}/dashboard`;
-  const activeTab = searchParams.get("tab") ?? "overview";
+  const requestedTab = searchParams.get("tab");
+  const activeTab = !requestedTab || requestedTab === "invite" ? "overview" : requestedTab;
   const bulkRequested = searchParams.get("bulk") === "1";
   const [bulkDialogDismissed, setBulkDialogDismissed] = useState(false);
   // Once bulk work starts, defer the tour for the rest of this dashboard visit.
@@ -193,9 +193,6 @@ export function DashboardModal({
                 <DashboardNavLink onClick={() => selectTab("visitors")} active={activeTab === "visitors"} icon={Eye}>
                   Profile visitors
                 </DashboardNavLink>
-                <DashboardNavLink onClick={() => selectTab("invite")} active={activeTab === "invite"} icon={Gift}>
-                  Referrals
-                </DashboardNavLink>
                 <p className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
                   Your account
                 </p>
@@ -264,7 +261,7 @@ export function DashboardModal({
                     lang={lang}
                     onSelectSection={selectTab}
                   />
-                ) : activeTab === "drafts" || activeTab === "saved" || activeTab === "analytics" || activeTab === "followers" || activeTab === "visitors" || activeTab === "invite" || activeTab === "settings" ? (
+                ) : activeTab === "drafts" || activeTab === "saved" || activeTab === "analytics" || activeTab === "followers" || activeTab === "visitors" || activeTab === "settings" ? (
                   <DashboardProfileTab section={activeTab} lang={lang} />
                 ) : (
                   <DashboardSectionPlaceholder tab={activeTab} />

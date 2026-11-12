@@ -3,9 +3,8 @@
  * its title and the WhatsApp preview card — says so, instead of "X invited you
  * to sell on Shopi".
  *
- * To resume, set it to false. The profile still needs its paused components
- * swapped back by hand: ReferralPausedPanel → InviteEarnPanel in ProfileView,
- * and ReferralPausedBanner → the "Earn" row in ProfileMenu.
+ * To resume the invite landing page, set it to false. Profile and dashboard
+ * referral sections are hidden separately.
  */
 export const REFERRALS_PAUSED = true;
 

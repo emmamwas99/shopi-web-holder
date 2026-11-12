@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 function apiOrigin() {
   const value = process.env.NEXT_PUBLIC_API_URL;
   if (!value) return null;
@@ -17,10 +19,10 @@ function apiOrigin() {
  * for them the preconnect opened a TLS connection that was never used, which is
  * what Lighthouse flags, and it competed with the LCP image for the small pool
  * of parallel connections. Signed-in visitors take the client-fetching branch
- * and issue an API request immediately on hydration, so for them the same hint
- * is worth real time.
+ * and issue API requests during hydration. The client-side hint may help later
+ * requests, though the first request can race it.
  *
- * The signed-in check runs in the browser, while the HTML is still parsing.
+ * The signed-in check runs in the browser when the shell hydrates.
  * It used to read the `shopi-auth-hint` cookie on the server with cookies(),
  * but this renders in the (shell) layout, so that one call made every route
  * under it — listings, videos, explore — dynamic: rendered by a Vercel
@@ -40,8 +42,9 @@ export function ApiPreconnect() {
   return (
     <>
       <link rel="dns-prefetch" href={origin} />
-      <script
+      <Script
         id="api-preconnect"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: preconnectWhenSignedIn }}
       />
     </>
