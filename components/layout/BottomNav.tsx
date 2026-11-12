@@ -84,7 +84,6 @@ export function shouldHideBottomNav(pathname: string) {
     pathname.includes("/upload/tiktok") ||
     /\/content\/[^/]+\/comments\/?$/.test(pathname) ||
     /^\/[^/]+\/explore\/[^/]+\/[^/]+\/?$/.test(pathname) ||
-    /\/profile\/[^/]+$/.test(pathname) ||
     /\/notifications\/[^/]+/.test(pathname)
   );
 }
@@ -301,6 +300,9 @@ function isTabActive(
   }
   if (tab.key === "explore") {
     return pathname.startsWith(`/${lang}/explore`) || pathname.startsWith(`/${lang}/search`);
+  }
+  if (tab.key === "profile" && pathname.startsWith(`/${lang}/@`)) {
+    return true;
   }
   return pathname.startsWith(`/${lang}/${tab.path}`);
 }

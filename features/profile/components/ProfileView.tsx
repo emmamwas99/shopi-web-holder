@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { ChartColumn, ChevronLeft, Plus, UserRound } from "lucide-react";
@@ -27,8 +27,6 @@ import {
 } from "./ProfileMenu";
 import { appendUnique } from "../lib/appendUnique";
 import { previousAppUrl } from "@/lib/appHistory";
-import { useUiStore } from "@/stores/ui";
-import { isTabletViewportNow, TABLET_QUERY } from "@/hooks/useIsTablet";
 
 type Tab = ProfileSection;
 
@@ -221,22 +219,6 @@ export function ProfileView({ lang }: Props) {
   const requested = searchParams.get("tab");
   const tab: Tab | null = isTab(requested) ? requested : null;
   const shownTab: Tab = tab ?? "posts";
-  const setBottomNavHidden = useUiStore((state) => state.setBottomNavHidden);
-
-  useLayoutEffect(() => {
-    const syncBottomNavVisibility = () => {
-      setBottomNavHidden(Boolean(tab) && !isTabletViewportNow());
-    };
-    syncBottomNavVisibility();
-
-    const tabletMedia = window.matchMedia(TABLET_QUERY);
-    tabletMedia.addEventListener("change", syncBottomNavVisibility);
-    return () => {
-      tabletMedia.removeEventListener("change", syncBottomNavVisibility);
-      setBottomNavHidden(false);
-    };
-  }, [setBottomNavHidden, tab]);
-
   // Whether back from a section can pop history to the menu, or whether the
   // section was opened straight from a link and history leads elsewhere.
   // Only the fallback: the browser's own record of the previous entry (below)

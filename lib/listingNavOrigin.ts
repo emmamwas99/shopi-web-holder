@@ -18,7 +18,7 @@ export function originForPath(pathname: string, lang: string, feedTab: string | 
   }
   if (pathname.startsWith(`/${lang}/explore`) || pathname.startsWith(`/${lang}/search`)) return "explore";
   if (pathname.startsWith(`/${lang}/notifications`)) return "notifications";
-  if (pathname.startsWith(`/${lang}/profile`)) return "profile";
+  if (pathname.startsWith(`/${lang}/profile`) || pathname.startsWith(`/${lang}/@`)) return "profile";
   if (pathname.startsWith(`/${lang}/stores`)) return "stores";
   return null;
 }

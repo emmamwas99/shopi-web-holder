@@ -19,8 +19,9 @@ function usernameFromHandle(handle: string): string | null {
   const username = decoded.slice(1).trim().toLowerCase();
   return /^[a-z0-9._-]{1,40}$/.test(username) ? username : null;
 }
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { CreatorProfilePage } from "@/features/profile/components/CreatorProfilePage";
+import { BottomNav, BottomNavWithSearchParams } from "@/components/layout/BottomNav";
 import { query } from "@/lib/apollo/ApolloClient";
 import {
   GetUserPostsDocument,
@@ -262,12 +263,17 @@ export default async function Page({ params }: Props) {
           }}
         />
       )}
-      <CreatorProfilePage
-        username={username}
-        lang={lang}
-        initialProfile={profile}
-        initialPosts={posts}
-      />
+      <div className="tablet-bottom-padding pb-[calc(var(--nav-height,0px)+var(--safe-bottom,0px))] md:pb-0">
+        <CreatorProfilePage
+          username={username}
+          lang={lang}
+          initialProfile={profile}
+          initialPosts={posts}
+        />
+      </div>
+      <Suspense fallback={<BottomNav lang={lang} />}>
+        <BottomNavWithSearchParams lang={lang} />
+      </Suspense>
     </>
   );
 }
