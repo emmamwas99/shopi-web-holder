@@ -46,15 +46,15 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useVideoDownload } from "../hooks/useVideoDownload";
 import { useAppBack } from "@/lib/useAppBack";
+import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { useSellerPhone } from "../hooks/useSellerPhone";
-import { formatStoredPhone } from "@/lib/phone";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DrawerLoadingIndicator } from "@/components/ui/drawer-loading-indicator";
 import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
-import { CommentThread, CommentList, useCommentThread } from "./CommentThread";
+import { CommentThread, useCommentThread } from "./CommentThread";
 import { fmtCompact as fmt, listingPriceText } from "@/lib/format";
 import { avatarGradient as avatarColors } from "@/lib/avatar";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -62,7 +62,7 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
-import { absoluteContentUrl , slugifyContentTitle} from "@/lib/content-url";
+import { absoluteContentUrl, contentPath, slugifyContentTitle } from "@/lib/content-url";
 import { ContentDetailDocument } from "../queries/contentDetail";
 import { ListingSeoSummary } from "./ListingSeoSummary";
 import { profileHref } from "@/lib/profile-url";
@@ -678,22 +678,13 @@ export function ContentDetail({
   const resolvedCommentCount =
     commentCountOverride ?? post?.stats?.comments ?? 0;
 
-  // Shared comment thread (list + replies + optimistic posting). The mobile PDP
-  // renders its list inline and drives the composer from the fixed bottom bar.
+  // Keep the newest comment ready for the mobile PDP preview. The full thread
+  // and composer live on the dedicated comments route.
   const mobileThread = useCommentThread({
     contentId: resolvedContentId,
     onCommentAdded: () => setCommentCountOverride(null),
     lang,
   });
-  const {
-    text: mobileCommentText,
-    setText: setMobileCommentText,
-    replyingTo: mobileReplyingTo,
-    setReplyingTo: setMobileReplyingTo,
-    handleSend: handleMobileSend,
-    inputRef: mobileCommentInputRef,
-  } = mobileThread;
-
   const [captionExpanded, setCaptionExpanded] = useState(false);
   // Images save straight from their R2 URL; videos go through the API, which
   // resolves them to a Mux MP4 and may have to wait on the encode.
@@ -820,6 +811,8 @@ export function ContentDetail({
     if (navigator.share && post) {
       const url = absoluteContentUrl(window.location.origin, lang, post);
       navigator.share({ title: post.title, url }).catch(() => {});
+    } else {
+      void handleCopyLink();
     }
   }
 
@@ -833,7 +826,8 @@ export function ContentDetail({
               slug: post?.slug ?? null,
             })
           : "";
-      await navigator.clipboard?.writeText(url);
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(url);
       toast.success("Link copied");
     } catch {
       toast.error("Couldn't copy link");
@@ -986,9 +980,9 @@ export function ContentDetail({
           </div>
         </div>
         <div className="relative min-h-svh overflow-x-clip bg-app md:hidden">
-          {/* Mirrors the phone layout: media with floating controls, the
+          {/* Mirrors the phone layout: media with top controls, the
               summary, then sections separated by soft bands. */}
-          <div className="relative h-[58svh] min-h-80 max-h-160 bg-surface">
+          <div className="relative aspect-square max-h-[62svh] bg-surface">
             <Skeleton className="h-full w-full rounded-none bg-foreground/10" />
             <div
               className="absolute inset-x-0 top-0 flex justify-between px-3"
@@ -1018,7 +1012,10 @@ export function ContentDetail({
                 <Skeleton className="h-3 w-40 rounded-full bg-foreground/10" />
               </div>
             </div>
-            <Skeleton className="h-10 w-full rounded-[10px] bg-foreground/10" />
+            <div className="flex gap-2">
+              <Skeleton className="h-11 flex-1 rounded-xl bg-foreground/10" />
+              <Skeleton className="h-11 flex-1 rounded-xl bg-foreground/10" />
+            </div>
           </div>
           <div className="h-2 bg-surface" />
 
@@ -1032,15 +1029,6 @@ export function ContentDetail({
             ))}
           </div>
 
-          <div
-            className="fixed inset-x-0 bottom-0 border-t border-default bg-app px-3 pt-2.5"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
-          >
-            <div className="grid grid-cols-[auto_1fr] gap-2">
-              <Skeleton className="h-12 w-24 rounded-[12px] bg-foreground/10" />
-              <Skeleton className="h-12 rounded-[12px] bg-foreground/10" />
-            </div>
-          </div>
         </div>
       </>
     );
@@ -1928,21 +1916,42 @@ export function ContentDetail({
           ...(fullLocation ? [{ label: "Location", value: fullLocation }] : []),
         ];
         const shopHref = profileHref(lang, { username: postCreator?.username, id: post.creatorId });
+        const commentsHref = `${contentPath(lang, post)}/comments`;
+        const firstMedia = media[0];
+        const mediaWidth = firstMedia?.displayWidth ?? firstMedia?.r2Variants?.[0]?.width ?? 0;
+        const mediaHeight = firstMedia?.displayHeight ?? firstMedia?.r2Variants?.[0]?.height ?? 0;
+        const mediaRatio = mediaWidth > 0 && mediaHeight > 0 ? mediaWidth / mediaHeight : 1;
+        const frameRatio = Math.min(Math.max(mediaRatio, 4 / 5), isVideo ? 16 / 9 : 4 / 3);
+        const description = caption.trim().toLowerCase() === post.title.trim().toLowerCase() ? "" : caption.trim();
+        const longDescription = description.length > 280 || description.split("\n").length > 6;
+        const visibleDescription = longDescription && !captionExpanded ? `${description.slice(0, 280)}…` : description;
         const startMessage = () => {
           if (!resolvedContentId) return;
           trackMessageIntent();
           if (!requireAuth({ contentId: resolvedContentId })) return;
           openMessageRoute();
         };
+        const startCall = async () => {
+          if (!resolvedContentId || !requireAuth({ contentId: resolvedContentId })) return;
+          try {
+            const phone = sellerPhone ?? await revealSellerPhone();
+            if (phone) dialSeller(phone);
+            else toast("This seller hasn't added a phone number");
+          } catch {
+            toast.error("Couldn't reach the seller. Please try again.");
+          }
+        };
 
         return (
         <div className="relative min-h-svh overflow-x-clip bg-app">
-          {/* ── Compact header: slides in once the media has scrolled away ── */}
+          {/* The native PDP keeps these controls in place as the photo gives way
+              to a solid title bar. */}
           <header
-            aria-hidden={mediaInView}
             className={[
-              "fixed inset-x-0 top-0 z-[60] flex items-center gap-1 border-b border-default bg-app px-2 pb-2 transition-all duration-200",
-              mediaInView ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100",
+              "fixed inset-x-0 top-0 z-[60] flex items-center gap-1 px-2 pb-2 transition-colors duration-200 md:hidden",
+              mediaInView
+                ? "bg-linear-to-b from-black/50 to-transparent text-white"
+                : "border-b border-default bg-app text-main",
             ].join(" ")}
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 8px)" }}
           >
@@ -1950,38 +1959,57 @@ export function ContentDetail({
               type="button"
               onClick={goBack}
               aria-label="Go back"
-              tabIndex={mediaInView ? -1 : 0}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-main active:bg-surface"
+              className={[
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                mediaInView ? "bg-black/40 text-white" : "text-main active:bg-surface",
+              ].join(" ")}
             >
               <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
             </button>
-            <div className="min-w-0 flex-1">
+            <div className={["min-w-0 flex-1 transition-opacity duration-200", mediaInView ? "opacity-0" : "opacity-100"].join(" ")} aria-hidden={mediaInView}>
               <p className="truncate text-[14px] font-semibold leading-5 text-main">{post.title}</p>
               <p className="truncate text-[12px] leading-4 text-muted">{priceText}</p>
             </div>
             <button
               type="button"
-              onClick={() => handleSave()}
-              aria-label={resolvedSaved ? "Remove saved listing" : "Save listing"}
-              tabIndex={mediaInView ? -1 : 0}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-main active:bg-surface"
-            >
-              <Bookmark
-                className="h-5 w-5"
-                fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
-                stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "currentColor"}
-                strokeWidth={2}
-              />
-            </button>
-            <button
-              type="button"
               onClick={handleShare}
               aria-label="Share listing"
-              tabIndex={mediaInView ? -1 : 0}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-main active:bg-surface"
+              className={[
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                mediaInView ? "bg-black/40 text-white" : "text-main active:bg-surface",
+              ].join(" ")}
             >
               <Forward className="h-5 w-5" strokeWidth={2} />
             </button>
+            <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More listing options"
+                  className={[
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                    mediaInView ? "bg-black/40 text-white" : "text-main active:bg-surface",
+                  ].join(" ")}
+                >
+                  <MoreHorizontal className="h-5 w-5" strokeWidth={2.2} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={8} className="z-[80] w-52 rounded-2xl border border-border bg-elevated p-1.5 shadow-lg">
+                <button type="button" onClick={() => { setMenuOpen(false); void handleCopyLink(); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-default active:bg-surface">
+                  <Link2 className="h-4 w-4" /> Copy link
+                </button>
+                {post.allowDownload && (
+                  <button type="button" onClick={() => { setMenuOpen(false); void handleDownload(); }} disabled={isDownloading || videoDownload.isDownloading} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-default active:bg-surface disabled:opacity-60">
+                    <Download className="h-4 w-4" /> Download
+                  </button>
+                )}
+                {!isOwnPost && (
+                  <button type="button" onClick={() => { setMenuOpen(false); if (!resolvedContentId || !requireAuth({ contentId: resolvedContentId })) return; void handleReport().then(() => toast.success("Thanks — we'll review this listing")).catch(() => toast.error("Couldn't report this listing")); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-default active:bg-surface">
+                    <Flag className="h-4 w-4" /> Report listing
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
           </header>
 
           {/* ── Media: full width, nothing overlaps it ───────────────────────
@@ -1990,7 +2018,8 @@ export function ContentDetail({
               the image dots. The media now ends cleanly where the page begins. */}
           <section
             ref={mediaRef}
-            className={["relative h-[58svh] min-h-80 max-h-160", isVideo ? "bg-black" : "bg-surface"].join(" ")}
+            className={["relative w-full max-h-[62svh]", isVideo ? "bg-black" : "bg-surface"].join(" ")}
+            style={{ aspectRatio: frameRatio }}
           >
             {isVideo && hlsUrl ? (
               <ContentVideo
@@ -2021,34 +2050,13 @@ export function ContentDetail({
               />
             )}
 
-            {/* Floating controls over the media, clear of the status bar. */}
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 z-50 flex items-center justify-between px-3"
-              style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 12px)" }}
-            >
-              <div className="pointer-events-auto">
-                <OverlayButton label="Go back" onClick={goBack}>
-                  <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
+            {!isOwnPost && (
+              <div className={["absolute left-3 z-30", isVideo ? "bottom-14" : "bottom-3"].join(" ")}>
+                <OverlayButton label={resolvedSaved ? "Remove from saved listings" : "Save listing"} pressed={resolvedSaved} onClick={() => void handleSave()}>
+                  <Bookmark className="h-5 w-5" fill={resolvedSaved ? "currentColor" : "none"} strokeWidth={2} />
                 </OverlayButton>
               </div>
-              <div className="pointer-events-auto flex items-center gap-2">
-                <OverlayButton
-                  label={resolvedSaved ? "Remove saved listing" : "Save listing"}
-                  pressed={resolvedSaved}
-                  onClick={() => void handleSave()}
-                >
-                  <Bookmark
-                    className="h-5 w-5"
-                    fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
-                    stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "currentColor"}
-                    strokeWidth={2}
-                  />
-                </OverlayButton>
-                <OverlayButton label="Share listing" onClick={handleShare}>
-                  <Forward className="h-5 w-5" strokeWidth={2} />
-                </OverlayButton>
-              </div>
-            </div>
+            )}
 
             {!isVideo && media.length > 1 && (
               <span className="pointer-events-none absolute bottom-3 right-3 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[12px] font-semibold tabular-nums text-white backdrop-blur-md">
@@ -2058,8 +2066,7 @@ export function ContentDetail({
           </section>
 
           <main
-            className={isOwnPost ? "pb-8" : ""}
-            style={isOwnPost ? undefined : { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)" }}
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 32px)" }}
           >
             {/* ── What it is ───────────────────────────────────────────── */}
             <section className="px-4 pb-4 pt-4">
@@ -2175,15 +2182,31 @@ export function ContentDetail({
                   </button>
                 )}
               </div>
+              {!isOwnPost && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void startCall()}
+                    disabled={sellerPhoneLoading || sellerPhoneUnavailable}
+                    aria-label="Call the seller"
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-default bg-elevated px-3 text-[14px] font-semibold text-main active:bg-surface disabled:opacity-55"
+                  >
+                    <Phone className="h-[18px] w-[18px]" strokeWidth={2} />
+                    {sellerPhoneLoading ? "Loading…" : sellerPhoneUnavailable ? "No number" : "Call"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startMessage}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-[14px] font-semibold text-white active:opacity-85"
+                  >
+                    <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2} />
+                    Message
+                  </button>
+                </div>
+              )}
               {postCreator?.isVerified && (
                 <VerifiedSellerNote lang={lang} sellerName={creatorName} className="mt-3" />
               )}
-              <Link
-                href={shopHref}
-                className="mt-3 flex h-10 items-center justify-center rounded-[10px] border border-default text-[14px] font-semibold text-main no-underline active:bg-surface"
-              >
-                Visit shop
-              </Link>
             </ListingSection>
 
             {detailRows.length > 0 && (
@@ -2195,14 +2218,14 @@ export function ContentDetail({
               </>
             )}
 
-            {caption && (
+            {description && (
               <>
                 <SectionGap />
                 <ListingSection title="Description">
                   <p className="whitespace-pre-line text-[14px] leading-6 text-main">
-                    {displayCaption}
+                    {visibleDescription}
                   </p>
-                  {isLongCaption && (
+                  {longDescription && (
                     <button
                       type="button"
                       onClick={() => setCaptionExpanded((v) => !v)}
@@ -2220,10 +2243,52 @@ export function ContentDetail({
               </>
             )}
 
+            <SectionGap />
+
+            {/* ── Questions & comments ─────────────────────────────────── */}
+            <ListingSection
+              sectionRef={commentsRef}
+              title={<Link href={commentsHref} className="text-main no-underline">Questions & comments</Link>}
+              aside={
+                <Link href={commentsHref} className="shrink-0 text-[13px] font-semibold text-primary no-underline">
+                  {resolvedCommentCount > 0 ? `See all · ${fmt(resolvedCommentCount)}` : "See all"}
+                </Link>
+              }
+            >
+              {mobileThread.comments[0] ? (
+                <Link
+                  href={commentsHref}
+                  className="block w-full rounded-xl bg-surface px-3 py-3 text-left no-underline"
+                  aria-label="Read questions and comments"
+                >
+                  <span className="flex items-center gap-2 text-[13px]">
+                    <span className="truncate font-semibold text-main">
+                      {[mobileThread.comments[0].author?.profile?.firstName, mobileThread.comments[0].author?.profile?.lastName].filter(Boolean).join(" ") || "Shopi member"}
+                    </span>
+                    {mobileThread.comments[0].creatorId === post.creatorId && <span className="rounded bg-primary-soft px-1.5 py-0.5 text-[11px] font-semibold text-primary">Seller</span>}
+                    <span className="shrink-0 text-muted">{timeAgo(mobileThread.comments[0].createdAt)}</span>
+                  </span>
+                  <span className="mt-1 line-clamp-2 text-[14px] leading-5 text-main">{mobileThread.comments[0].text}</span>
+                </Link>
+              ) : (
+                <p className="text-[14px] leading-5 text-muted">
+                  {mobileThread.loading ? "Loading questions…" : isOwnPost ? "No questions yet. Buyers' questions will appear here." : "No questions yet. Ask the seller about the item."}
+                </p>
+              )}
+              <Link
+                href={`${commentsHref}?compose=1`}
+                className="mt-3 flex min-h-11 items-center gap-2 rounded-full border border-default bg-elevated px-4 text-[14px] text-muted no-underline"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="min-w-0 flex-1 truncate">{isOwnPost ? "Answer buyers' questions…" : resolvedCommentCount > 0 ? "Add a comment…" : "Ask the seller a question…"}</span>
+                <Send className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              </Link>
+            </ListingSection>
+
             {!isOwnPost && (
               <>
                 <SectionGap />
-                <ListingSection title="Buying on Shopi">
+                <ListingSection title="Buying safely">
                   <BuyingSteps />
                   <p className="mt-4 flex items-start gap-2 rounded-[10px] bg-surface px-3 py-2.5 text-[13px] leading-5 text-muted">
                     <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
@@ -2235,74 +2300,6 @@ export function ContentDetail({
                 </ListingSection>
               </>
             )}
-
-            <SectionGap />
-
-            {/* ── Questions & comments ─────────────────────────────────── */}
-            <ListingSection
-              sectionRef={commentsRef}
-              title="Questions & comments"
-              aside={
-                resolvedCommentCount > 0 ? (
-                  <span className="text-[13px] text-muted">{fmt(resolvedCommentCount)}</span>
-                ) : undefined
-              }
-            >
-              <CommentList thread={mobileThread} contentCreatorId={post.creatorId} className="" />
-              {mobileReplyingTo && (
-                <div className="mt-3 flex items-center justify-between rounded-[10px] bg-surface px-3 py-2 text-[13px] text-muted">
-                  <span>
-                    Replying to{" "}
-                    <span className="font-medium text-main">
-                      {mobileReplyingTo.author?.profile?.firstName ??
-                        `User ${mobileReplyingTo.creatorId.slice(-6)}`}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setMobileReplyingTo(null)}
-                    className="ml-2 flex h-6 w-6 items-center justify-center rounded-full text-muted hover:text-main"
-                    aria-label="Cancel reply"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  ref={mobileCommentInputRef as React.RefObject<HTMLInputElement>}
-                  type="text"
-                  value={mobileCommentText}
-                  onChange={(e) => setMobileCommentText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleMobileSend();
-                    }
-                  }}
-                  onFocus={() => {
-                    if (
-                      !resolvedContentId ||
-                      !requireAuth({ contentId: resolvedContentId, action: "comment" })
-                    )
-                      mobileCommentInputRef.current?.blur();
-                  }}
-                  placeholder={mobileReplyingTo ? "Write a reply…" : "Ask the seller a question…"}
-                  maxLength={500}
-                  className="h-11 min-w-0 flex-1 rounded-full border border-default bg-surface px-4 text-[14px] text-main outline-none transition-colors placeholder:text-muted focus:border-primary"
-                />
-                {mobileCommentText.trim() && (
-                  <button
-                    type="button"
-                    onClick={handleMobileSend}
-                    aria-label="Send comment"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-transform active:scale-95"
-                  >
-                    <Send className="h-4 w-4" strokeWidth={2.2} />
-                  </button>
-                )}
-              </div>
-            </ListingSection>
 
             {related && (
               <>
@@ -2346,52 +2343,8 @@ export function ContentDetail({
               )}
             </div>
           </main>
+          <BackToTopButton variant="pdp" />
 
-          {/* ── Contact bar ─────────────────────────────────────────────── */}
-          {!isOwnPost && (
-            <div
-              className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app px-3 pt-2.5"
-              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
-            >
-              <div className="mx-auto grid w-full max-w-xl grid-cols-[auto_1fr] gap-2">
-                <button
-                  type="button"
-                  disabled={sellerPhoneLoading}
-                  onClick={async () => {
-                    if (!resolvedContentId) return;
-                    if (!requireAuth({ contentId: resolvedContentId })) return;
-                    if (sellerPhone) {
-                      dialSeller();
-                      return;
-                    }
-                    const revealed = await revealSellerPhone();
-                    if (!revealed) toast("This seller hasn't added a phone number");
-                  }}
-                  aria-label={sellerPhone ? "Call seller" : "Show seller phone number"}
-                  className="flex h-12 min-w-24 items-center justify-center gap-2 rounded-[12px] border border-default bg-elevated px-4 text-[15px] font-semibold text-main transition-colors active:bg-surface disabled:opacity-60"
-                >
-                  <Phone className="h-[18px] w-[18px] shrink-0" strokeWidth={2.2} />
-                  <span className="max-w-32 truncate">
-                    {sellerPhoneLoading
-                      ? "Loading…"
-                      : sellerPhone
-                        ? formatStoredPhone(sellerPhone)
-                        : sellerPhoneUnavailable
-                          ? "No number"
-                          : "Call"}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={startMessage}
-                  className="flex h-12 items-center justify-center gap-2 rounded-[12px] bg-primary px-4 text-[15px] font-semibold text-white transition-transform active:scale-[0.98]"
-                >
-                  <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2.2} />
-                  Message seller
-                </button>
-              </div>
-            </div>
-          )}
         </div>
         );
       })()}

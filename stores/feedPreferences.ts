@@ -13,10 +13,17 @@ export type NearbyLocation = {
 
 type NearbyLocationInput = Omit<NearbyLocation, "updatedAt">;
 
+export type NearbySearchPlace = {
+  latitude: number;
+  longitude: number;
+  label: string;
+};
+
 type FeedPreferencesState = {
   nearbyLocation: NearbyLocation | null;
   nearbyRadiusKm: number;
   homeNearbyRadiusKm: number;
+  homeNearbyPlace: NearbySearchPlace | null;
   homeNearbyFilterActive: boolean;
   videoMuted: boolean;
   /** When the "enable location" feed banner was last dismissed, or null if never. */
@@ -25,6 +32,7 @@ type FeedPreferencesState = {
   clearNearbyLocation: () => void;
   setNearbyRadiusKm: (radiusKm: number) => void;
   setHomeNearbyRadiusKm: (radiusKm: number) => void;
+  setHomeNearbyPlace: (place: NearbySearchPlace | null) => void;
   setHomeNearbyFilterActive: (active: boolean) => void;
   setVideoMuted: (muted: boolean) => void;
   toggleVideoMuted: () => void;
@@ -35,6 +43,7 @@ type PersistedFeedPreferencesState = {
   nearbyLocation?: NearbyLocation | null;
   nearbyRadiusKm?: number;
   homeNearbyRadiusKm?: number;
+  homeNearbyPlace?: NearbySearchPlace | null;
   homeNearbyFilterActive?: boolean;
   videoMuted?: boolean;
   locationBannerDismissedAt?: number | null;
@@ -49,6 +58,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
       nearbyLocation: null,
       nearbyRadiusKm: DEFAULT_NEARBY_RADIUS_KM,
       homeNearbyRadiusKm: DEFAULT_HOME_NEARBY_RADIUS_KM,
+      homeNearbyPlace: null,
       homeNearbyFilterActive: false,
       videoMuted: true,
       locationBannerDismissedAt: null,
@@ -67,6 +77,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
       clearNearbyLocation: () => set({ nearbyLocation: null }),
       setNearbyRadiusKm: (nearbyRadiusKm) => set({ nearbyRadiusKm }),
       setHomeNearbyRadiusKm: (homeNearbyRadiusKm) => set({ homeNearbyRadiusKm }),
+      setHomeNearbyPlace: (homeNearbyPlace) => set({ homeNearbyPlace }),
       setHomeNearbyFilterActive: (homeNearbyFilterActive) =>
         set({ homeNearbyFilterActive }),
       setVideoMuted: (videoMuted) => set({ videoMuted }),
@@ -81,7 +92,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
         nearbyLocation: state.nearbyLocation,
         nearbyRadiusKm: state.nearbyRadiusKm,
         homeNearbyRadiusKm: state.homeNearbyRadiusKm,
-        homeNearbyFilterActive: state.homeNearbyFilterActive,
+        homeNearbyPlace: state.homeNearbyPlace,
         videoMuted: state.videoMuted,
         locationBannerDismissedAt: state.locationBannerDismissedAt,
       }),
@@ -99,17 +110,26 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
             : DEFAULT_NEARBY_RADIUS_KM;
         const homeNearbyRadiusKm =
           typeof persistedState?.homeNearbyRadiusKm === "number" &&
-          [5, 10, 20, 50, 100, 200, 400].includes(persistedState.homeNearbyRadiusKm)
+          [5, 10, 20, 50, 100, 200].includes(persistedState.homeNearbyRadiusKm)
             ? persistedState.homeNearbyRadiusKm
             : DEFAULT_HOME_NEARBY_RADIUS_KM;
+        const savedPlace = persistedState?.homeNearbyPlace;
+        const homeNearbyPlace =
+          savedPlace &&
+          Number.isFinite(savedPlace.latitude) &&
+          Number.isFinite(savedPlace.longitude) &&
+          typeof savedPlace.label === "string"
+            ? savedPlace
+            : null;
 
         return {
           ...current,
           nearbyLocation,
           nearbyRadiusKm,
           homeNearbyRadiusKm,
-          homeNearbyFilterActive:
-            persistedState?.homeNearbyFilterActive === true,
+          homeNearbyPlace,
+          // The old Home location toggle became a separate Nearby tab.
+          homeNearbyFilterActive: false,
           videoMuted:
             typeof persistedState?.videoMuted === "boolean"
               ? persistedState.videoMuted

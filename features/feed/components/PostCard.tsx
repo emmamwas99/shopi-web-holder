@@ -1352,11 +1352,21 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <div className="h-4 w-28 rounded-full bg-surface animate-pulse" />
           )}
           <p
-            className="mt-0.5 truncate text-[12px] leading-4 text-muted md:text-[13px]"
-            title={place ?? undefined}
+            className="mt-0.5 flex min-w-0 items-center gap-1 text-[12px] leading-4 text-muted md:text-[13px]"
           >
-            {place ? `${place} · ` : ""}
-            {timeAgo(post.createdAt)}
+            {place && (
+              <>
+                <span className="min-w-0 truncate" title={place}>
+                  {place}
+                </span>
+                <span className="shrink-0" aria-hidden="true">
+                  ·
+                </span>
+              </>
+            )}
+            <span className="shrink-0 whitespace-nowrap">
+              {timeAgo(post.createdAt)}
+            </span>
           </p>
         </div>
 

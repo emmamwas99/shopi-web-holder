@@ -30,7 +30,7 @@ export function LocationPermissionBanner() {
   if (permState !== "idle" || recentlyDismissed || justRequested) return null;
 
   return (
-    <div className="mx-3 mb-2 flex items-center gap-3 rounded-2xl border border-border bg-elevated px-4 py-3 shadow-sm sm:mx-0">
+    <div className="mx-3 my-2 flex items-center gap-3 rounded-2xl border border-border bg-elevated px-4 py-3 shadow-sm sm:mx-0">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
         <svg
           width="18"

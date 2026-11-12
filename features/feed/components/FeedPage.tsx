@@ -52,6 +52,14 @@ const WatchGrid = dynamic(
   () => import("./WatchGrid").then((mod) => mod.WatchGrid),
   { loading: () => <WatchGridSkeleton /> },
 );
+const FollowingGrid = dynamic(
+  () => import("./FollowingGrid").then((mod) => mod.FollowingGrid),
+  { loading: () => <FeedCardsSkeleton /> },
+);
+const NearbyFeedTab = dynamic(
+  () => import("./NearbyFeedTab").then((mod) => mod.NearbyFeedTab),
+  { loading: () => <FeedCardsSkeleton /> },
+);
 const AskShopiGrid = SHOW_ASK_SHOPI
   ? dynamic(
       () => import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
@@ -74,10 +82,11 @@ interface Props {
   initialItemsPromise?: Promise<ContentCardFieldsFragment[]>;
 }
 
-type Tab = "for-you" | "watch" | "ask-shopi";
+type Tab = "for-you" | "following" | "nearby" | "watch" | "ask-shopi";
 
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" || v === "watch" || (SHOW_ASK_SHOPI && v === "ask-shopi");
+  v === "for-you" || v === "following" || v === "nearby" ||
+  v === "watch" || (SHOW_ASK_SHOPI && v === "ask-shopi");
 
 const DESKTOP_QUERY = "(min-width: 1280px) and (pointer: fine)";
 const isDesktopViewportNow = () =>
@@ -181,6 +190,8 @@ export function FeedPage({
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (Array.isArray(parsed)) {
+          // Browser storage is only available after hydration.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setRecentSearches(
             parsed.filter((term): term is string => typeof term === "string").slice(0, 10),
           );
@@ -298,6 +309,7 @@ export function FeedPage({
 
   function handleTabChange(next: Tab) {
     if (next === tab) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
       if (next === "for-you") window.dispatchEvent(new Event(FOR_YOU_REFRESH_EVENT));
       return;
     }
@@ -314,7 +326,7 @@ export function FeedPage({
           screen being shown (FeedPage stays mounted behind other routes). */}
       <GoogleOneTap lang={lang} active={visible} />
 
-      {mobileSearchOpen && !isSearchResultPdpOpen ? (
+      {mobileSearchOpen && !desktop && !isSearchResultPdpOpen ? (
         <MobileSearchScreen
           lang={lang}
           view={searchResultsOpen ? "results" : "entry"}
@@ -396,6 +408,16 @@ export function FeedPage({
             {openedTabs.has("watch") ? (
               <div className={tab === "watch" ? undefined : "hidden"}>
                 <WatchGrid lang={lang} active={visible && tab === "watch"} />
+              </div>
+            ) : null}
+            {openedTabs.has("following") ? (
+              <div className={tab === "following" ? undefined : "hidden"}>
+                <FollowingGrid lang={lang} active={visible && tab === "following" && !mobileSearchOpen} />
+              </div>
+            ) : null}
+            {openedTabs.has("nearby") ? (
+              <div className={tab === "nearby" ? undefined : "hidden"}>
+                <NearbyFeedTab lang={lang} active={visible && tab === "nearby" && !mobileSearchOpen} />
               </div>
             ) : null}
             {SHOW_ASK_SHOPI && AskShopiGrid && openedTabs.has("ask-shopi") ? (

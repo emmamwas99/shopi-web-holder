@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clapperboard, MapPin, Search, Sparkles } from "lucide-react";
+import { Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { WatchGridSkeleton } from "./WatchGridSkeleton";
@@ -89,15 +89,16 @@ function StoriesTraySkeleton() {
 }
 
 export function FeedSkeleton() {
-  const [activeTab, setActiveTab] = useState<"for-you" | "watch" | "ask-shopi">("for-you");
+  const [activeTab, setActiveTab] = useState<"for-you" | "following" | "nearby" | "watch" | "ask-shopi">("for-you");
 
   useEffect(() => {
-    // The server snapshot defaults to For You; sync a direct Watch URL after
+    // The server snapshot defaults to For You; sync a direct sub-tab URL after
     // hydration so the matching placeholder appears without changing SSR HTML.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     const tab = new URLSearchParams(window.location.search).get("tab");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab(
-      tab === "watch" || (SHOW_ASK_SHOPI && tab === "ask-shopi")
+      tab === "watch" || tab === "following" || tab === "nearby" ||
+      (SHOW_ASK_SHOPI && tab === "ask-shopi")
         ? tab
         : "for-you",
     );
@@ -106,12 +107,14 @@ export function FeedSkeleton() {
   return (
     <div>
       {/* Match the mobile toolbar while the feed content loads. */}
-      <div className="md:hidden">
-        <MobileFeedHeaderSkeleton />
+      <div className="feed-mobile-shell">
+        <MobileFeedHeaderSkeleton activeTab={activeTab} />
         {activeTab === "watch" ? (
           <WatchGridSkeleton />
         ) : activeTab === "ask-shopi" ? (
           <AskShopiSkeleton />
+        ) : activeTab === "following" || activeTab === "nearby" ? (
+          <FeedCardsSkeleton />
         ) : (
           <>
             <StoriesTraySkeleton />
@@ -125,13 +128,13 @@ export function FeedSkeleton() {
       {/* Desktop Watch is a full-width video grid with no tabs or right rail
           (DesktopFeed), so its placeholder is that grid alone. */}
       {activeTab === "watch" ? (
-        <div className="hidden min-h-svh bg-app md:block">
+        <div className="desktop-feed-skeleton min-h-svh bg-app">
           <div className="mx-auto w-full max-w-[1560px] px-2 md:px-5 lg:px-8">
             <WatchGridSkeleton desktopLayout />
           </div>
         </div>
       ) : (
-      <div className="hidden min-h-svh bg-app md:block">
+      <div className="desktop-feed-skeleton min-h-svh bg-app">
         <div className="mx-auto w-full max-w-[1680px] px-4 pt-2 md:px-6 xl:px-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
             <div className="mx-auto w-full min-w-0 max-w-[780px] pb-4 md:pb-6 xl:mx-0 xl:max-w-none">
@@ -201,41 +204,26 @@ export function FeedSkeleton() {
   );
 }
 
-function MobileFeedHeaderSkeleton() {
-  const icons = SHOW_ASK_SHOPI
-    ? [MapPin, Search, Sparkles, Clapperboard]
-    : [MapPin, Search, Clapperboard];
-
+function MobileFeedHeaderSkeleton({ activeTab }: { activeTab: "for-you" | "following" | "nearby" | "watch" | "ask-shopi" }) {
+  const activeIndex = ["for-you", "following", "nearby"].indexOf(activeTab);
   return (
     <>
-      <div className="h-[57px]" aria-hidden="true" />
+      <div className="h-12 md:h-16" aria-hidden="true" />
       <header
-        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-app px-4 md:px-6"
+        className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-elevated"
         aria-hidden
       >
-        <div className="mx-auto flex h-14 max-w-2xl items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
-            <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-transparent bg-subtle pl-3.5 pr-2">
-              <Search size={16} className="shrink-0 text-muted" aria-hidden />
-              <Skeleton className="h-3.5 w-40 max-w-full rounded-full" />
-            </div>
-            <Skeleton className="size-10 shrink-0 rounded-full" />
+        <div className="mx-auto grid h-12 max-w-2xl grid-cols-[40px_minmax(0,1fr)_40px] items-center px-2 md:h-16 md:max-w-5xl md:grid-cols-[52px_minmax(0,1fr)_52px] md:px-5">
+          <span />
+          <div className="relative flex h-full min-w-0 items-center">
+            {["For you", "Following", "Nearby"].map((label, index) => (
+              <div key={label} className={`grid h-full min-w-0 flex-1 place-items-center px-1 text-[15px] font-semibold sm:text-base md:text-lg ${index === activeIndex ? "text-main" : "text-muted"}`}>
+                {label}
+              </div>
+            ))}
+            {activeIndex >= 0 && <span className={`absolute bottom-1 h-[3px] w-[22px] -translate-x-1/2 rounded-full bg-primary ${activeIndex === 0 ? "left-[16.6667%]" : activeIndex === 1 ? "left-1/2" : "left-[83.3333%]"}`} />}
           </div>
-          <div className="hidden min-w-0 items-center justify-between gap-3 md:flex md:flex-1">
-            <div className="shrink-0 text-base font-bold tracking-tight text-main">
-              For you
-            </div>
-            <div className="flex items-center gap-2">
-              {icons.map((Icon, index) => (
-                <div
-                  key={index}
-                  className="grid size-10 place-items-center rounded-full bg-surface text-foreground"
-                >
-                  <Icon size={index === 0 ? 19 : 21} strokeWidth={2.1} aria-hidden />
-                </div>
-              ))}
-            </div>
-          </div>
+          <Search size={24} strokeWidth={2.4} className="mx-auto text-main" />
         </div>
       </header>
     </>

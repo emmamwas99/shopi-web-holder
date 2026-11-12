@@ -304,7 +304,7 @@ export function useNearbyFeed(
   coordinates: NearbyCoordinates | null,
   radiusKm: number,
 ) {
-  const { data, loading, error, fetchMore } = useQuery(
+  const { data, loading, error, fetchMore, refetch } = useQuery(
     LocalFeedDocument,
     {
       variables: {
@@ -359,6 +359,7 @@ export function useNearbyFeed(
     loading: loading && items.length === 0,
     loadingMore,
     error,
+    refetch,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
   };

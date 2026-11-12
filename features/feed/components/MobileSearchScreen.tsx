@@ -319,7 +319,7 @@ export function MobileSearchScreen({
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
       }}
-      className="fixed inset-0 z-[100] bg-app md:hidden"
+      className="fixed inset-0 z-[100] bg-app"
     >
       <div className="flex h-full flex-col pt-[env(safe-area-inset-top)]">
         <form
@@ -333,7 +333,7 @@ export function MobileSearchScreen({
             type="button"
             onClick={view === "results" ? onBackToEntry : onClose}
             className="grid h-8 w-7 shrink-0 place-items-center rounded-full text-default active:bg-surface"
-            aria-label={view === "results" ? "Back to search" : "Back to For You"}
+            aria-label={view === "results" ? "Back to search" : "Back to feed"}
           >
             <ChevronLeft size={22} strokeWidth={2} aria-hidden />
           </button>

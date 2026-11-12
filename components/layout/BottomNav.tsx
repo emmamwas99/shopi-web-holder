@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Clapperboard,
   House,
-  LayoutGrid,
   MessageCircle,
+  ShoppingBag,
   SquarePlus,
   Store,
   User,
@@ -16,6 +17,14 @@ import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useUiStore } from "@/stores/ui";
 import { useNavTabHref } from "@/lib/navTabMemory";
+import { useScrollChromeHidden } from "@/hooks/useScrollChromeHidden";
+import {
+  isListingPath,
+  originForPath,
+  rememberListingOrigin,
+  restoreListingOrigin,
+  useListingOrigin,
+} from "@/lib/listingNavOrigin";
 
 type Tab = {
   key: string;
@@ -40,9 +49,9 @@ const tabs: Tab[] = [
   {
     key: "explore",
     path: "explore",
-    // The route stays /explore; the tab is named for its category-led view.
-    label: "Categories",
-    icon: LayoutGrid,
+    // Match the mobile app's Market tab while keeping the /explore route.
+    label: "Market",
+    icon: Store,
   },
   {
     key: "upload",
@@ -73,7 +82,7 @@ export function shouldHideBottomNav(pathname: string) {
   return (
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok") ||
-    pathname.includes("/content/") ||
+    /\/content\/[^/]+\/comments\/?$/.test(pathname) ||
     /^\/[^/]+\/explore\/[^/]+\/[^/]+\/?$/.test(pathname) ||
     /\/profile\/[^/]+$/.test(pathname) ||
     /\/notifications\/[^/]+/.test(pathname)
@@ -88,6 +97,18 @@ export function BottomNav({
   activeFeedTab?: string | null;
 }) {
   const pathname = usePathname();
+  const listingPath = isListingPath(pathname, lang);
+  const listingOrigin = useListingOrigin();
+  // MainShell persists as tabs push listing routes. Keep the originating tab
+  // highlighted on the PDP, including after another listing opens from it.
+  useEffect(() => {
+    const origin = originForPath(pathname, lang, activeFeedTab);
+    if (origin) {
+      rememberListingOrigin(origin);
+    } else if (listingPath) {
+      restoreListingOrigin();
+    }
+  }, [pathname, lang, activeFeedTab, listingPath]);
   // Hydration-safe: no badge until the persisted session has rehydrated, so
   // the first client paint matches the server HTML.
   const { hydrated } = useAuthSession();
@@ -97,6 +118,10 @@ export function BottomNav({
   // to hide the nav WITHOUT unmounting it — a class toggle, so there's no
   // remount flash when they appear or leave.
   const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
+  const scrollKey = pathname.startsWith(`/${lang}/for-you`)
+    ? `${pathname}:${activeFeedTab ?? "for-you"}`
+    : pathname;
+  const scrollHidden = useScrollChromeHidden(scrollKey);
   // Explore and Inbox return to their last screen. Home always opens For You.
   // RouteScrollRestoration restores each tab's scroll position.
   const tabHrefs: Record<string, string> = {
@@ -107,19 +132,22 @@ export function BottomNav({
   };
   const tabletTabs: Tab[] = [
     ...tabs.slice(0, 2),
-    { key: "stores", path: "stores", label: "Stores", icon: Store },
+    { key: "stores", path: "stores", label: "Stores", icon: ShoppingBag },
     tabs[2],
     { key: "watch", path: "for-you?tab=watch", label: "Watch", icon: Clapperboard },
     ...tabs.slice(3),
   ];
 
-  // Hide on the full create flow, content detail, creator profile, and chat detail pages
+  // Comments own the full screen; listings keep the originating tab visible.
   if (shouldHideBottomNav(pathname)) return null;
 
   return (
     <nav
+      data-scroll-hidden={scrollHidden}
+      aria-hidden={scrollHidden || undefined}
+      inert={scrollHidden}
       className={`bottom-nav tablet-bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-elevated   ${
-        bottomNavHidden ? "hidden" : ""
+        bottomNavHidden && !listingPath ? "hidden" : ""
       }`}
     >
       <div className="mobile-bottom-nav-items relative flex h-(--nav-height) items-center justify-between border-t border-border">
@@ -132,7 +160,9 @@ export function BottomNav({
           const isUpload = tab.key === "upload";
 
           // Active if the pathname segment after lang matches this tab's path
-          const isActive = isTabActive(tab, pathname, lang, activeFeedTab, false);
+          const isActive = listingPath
+            ? tab.key === (listingOrigin === "watch" ? "feed" : listingOrigin)
+            : isTabActive(tab, pathname, lang, activeFeedTab, false);
 
           return (
             <Link
@@ -187,7 +217,9 @@ export function BottomNav({
           const href = tabHrefs[tab.key] ?? `/${lang}/${tab.path}`;
           const Icon = tab.icon;
           const isUpload = tab.key === "upload";
-          const isActive = isTabActive(tab, pathname, lang, activeFeedTab, true);
+          const isActive = listingPath
+            ? tab.key === listingOrigin
+            : isTabActive(tab, pathname, lang, activeFeedTab, true);
 
           return (
             <Link

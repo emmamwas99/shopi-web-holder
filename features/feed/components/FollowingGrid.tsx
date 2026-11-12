@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth";
 import { PostCard } from "./PostCard";
-import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
+import { FeedCardsSkeleton, FeedPaginationSkeleton } from "./FeedSkeleton";
 import { useFollowingFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
@@ -17,7 +17,7 @@ function LoginWall({ lang }: { lang: string }) {
   const returnTo = encodeURIComponent(`/${lang}/for-you?tab=following`);
 
   return (
-    <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 no-bar flex-col items-center justify-center px-6 text-center gap-5">
+    <div className="flex min-h-[65svh] flex-col items-center justify-center gap-5 px-6 text-center">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)" }}
@@ -84,11 +84,11 @@ export function FollowingGrid({ lang, active = true }: Props) {
 
   if (!isAuthenticated) return <LoginWall lang={lang} />;
 
-  if (loading && items.length === 0) return <FeedSkeleton />;
+  if (loading && items.length === 0) return <FeedCardsSkeleton />;
 
   if (!loading && items.length === 0) {
     return (
-      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 no-bar overflow-y-hidden flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[65svh] flex-col items-center justify-center gap-4 px-6 text-center">
         <div className="text-5xl">👥</div>
         <h3
           className="font-bold text-base mb-1"

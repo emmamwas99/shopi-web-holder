@@ -1105,8 +1105,8 @@ export { CommentList, CommentComposer };
 /**
  * The reusable comment experience: a scrollable, paginated list of comments
  * with expandable replies and a reply-aware composer. Used by the CommentsDrawer
- * (mobile sheet / desktop dialog) and inline in the desktop PDP. Hosts that
- * supply their own composer (e.g. the mobile PDP bottom bar) should call
+ * (mobile sheet / desktop dialog), the desktop PDP, and the dedicated mobile
+ * comments screen. Hosts that supply their own composer can call
  * {@link useCommentThread} with {@link CommentList} instead.
  */
 export function CommentThread({

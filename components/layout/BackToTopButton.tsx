@@ -29,6 +29,7 @@ const PLACEMENT = {
   app: "right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(var(--nav-height,60px)+var(--safe-bottom,0px)+0.75rem)] md:right-auto md:bottom-6 md:left-1/2 md:-translate-x-1/2",
   landing:
     "right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(4.5rem+env(safe-area-inset-bottom)+0.75rem)] md:right-6 md:bottom-6",
+  pdp: "right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(var(--nav-height,60px)+var(--safe-bottom,0px)+1rem)] md:hidden",
 } as const;
 
 export function BackToTopButton({

@@ -103,7 +103,7 @@ export function OverlayButton({
       }}
       aria-label={label}
       aria-pressed={pressed}
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-transform active:scale-95"
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-transform active:scale-95"
     >
       {children}
     </button>

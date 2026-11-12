@@ -8,6 +8,7 @@ import {
   BottomNavWithSearchParams,
   shouldHideBottomNav,
 } from "@/components/layout/BottomNav";
+import { isListingPath } from "@/lib/listingNavOrigin";
 import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { hasDesktopSideNav } from "@/components/layout/SideNav";
 import { usePreloadInbox } from "@/features/notifications/hooks/usePreloadInbox";
@@ -25,7 +26,9 @@ export function MainShell({
   // Reserve no space for the nav when it's route-hidden OR class-hidden by a
   // full-viewport screen (e.g. the create-mode chooser) — otherwise the hidden
   // nav's padding leaves an empty gap under that screen's own footer.
-  const hideBottomNav = shouldHideBottomNav(pathname) || bottomNavHidden;
+  const hideBottomNav =
+    shouldHideBottomNav(pathname) ||
+    (bottomNavHidden && !isListingPath(pathname, lang));
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
