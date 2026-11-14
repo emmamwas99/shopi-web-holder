@@ -328,11 +328,7 @@ export function ProfileMenu({
 
   return (
     <nav aria-label="Profile menu" className="flex flex-col gap-6 md:gap-7">
-      <ReferralPausedBanner
-        compact
-        onOpen={() => onSelect("invite")}
-        active={active === "invite"}
-      />
+      <ReferralPausedBanner compact />
 
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}

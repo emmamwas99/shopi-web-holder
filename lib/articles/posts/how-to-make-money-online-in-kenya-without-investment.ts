@@ -6,9 +6,7 @@ import type { Article } from "../types.ts";
  * Shopi is one route among several, not the only answer — and never to put a
  * number on what a reader will earn.
  *
- * The referral section quotes the Invite & earn terms, which live in
- * shopi-social-commerce-api/src/modules/referral/referral.constants.ts. If
- * those change, update this article and refer-and-earn-in-kenya.ts too.
+ * Keep the referral section aligned with the programme's current status.
  */
 export const article: Article = {
   slug: "how-to-make-money-online-in-kenya-without-investment",
@@ -16,9 +14,9 @@ export const article: Article = {
   intent: "selling-guide",
   title: "How to Make Money Online in Kenya Without Investment",
   seoDescription:
-    "Real ways to make money online in Kenya without investment: sell what you own, sell for others, freelance, refer sellers — and the scams to avoid.",
+    "Real ways to make money online in Kenya without investment: sell what you own, sell for others, freelance, and avoid scams.",
   excerpt:
-    "The quickest way to make money online in Kenya without investment is to sell things you already own, then help other people sell theirs for a cut. A skill you can freelance and referral rewards paid on M-Pesa add more. None of these should ever ask you to pay first — that is how you spot a scam.",
+    "The quickest way to make money online in Kenya without investment is to sell things you already own, then help other people sell theirs for a cut. You can also freelance a skill. Shopi's referral programme is currently paused, and a legitimate earning opportunity should never ask you to pay first.",
   primaryKeyword: "make money online in Kenya",
   keywords: [
     "how to make money online in Kenya",
@@ -172,7 +170,7 @@ export const article: Article = {
     },
     {
       id: "refer",
-      heading: "6. Invite sellers and earn on M-Pesa",
+      heading: "6. Understand referral programmes",
       blocks: [
         {
           type: "p",
@@ -180,7 +178,7 @@ export const article: Article = {
         },
         {
           type: "p",
-          text: "Shopi's Invite & earn pays **KSh 200 on M-Pesa for every seller** who joins through your invite link and posts 5 real listings. It's free, there's no limit on how many sellers you can invite, and it fits neatly with selling for others: the people you help list their things are exactly the sellers who count. The full rules are in our guide to [refer and earn in Kenya](/blog/refer-and-earn-in-kenya).",
+          text: "Shopi's referral programme is currently paused, and personal invite links are disabled. You can still earn by selling your own items or helping someone else sell theirs. Our [Shopi referral guide](/blog/refer-and-earn-in-kenya) explains the pause and how to check an earlier referral.",
         },
       ],
     },
@@ -236,7 +234,7 @@ export const article: Article = {
     },
     {
       q: "Which online jobs in Kenya pay through M-Pesa?",
-      a: "Selling items locally, selling for others, making videos for nearby shops and freelancing for local businesses are usually paid straight to M-Pesa. Shopi's Invite & earn pays referral rewards to M-Pesa too. Many international freelance platforms pay to a bank or online wallet instead, which you can then move to M-Pesa.",
+      a: "Selling items locally, selling for others, making videos for nearby shops and freelancing for local businesses are usually paid straight to M-Pesa. Shopi's referral programme is currently paused. Many international freelance platforms pay to a bank or online wallet instead, which you can then move to M-Pesa.",
     },
     {
       q: "Is it free to sell on Shopi?",
