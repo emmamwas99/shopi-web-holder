@@ -27,6 +27,7 @@ export function LandingFooter({
           { label: label("How it works", "Jinsi inavyofanya kazi"), href: `/${lang}#how-it-works` },
           { label: label("The feed", "Bidhaa zinazouzwa"), href: "/en/for-you" },
           { label: "Shopi Agent", href: "/en/shopi-agent" },
+          { label: label("Search by photo", "Tafuta kwa picha"), href: "/en/search-by-photo" },
           { label: label("Sell on Shopi", "Uza kwenye Shopi"), href: "/en/upload" },
           { label: label("TikTok video downloader", "Pakua video za TikTok"), href: "/en/tiktok-downloader" },
         ],
@@ -133,6 +134,7 @@ export function LandingFooter({
                 // to jump to are gone from the homepage.
                 { label: "The Feed", href: `/${lang}/for-you` },
                 { label: "Shopi Agent", href: `/${lang}/shopi-agent` },
+                { label: "Search by photo", href: `/${lang}/search-by-photo` },
                 { label: "Sell on Shopi", href: `/${lang}/sell-in-kenya` },
                 {
                   label: "TikTok video downloader",

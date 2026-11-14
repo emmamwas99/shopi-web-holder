@@ -154,6 +154,7 @@ export async function BrowseHub({
         <Link href={`/${lang}/for-you`}>Open For You</Link>
         <Link href={`/${lang}/explore`}>Explore listings</Link>
         <Link href={`/${lang}/shopi-agent`}>Shopi Agent</Link>
+        <Link href={`/${lang}/search-by-photo`}>Search by photo</Link>
         <Link href={`/${lang}/sell-in-kenya`}>Sell on Shopi</Link>
         <Link href={`/${lang}/faq`}>FAQ</Link>
         <Link href={`/${lang}/blog`}>Buying and selling guides</Link>

@@ -119,6 +119,10 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
       a: "Shopi Agent writes listings and helps you find products. It does not message sellers on your behalf, negotiate prices, or complete purchases. Every conversation and every deal stays between the buyer and the seller.",
     },
     {
+      q: "Can I search Shopi with a photo?",
+      a: "Yes. Tap the camera in the search bar, then take a photo or choose one from your gallery, such as a screenshot from WhatsApp, TikTok or Instagram. Shopi shows items for sale on Shopi that look similar. It's free, you don't need an account, and Shopi doesn't keep your photo. It only searches Shopi listings, not the wider web.",
+    },
+    {
       q: "Does Shopi chat happen on WhatsApp?",
       a: "No. Buyer and seller messaging happens inside Shopi's own chat. Shopi does not require or link a WhatsApp account.",
     },
@@ -224,6 +228,10 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     {
       q: "Shopi Agent haiwezi kufanya nini?",
       a: "Shopi Agent huandika matangazo na kukusaidia kupata bidhaa. Haimtumii muuzaji ujumbe kwa niaba yako, haijadiliani bei, wala haikamilishi manunuzi. Kila mazungumzo na kila dili hubaki kati ya mnunuzi na muuzaji.",
+    },
+    {
+      q: "Je, naweza kutafuta kwenye Shopi kwa picha?",
+      a: "Ndiyo. Gusa kamera kwenye sehemu ya kutafuta, kisha piga picha au chagua moja kwenye simu yako, kama picha ya skrini kutoka WhatsApp, TikTok au Instagram. Shopi itakuonyesha bidhaa zinazouzwa kwenye Shopi zinazofanana nayo. Ni bure, huhitaji akaunti, na Shopi haihifadhi picha yako. Inatafuta matangazo ya Shopi pekee, si mtandao mzima.",
     },
     {
       q: "Je, mazungumzo ya Shopi hufanyika WhatsApp?",

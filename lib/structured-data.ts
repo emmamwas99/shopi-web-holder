@@ -230,6 +230,7 @@ export const marketplaceSchema = {
     "AI-assisted listing creation",
     "Bulk listing upload from Excel (up to 500 listings at once)",
     "AI-assisted product discovery",
+    "Search listings by photo or screenshot (visual search)",
     "Local discovery across Kenya",
   ],
   areaServed: {

@@ -26,6 +26,8 @@ import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { HomeCategories } from "@/components/landing/HomeCategories";
 import { HomeListings, type HomeListing } from "@/components/landing/HomeListings";
 import { SellersIllustration } from "@/components/landing/SellersIllustration";
+import { PhotoSearchButton } from "@/components/landing/PhotoSearchButton";
+import { PhotoSearchIllustration } from "@/components/landing/PhotoSearchIllustration";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
 import { fetchBrowseCards } from "@/features/discover/queries/browse.server";
 import {
@@ -66,7 +68,7 @@ const COPY = {
   en: {
     title: "Shopi — Kenya's Free Online Marketplace | Buy & Sell Near You",
     description:
-      "Buy and sell near you on Shopi, Kenya's free online marketplace. Phones, cars, furniture, fashion and more. Free to post, no commission.",
+      "Buy and sell near you on Shopi, Kenya's free online marketplace. Phones, cars, furniture, fashion and more. Search by photo. Free to post, no commission.",
     heroTitle: "Kenya's free marketplace. Buy and sell near you.",
     heroBody:
       "Find phones, cars, furniture and more from people near you, or sell yours free. No commission.",
@@ -108,6 +110,21 @@ const COPY = {
     ],
     howSafety: "Stay safe: meet in public and check the item before you pay.",
     howSafetyLink: "Safety tips",
+    photoEyebrow: "New: search by photo",
+    photoTitle: "Seen it somewhere? Search Shopi with a photo.",
+    photoBody:
+      "Take a photo of the item, or use a screenshot from WhatsApp, TikTok or Instagram. Shopi shows you similar items for sale.",
+    photoSteps: [
+      "Tap the camera in search",
+      "Take a photo or choose a screenshot",
+      "See similar items and chat with the seller",
+    ],
+    photoCta: "Search with a photo",
+    photoLink: "How photo search works",
+    photoNote: "Free, no account needed. Shopi doesn't keep your photo.",
+    photoSearchPlaceholder: "Search Shopi",
+    photoResultsTitle: "Results for your photo",
+    photoResultsBody: "Similar items for sale",
     hookEyebrow: "Free guide · 3-minute read",
     hookTitle: "How Kenyans earn online in 2026, with zero stock.",
     hookBody: "No shop. No capital. Just your phone and one simple method.",
@@ -196,6 +213,10 @@ const COPY = {
         a: "Not to browse. To post or chat, sign in free with Google, Apple or email.",
       },
       {
+        q: "Can I search Shopi with a photo?",
+        a: "Yes. Tap the camera in the search bar, then take a photo or choose one from your gallery, such as a screenshot. Shopi shows similar items for sale on Shopi. It's free, and Shopi doesn't keep your photo.",
+      },
+      {
         q: "Is Shopi like Jiji?",
         a: "Shopi is a free Kenyan marketplace like Jiji, built around photo and video posts from people near you. Posting is free with no commission, and you can list on both.",
       },
@@ -210,7 +231,7 @@ const COPY = {
   sw: {
     title: "Shopi — Soko la Bure la Mtandaoni Kenya | Nunua na Uza",
     description:
-      "Nunua na uza karibu nawe kwenye Shopi, soko la bure la mtandaoni Kenya. Simu, magari, fanicha, mavazi na zaidi. Weka tangazo bure, bila kamisheni.",
+      "Nunua na uza karibu nawe kwenye Shopi, soko la bure la mtandaoni Kenya. Simu, magari, fanicha, mavazi na zaidi. Tafuta kwa picha. Tangaza bure, bila kamisheni.",
     heroTitle: "Soko la bure Kenya. Nunua na uza karibu nawe.",
     heroBody:
       "Pata simu, magari, fanicha na zaidi kutoka kwa watu wa karibu nawe, au uza zako bure. Hakuna kamisheni.",
@@ -251,6 +272,21 @@ const COPY = {
     ],
     howSafety: "Kuwa salama: kutana mahali pa wazi na kagua bidhaa kabla ya kulipa.",
     howSafetyLink: "Vidokezo vya usalama",
+    photoEyebrow: "Mpya: tafuta kwa picha",
+    photoTitle: "Umeiona mahali? Itafute kwenye Shopi kwa picha.",
+    photoBody:
+      "Piga picha ya bidhaa, au tumia picha ya skrini kutoka WhatsApp, TikTok au Instagram. Shopi itakuonyesha bidhaa zinazofanana zinazouzwa.",
+    photoSteps: [
+      "Gusa kamera kwenye sehemu ya kutafuta",
+      "Piga picha au chagua picha ya skrini",
+      "Ona bidhaa zinazofanana na uongee na muuzaji",
+    ],
+    photoCta: "Tafuta kwa picha",
+    photoLink: "Jinsi kutafuta kwa picha kunavyofanya kazi",
+    photoNote: "Ni bure, huhitaji akaunti. Shopi haihifadhi picha yako.",
+    photoSearchPlaceholder: "Tafuta kwenye Shopi",
+    photoResultsTitle: "Matokeo ya picha yako",
+    photoResultsBody: "Bidhaa zinazofanana zinazouzwa",
     hookEyebrow: "Mwongozo wa bure · dakika 3",
     hookTitle: "Jinsi Wakenya wanavyopata pesa mtandaoni 2026, bila stoki.",
     hookBody: "Bila duka. Bila mtaji. Simu yako na mbinu moja rahisi tu.",
@@ -338,6 +374,10 @@ const COPY = {
       {
         q: "Je, ninahitaji akaunti?",
         a: "Si ili kuangalia bidhaa. Ili kuweka tangazo au kuongea na muuzaji, ingia bure kwa Google, Apple au barua pepe.",
+      },
+      {
+        q: "Je, naweza kutafuta kwenye Shopi kwa picha?",
+        a: "Ndiyo. Gusa kamera kwenye sehemu ya kutafuta, kisha piga picha au chagua moja kwenye simu yako, kama picha ya skrini. Shopi itakuonyesha bidhaa zinazofanana zinazouzwa kwenye Shopi. Ni bure, na Shopi haihifadhi picha yako.",
       },
       {
         q: "Je, Shopi ni kama Jiji?",
@@ -635,6 +675,64 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 </Link>
               </span>
             </p>
+          </div>
+        </section>
+
+        {/* Photo search: for the buyer who has seen the thing but can't name
+            it. The button opens the camera or gallery straight away; the
+            full explanation (and the page answer engines cite) is
+            /search-by-photo. Keep the privacy line true: the API never stores
+            the photo (image-search.resolver.ts). */}
+        <section
+          id="photo-search"
+          aria-labelledby="photo-search-title"
+          className="border-t border-landing-line bg-landing-page px-5 py-16 md:px-8 md:py-24"
+        >
+          <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
+            <div className="max-w-lg md:order-2">
+              <p className="mb-3 text-sm font-semibold text-primary">{t.photoEyebrow}</p>
+              <h2
+                id="photo-search-title"
+                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+              >
+                {t.photoTitle}
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">
+                {t.photoBody}
+              </p>
+              <ol className="mt-6 grid list-none gap-2.5 p-0">
+                {t.photoSteps.map((step, i) => (
+                  <li key={step} className="flex items-center gap-3 text-[0.9375rem] font-medium text-landing-ink">
+                    <span
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
+                      aria-hidden
+                    >
+                      {i + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
+                <PhotoSearchButton lang={lang} label={t.photoCta} placement="photo_search_section" />
+                <TrackedHomepageLink
+                  href={`/${lang}/search-by-photo`}
+                  buttonId="photo_search_guide"
+                  placement="photo_search_section"
+                  className="font-semibold text-landing-ink underline underline-offset-4"
+                >
+                  {t.photoLink}
+                </TrackedHomepageLink>
+              </div>
+              <p className="mt-4 text-sm text-landing-muted">{t.photoNote}</p>
+            </div>
+            <div className="md:order-1">
+              <PhotoSearchIllustration
+                searchPlaceholder={t.photoSearchPlaceholder}
+                resultsTitle={t.photoResultsTitle}
+                resultsBody={t.photoResultsBody}
+              />
+            </div>
           </div>
         </section>
 
