@@ -35,7 +35,7 @@ const faq = [
   },
   {
     q: "Is Shopi hiring right now?",
-    a: "Shopi is not collecting public job applications on this page. You can earn through Shopi today in two ways: sell directly to buyers, or invite sellers you know. When a seller you invite posts 5 listings, you get KSh 200 on M-Pesa.",
+    a: "Shopi is not collecting public job applications on this page. You can post items for free and sell directly to buyers. Shopi's referral programme is currently paused, so new signups and listings do not create referral rewards.",
   },
 ];
 
@@ -124,14 +124,14 @@ export default async function OnlineSellingJobsKenyaPage({ params }: Props) {
                 Start selling free
               </Link>
               <Link
-                href={`/${safeLang}/profile?tab=invite`}
+                href={`/${safeLang}/blog/refer-and-earn-in-kenya`}
                 className="rounded-full border border-border px-6 py-3 text-sm font-bold text-foreground no-underline"
               >
-                Earn KSh 200 per seller you invite
+                Referral programme status
               </Link>
             </div>
             <p className="mt-3 text-sm text-muted">
-              Paid on M-Pesa once a seller you invite posts 5 listings.
+              Referral links are currently disabled. Selling on Shopi is still free.
             </p>
           </div>
         </section>
@@ -247,7 +247,7 @@ export default async function OnlineSellingJobsKenyaPage({ params }: Props) {
               {
                 href: "/blog/refer-and-earn-in-kenya",
                 title: "Refer and earn in Kenya",
-                body: "Invite a seller, and when they post 5 listings you get KSh 200 on M-Pesa.",
+                body: "Shopi's referral programme is paused. Learn what counted as a referral and how to check earlier records.",
               },
             ].map(({ href, title, body }) => (
               <Link

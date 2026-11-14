@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * fill, no icon: it is a status, not a promotion.
  *
  * Given `onOpen` or `href` it becomes the way into the referrals section, so a
- * referrer can still see who they brought in and what they will be paid.
+ * referrer can still see their existing referral details.
  */
 export function ReferralPausedBanner({
   className,
@@ -27,12 +27,12 @@ export function ReferralPausedBanner({
   const body = (
     <>
       <p className={cn("font-semibold leading-tight text-main", compact ? "text-sm" : "text-base")}>
-        Referral rewards are paused
+        Referral programme paused
       </p>
       <p className={cn("mt-1 leading-snug text-muted", compact ? "text-[13px]" : "text-sm")}>
         {compact
-          ? "Qualified referrals are paid in full on the 28th of every month."
-          : "We are reviewing referred-seller content because some posts do not meet Shopi marketplace guidelines. Qualified referrals are paid in full on the 28th of every month at 1:00 PM."}
+          ? "Referral links are disabled. A seller profile link does not count as an invite."
+          : "Referral links are disabled, so new signups and listings do not earn referral rewards. A seller profile link shares your shop, but it is not a referral link. You can still view referrals already recorded on your account."}
       </p>
       {actionable && (
         <p
@@ -41,7 +41,7 @@ export function ReferralPausedBanner({
             active ? "text-main md:text-primary" : "text-main",
           )}
         >
-          See your referrals and payouts
+          View your referrals
         </p>
       )}
     </>

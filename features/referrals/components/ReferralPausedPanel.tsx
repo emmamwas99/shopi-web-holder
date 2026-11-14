@@ -33,13 +33,6 @@ function day(value: unknown) {
   return dayjs(value as string | null | undefined);
 }
 
-/** Payouts go out on the 28th of every month at 1:00 PM. */
-function nextPayout() {
-  const now = dayjs();
-  const thisMonth = now.date(28).hour(13).minute(0).second(0).millisecond(0);
-  return now.isBefore(thisMonth) ? thisMonth : thisMonth.add(1, "month");
-}
-
 function initials(name: string) {
   const letters = name
     .replace(/^@/, "")
@@ -109,14 +102,11 @@ function PayoutSummary({ program }: { program: Program }) {
 
   return (
     <div>
-      <p className="text-sm text-muted">To be paid</p>
+      <p className="text-sm text-muted">Pending payout</p>
       <p className="mt-1 text-[32px] font-bold leading-none tabular-nums text-main">
         {kes(program.pendingPayoutKes)}
       </p>
-      <p className="mt-2 text-sm text-muted">
-        {program.pendingPayoutKes > 0 ? "Paying out" : "Next payout"}{" "}
-        {nextPayout().format("D MMM [at] h:mm A")}
-      </p>
+      <p className="mt-2 text-sm text-muted">Based on referrals recorded on your account.</p>
 
       <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4">
         {stats.map((stat) => (
@@ -138,7 +128,7 @@ function InviteLinkPaused() {
     <div>
       <p className="text-sm font-semibold text-main">Your invite link</p>
       <p className="mt-2 rounded-xl border border-border px-4 py-3 text-sm text-muted">
-        Referral paused
+        Referral links are disabled
       </p>
     </div>
   );
@@ -166,7 +156,7 @@ function Referrals({ program }: { program: Program }) {
 
       {referrals.length === 0 ? (
         <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted">
-          Sellers who joined with your link will show here.
+          No referrals are recorded on your account.
         </p>
       ) : (
         <ul className="mt-1 divide-y divide-border">

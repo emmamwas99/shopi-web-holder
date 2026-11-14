@@ -196,7 +196,7 @@ export const article: Article = {
         },
         {
           type: "p",
-          text: "Want help on the side? Our guide to [online selling jobs in Kenya](/online-selling-jobs-kenya) covers other ways to earn from your phone, and [Invite & earn](/blog/refer-and-earn-in-kenya) pays KSh 200 on M-Pesa for every seller you bring who posts 5 listings — your suppliers count.",
+          text: "Want help on the side? Our guide to [online selling jobs in Kenya](/online-selling-jobs-kenya) covers other ways to earn from your phone. Shopi's [referral programme](/blog/refer-and-earn-in-kenya) is currently paused, so sharing a shop profile or bringing in a supplier does not create a referral reward.",
         },
       ],
     },

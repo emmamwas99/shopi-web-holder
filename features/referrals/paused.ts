@@ -4,11 +4,11 @@
  * to sell on Shopi".
  *
  * To resume the invite landing page, set it to false. Profile and dashboard
- * referral sections are hidden separately.
+ * referral sections are controlled separately.
  */
 export const REFERRALS_PAUSED = true;
 
 export const REFERRALS_PAUSED_TITLE = "Shopi referrals are paused";
 
 export const REFERRALS_PAUSED_BODY =
-  "Referral rewards are on hold while we review content. You can still sell on Shopi for free.";
+  "Referral links are disabled, so joining Shopi or posting listings does not earn referral rewards. You can still sell on Shopi for free.";

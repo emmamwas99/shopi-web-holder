@@ -100,7 +100,7 @@ export const CATEGORIES: ArticleCategory[] = [
     name: "Earn online",
     title: "Make Money Online in Kenya",
     description:
-      "Honest ways to make money online in Kenya without investment: selling, reselling, freelancing and referral rewards paid on M-Pesa.",
+      "Honest ways to make money online in Kenya without investment: selling, reselling and freelancing, plus the current status of Shopi referrals.",
     intro:
       "Practical ways to earn from your phone in Kenya, what each one really pays, and the scams to walk away from.",
     marketplace: [
