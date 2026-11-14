@@ -107,7 +107,6 @@ function SignedIn({ lang }: { lang: string }) {
       </p>
       <ReferralPausedBanner
         compact
-        href={`/${lang}/profile?tab=invite`}
         className="mt-6"
       />
       <div className="mt-6 flex flex-col gap-3">

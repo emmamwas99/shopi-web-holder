@@ -115,8 +115,8 @@ export const article: Article = {
     "where-to-sell-used-items-in-kenya",
   ],
   cta: {
-    label: "View your referrals",
-    to: { kind: "page", path: "/profile?tab=invite", label: "Referrals" },
-    text: "See referrals already recorded on your account and their reward status.",
+    label: "Start selling for free",
+    to: { kind: "page", path: "/upload", label: "Post an item for free" },
+    text: "The referral programme is paused, but you can still list items and reach buyers on Shopi.",
   },
 };
