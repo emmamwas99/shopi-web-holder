@@ -28,6 +28,7 @@ import { timeAgoLong } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { VideoProgressBar } from "@/features/feed/components/VideoProgressBar";
 import { shortDay } from "@/features/billing/lib/money";
+import { BOOSTS_FOR_SALE } from "@/features/billing/flags";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 import {
   isHidden,
@@ -178,6 +179,26 @@ export function ManagedPostDetail({
 
 function BoostCard({ post, onBoost }: { post: ManagedPost; onBoost: () => void }) {
   const boosted = runningBoost(post);
+  // Boosting hidden until launch (features/billing/flags.ts): a running boost
+  // still shows, without the buy / add-time action.
+  if (!BOOSTS_FOR_SALE) {
+    if (!boosted) return null;
+    return (
+      <div className="flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-3.5 py-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+          <Zap className="size-[18px]" fill="currentColor" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14.5px] font-semibold text-main">
+            {`${boosted.name} boost · ${boosted.daysLeft} day${boosted.daysLeft === 1 ? "" : "s"} left`}
+          </span>
+          <span className="block text-[12.5px] leading-snug text-muted">
+            Shown higher in feeds until {shortDay(boosted.endsAt)}
+          </span>
+        </span>
+      </div>
+    );
+  }
   return (
     <button
       type="button"

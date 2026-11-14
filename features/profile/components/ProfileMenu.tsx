@@ -43,6 +43,7 @@ import {
 } from "@/types/__generated__/graphql";
 import { signOutAndLeave } from "@/stores/auth";
 import { settingsSubPageHref } from "../lib/settingsReturn";
+import { BOOSTS_FOR_SALE } from "@/features/billing/flags";
 import { cn } from "@/lib/utils";
 import { ReferralPausedBanner } from "@/features/referrals/components/ReferralPausedBanner";
 import { useTeamThread } from "@/features/team-messages/hooks/useTeamThread";
@@ -371,11 +372,14 @@ export function ProfileMenu({
           label="Edit profile"
           href={settingsSubPageHref(lang, "/profile/edit")}
         />
-        <MenuRow
-          icon={Receipt}
-          label="Payments"
-          href={settingsSubPageHref(lang, "/profile/billing")}
-        />
+        {/* Boosting hidden until launch — see features/billing/flags.ts. */}
+        {BOOSTS_FOR_SALE && (
+          <MenuRow
+            icon={Receipt}
+            label="Payments"
+            href={settingsSubPageHref(lang, "/profile/billing")}
+          />
+        )}
         {hasPassword && (
           <MenuRow
             icon={KeyRound}

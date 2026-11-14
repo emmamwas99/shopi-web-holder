@@ -35,6 +35,7 @@ import { useFollow } from "../hooks/useFollow";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { BOOSTS_FOR_SALE } from "@/features/billing/flags";
 import Image from "next/image";
 import { listingPlace } from "@/lib/listingPlace";
 import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
@@ -1070,7 +1071,8 @@ export function ContentDetail({
   // isMyContent is resolved server-side — authoritative, no client-side ID comparison
   const isOwnPost = post.isMyContent ?? false;
   const ownerBoost =
-    isOwnPost && resolvedContentId ? (
+    // Boosting hidden until launch — see features/billing/flags.ts.
+    BOOSTS_FOR_SALE && isOwnPost && resolvedContentId ? (
       <OwnerBoostCard
         post={{
           id: resolvedContentId,

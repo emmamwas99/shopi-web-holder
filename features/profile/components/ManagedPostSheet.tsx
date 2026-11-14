@@ -10,6 +10,7 @@ import { contentPath } from "@/lib/content-url";
 import { timeAgoLong } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { BoostSheet } from "@/features/billing/components/BoostSheet";
+import { BOOSTS_FOR_SALE } from "@/features/billing/flags";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 import { isHidden, postThumb } from "../lib/managedPost";
 import { DetailSheet } from "./DetailSheet";
@@ -121,7 +122,7 @@ export function ManagedPostSheet({
       <ActionButton icon={hidden ? Eye : EyeOff} onClick={() => onToggleHidden(shown)} disabled={busy}>
         {hidden ? "Show in store" : "Hide"}
       </ActionButton>
-      {live && (
+      {BOOSTS_FOR_SALE && live && (
         <ActionButton icon={Zap} onClick={() => setBoostFor(shown.id)} disabled={busy}>
           {boosted ? "Boosted" : "Boost"}
         </ActionButton>

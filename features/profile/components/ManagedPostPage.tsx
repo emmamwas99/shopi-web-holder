@@ -10,6 +10,7 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { goBackOr } from "@/lib/useAppBack";
 import { cn } from "@/lib/utils";
 import { BoostSheet } from "@/features/billing/components/BoostSheet";
+import { BOOSTS_FOR_SALE } from "@/features/billing/flags";
 import { useMyManagedPost, type ManagedPost } from "../hooks/useManagedPosts";
 import { isHidden, postThumb } from "../lib/managedPost";
 import { useManagedPostActions } from "./ManagedPostActions";
@@ -77,6 +78,8 @@ export function ManagedPostPage({ lang, contentId }: { lang: string; contentId: 
   const live = isLivePost(post);
   const hidden = isHidden(post);
   const boosted = runningBoost(post);
+  // Boosting hidden until launch — see features/billing/flags.ts.
+  const canBoost = BOOSTS_FOR_SALE && live;
   const busy = actions.busy;
 
   return (
@@ -109,7 +112,7 @@ export function ManagedPostPage({ lang, contentId }: { lang: string; contentId: 
         </>
       }
     >
-      <div className="mx-auto w-full max-w-2xl pb-[calc(env(safe-area-inset-bottom)+6.5rem)] md:px-6 md:pb-12 md:pt-6">
+      <div className="mx-auto w-full max-w-2xl pb-[calc(env(safe-area-inset-bottom)+5rem)] md:px-6 md:pb-12 md:pt-6">
         <ManagedPostDetail
           post={post}
           layout="page"
@@ -124,7 +127,7 @@ export function ManagedPostPage({ lang, contentId }: { lang: string; contentId: 
               <ActionButton icon={hidden ? Eye : EyeOff} onClick={() => actions.toggleHidden(post)} disabled={busy}>
                 {hidden ? "Show in store" : "Hide"}
               </ActionButton>
-              {live && (
+              {canBoost && (
                 <ActionButton icon={Zap} onClick={() => setBoostOpen(true)} disabled={busy}>
                   {boosted ? "Boosted" : "Boost"}
                 </ActionButton>
@@ -136,17 +139,17 @@ export function ManagedPostPage({ lang, contentId }: { lang: string; contentId: 
 
       {/* The phone's action bar: the main action wide, the others beside it. */}
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-default px-4 pt-2.5 backdrop-blur-md md:hidden"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)", backgroundColor: BAR_BACKGROUND }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-default px-4 pt-2 backdrop-blur-md md:hidden"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)", backgroundColor: BAR_BACKGROUND }}
       >
-        <div className={cn("grid gap-2", live ? "grid-cols-[1fr_auto_auto]" : "grid-cols-[1fr_auto]")}>
+        <div className={cn("grid gap-2", canBoost ? "grid-cols-[1fr_auto_auto]" : "grid-cols-[1fr_auto]")}>
           <BarButton primary icon={Pencil} onClick={() => actions.openEdit(post)} disabled={busy}>
             Edit
           </BarButton>
           <BarButton icon={hidden ? Eye : EyeOff} onClick={() => actions.toggleHidden(post)} disabled={busy}>
             {hidden ? "Show" : "Hide"}
           </BarButton>
-          {live && (
+          {canBoost && (
             <BarButton icon={Zap} onClick={() => setBoostOpen(true)} disabled={busy} accent={Boolean(boosted)}>
               {boosted ? "Boosted" : "Boost"}
             </BarButton>
@@ -227,15 +230,15 @@ function BarButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex h-12 items-center justify-center gap-1.5 rounded-full text-[15px] font-semibold transition-opacity active:opacity-75 disabled:opacity-50",
+        "flex h-10 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold transition-opacity active:opacity-75 disabled:opacity-50",
         primary
-          ? "bg-primary px-5 text-white"
+          ? "bg-primary px-4 text-white"
           : accent
-            ? "bg-primary-soft px-4 text-primary"
-            : "border border-default bg-app px-4 text-main",
+            ? "bg-primary-soft px-3.5 text-primary"
+            : "border border-default bg-app px-3.5 text-main",
       )}
     >
-      <Icon className={cn("size-[18px] shrink-0", accent && "fill-current")} />
+      <Icon className={cn("size-4 shrink-0", accent && "fill-current")} />
       {children}
     </button>
   );
