@@ -15,6 +15,10 @@ import { contentPath, videoPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
 import { idInitials } from "@/lib/avatar";
 import { useFollow } from "@/features/feed/hooks/useFollow";
+import { ImageSearchButton } from "@/components/search/ImageSearchButton";
+import { ImageSearchPanel } from "@/components/search/ImageSearchPanel";
+import { useImageSearchResults } from "@/components/search/useImageSearchResults";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export type MobileSearchTab = "Top" | "Users" | "Videos" | "Photos";
 
@@ -254,6 +258,7 @@ export function MobileSearchScreen({
   onSelectRecent,
   onRemoveRecent,
   onViewAllUsers,
+  onImageSearch,
 }: {
   lang: string;
   view: "entry" | "results";
@@ -270,8 +275,12 @@ export function MobileSearchScreen({
   onSelectRecent: (value: string) => void;
   onRemoveRecent: (value: string) => void;
   onViewAllUsers: () => void;
+  /** A photo was picked: open the results view for it. */
+  onImageSearch: () => void;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
+  const imageSearch = useImageSearchResults("home");
+  const imageMode = view === "results" && Boolean(imageSearch.session && imageSearch.phase);
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const tab = activeTab;
   const resultQuery = view === "results" ? query : "";
@@ -315,7 +324,13 @@ export function MobileSearchScreen({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={view === "results" ? `Search results for ${query}` : "Search Shopi"}
+      aria-label={
+        imageMode
+          ? "Search results for your photo"
+          : view === "results"
+            ? `Search results for ${query}`
+            : "Search Shopi"
+      }
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
       }}
@@ -361,6 +376,12 @@ export function MobileSearchScreen({
                 <X size={16} />
               </button>
             ) : null}
+            <ImageSearchButton
+              surface="HOME"
+              target="home"
+              onPicked={onImageSearch}
+              className="text-muted-foreground"
+            />
           </div>
           {view === "entry" && searchDraft.trim() ? (
             <button
@@ -465,6 +486,39 @@ export function MobileSearchScreen({
                 ))}
               </div>
             )}
+          </div>
+        ) : imageMode && imageSearch.session && imageSearch.phase ? (
+          // Photo results: the same results screen and tiles as a typed
+          // search, with the photo where the tabs would be. No tabs — a photo
+          // matches listings, not users.
+          <div className="min-h-0 flex-1 overflow-y-auto pb-8 pt-2">
+            <ImageSearchPanel
+              session={imageSearch.session}
+              phase={imageSearch.phase}
+              count={imageSearch.items.length}
+              error={imageSearch.error}
+              onClose={onBackToEntry}
+              className="mx-3 mb-3"
+            />
+            {imageSearch.phase === "analyzing" || imageSearch.phase === "searching" ? (
+              <div className="grid grid-cols-2 gap-1 px-0.5" role="status" aria-label="Loading results">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <div key={index} className="overflow-hidden rounded-md bg-elevated">
+                    <Skeleton className="aspect-[3/4] rounded-none" />
+                    <div className="space-y-1.5 px-2 py-2">
+                      <Skeleton className="h-3 w-4/5" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : imageSearch.items.length ? (
+              <div className="grid grid-cols-2 gap-1 px-0.5">
+                {imageSearch.items.map((item) => (
+                  <SearchContentCard key={item.id} item={item} lang={lang} />
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : (
           <>

@@ -75,6 +75,9 @@ import {
 } from "../categories";
 import { slugifyContentTitle } from "@/lib/content-url";
 import { rememberScrollBeforeNavigation } from "@/lib/scrollRestoration";
+import { ImageSearchButton } from "@/components/search/ImageSearchButton";
+import { ImageSearchPanel } from "@/components/search/ImageSearchPanel";
+import { useImageSearchResults } from "@/components/search/useImageSearchResults";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -2450,6 +2453,45 @@ export function DiscoverPage({
     setQuery("");
   }, [setSearchDraft]);
 
+  // A photo search replaces the grid, the way a typed term does: same page,
+  // same tiles, with the photo where the term's heading would be.
+  const imageSearch = useImageSearchResults("explore");
+  const imageMode = Boolean(imageSearch.session && imageSearch.phase);
+  const clearImageSearch = imageSearch.clear;
+
+  // Typing (or arriving on a ?q= link) takes over from the photo.
+  useEffect(() => {
+    if (query) clearImageSearch();
+  }, [clearImageSearch, query]);
+
+  // So does choosing a category — but not this page mounting with one still
+  // in the shared store from the page before it, which the reset above clears.
+  const lastCategoryId = useRef(selectedCategory?.id ?? null);
+  useEffect(() => {
+    const id = selectedCategory?.id ?? null;
+    if (id && id !== lastCategoryId.current) clearImageSearch();
+    lastCategoryId.current = id;
+  }, [clearImageSearch, selectedCategory?.id]);
+
+  /** A photo was picked here: show its results on unscoped Browse, from the top. */
+  const prepareImageSearch = useCallback(() => {
+    clearSearch();
+    if (isSubcategoryRoute) {
+      router.push(`/${lang}/explore`);
+      return;
+    }
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    window.scrollTo({ top: 0 });
+  }, [
+    clearSearch,
+    isSubcategoryRoute,
+    lang,
+    router,
+    setSelectedCategory,
+    setSelectedSubcategory,
+  ]);
+
   const closeTopOverlayState = useCallback(() => {
     if (subcategoryDrawerOpen) {
       setSubcategoryDrawerOpen(false);
@@ -3007,6 +3049,11 @@ export function DiscoverPage({
                     aria-label="Search listings"
                     className="h-full min-w-0 flex-1 appearance-none bg-transparent text-[16px] leading-5 text-main outline-none text-ellipsis placeholder:!text-[15px] placeholder:text-[rgb(var(--color-text-placeholder))] [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
                   />
+                  <ImageSearchButton
+                    surface="MARKET"
+                    onPicked={prepareImageSearch}
+                    className="text-muted"
+                  />
                   {searchDraft ? (
                     <button
                       type="button"
@@ -3022,8 +3069,10 @@ export function DiscoverPage({
                 </div>
 
                 {/* Category pages carry their filters as chips just below;
-                    everywhere else this is the way in to them (sort included). */}
-                {!showCategoryFilterChips ? (
+                    everywhere else this is the way in to them (sort included).
+                    Photo results are a fixed set of best matches, so there is
+                    nothing for filters to narrow until the photo is put away. */}
+                {!showCategoryFilterChips && !imageMode ? (
                   <button
                     type="button"
                     onClick={openFilterSheet}
@@ -3172,7 +3221,40 @@ export function DiscoverPage({
           </div>
 
           <div className="min-w-0">
-            {!selectedCategory && !categoryParam && !query ? (
+            {imageSearch.session && imageSearch.phase ? (
+              <div className="px-4 pb-6 pt-3 lg:px-0 lg:pt-2">
+                <ImageSearchPanel
+                  session={imageSearch.session}
+                  phase={imageSearch.phase}
+                  count={imageSearch.items.length}
+                  error={imageSearch.error}
+                  onClose={clearImageSearch}
+                  className="mb-4 lg:max-w-2xl md:mb-6"
+                />
+                {imageSearch.phase === "analyzing" ||
+                imageSearch.phase === "searching" ? (
+                  <DiscoverGridSkeleton rows={2} />
+                ) : imageSearch.items.length > 0 ? (
+                  <>
+                    <div className={DISCOVER_GRID}>
+                      {imageSearch.items.map((post, index) => (
+                        <DiscoverGridCard
+                          key={post.id}
+                          post={post}
+                          lang={lang}
+                          priority={index < 4}
+                        />
+                      ))}
+                    </div>
+                    <p className="py-8 text-center text-[12px] text-muted">
+                      You&apos;ve reached the end
+                    </p>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
+            {!imageMode && !selectedCategory && !categoryParam && !query ? (
               <ExploreCategoryGrid
                 categories={categories}
                 loading={categoriesLoading}
@@ -3180,7 +3262,7 @@ export function DiscoverPage({
               />
             ) : null}
 
-            {error && items.length === 0 ? (
+            {imageMode ? null : error && items.length === 0 ? (
               <div className="px-8 pb-16 pt-12 text-center">
                 <p className="text-[16px] font-semibold leading-6 text-main">
                   Couldn&apos;t load listings
@@ -3239,7 +3321,8 @@ export function DiscoverPage({
             {/* A full reload (filter/search/sort change) — NOT pagination — is in
               flight. Show only the skeleton; the stale results grid below is
               hidden so we never stack old items under a loader. */}
-            {isReloading &&
+            {!imageMode &&
+              isReloading &&
               (showInitialPosts ? (
                 <div className="px-4 pb-6 lg:px-0">
                   <div className={DISCOVER_GRID}>
@@ -3257,7 +3340,7 @@ export function DiscoverPage({
                 <DiscoverFeedSkeleton />
               ))}
 
-            {showEmptyState ? (
+            {!imageMode && showEmptyState ? (
               query ? (
                 <EmptyState
                   title={`No results for “${query}”`}
@@ -3278,7 +3361,7 @@ export function DiscoverPage({
               )
             ) : null}
 
-            {!isReloading && items.length > 0 ? (
+            {!imageMode && !isReloading && items.length > 0 ? (
               <div className="px-4 pb-6 lg:px-0">
                 <div className={DISCOVER_GRID}>
                   {items.map((post, index) => (

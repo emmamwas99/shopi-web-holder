@@ -37,6 +37,7 @@ import {
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
 import { FOR_YOU_REFRESH_EVENT } from "@/lib/feedFreshness";
 import { useUiStore } from "@/stores/ui";
+import { useImageSearchStore } from "@/stores/imageSearch";
 import { isTabletViewportNow, TABLET_QUERY } from "@/hooks/useIsTablet";
 import {
   RecordSearchTermDocument,
@@ -150,6 +151,7 @@ export function FeedPage({
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   const [recordSearchTerm] = useMutation(RecordSearchTermDocument);
+  const clearImageSearch = useImageSearchStore((s) => s.clear);
   const isSearchResultPdpOpen =
     pathname.includes("/video/") || pathname.includes("/content/");
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
@@ -233,6 +235,7 @@ export function FeedPage({
       // Continue to results if browser storage is unavailable.
     }
     void recordSearchTerm({ variables: { input: { term: normalized } } }).catch(() => {});
+    clearImageSearch("home");
     setSubmittedSearch(normalized);
     setMobileSearchDraft(normalized);
     setSearchTab("Top");
@@ -338,11 +341,22 @@ export function FeedPage({
           inputRef={mobileSearchInputRef}
           onDraftChange={setMobileSearchDraft}
           onSubmit={submitMobileSearch}
-          onClose={() => setMobileSearchOpen(false)}
-          onBackToEntry={() => setSearchResultsOpen(false)}
+          onClose={() => {
+            setMobileSearchOpen(false);
+            clearImageSearch("home");
+          }}
+          onBackToEntry={() => {
+            setSearchResultsOpen(false);
+            clearImageSearch("home");
+          }}
           onSelectRecent={submitMobileSearch}
           onRemoveRecent={removeRecentSearch}
           onViewAllUsers={() => setSearchTab("Users")}
+          onImageSearch={() => {
+            setSubmittedSearch("");
+            setMobileSearchDraft("");
+            setSearchResultsOpen(true);
+          }}
         />
       ) : null}
 

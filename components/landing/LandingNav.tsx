@@ -11,6 +11,7 @@ import { trackHomepageButtonClick } from "@/lib/analytics";
 import { ThemeSelect } from "@/components/ui/ThemeSelect";
 import { homeHref } from "@/lib/home-url";
 import { browseSearchHref, openListingAfterBrowse } from "@/lib/searchHandoff";
+import { ImageSearchButton } from "@/components/search/ImageSearchButton";
 
 // The homepage ships without Apollo (see RouteProviders), so the suggestions
 // and the client they query load on demand — warmed when the search box is
@@ -150,6 +151,16 @@ export function LandingNav({ lang }: { lang: Locale }) {
               </span>
             </button>
           ) : null}
+          {/* A picked photo's results open on Browse, like a typed search. */}
+          <ImageSearchButton
+            surface="HOME"
+            onPicked={() => {
+              setSearchOpen(false);
+              inputRef.current?.blur();
+              router.push(browsePath);
+            }}
+            className="text-landing-body hover:text-primary"
+          />
           {/* Live suggestions, the same preview the app's own nav search
               shows: tap one to open it, or press return for every match on
               Browse. */}

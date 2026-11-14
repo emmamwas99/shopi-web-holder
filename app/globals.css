@@ -480,6 +480,33 @@ html.theme-switching *::after {
   animation: shopi-dot-wave 1.1s ease-in-out infinite;
 }
 
+/* Photo search: a bright line sweeping over the picked photo while it is
+   analysed, so the wait reads as work being done on that image. */
+@keyframes shopi-image-scan {
+  0% {
+    top: 6%;
+  }
+  100% {
+    top: 92%;
+  }
+}
+
+.shopi-image-scan {
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  background: rgb(var(--brand-primary));
+  box-shadow: 0 0 10px 2px rgb(var(--brand-primary) / 0.65);
+  animation: shopi-image-scan 1.1s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shopi-image-scan {
+    top: 50%;
+    animation: shopi-dot-fade 1.6s ease-in-out infinite;
+  }
+}
+
 /* Compact paired loader for drawers while their filter options are fetched. */
 .shopi-drawer-loader {
   position: relative;

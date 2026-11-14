@@ -44,6 +44,7 @@ import type { CategoryFacet } from "@/features/discover/categories";
 import { CategoryGlyph } from "@/features/discover/components/CategoryGlyph";
 import { shouldUnoptimize } from "@/lib/imageUtils";
 import { homeHref } from "@/lib/home-url";
+import { ImageSearchButton } from "@/components/search/ImageSearchButton";
 
 /**
  * The desktop filter rail appears once a shopper has chosen a category. The
@@ -355,6 +356,27 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
     );
   }
 
+  /**
+   * A photo was picked: its results show on unscoped Browse, like a typed
+   * search's. Already there, the page swaps its grid in place; anywhere else
+   * (a category page included) it is a navigation to Browse.
+   */
+  function startImageSearch() {
+    setDraft("");
+    setFocused(false);
+    if (
+      pathname.startsWith(`/${lang}/search`) ||
+      pathname === `/${lang}/explore`
+    ) {
+      const filters = useDiscoverFiltersStore.getState();
+      filters.setSelectedCategory(null);
+      filters.setSelectedSubcategory(null);
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    router.push(`/${lang}/explore`);
+  }
+
   return (
     <form
       ref={formRef}
@@ -380,6 +402,10 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
         // Safari paints its own clear affordance on type=search, which would
         // sit next to ours.
         className="min-w-0 flex-1 bg-transparent placeholder:text-xs text-sm font-medium text-default outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:appearance-none"
+      />
+      <ImageSearchButton
+        surface={isDiscoverRoute ? "MARKET" : "HOME"}
+        onPicked={startImageSearch}
       />
       {draft ? (
         <button
