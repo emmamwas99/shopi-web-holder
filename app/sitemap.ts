@@ -383,6 +383,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "", changeFrequency: "weekly", priority: 1 },
     { path: "/faq", changeFrequency: "monthly", priority: 0.8 },
     { path: "/shopi-agent", changeFrequency: "monthly", priority: 0.9 },
+    { path: "/search-by-photo", changeFrequency: "monthly", priority: 0.85 },
     {
       path: "/online-selling-jobs-kenya",
       changeFrequency: "weekly",
