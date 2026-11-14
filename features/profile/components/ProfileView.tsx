@@ -18,6 +18,7 @@ import { PostsGrid } from "./PostsGrid";
 import { ManagedPostsGrid } from "./ManagedPostsGrid";
 import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
+import { ReferralPausedPanel } from "@/features/referrals/components/ReferralPausedPanel";
 import { cn } from "@/lib/utils";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import {
@@ -82,6 +83,13 @@ function ProfileSkeleton() {
             aria-label="Loading profile menu"
             className="flex flex-col gap-6 md:gap-7"
           >
+            <div className="rounded-xl bg-surface px-4 py-3.5">
+              <Skeleton className="h-4 w-44 rounded" />
+              <Skeleton className="mt-2 h-3.5 w-full rounded" />
+              <Skeleton className="mt-1 h-3.5 w-4/5 rounded" />
+              <Skeleton className="mt-2.5 h-3.5 w-36 rounded" />
+            </div>
+
             {[
               { title: true, rows: [0, 1, 2] },
               { title: true, rows: [0, 1, 2] },
@@ -444,6 +452,8 @@ export function ProfileView({ lang }: Props) {
           )}
 
           {shownTab === "drafts" && <DraftsGrid lang={lang} />}
+
+          {shownTab === "invite" && <ReferralPausedPanel />}
 
           {shownTab === "analytics" && (
             <>
