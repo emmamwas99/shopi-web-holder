@@ -2,7 +2,12 @@
 
 import type { ReactNode, Ref } from "react";
 import { ChevronLeft } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -52,7 +57,9 @@ export function DetailSheet({
               {subtitle || "Details"}
             </SheetDescription>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     );
@@ -63,7 +70,7 @@ export function DetailSheet({
       <DialogContent
         ref={contentRef}
         overlayClassName="z-[70] bg-black/50"
-        className="!fixed !inset-0 !left-0 !top-0 !z-[80] !flex !h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !rounded-none !border-0 !bg-app !p-0 !shadow-none [&>button:last-child]:hidden"
+        className="!fixed !inset-0 !left-0 !top-0 z-80! !flex h-dvh! !w-full !max-w-none translate-x-0! !translate-y-0 !flex-col !gap-0 !rounded-none !border-0 !bg-app !p-0 !shadow-none [&>button:last-child]:hidden"
       >
         <div
           className="grid min-h-14 shrink-0 grid-cols-[40px_minmax(0,1fr)_40px] items-center gap-2 border-b border-default px-3 py-2"
