@@ -1,12 +1,12 @@
 import { privatePageMetadata } from "@/lib/metadata";
 
-export const metadata = privatePageMetadata("Post insights");
+export const metadata = privatePageMetadata("Your listing");
 
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import { ManagedPostInsightsPage } from "@/features/profile/components/ManagedPostInsightsPage";
+import { ManagedPostPage } from "@/features/profile/components/ManagedPostPage";
 
-export default async function ProfilePostInsightsRoute({
+export default async function ProfilePostRoute({
   params,
 }: {
   params: Promise<{ lang: string; id: string }>;
@@ -14,5 +14,5 @@ export default async function ProfilePostInsightsRoute({
   const { lang, id } = await params;
   if (!isValidLocale(lang)) notFound();
 
-  return <ManagedPostInsightsPage lang={lang} contentId={id} />;
+  return <ManagedPostPage lang={lang} contentId={id} />;
 }

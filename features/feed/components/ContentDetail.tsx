@@ -75,6 +75,12 @@ import {
   SectionGap,
 } from "./ListingParts";
 
+// Only the seller ever sees it, so buyers never download the checkout.
+const OwnerBoostCard = dynamic(
+  () => import("@/features/billing/components/OwnerBoostCard").then((mod) => mod.OwnerBoostCard),
+  { ssr: false },
+);
+
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
 );
@@ -1063,6 +1069,16 @@ export function ContentDetail({
   const avatarUrl = postCreator?.profile?.avatar;
   // isMyContent is resolved server-side — authoritative, no client-side ID comparison
   const isOwnPost = post.isMyContent ?? false;
+  const ownerBoost =
+    isOwnPost && resolvedContentId ? (
+      <OwnerBoostCard
+        post={{
+          id: resolvedContentId,
+          title: post.title,
+          thumbnail: media[0]?.thumbnailUrl ?? media[0]?.url ?? videoThumbnail,
+        }}
+      />
+    ) : null;
 
   const CreatorRow = (
     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
@@ -1852,6 +1868,7 @@ export function ContentDetail({
                   )}
                 </div>
                 {DesktopActions}
+                {ownerBoost && <div className="hidden px-4 py-3 md:block">{ownerBoost}</div>}
               </article>
 
               {!isOwnPost && (
@@ -2113,6 +2130,7 @@ export function ContentDetail({
                     .join(" · ")}
                 </p>
               )}
+              {ownerBoost && <div className="mt-3">{ownerBoost}</div>}
             </section>
 
             <SectionGap />

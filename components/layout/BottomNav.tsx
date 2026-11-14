@@ -84,7 +84,9 @@ export function shouldHideBottomNav(pathname: string) {
     pathname.includes("/upload/tiktok") ||
     /\/content\/[^/]+\/comments\/?$/.test(pathname) ||
     /^\/[^/]+\/explore\/[^/]+\/[^/]+\/?$/.test(pathname) ||
-    /\/notifications\/[^/]+/.test(pathname)
+    /\/notifications\/[^/]+/.test(pathname) ||
+    // A seller's own post: full screen, with its own action bar.
+    /\/profile\/posts\/[^/]+\/?$/.test(pathname)
   );
 }
 
