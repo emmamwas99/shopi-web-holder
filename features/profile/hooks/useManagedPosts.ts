@@ -57,6 +57,12 @@ export type ManagedPost = {
     shares: number;
     comments: number;
   };
+  /** Paid or granted promotion; `expiresAt` in the past means it has ended. */
+  boost?: {
+    isBoosted: boolean;
+    tier?: "SILVER" | "GOLD" | "PLATINUM" | null;
+    expiresAt?: string | null;
+  } | null;
   media: Array<{
     mediaType: ManagedPostType;
     thumbnailUrl?: string | null;
@@ -168,6 +174,11 @@ const MANAGED_POST_FIELDS = gql`
       saves
       shares
       comments
+    }
+    boost {
+      isBoosted
+      tier
+      expiresAt
     }
     media {
       mediaType

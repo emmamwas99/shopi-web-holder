@@ -1,3 +1,4 @@
+import { daysLeft } from "@/features/billing/lib/money";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 
 /**
@@ -201,4 +202,17 @@ export function shortDate(value: string | null | undefined): string {
     month: "short",
     ...(sameYear ? {} : { year: "numeric" }),
   });
+}
+
+const TIER_NAMES = { SILVER: "Silver", GOLD: "Gold", PLATINUM: "Platinum" } as const;
+
+/** The running boost on a post, or null once it has ended. */
+export function runningBoost(post: ManagedPost) {
+  const boost = post.boost;
+  if (!boost?.isBoosted || !boost.expiresAt || new Date(boost.expiresAt).getTime() <= Date.now()) return null;
+  return {
+    name: boost.tier ? TIER_NAMES[boost.tier] : "Boost",
+    endsAt: boost.expiresAt,
+    daysLeft: daysLeft(boost.expiresAt),
+  };
 }

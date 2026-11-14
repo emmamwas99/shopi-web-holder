@@ -16,6 +16,7 @@ import {
   LogOut,
   MessageCircleQuestionMark,
   Monitor,
+  Receipt,
   ShieldCheck,
   Star,
   Trash2,
@@ -369,6 +370,11 @@ export function ProfileMenu({
           icon={UserPen}
           label="Edit profile"
           href={settingsSubPageHref(lang, "/profile/edit")}
+        />
+        <MenuRow
+          icon={Receipt}
+          label="Payments"
+          href={settingsSubPageHref(lang, "/profile/billing")}
         />
         {hasPassword && (
           <MenuRow

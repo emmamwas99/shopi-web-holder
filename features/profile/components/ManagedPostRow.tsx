@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Image from "next/image";
-import { ChevronRight, ImageIcon, Play } from "lucide-react";
+import { ChevronRight, ImageIcon, Play, Zap } from "lucide-react";
 import { fmtCompact } from "@/lib/format";
 import { timeAgo } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import {
   postProblem,
   postStatus,
   postThumb,
+  runningBoost,
   TONE_CLASSES,
   type StatusTone,
 } from "../lib/managedPost";
@@ -36,6 +37,38 @@ export function StatusBadge({
       )}
     >
       {children}
+    </span>
+  );
+}
+
+/**
+ * "Boosted" on a post whose paid (or granted) promotion is running. `onPhoto`
+ * is the solid version for sitting on top of a cover image.
+ */
+export function BoostedBadge({
+  post,
+  onPhoto,
+  className,
+}: {
+  post: ManagedPost;
+  onPhoto?: boolean;
+  className?: string;
+}) {
+  const boost = runningBoost(post);
+  if (!boost) return null;
+  const left = `${boost.name} boost · ${boost.daysLeft} day${boost.daysLeft === 1 ? "" : "s"} left`;
+  return (
+    <span
+      title={left}
+      aria-label={left}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] px-2 py-0.5 text-xs font-semibold",
+        onPhoto ? "bg-primary text-white shadow-sm" : "bg-primary-soft text-primary",
+        className,
+      )}
+    >
+      <Zap className="size-3" fill="currentColor" strokeWidth={0} aria-hidden />
+      Boosted
     </span>
   );
 }
@@ -65,7 +98,7 @@ export function ManagedPostRow({
         type="button"
         onClick={() => onOpen(post)}
         className="flex w-full items-center gap-3 py-3 text-left transition-colors active:bg-surface"
-        aria-label={`${post.title || "Untitled post"}, ${postPriceLabel(post)}, ${status.label}`}
+        aria-label={`${post.title || "Untitled post"}, ${postPriceLabel(post)}, ${status.label}${runningBoost(post) ? ", boosted" : ""}`}
       >
         <span className="relative size-12 shrink-0 overflow-hidden rounded-[8px] border border-default bg-surface">
           {thumb ? (
@@ -97,6 +130,7 @@ export function ManagedPostRow({
           </span>
           <span className="mt-1.5 flex min-w-0 items-center gap-1.5">
             <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+            <BoostedBadge post={post} />
             {problem ? (
               <span className="truncate text-xs text-rose-600 dark:text-rose-400">{problem}</span>
             ) : (
