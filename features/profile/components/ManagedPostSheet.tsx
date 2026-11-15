@@ -1,10 +1,28 @@
 "use client";
 
-import { useCallback, useState, type ComponentType, type ReactNode } from "react";
+import {
+  useCallback,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, MoreHorizontal, Pencil, Share2, Store, Trash2, Zap } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  MoreHorizontal,
+  Pencil,
+  Share2,
+  Store,
+  Trash2,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useBackDismiss } from "@/hooks/useBackDismiss";
 import { contentPath } from "@/lib/content-url";
 import { timeAgoLong } from "@/lib/time";
@@ -14,10 +32,17 @@ import { BOOSTS_FOR_SALE } from "@/features/billing/flags";
 import type { ManagedPost } from "../hooks/useManagedPosts";
 import { isHidden, postThumb } from "../lib/managedPost";
 import { DetailSheet } from "./DetailSheet";
-import { ManagedPostDetail, isLivePost, runningBoost } from "./ManagedPostDetail";
+import {
+  ManagedPostDetail,
+  isLivePost,
+  runningBoost,
+} from "./ManagedPostDetail";
 
 /** Share the post's public link, or copy it where the share sheet isn't available. */
-export async function sharePostLink(lang: string, post: ManagedPost): Promise<void> {
+export async function sharePostLink(
+  lang: string,
+  post: ManagedPost,
+): Promise<void> {
   const url = `${window.location.origin}${contentPath(lang, post)}`;
   try {
     if (navigator.share) {
@@ -47,7 +72,12 @@ export function postMenuActions({
   return [
     ...(isLivePost(post)
       ? [
-          { key: "share", label: "Share link", icon: Share2, onSelect: () => void sharePostLink(lang, post) },
+          {
+            key: "share",
+            label: "Share link",
+            icon: Share2,
+            onSelect: () => void sharePostLink(lang, post),
+          },
           {
             key: "store",
             label: "View as a buyer",
@@ -57,7 +87,13 @@ export function postMenuActions({
           },
         ]
       : []),
-    { key: "delete", label: "Delete post", icon: Trash2, onSelect: onDelete, danger: true },
+    {
+      key: "delete",
+      label: "Delete post",
+      icon: Trash2,
+      onSelect: onDelete,
+      danger: true,
+    },
   ];
 }
 
@@ -89,7 +125,8 @@ export function ManagedPostSheet({
 }) {
   const router = useRouter();
   const open = Boolean(post);
-  const [menuPortalContainer, setMenuPortalContainer] = useState<HTMLDivElement | null>(null);
+  const [menuPortalContainer, setMenuPortalContainer] =
+    useState<HTMLDivElement | null>(null);
   // Which post the boost sheet was opened for, so it never reopens on another post.
   const [boostFor, setBoostFor] = useState<string | null>(null);
   const boostOpen = Boolean(post && boostFor === post.id);
@@ -116,19 +153,37 @@ export function ManagedPostSheet({
 
   const actions = (
     <div className="flex flex-wrap items-center gap-2">
-      <ActionButton primary icon={Pencil} onClick={() => onEdit(shown)} disabled={busy}>
+      <ActionButton
+        primary
+        icon={Pencil}
+        onClick={() => onEdit(shown)}
+        disabled={busy}
+      >
         Edit
       </ActionButton>
-      <ActionButton icon={hidden ? Eye : EyeOff} onClick={() => onToggleHidden(shown)} disabled={busy}>
+      <ActionButton
+        icon={hidden ? Eye : EyeOff}
+        onClick={() => onToggleHidden(shown)}
+        disabled={busy}
+      >
         {hidden ? "Show in store" : "Hide"}
       </ActionButton>
       {BOOSTS_FOR_SALE && live && (
-        <ActionButton icon={Zap} onClick={() => setBoostFor(shown.id)} disabled={busy}>
+        <ActionButton
+          icon={Zap}
+          onClick={() => setBoostFor(shown.id)}
+          disabled={busy}
+        >
           {boosted ? "Boosted" : "Boost"}
         </ActionButton>
       )}
       <MoreMenu
-        actions={postMenuActions({ lang, post: shown, onNavigate: go, onDelete: () => onDelete(shown) })}
+        actions={postMenuActions({
+          lang,
+          post: shown,
+          onNavigate: go,
+          onDelete: () => onDelete(shown),
+        })}
         disabled={busy}
         container={menuPortalContainer}
       />
@@ -141,7 +196,12 @@ export function ManagedPostSheet({
         open={open}
         desktop={desktop}
         title={shown.title || "Untitled post"}
-        subtitle={[shown.listingNumber, `posted ${timeAgoLong(shown.createdAt)}`].filter(Boolean).join(" · ")}
+        subtitle={[
+          shown.listingNumber,
+          `posted ${timeAgoLong(shown.createdAt)}`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         contentRef={setMenuPortalContainer}
         onRequestClose={requestClose}
       >
@@ -199,9 +259,11 @@ export function ActionButton({
       disabled={disabled}
       title={title}
       className={cn(
-        "inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-[8px] px-3.5 text-sm font-medium transition-opacity active:opacity-70 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition-opacity active:opacity-70 disabled:pointer-events-none disabled:opacity-50",
         compact && "w-full min-w-0 gap-1 px-1.5 text-xs",
-        primary ? "bg-primary text-white" : "border border-default bg-app text-main",
+        primary
+          ? "bg-primary text-white"
+          : "border border-default bg-app text-main",
       )}
     >
       <Icon className="size-4 shrink-0" />
@@ -263,32 +325,42 @@ export function MoreMenu({
         collisionPadding={16}
         className="z-[90] w-56 rounded-xl border border-default bg-app p-1 shadow-lg"
       >
-        {actions.map(({ key, label, icon: Icon, onSelect, navigate, danger }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => {
-              // Release this menu's Back entry before the parent sheet
-              // releases its entry and navigates away.
-              if (navigate) release();
-              setOpen(false);
-              onSelect();
-            }}
-            className={cn(
-              "flex h-10 w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-sm transition-colors active:bg-surface",
-              danger ? "text-rose-600 dark:text-rose-400" : "text-main",
-            )}
-          >
-            <Icon className={cn("size-4 shrink-0", danger ? "" : "text-muted")} />
-            {label}
-          </button>
-        ))}
+        {actions.map(
+          ({ key, label, icon: Icon, onSelect, navigate, danger }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                // Release this menu's Back entry before the parent sheet
+                // releases its entry and navigates away.
+                if (navigate) release();
+                setOpen(false);
+                onSelect();
+              }}
+              className={cn(
+                "flex h-10 w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-sm transition-colors active:bg-surface",
+                danger ? "text-rose-600 dark:text-rose-400" : "text-main",
+              )}
+            >
+              <Icon
+                className={cn("size-4 shrink-0", danger ? "" : "text-muted")}
+              />
+              {label}
+            </button>
+          ),
+        )}
       </PopoverContent>
     </Popover>
   );
 }
 
-export function Detail({ label, children }: { label: string; children: ReactNode }) {
+export function Detail({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex items-start justify-between gap-4 py-2 text-sm">
       <dt className="shrink-0 text-muted">{label}</dt>
