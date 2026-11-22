@@ -170,6 +170,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
 
   experimental: {
+    agentUpgrade: "security",
     // app/global-not-found.tsx: the 404 for URLs that match no route. The
     // root layout is app/[lang]/layout.tsx (a dynamic segment), so a plain
     // app/not-found.tsx has no layout to render in — Next's docs name this
