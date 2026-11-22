@@ -25,6 +25,7 @@ import {
   sellCarLocationPath,
   sellCarLocations,
 } from "@/lib/seo/sell-car-locations";
+import { facebookToolPages, facebookToolPath } from "@/lib/seo/facebook-tools";
 import { tiktokToolPages, tiktokToolPath } from "@/lib/seo/tiktok-tools";
 import { whereToSellPages, whereToSellPath } from "@/lib/seo/where-to-sell";
 
@@ -426,7 +427,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
-    // The TikTok tools (video, MP3, photos) come from tiktokToolPages below.
+    // The TikTok tools (video, MP3, photos) and the Facebook video downloader
+    // come from tiktokToolPages and facebookToolPages below.
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/privacy-policy", changeFrequency: "yearly", priority: 0.3 },
     { path: "/terms-and-conditions", changeFrequency: "yearly", priority: 0.3 },
@@ -495,6 +497,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // photos) and targets its own searches (lib/seo/tiktok-tools.ts).
   const tiktokToolEntries: MetadataRoute.Sitemap = tiktokToolPages.map((page) => {
     const path = tiktokToolPath(page.slug);
+    return {
+      url: langs("en", path),
+      changeFrequency: "monthly",
+      priority: 0.7,
+      alternates: alternates(path),
+    };
+  });
+
+  // The Facebook video downloader (videos and Reels on one page;
+  // lib/seo/facebook-tools.ts says why).
+  const facebookToolEntries: MetadataRoute.Sitemap = facebookToolPages.map((page) => {
+    const path = facebookToolPath(page.slug);
     return {
       url: langs("en", path),
       changeFrequency: "monthly",
@@ -629,6 +643,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...sellCarLocationEntries,
     ...whereToSellEntries,
     ...tiktokToolEntries,
+    ...facebookToolEntries,
     ...browseEntries,
     ...blogEntries,
     ...listingEntries,

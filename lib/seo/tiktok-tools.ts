@@ -23,38 +23,16 @@
  *   and the visible "Updated" line.
  */
 
+import type { ToolSection } from "./tool-pages";
+
+export type { ToolSection };
+
 export const TIKTOK_TOOLS_UPDATED = "2026-11-04";
 
 export type TiktokToolSlug =
   | "tiktok-downloader"
   | "tiktok-mp3-downloader"
   | "tiktok-photo-downloader";
-
-export type ToolSection =
-  | {
-      kind: "cards";
-      id: string;
-      heading: string;
-      intro?: string;
-      cards: { title: string; body: string }[];
-    }
-  | {
-      kind: "table";
-      id: string;
-      heading: string;
-      intro?: string;
-      head: string[];
-      rows: string[][];
-      note?: string;
-    }
-  | {
-      kind: "list";
-      id: string;
-      heading: string;
-      intro?: string;
-      items: string[];
-      closing?: string;
-    };
 
 export type TiktokToolPageData = {
   slug: TiktokToolSlug;

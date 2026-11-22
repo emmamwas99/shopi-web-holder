@@ -244,5 +244,31 @@
     "errorBusy": "TikTok didn't answer in time. Wait a few seconds and try again.",
     "errorSave": "The download didn't finish. Check your connection and try again.",
     "disclaimer": "Only save videos you created or have permission to use."
+  },
+  "facebookSaver": {
+    "placeholder": "Paste a Facebook video or Reel link…",
+    "button": "Get video",
+    "paste": "Paste",
+    "fetching": "Fetching…",
+    "saveVideo": "Download video (MP4)",
+    "saveHd": "Download HD",
+    "saving": "Downloading…",
+    "saved": "Saved. Check your Downloads.",
+    "savedBig": "This video is big, so your browser is downloading it directly. Check your Downloads; it keeps Facebook's file name.",
+    "videoBadge": "Video",
+    "reelBadge": "Reel",
+    "hdNoteH264": "Both files are H.264 MP4s, so either one plays on every phone, computer and app.",
+    "hdNoteCodec": "This HD file is {codec}. It plays in Chrome and on most Android phones; on an iPhone, or if it won't play, download the MP4 instead.",
+    "hdNoteUnknown": "This HD file may not play on every device. If it won't play, download the MP4 instead.",
+    "tryAnother": "Try another link",
+    "errorInvalid": "That isn't a Facebook link. In Facebook, tap Share, then Copy link, and paste it here.",
+    "errorTiktok": "That's a TikTok link.",
+    "errorTiktokLink": "Use the TikTok downloader instead.",
+    "errorUnavailable": "That video is private, deleted, or the link isn't a video. Check it's a public video or Reel and try again.",
+    "errorLogin": "Facebook only shows that video to people who are logged in, as with friends-only and group videos, so it can't be saved here. If it's public, try again in a few minutes.",
+    "errorBusy": "Facebook didn't answer in time. Wait a few seconds and try again.",
+    "errorLimit": "That's a lot of links in one minute. Wait a moment and try again.",
+    "errorSave": "The download didn't finish. Check your connection and try again.",
+    "disclaimer": "Only save videos you created or have permission to use."
   }
 }

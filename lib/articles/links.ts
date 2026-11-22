@@ -56,6 +56,7 @@ const STATIC_PATHS = new Set<string>([
   "/sell-in-kenya",
   "/shopi-agent",
   "/stores",
+  "/facebook-video-downloader",
   "/tiktok-downloader",
   "/tiktok-mp3-downloader",
   "/tiktok-photo-downloader",

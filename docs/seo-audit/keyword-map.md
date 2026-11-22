@@ -118,3 +118,19 @@ Same method, 27 seeds (729 queries, 6,198 suggestions), seeds in [`seeds/tiktok.
 | Competitor brands | 851 / 1,054 | "tikmate", "musicallydown", "ssstik" | Not targeted: navigational. No comparison pages naming them |
 
 **Tool facts behind the copy** (checked 4 Nov 2026 against the lookup service): `play` is H.264 (576×1024 in the test), `hdplay` is HEVC (720×1280), the MP3 is 64 kbps as TikTok serves it, photo posts return 1080–1440 px JPEGs, and every media URL sends `Access-Control-Allow-Origin: *`. Don't claim "320 kbps", "1080p" or "4K".
+
+## Facebook video downloader: what people type, November 2026
+
+Same method, 27 seeds (729 queries, 3,275 suggestions, 22 Nov 2026), seeds in [`seeds/facebook.txt`](seeds/facebook.txt). Counts below keep only download intents that mention Facebook/FB (or a downloader brand); Marketplace, monetisation and "upload to Facebook" noise is dropped. Kenya-specific and Swahili queries are tiny again ("pakua video ya facebook" 1).
+
+| Cluster | Variants / breadth | Examples | Page |
+|---|---|---|---|
+| Video without watermark / HD / by link / MP4 | 1,354 / 2,197 | "download facebook video without watermark online" (18, the top suggestion), "fb video downloader browser" (17), "can a video from facebook be downloaded" (13), "fb downloader hd quality" (11), "download facebook video using link" | **New** `/facebook-video-downloader`. Facebook doesn't watermark files, so the copy says nothing is added and a creator's own logo stays |
+| Private / group / Story / live / Messenger | 474 / 632 | "can you download a facebook live video" (12), "facebook story download online kenya" (5), "fb reels download private without watermark" | Not possible logged out. A "What the Facebook downloader can't save" section and FAQs answer it plainly |
+| MP3 / audio | 339 / 597 | "facebook download video online mp3" (17), "how to convert facebook video to mp3" (12), "facebook video to mp3 download" (9) | Not offered (the API returns MP4 only). FAQ says so. The biggest gap: Facebook's DASH data includes an audio-only AAC track, so an audio download is possible later |
+| Competitor brands | 343 / 432 | "fb downloader snap" (10), "what is snapsave", "is snapsave safe", "fdown net video downloader online" | Not targeted: navigational. No comparison pages naming them |
+| Device | 310 / 517 | "facebook video download gallery app" (7), "facebook video downloader online chrome extension" (6), "save facebook video to iphone", "how to save videos from facebook to pc" | Device cards and FAQs; "no app or extension needed" FAQ |
+| Reels | 143 / 191 | "facebook reels downloader without watermark hd" (5), "how to save a facebook reel to my gallery" (4) | Same page (same job as videos); Reels in the title, H1 and an FAQ |
+| Safety, "not working" | 6 / 7 | "facebook video download not working", "fb video downloader safe" | "Why won't a Facebook video download?" and "Is it safe" lists |
+
+**Tool facts behind the copy** (checked 22 Nov 2026 against live public videos with ffprobe): every video and Reel has a progressive MP4 with AAC sound; SD is H.264 (224–400 px wide); HD, when present, was 720×1280, 1080×1920 or 1920×1080 and came as H.264 (`dash_h264-*`, `dash_baseline_*`), VP9 (`compressed_source`) or AV1 (`av1_compressed_source`). fbcdn sends `Access-Control-Allow-Origin: *`, and `dl=1` makes it answer as an attachment. Don't claim "4K", MP3, private videos or Stories.

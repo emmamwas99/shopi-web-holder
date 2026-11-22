@@ -244,5 +244,31 @@
     "errorBusy": "TikTok haikujibu kwa wakati. Subiri sekunde chache kisha ujaribu tena.",
     "errorSave": "Upakuaji haukukamilika. Angalia mtandao wako kisha ujaribu tena.",
     "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
+  },
+  "facebookSaver": {
+    "placeholder": "Bandika link ya video au Reel ya Facebook…",
+    "button": "Pata video",
+    "paste": "Bandika",
+    "fetching": "Inatafuta…",
+    "saveVideo": "Pakua video (MP4)",
+    "saveHd": "Pakua HD",
+    "saving": "Inapakua…",
+    "saved": "Imehifadhiwa. Angalia Downloads.",
+    "savedBig": "Video hii ni kubwa, kwa hivyo browser yako inaipakua moja kwa moja. Angalia Downloads; itakuwa na jina la faili la Facebook.",
+    "videoBadge": "Video",
+    "reelBadge": "Reel",
+    "hdNoteH264": "Faili zote mbili ni MP4 za H.264, kwa hivyo yoyote inacheza kwenye kila simu, kompyuta na app.",
+    "hdNoteCodec": "Faili hii ya HD ni {codec}. Inacheza kwenye Chrome na simu nyingi za Android; kwenye iPhone, au isipocheza, pakua MP4 badala yake.",
+    "hdNoteUnknown": "Faili hii ya HD huenda isicheze kwenye kila kifaa. Isipocheza, pakua MP4 badala yake.",
+    "tryAnother": "Jaribu link nyingine",
+    "errorInvalid": "Hiyo si link ya Facebook. Kwenye Facebook, gusa Share, kisha Copy link, na uibandike hapa.",
+    "errorTiktok": "Hiyo ni link ya TikTok.",
+    "errorTiktokLink": "Tumia kipakuzi cha TikTok badala yake.",
+    "errorUnavailable": "Video hiyo ni ya faragha, imefutwa, au link si ya video. Hakikisha ni video au Reel ya umma kisha ujaribu tena.",
+    "errorLogin": "Facebook inaonyesha video hiyo kwa walioingia tu, kama video za marafiki au za group, kwa hivyo haiwezi kuhifadhiwa hapa. Kama ni ya umma, jaribu tena baada ya dakika chache.",
+    "errorBusy": "Facebook haikujibu kwa wakati. Subiri sekunde chache kisha ujaribu tena.",
+    "errorLimit": "Umejaribu link nyingi ndani ya dakika moja. Subiri kidogo kisha ujaribu tena.",
+    "errorSave": "Upakuaji haukukamilika. Angalia mtandao wako kisha ujaribu tena.",
+    "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
   }
 }

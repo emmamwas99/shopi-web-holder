@@ -92,6 +92,10 @@ const connectSrc = [
   "https://*.ibyteimg.com",
   "https://*.byteoversea.com",
   "https://*.tikwm.com",
+  // Facebook video downloader: videos come straight from Facebook's CDN
+  // (video.*.fbcdn.net, CORS *, checked 22 Nov 2026). Same fallback idea: if
+  // this is ever blocked, the tool streams the file through the API instead.
+  "https://*.fbcdn.net",
 ]
   .filter(Boolean)
   .join(" ");
@@ -249,6 +253,7 @@ const nextConfig: NextConfig = {
       "tiktok-downloader",
       "tiktok-mp3-downloader",
       "tiktok-photo-downloader",
+      "facebook-video-downloader",
       "privacy-policy",
       "terms-and-conditions",
       "cookies",

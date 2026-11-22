@@ -4,7 +4,8 @@ import { ImageResponse } from "next/og";
 import { siteConfig } from "@/config/site";
 
 /**
- * Share card for the TikTok tool pages. Each page gets its own card rather
+ * Share card for the free tool pages (the TikTok tools and the Facebook video
+ * downloader). Each page gets its own card rather
  * than the site-wide one, which sells "buying and selling locally" — the
  * wrong promise for someone who pasted a downloader link to be told what the
  * page does. Each card repeats its page's H1, so the preview and the page it

@@ -126,17 +126,21 @@ export function tiktokFileName(
   return `${base}${suffix}.${fromMime ?? EXTENSION[asset]}`;
 }
 
-/** "1:05" from 65 seconds. */
+/** "1:05" from 65 seconds; "1:15:24" past an hour (long Facebook videos). */
 export function formatDuration(seconds: number | null): string | null {
   if (!seconds || seconds <= 0) return null;
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
+  const total = Math.round(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 
-/** "2.9 MB" */
+/** "2.9 MB"; "1.7 GB" from a gigabyte up. */
 export function formatBytes(bytes: number | null): string | null {
   if (!bytes || bytes <= 0) return null;
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
