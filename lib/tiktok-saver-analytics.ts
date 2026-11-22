@@ -48,8 +48,12 @@ export function rememberViewerGeo(geo: ViewerGeo | null | undefined): void {
   if (geo) viewerGeo = geo;
 }
 
-/** The external site that sent this visitor, captured once per tab session. */
-function landingReferrerHost(): string | undefined {
+/**
+ * The external site that sent this visitor, captured once per tab session.
+ * Shared with the Facebook tool (lib/facebook-saver-analytics.ts): it is the
+ * landing referrer of the tab, whichever tool page the visitor is on.
+ */
+export function landingReferrerHost(): string | undefined {
   try {
     const store = window.sessionStorage;
     const saved = store.getItem(REFERRER_KEY);
@@ -66,7 +70,7 @@ function landingReferrerHost(): string | undefined {
   }
 }
 
-function currentLocale(): string | undefined {
+export function currentLocale(): string | undefined {
   const segment = window.location.pathname.split("/")[1] ?? "";
   return /^[a-z]{2}(-[A-Za-z]{2})?$/.test(segment) ? segment : undefined;
 }

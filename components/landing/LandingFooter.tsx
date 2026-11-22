@@ -30,6 +30,7 @@ export function LandingFooter({
           { label: label("Search by photo", "Tafuta kwa picha"), href: "/en/search-by-photo" },
           { label: label("Sell on Shopi", "Uza kwenye Shopi"), href: "/en/upload" },
           { label: label("TikTok video downloader", "Pakua video za TikTok"), href: "/en/tiktok-downloader" },
+          { label: label("Facebook video downloader", "Pakua video za Facebook"), href: "/en/facebook-video-downloader" },
         ],
       },
       {
@@ -139,6 +140,10 @@ export function LandingFooter({
                 {
                   label: "TikTok video downloader",
                   href: `/${lang}/tiktok-downloader`,
+                },
+                {
+                  label: "Facebook video downloader",
+                  href: `/${lang}/facebook-video-downloader`,
                 },
               ],
             },

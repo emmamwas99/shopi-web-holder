@@ -157,3 +157,27 @@ export function trackTiktokSaver(
   }
   trackEvent(event, clean);
 }
+
+/**
+ * The Facebook video downloader, same shape as trackTiktokSaver. `codec` is
+ * the downloaded file's codec, which says how often people pick a VP9/AV1 HD
+ * file; `delivery` is direct (CDN to browser), proxy (through our API) or
+ * attachment (a big file the browser saved itself).
+ */
+export function trackFacebookSaver(
+  event: "facebook_saver_lookup" | "facebook_saver_download",
+  properties: {
+    outcome: "success" | "error";
+    asset?: string;
+    codec?: string;
+    delivery?: string;
+    hasHd?: boolean;
+    error?: string;
+  },
+) {
+  const clean: AnalyticsProperties = {};
+  for (const [key, value] of Object.entries(properties)) {
+    if (value !== undefined) clean[key] = value;
+  }
+  trackEvent(event, clean);
+}
