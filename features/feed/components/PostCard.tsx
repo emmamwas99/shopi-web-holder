@@ -849,8 +849,10 @@ function ImageMedia({
           // image binds one of these two clamps (a tall one hits the max, a wide
           // one hits the min), so with dvh their boxes resized on every frame of
           // iOS Safari's toolbar collapse and the whole feed jumped mid-scroll.
-          maxHeight: "60dvh",
-          minHeight: "40dvh",
+          // eslint.config.mjs rejects dvh in this file — it has been reverted
+          // to dvh by merges several times.
+          maxHeight: "60svh",
+          minHeight: "40svh",
         }}
         onClick={nav}
       >
