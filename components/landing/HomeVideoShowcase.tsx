@@ -3,13 +3,13 @@ import { ArrowRight, BadgeCheck, Check, Clapperboard, Link2, Plus } from "lucide
 import type { LucideIcon } from "lucide-react";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
-import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { VideoShowcasePlayer, type VideoShowcaseCopy } from "./VideoShowcasePlayer";
 
 /**
  * Homepage: Shopi takes video listings, and reuses a seller's TikToks from a
  * pasted link. Most marketplaces stop at photos, so it sits right under the
- * hero.
+ * hero. Right under it, it's often on screen at load, so it has no scroll-in
+ * animation: it's simply there (see Reveal's note on above-the-fold content).
  *
  * The phone plays one real listing (picked by hand: a clean, 22-second
  * product clip whose last frame meets its first, so the loop is seamless).
@@ -71,7 +71,7 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
           so the video comes straight after the headline; from md the phone
           takes the right column beside both. */}
       <div className="relative mx-auto grid max-w-7xl gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-x-16 md:gap-y-8">
-        <Reveal className="max-w-xl md:self-end">
+        <div className="max-w-xl md:self-end">
           <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary-strong">
             <Clapperboard className="size-4" aria-hidden />
             {t.eyebrow}
@@ -89,9 +89,9 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
             ))}
           </h2>
           <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">{t.body}</p>
-        </Reveal>
+        </div>
 
-        <Reveal delay={0.1} scale className="relative mx-auto w-full max-w-md px-6 sm:px-10 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
+        <div className="relative mx-auto w-full max-w-md px-6 sm:px-10 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
           <VideoShowcasePlayer
             playbackId={SHOWCASE.playbackId}
             href={`/${lang}/video/${SHOWCASE.slug}`}
@@ -127,14 +127,14 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
               </div>
             </div>
           </div>
-        </Reveal>
+        </div>
 
         <div className="max-w-xl md:self-start">
-          <RevealGroup as="ul" className="grid list-none gap-4 p-0" stagger={0.08}>
+          <ul className="grid list-none gap-4 p-0">
             {t.points.map((point, i) => {
               const Icon = POINT_ICONS[i] ?? Check;
               return (
-                <RevealItem as="li" key={point.title} className="flex gap-4">
+                <li key={point.title} className="flex gap-4">
                   <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-landing-card text-primary shadow-[0_1px_2px_rgb(0_0_0/0.06)] ring-1 ring-landing-line">
                     <Icon className="size-5" aria-hidden />
                   </span>
@@ -142,10 +142,10 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
                     <p className="font-semibold text-landing-ink">{point.title}</p>
                     <p className="mt-0.5 text-sm leading-relaxed text-landing-body">{point.body}</p>
                   </div>
-                </RevealItem>
+                </li>
               );
             })}
-          </RevealGroup>
+          </ul>
 
           {/* Phones: two equal, plain buttons side by side, like the hero's.
               From md: the pill pair with icons. */}
