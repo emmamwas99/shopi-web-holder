@@ -1,5 +1,6 @@
 "use client";
 
+import { DASHBOARD_PRIMARY_BUTTON, DashboardHeader } from "./DashboardSection";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
@@ -144,7 +145,7 @@ function PostItemMenu({
           }
           className={className}
         >
-          <Plus className="h-4 w-4" aria-hidden /> Post a listing
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden /> Post an item
         </button>
       </PopoverTrigger>
       <PopoverContent container={popoverContainer} align="end" className="w-52 rounded-xl border-border bg-elevated p-1.5 shadow-lg">
@@ -783,21 +784,22 @@ export function DashboardListings({
   }
 
   return (
-    <section className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col px-5 md:px-8">
-      <header data-dashboard-tour="dashboard-tour-listings-page" className="z-10 flex shrink-0 flex-wrap items-end justify-between gap-3 bg-app pb-4 pt-5 md:pb-5 md:pt-6">
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-main">My listings</h1>
-          <p className="mt-1 text-xs text-muted">Manage your posts and see how they are performing.</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <section className="flex h-full min-h-0 w-full flex-col">
+      <DashboardHeader
+        tourId="dashboard-tour-listings-page"
+        title="My listings"
+        description="Manage your posts and see how they're performing."
+        actions={
           <PostItemMenu
             onSingleUpload={onSingleUpload}
             onBulkUpload={openBulkUpload}
             forceOpen={tourStep === "bulk-menu"}
-            className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-3.5 text-xs font-bold text-white hover:opacity-90"
+            className={DASHBOARD_PRIMARY_BUTTON}
           />
-        </div>
-      </header>
+        }
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col px-8 pb-8 pt-6">
 
       <div ref={setListingsScrollRoot} data-dashboard-tour="dashboard-tour-listing-table" className="min-h-0 flex-1 overflow-auto rounded-2xl border border-border bg-elevated shadow-sm">
           <table className="w-full min-w-[790px] border-collapse text-left text-xs">
@@ -829,14 +831,18 @@ export function DashboardListings({
                 <tr><td colSpan={7} className="px-5 py-12 text-center text-muted">Your listings could not be loaded. Please try again.</td></tr>
               ) : posts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-14 text-center">
-                    <Package className="mx-auto h-6 w-6 text-primary" aria-hidden />
-                    <p className="mt-3 text-sm font-semibold text-main">No listings yet</p>
-                    <p className="mt-1 text-xs text-muted">Your posts will appear here once you publish one.</p>
+                  <td colSpan={7} className="px-5 py-20 text-center">
+                    <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+                      <Package className="size-6" aria-hidden />
+                    </span>
+                    <p className="mt-4 text-lg font-bold normal-case tracking-normal text-main">No listings yet</p>
+                    <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted">
+                      Post your first item and it shows up here, with its views and saves.
+                    </p>
                     <PostItemMenu
                       onSingleUpload={onSingleUpload}
                       onBulkUpload={openBulkUpload}
-                      className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-white hover:opacity-90"
+                      className={`${DASHBOARD_PRIMARY_BUTTON} mt-5`}
                     />
                   </td>
                 </tr>
@@ -875,6 +881,7 @@ export function DashboardListings({
             ) : null}
           </div>
         ) : null}
+      </div>
       </div>
       <BulkListingsDialog
         open={bulkDialogOpen}

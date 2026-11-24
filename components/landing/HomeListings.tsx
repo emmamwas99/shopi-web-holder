@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
+import { Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal";
 import { contentPath } from "@/lib/content-url";
 import { listingPriceText } from "@/lib/format";
 import { listingPlace } from "@/lib/listingPlace";
@@ -36,7 +37,7 @@ export function HomeListings({
       className="px-4 py-8 md:px-8 md:py-12"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="flex items-baseline justify-between gap-4">
+        <Reveal className="flex items-baseline justify-between gap-4">
           <h2
             id="live-listings-title"
             className="font-display text-[1.375rem] font-semibold leading-tight text-landing-ink md:text-[2rem]"
@@ -47,22 +48,23 @@ export function HomeListings({
             href={`/${lang}/for-you`}
             buttonId="see_all_listings"
             placement="listings_row"
-            className="shrink-0 pb-0.5 text-sm font-semibold text-primary no-underline"
+            className="inline-flex shrink-0 items-center gap-1.5 pb-0.5 text-sm font-semibold text-primary no-underline transition-[gap]! duration-200! hover:gap-2.5"
           >
             {t.all}
+            <ArrowRight size={16} strokeWidth={2.5} aria-hidden />
           </TrackedHomepageLink>
-        </div>
+        </Reveal>
 
         {/* The row bleeds to the screen edges (-mx-4) and pads back in (px-4).
             scroll-px-4 matters: snapping aligns cards to the scroll port, not
             the padding, so without it the browser scrolls the first card
             flush against the screen edge, out of line with the heading. */}
-        <ul className="-mx-4 mt-4 flex list-none snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:mt-6 md:grid md:scroll-px-0 md:grid-cols-5 md:gap-5 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
+        <RevealGroup as="ul" stagger={0.06} className="-mx-4 mt-4 flex list-none snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:mt-6 md:grid md:scroll-px-0 md:grid-cols-5 md:gap-5 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
           {listings.map(({ post, thumb }) => {
             const price = listingPriceText(post.price);
             const place = listingPlace(post.location);
             return (
-              <li key={post.id} className="w-[42%] shrink-0 snap-start sm:w-[28%] md:w-auto">
+              <RevealItem as="li" key={post.id} className="w-[42%] shrink-0 snap-start sm:w-[28%] md:w-auto">
                 <TrackedHomepageLink
                   href={contentPath(lang, post)}
                   buttonId="listing_card"
@@ -91,11 +93,11 @@ export function HomeListings({
                     <span className="mt-0.5 block truncate text-xs text-landing-muted">{place}</span>
                   ) : null}
                 </TrackedHomepageLink>
-              </li>
+              </RevealItem>
             );
           })}
           {/* Phones: the row ends in the app, not in nothing. */}
-          <li className="w-[42%] shrink-0 snap-start sm:w-[28%] md:hidden">
+          <RevealItem as="li" className="w-[42%] shrink-0 snap-start sm:w-[28%] md:hidden">
             <TrackedHomepageLink
               href={`/${lang}/for-you`}
               buttonId="listings_more"
@@ -107,8 +109,8 @@ export function HomeListings({
               </span>
               <span className="text-sm font-semibold leading-snug">{t.more}</span>
             </TrackedHomepageLink>
-          </li>
-        </ul>
+          </RevealItem>
+        </RevealGroup>
       </div>
     </section>
   );

@@ -17,8 +17,10 @@ import { FeedPaginationSkeleton, PostCardSkeleton } from "./FeedSkeleton";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { PostCard } from "./PostCard";
 import { DesktopFeedRail } from "./DesktopFeedRail";
+import { DesktopFeedNav } from "./DesktopFeedNav";
 import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { WatchGridSkeleton } from "./WatchGridSkeleton";
+import { FeedCardsSkeleton } from "./FeedSkeleton";
 import {
   captureScrollPosition,
   restoreScrollPosition,
@@ -31,7 +33,8 @@ import {
 } from "@/features/feed/lib/watchScrollPosition";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
-type Tab = "for-you" | "watch";
+export type DesktopFeedTab = "for-you" | "following" | "nearby" | "watch";
+type Tab = DesktopFeedTab;
 
 // `loading` gives each its own Suspense boundary (see FeedPage): without it the
 // first open suspended to the route boundary and replaced the whole feed with
@@ -40,8 +43,18 @@ const WatchGrid = dynamic(
   () => import("./WatchGrid").then((mod) => mod.WatchGrid),
   { loading: () => <WatchGridSkeleton desktopLayout /> },
 );
+// Following and Nearby are filters of the post column, chosen from the left
+// rail (DesktopFeedNav) — the phone feed's sub-tabs of the same names.
+const FollowingGrid = dynamic(
+  () => import("./FollowingGrid").then((mod) => mod.FollowingGrid),
+  { loading: () => <FeedCardsSkeleton /> },
+);
+const NearbyFeedTab = dynamic(
+  () => import("./NearbyFeedTab").then((mod) => mod.NearbyFeedTab),
+  { loading: () => <FeedCardsSkeleton /> },
+);
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" || v === "watch";
+  v === "for-you" || v === "following" || v === "nearby" || v === "watch";
 
 const isDesktopViewport = () =>
   typeof window !== "undefined" &&
@@ -60,7 +73,7 @@ function ColumnSkeleton() {
       {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
-          className="overflow-hidden rounded-xl border border-border bg-elevated"
+          className="overflow-hidden rounded-2xl border border-border bg-elevated"
         >
           <PostCardSkeleton />
         </div>
@@ -104,7 +117,7 @@ function DesktopPostCard({
   priority?: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-elevated shadow-sm shadow-black/[0.03]">
+    <div className="overflow-hidden rounded-2xl border border-border bg-elevated shadow-[0_1px_3px_rgb(0_0_0/0.04)]">
       <PostCard post={post} lang={lang} priority={priority} />
     </div>
   );
@@ -182,6 +195,10 @@ export default function DesktopFeed({
   })();
   const [tab, setTab] = useState<Tab>(initialTab);
   const prevTab = useRef<Tab>(initialTab);
+  // A filter mounts the first time it's chosen and then stays mounted
+  // (hidden), so switching back keeps its loaded posts.
+  const [opened, setOpened] = useState<ReadonlySet<Tab>>(() => new Set([initialTab]));
+  if (!opened.has(tab)) setOpened(new Set(opened).add(tab));
 
   useLayoutEffect(() => {
     if (prevTab.current !== tab) {
@@ -225,14 +242,17 @@ export default function DesktopFeed({
     return () => cancelAnimationFrame(frame);
   }, [pathname, selectTab, tab]);
 
+  // Follow the URL when it changes under us — the top bar's For You and
+  // Watch links. No ?tab= is For You: returning early on it left the Watch
+  // grid on screen after the For You link had already changed the URL.
   useEffect(() => {
     if (!visible) return;
     const t = searchParams.get("tab");
-    if (!isTab(t)) return;
+    const next: Tab = isTab(t) ? t : "for-you";
     const current = prevTab.current;
-    if (t === current) return;
+    if (next === current) return;
     if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
-    setTab(t);
+    setTab(next);
   }, [searchParams, visible]);
 
   return (
@@ -242,12 +262,32 @@ export default function DesktopFeed({
           <WatchGrid lang={lang} active={visible} desktopLayout />
         </div>
       ) : (
-        <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 pb-0 pt-6 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+        <div className="mx-auto grid w-full grid-cols-1 gap-6 px-4 pb-0 pt-6 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[250px_minmax(0,1fr)_330px] xl:items-start 2xl:grid-cols-[280px_minmax(0,1fr)_360px] 2xl:gap-8">
+          {/* Rail · posts · rail, filling the same frame as Market and Stores.
+              The posts get the middle (~730px in the 1440px frame): wide
+              enough to match the other pages' edges, narrow enough that a
+              portrait photo still fills its card. */}
+          <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.5rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-3rem)] overflow-y-auto xl:block">
+            <DesktopFeedNav lang={lang} tab={tab} onSelect={selectTab} />
+          </aside>
+
           <section className="min-w-0">
-            <div className={tab === "for-you" ? undefined : "hidden"}>
-              <StoriesBar lang={lang} variant="desktop" />
-              <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
-            </div>
+            {opened.has("for-you") ? (
+              <div className={tab === "for-you" ? undefined : "hidden"}>
+                <StoriesBar lang={lang} variant="desktop" />
+                <ForYouColumn lang={lang} active={visible && tab === "for-you"} />
+              </div>
+            ) : null}
+            {opened.has("following") ? (
+              <div className={tab === "following" ? undefined : "hidden"}>
+                <FollowingGrid lang={lang} active={visible && tab === "following"} />
+              </div>
+            ) : null}
+            {opened.has("nearby") ? (
+              <div className={tab === "nearby" ? undefined : "hidden"}>
+                <NearbyFeedTab lang={lang} active={visible && tab === "nearby"} />
+              </div>
+            ) : null}
           </section>
 
           <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">

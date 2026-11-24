@@ -173,6 +173,21 @@ const fetchSubcategoryFacets = cache(
 );
 
 /**
+ * Top-level category IDs by slug, for pages that only need to filter the feed
+ * (the homepage's category photos). Best-effort: {} when the API is down.
+ */
+export async function fetchTopCategoryIds(): Promise<Record<string, string>> {
+  try {
+    const taxonomy = await fetchTaxonomy();
+    return Object.fromEntries(
+      taxonomy.filter((item) => !item.parentId).map((item) => [item.slug, item.id]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Resolves /explore/{categorySlug}/{subcategorySlug} to a real subcategory, or
  * null when either segment isn't one — the route answers that with a 404.
  *
@@ -218,7 +233,8 @@ export const resolveBrowseRoute = cache(
  */
 export async function fetchBrowseCards(
   filters: { categoryId?: string; subcategory?: string } = {},
-  limit = 20,
+  // DiscoverPage's PAGE_SIZE: the server's first page is the client's.
+  limit = 24,
 ): Promise<ContentCardFieldsFragment[]> {
   try {
     const result = await query({

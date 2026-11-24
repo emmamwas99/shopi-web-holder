@@ -17,7 +17,7 @@ export function PhotoSearchIllustration({
 }) {
   return (
     <div
-      className="flex items-center justify-center overflow-hidden rounded-md bg-landing-tint p-5 sm:p-8 md:aspect-4/3"
+      className="flex items-center justify-center overflow-hidden rounded-md bg-linear-to-br from-primary/[0.11] via-primary/[0.05] to-primary/[0.02] p-5 sm:p-8 md:aspect-4/3"
       aria-hidden
     >
       <div className="w-full max-w-sm rounded-xl border border-landing-line bg-landing-card p-4 shadow-sm sm:p-5">

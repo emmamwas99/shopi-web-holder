@@ -15,12 +15,15 @@ import {
   MessageCircle,
   Moon,
   Package,
+  Plus,
   Settings2,
   Users,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -37,6 +40,8 @@ import { useUnreadNotificationCount } from "@/features/notifications/hooks/useUn
 import { DashboardInboxTab } from "./DashboardInboxTab";
 import { DesktopCreateFlow } from "@/features/create/components/DesktopCreateFlow";
 import { useAuthStore } from "@/stores/auth";
+import { Logo } from "@/components/ui/Logo";
+import { DashboardHeader } from "./DashboardSection";
 import { DashboardTour, type DashboardTourStep } from "./DashboardTour";
 import { goBackOr } from "@/lib/useAppBack";
 import { VerificationScreen } from "@/features/verification/components/VerificationScreen";
@@ -69,6 +74,11 @@ export function DashboardModal({
   const unreadMessages = useUnreadMessageCount();
   const unreadNotifications = useUnreadNotificationCount();
   const tourUserId = useAuthStore((state) => state.user?.id ?? null);
+  const user = useAuthStore((state) => state.user);
+  const displayName =
+    [user?.profile?.firstName, user?.profile?.lastName].filter(Boolean).join(" ") ||
+    user?.email?.split("@")[0] ||
+    "Your shop";
   const { verification } = useMyShopVerification();
   const shopVerificationStage = verificationStage(verification);
   const [tourStepId, setTourStepId] = useState<DashboardTourStep["id"] | null>(null);
@@ -155,23 +165,58 @@ export function DashboardModal({
     <>
       <span data-route-overlay="" hidden />
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="flex h-[90vh] max-h-[90vh] w-[88vw] max-w-[88vw] flex-col gap-0 overflow-hidden rounded-2xl border-border bg-elevated p-0 shadow-2xl">
+        <DialogContent
+          hideClose
+          // Focus the panel, not its first control: the profile button lit up
+          // with a focus ring on every open. Tab still starts inside.
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            (event.currentTarget as HTMLElement | null)?.focus();
+          }}
+          className="flex h-[90vh] max-h-[90vh] w-[88vw] max-w-[88vw] flex-col gap-0 overflow-hidden rounded-2xl outline-none border-border bg-elevated p-0 shadow-2xl"
+        >
           <div className="flex min-h-0 flex-1">
-            <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface/40 md:flex">
-              <div className="border-b border-border px-5 py-6">
-                <p className="text-lg font-black tracking-tight text-primary">Shopi</p>
-                <p className="mt-1 text-xs font-medium text-muted">Seller workspace</p>
+            <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-elevated md:flex">
+              {/* Who this workspace belongs to, and the one action it's for. */}
+              <div className="flex flex-col gap-3 px-3 pb-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => selectTab("settings")}
+                  aria-label="Account settings"
+                  className="flex items-center gap-3 rounded-2xl bg-subtle p-2.5 text-left outline-none transition-colors hover:bg-[rgb(var(--color-border))]/50 focus-visible:ring-2 focus-visible:ring-primary/50"
+                >
+                  <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/15 text-sm font-bold text-primary">
+                    {user?.profile?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- avatars come from several hosts
+                      <img src={user.profile.avatar} alt="" className="size-full object-cover" />
+                    ) : (
+                      <Logo variant="icon" size={40} />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1 text-sm font-bold text-main">
+                      <span className="truncate">{displayName}</span>
+                      {shopVerificationStage === "verified" ? <VerifiedTick size={14} label="Verified" /> : null}
+                    </span>
+                    <span className="block text-xs font-medium text-[rgb(var(--color-text-muted))]">Seller workspace</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectTab("create")}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgb(var(--brand-primary)/0.7)] transition-colors hover:bg-primary-strong"
+                >
+                  <Plus className="size-4" strokeWidth={2.5} aria-hidden />
+                  Post an item
+                </button>
               </div>
-              <nav aria-label="Dashboard navigation" className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
-                <p className="px-3 pb-2 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-                  Workspace
-                </p>
+
+              <nav aria-label="Dashboard navigation" className="min-h-0 flex-1 space-y-0.5 overflow-y-auto border-t border-border/70 px-3 pb-3">
+                <NavGroupLabel>Workspace</NavGroupLabel>
                 <DashboardNavLink onClick={() => selectTab("overview")} active={activeTab === "overview"} icon={LayoutDashboard}>
-                  Dashboard
+                  Overview
                 </DashboardNavLink>
-                <p className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-                  Your content
-                </p>
+                <NavGroupLabel>Your content</NavGroupLabel>
                 <DashboardNavLink tourId="dashboard-tour-listings-nav" onClick={() => selectTab("listings")} active={activeTab === "listings" || activeTab === "create"} icon={Package}>
                   My listings
                 </DashboardNavLink>
@@ -181,9 +226,7 @@ export function DashboardModal({
                 <DashboardNavLink onClick={() => selectTab("saved")} active={activeTab === "saved"} icon={Bookmark}>
                   Saved items
                 </DashboardNavLink>
-                <p data-dashboard-tour="dashboard-tour-audience-nav" className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-                  Audience
-                </p>
+                <NavGroupLabel tourId="dashboard-tour-audience-nav">Audience</NavGroupLabel>
                 <DashboardNavLink tourId="dashboard-tour-analytics-nav" onClick={() => selectTab("analytics")} active={activeTab === "analytics"} icon={ChartColumn}>
                   Analytics
                 </DashboardNavLink>
@@ -193,14 +236,12 @@ export function DashboardModal({
                 <DashboardNavLink onClick={() => selectTab("visitors")} active={activeTab === "visitors"} icon={Eye}>
                   Profile visitors
                 </DashboardNavLink>
-                <p className="px-3 pb-2 pt-5 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-                  Your account
-                </p>
+                <NavGroupLabel>Your account</NavGroupLabel>
                 <DashboardNavLink
                   onClick={() => selectTab("verification")}
                   active={activeTab === "verification"}
                   icon={BadgeCheck}
-                  trailing={<VerificationNavStatus stage={shopVerificationStage} active={activeTab === "verification"} />}
+                  trailing={<VerificationNavStatus stage={shopVerificationStage} />}
                 >
                   Verification
                 </DashboardNavLink>
@@ -213,6 +254,10 @@ export function DashboardModal({
                 <DashboardNavLink onClick={() => selectTab("settings")} active={activeTab === "settings"} icon={Settings2}>
                   Account settings
                 </DashboardNavLink>
+              </nav>
+
+              {/* Preferences pinned under the list, so they're never cut off. */}
+              <div className="shrink-0 border-t border-border/70 px-3 py-2">
                 <DashboardPreferenceRow icon={Moon} label="Dark mode"><ThemeToggle /></DashboardPreferenceRow>
                 {push.isSupported && (
                   <DashboardPreferenceRow icon={Bell} label="Push notifications">
@@ -224,7 +269,7 @@ export function DashboardModal({
                     />
                   </DashboardPreferenceRow>
                 )}
-              </nav>
+              </div>
             </aside>
 
             <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-app">
@@ -252,7 +297,7 @@ export function DashboardModal({
                     tourStep={suppressTour ? null : tourStepId}
                   />
                 ) : activeTab === "overview" ? (
-                  <DashboardOverview lang={lang} onOpenVerification={() => selectTab("verification")} />
+                  <DashboardOverview lang={lang} onOpenVerification={() => selectTab("verification")} onCreate={() => selectTab("create")} />
                 ) : activeTab === "verification" ? (
                   <VerificationScreen lang={lang} embedded />
                 ) : activeTab === "messages" || activeTab === "notifications" ? (
@@ -269,6 +314,16 @@ export function DashboardModal({
               </div>
             </div>
           </div>
+          {/* A clear close control over every section. The dialog's stock X
+              was 16px and faint, and the sections' own z-10 headers painted
+              over it. DashboardHeader keeps clear of this corner. Last in the
+              dialog so opening it focuses the content, not the X. */}
+          <DialogClose
+            className={`absolute right-5 z-30 ${activeTab === "create" ? "top-3" : "top-6"}  grid size-9 place-items-center rounded-full bg-elevated text-main shadow-[0_2px_8px_-2px_rgb(0_0_0/0.18)] ring-1 ring-border outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-primary/60`}
+            aria-label="Close dashboard"
+          >
+            <X className="size-4.5" strokeWidth={2.4} aria-hidden />
+          </DialogClose>
           <DashboardTour
             key={tourUserId ?? "anonymous"}
             enabled={open && isActiveRoute && !suppressTour}
@@ -278,6 +333,17 @@ export function DashboardModal({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function NavGroupLabel({ children, tourId }: { children: React.ReactNode; tourId?: string }) {
+  return (
+    <p
+      data-dashboard-tour={tourId}
+      className="px-3 pb-1 pt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-[rgb(var(--color-text-muted))]"
+    >
+      {children}
+    </p>
   );
 }
 
@@ -291,8 +357,8 @@ function DashboardPreferenceRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-main">
-      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+    <div className="flex min-h-9 items-center gap-3 rounded-xl px-3 text-sm font-medium text-main">
+      <Icon className="size-[1.0625rem] shrink-0 text-[rgb(var(--color-text-muted))]" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {children}
     </div>
@@ -300,18 +366,16 @@ function DashboardPreferenceRow({
 }
 
 /** Where the seller stands on verification, in the space a count would take. */
-function VerificationNavStatus({ stage, active }: { stage: VerificationStage; active: boolean }) {
+function VerificationNavStatus({ stage }: { stage: VerificationStage }) {
   if (stage === "verified") {
-    return <VerifiedTick size={15} label="Verified" className={active ? "rounded-full bg-white" : undefined} />;
+    return <VerifiedTick size={15} label="Verified" />;
   }
   const text = stage === "pending" ? "In review" : stage === "changes" ? "Fix" : stage === "none" ? "Free" : null;
   if (!text) return null;
   return (
     <span
       className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold leading-none ${
-        active
-          ? "bg-white/20 text-white"
-          : stage === "changes"
+        stage === "changes"
             ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
             : stage === "pending"
               ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
@@ -348,16 +412,16 @@ function DashboardNavLink({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       aria-label={badge && badge > 0 ? `${children}, ${badge} unread` : undefined}
-      className={`flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-colors ${
+      className={`flex h-9 w-full items-center gap-3 rounded-xl px-3 text-sm transition-colors ${
         active
-          ? "bg-primary text-white shadow-sm"
-          : "text-main hover:bg-surface"
+          ? "bg-primary/10 font-semibold text-primary"
+          : "font-medium text-main hover:bg-subtle"
       }`}
     >
-      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+      <Icon className={`size-[1.0625rem] shrink-0 ${active ? "text-primary" : "text-[rgb(var(--color-text-muted))]"}`} strokeWidth={active ? 2.3 : 2} aria-hidden />
       <span>{children}</span>
       {badge !== undefined && badge > 0 ? (
-        <span className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-extrabold tabular-nums ${active ? "bg-white/20 text-white" : "bg-primary text-white"}`}>
+        <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-extrabold tabular-nums text-white">
           {badge > 99 ? "99+" : badge}
         </span>
       ) : trailing ? (
@@ -377,14 +441,8 @@ function DashboardSectionPlaceholder({ tab }: { tab: string }) {
   const section = labels[tab] ?? labels.settings;
 
   return (
-    <section className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col">
-      <header className="z-10 shrink-0 bg-app px-5 pb-4 pt-5 text-center md:px-8 md:pb-5 md:pt-6">
-        <h1 className="text-xl font-extrabold tracking-tight text-main">{section.title}</h1>
-        <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-muted">{section.description}</p>
-      </header>
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-5 text-center">
-        <div className="rounded-2xl bg-primary/10 p-3 text-primary"><LayoutDashboard className="h-5 w-5" aria-hidden /></div>
-      </div>
+    <section className="flex h-full min-h-0 flex-col">
+      <DashboardHeader title={section.title} description={section.description} />
     </section>
   );
 }

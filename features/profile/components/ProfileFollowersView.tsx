@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAppBack } from "@/lib/useAppBack";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, UsersRound } from "lucide-react";
+import { DashboardEmpty } from "@/features/dashboard/components/DashboardSection";
 import { useQuery } from "@apollo/client/react";
 import {
   MyFollowersDocument,
@@ -260,7 +261,7 @@ export function ProfileFollowersView({ lang, embedded = false }: Props) {
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-20 border-b"
+        className={`sticky top-0 z-20 border-b ${embedded ? "hidden" : ""}`}
         style={{
           backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
@@ -308,7 +309,9 @@ export function ProfileFollowersView({ lang, embedded = false }: Props) {
           The `md:divide-y-0` removes the mobile dividers once we switch to the
           gapped grid; `md:max-w-*` widens the container per breakpoint. */}
       <ul
-        className="mx-auto w-full max-w-2xl divide-y md:max-w-3xl md:grid md:grid-cols-2 md:gap-3 md:divide-y-0 md:px-4 md:py-4 lg:max-w-full lg:grid-cols-3 xl:max-w-full"
+        className={embedded
+          ? "grid w-full grid-cols-2 gap-3 px-8 py-6 xl:grid-cols-3"
+          : "mx-auto w-full max-w-2xl divide-y md:max-w-3xl md:grid md:grid-cols-2 md:gap-3 md:divide-y-0 md:px-4 md:py-4 lg:max-w-full lg:grid-cols-3 xl:max-w-full"}
         style={{ borderColor: "rgb(var(--color-border))" }}
       >
         {initialLoading
@@ -325,7 +328,16 @@ export function ProfileFollowersView({ lang, embedded = false }: Props) {
       </ul>
 
       {/* Empty state */}
-      {!initialLoading && users.length === 0 && (
+      {!initialLoading && users.length === 0 && embedded && (
+        <div className="px-8">
+          <DashboardEmpty
+            icon={UsersRound}
+            title="No followers yet"
+            body="When people follow your shop, they'll show up here. Post regularly and share your shop link to grow your audience."
+          />
+        </div>
+      )}
+      {!initialLoading && users.length === 0 && !embedded && (
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
           <p
             className="font-semibold"

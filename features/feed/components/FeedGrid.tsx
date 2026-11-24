@@ -71,7 +71,7 @@ function FeedCards({
   const [initialCount] = useState(items.length);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 md:gap-4">
       {items.map((post, i) => {
         // Slot goes AFTER the nth post, and only once there is a seller to put
         // in it — never an empty gap or a placeholder.
@@ -93,7 +93,10 @@ function FeedCards({
 
         return (
           <Fragment key={post.id}>
-            <PostCard post={post} lang={lang} priority={i === 0} />
+            {/* Phones: full-bleed posts. Tablets: rounded cards. */}
+            <div className="md:overflow-hidden md:rounded-2xl md:border md:border-border md:shadow-[0_1px_3px_rgb(0_0_0/0.04)]">
+              <PostCard post={post} lang={lang} priority={i === 0} />
+            </div>
             {seller && <FeaturedSellerCard seller={seller} lang={lang} />}
           </Fragment>
         );

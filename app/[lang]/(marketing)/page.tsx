@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowRight,
   ArrowUpRight,
   BadgeCheck,
   Car,
@@ -24,6 +25,8 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { HomeCategories } from "@/components/landing/HomeCategories";
+import { HeroListingsBoard } from "@/components/landing/HeroListingsBoard";
+import { LandingMotion, Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal";
 import { HomeListings, type HomeListing } from "@/components/landing/HomeListings";
 import { SellersIllustration } from "@/components/landing/SellersIllustration";
 import { PhotoSearchButton } from "@/components/landing/PhotoSearchButton";
@@ -75,7 +78,25 @@ const COPY = {
     heroBrowse: "Browse For You",
     heroSell: "Sell an item",
     trust: ["Free to post", "No commission", "Chat directly"],
+    // Desktop hero picture (HeroListingsBoard). Illustrative, decorative.
+    heroBoard: {
+      title: "Your listings",
+      period: "Today",
+      active: "3 active",
+      buyer: "Buyer",
+      listing: "Your listing",
+      status: "Status",
+      chip: "0% commission",
+      rows: [
+        { name: "Brian O.", place: "Westlands", title: "iPhone X, 64GB", price: "KES 28,000", status: "New chat" },
+        { name: "Wanjiku M.", place: "Rongai", title: "3-seater sofa", price: "KES 45,000", status: "Sold" },
+        { name: "Achieng K.", place: "Kilimani", title: "Cotton T-shirts", price: "KES 800 each", status: "Saved" },
+      ],
+      message: "Hi, is it still available?",
+      messageTime: "now",
+    },
     categoriesTitle: "Browse by category",
+    categoriesBody: "Phones, cars, sofas and more, from real sellers.",
     categories: {
       phones: "Phones",
       electronics: "Electronics",
@@ -85,6 +106,17 @@ const COPY = {
       beauty: "Beauty",
       appliances: "Appliances",
       more: "See all",
+    },
+    // Text links to the search landing pages (HomeCategories says why).
+    categorySearches: {
+      title: "Popular searches",
+      labels: {
+        phones: "Phones for sale",
+        cars: "Used cars for sale",
+        furniture: "Furniture for sale",
+        electronics: "Phones & electronics in Kenya",
+        beauty: "Beauty & cosmetics in Kenya",
+      },
     },
     listings: {
       // Short enough to sit on one line beside "See all" on a 360px phone.
@@ -238,7 +270,24 @@ const COPY = {
     heroBrowse: "Angalia For You",
     heroSell: "Uza bidhaa",
     trust: ["Kuweka tangazo ni bure", "Hakuna kamisheni", "Ongea moja kwa moja"],
+    heroBoard: {
+      title: "Matangazo yako",
+      period: "Leo",
+      active: "3 hai",
+      buyer: "Mnunuzi",
+      listing: "Tangazo lako",
+      status: "Hali",
+      chip: "Kamisheni 0%",
+      rows: [
+        { name: "Brian O.", place: "Westlands", title: "iPhone X, 64GB", price: "KES 28,000", status: "Ujumbe mpya" },
+        { name: "Wanjiku M.", place: "Rongai", title: "Sofa ya viti 3", price: "KES 45,000", status: "Imeuzwa" },
+        { name: "Achieng K.", place: "Kilimani", title: "T-shati", price: "KES 800", status: "Imehifadhiwa" },
+      ],
+      message: "Habari, bado inapatikana?",
+      messageTime: "sasa hivi",
+    },
     categoriesTitle: "Vinjari kwa kategoria",
+    categoriesBody: "Simu, magari, sofa na zaidi, kutoka kwa wauzaji halisi.",
     categories: {
       phones: "Simu",
       electronics: "Elektroniki",
@@ -248,6 +297,16 @@ const COPY = {
       beauty: "Urembo",
       appliances: "Vifaa vya nyumbani",
       more: "Ona zote",
+    },
+    categorySearches: {
+      title: "Utafutaji maarufu",
+      labels: {
+        phones: "Simu zinazouzwa",
+        cars: "Magari yaliyotumika yanayouzwa",
+        furniture: "Fanicha zinazouzwa",
+        electronics: "Simu na elektroniki Kenya",
+        beauty: "Urembo na vipodozi Kenya",
+      },
     },
     listings: {
       title: "Ona vinavyouzwa",
@@ -550,105 +609,169 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           ),
         }}
       />
-      <LandingNav lang={lang} />
+      <LandingNav lang={lang} overHero />
+      {/* Scroll-in motion (components/landing/Reveal.tsx) starts content
+          hidden; without JavaScript, show it. */}
+      <noscript
+        dangerouslySetInnerHTML={{
+          __html: "<style>[data-reveal]{opacity:1!important;transform:none!important}</style>",
+        }}
+      />
       <main>
-        {/* ── Hero: both jobs, buy and sell, one tap each ───────────── */}
-        <section
-          id="hero"
-          aria-labelledby="home-title"
-          className="px-4 pb-4 md:px-8 md:pb-10"
-        >
-          <div className="relative mx-auto flex min-h-[min(640px,70vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-0 md:items-center">
-            <picture className="absolute inset-0 block h-full w-full overflow-hidden">
-              <source
-                media="(max-width: 767px)"
-                type="image/webp"
-                srcSet="/assets/hero/marketplace-banner-mobile.webp"
-              />
-              <Image
-                src="/assets/hero/marketplace-banner.webp"
-                alt="An illustration of a local seller and buyer reviewing a listing together"
-                fill
-                sizes="(max-width: 768px) 100vw, 1500px"
-                priority
-                fetchPriority="high"
-                className="absolute h-full w-full object-cover object-[55%_center] md:object-contain"
-              />
-            </picture>
-            {/* Darken the image beneath the text so white copy stays readable. */}
-            <div
-              className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-linear-to-r md:from-black/45 md:via-black/10 md:to-transparent"
-              aria-hidden
-            />
-            <div className="relative z-10 w-full max-w-7xl px-5 py-8 text-center text-white md:mx-auto md:px-12 md:py-5 md:text-left lg:py-12">
-              <h1
-                id="home-title"
-                className="mx-auto max-w-3xl text-balance font-display text-[1.875rem] font-semibold leading-[1.12] md:mx-0 md:text-[clamp(2rem,4.5vw,4.25rem)]"
-              >
-                {t.heroTitle}
-              </h1>
-              <p className="mx-auto mt-3 max-w-xl text-balance text-[0.9375rem] leading-snug text-white/90 md:mx-0 md:mt-4 md:text-base lg:mt-5 lg:text-lg">
-                {t.heroBody}
-              </p>
-              {/* Phones: two full-width buttons, browse first — most people
-                  arriving from search came to look. From md: one row. */}
-              <div className="mx-auto mt-6 grid w-full max-w-sm gap-3 md:mx-0 md:mt-6 md:flex md:max-w-none md:flex-wrap lg:mt-8">
-                <TrackedHomepageLink
-                  href={`/${lang}/for-you`}
-                  buttonId="browse_for_you"
-                  placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[0.9375rem] font-semibold text-white no-underline hover:opacity-90"
+        <LandingMotion>
+        {/* ── Hero: both jobs, buy and sell, one tap each ─────────────
+            One design on every screen: a quiet brand-tinted panel, the copy,
+            and a drawn listings board (HeroListingsBoard) instead of a
+            picture — stacked on phones, side by side from xl. The H1 is the
+            LCP element (no banner image to wait for). Avoid the unlayered
+            .text-default/.bg-elevated classes here — they would beat the md:
+            overrides (globals.css). */}
+        <section id="hero" aria-labelledby="home-title" className="pb-4 md:-mt-22 md:pb-10">
+          {/* The tint runs full width and up behind the nav. md+: the panel
+              slides under the bar (-mt-22 / pt-22 = the nav's height) and
+              LandingNav overHero keeps the bar transparent until the page
+              scrolls. Phones: the bar itself wears the same tint until then
+              (their two-row bar has no fixed height to slide under). */}
+          <div className="relative mx-auto flex items-center overflow-hidden rounded-b-[1.75rem] bg-primary/[0.07] md:rounded-b-[2rem] md:pt-22">
+            {/* Backdrop: two soft discs, nothing to read. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0">
+              <div className="absolute -left-[14%] top-[14%] aspect-square w-[70%] rounded-full bg-landing-page/50" />
+              <div className="absolute left-[36%] top-[42%] aspect-square w-[95%] rounded-full bg-primary/[0.05]" />
+            </div>
+
+            <div className="relative z-10 w-full max-w-7xl px-4 pb-8 pt-6 text-landing-ink md:mx-auto md:grid md:items-center md:gap-14 md:px-12 md:pb-16 md:pt-16 lg:py-20 xl:grid-cols-[minmax(0,1fr)_minmax(0,32rem)] xl:gap-12 xl:py-[5.25rem]">
+              <div>
+                <h1
+                  id="home-title"
+                  className="max-w-3xl text-balance font-display text-[2rem] font-semibold leading-[1.08] tracking-[-0.015em] md:text-[clamp(2.5rem,5.4vw,3.5rem)] md:leading-[1.05] md:tracking-[-0.02em] xl:text-[clamp(2.75rem,3.6vw,3.25rem)]"
                 >
-                  <Compass size={18} aria-hidden />
-                  {t.heroBrowse}
-                </TrackedHomepageLink>
-                <TrackedHomepageLink
-                  href={`/${lang}/upload`}
-                  buttonId="sell_item"
-                  placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.9375rem] font-semibold text-[#18282a] no-underline hover:bg-white/90"
-                >
-                  <Plus size={18} aria-hidden />
-                  {t.heroSell}
-                </TrackedHomepageLink>
+                  {/* Each sentence on its own line, like a stacked headline. */}
+                  {t.heroTitle.split(/(?<=\.)\s+/).map((sentence, i) => (
+                    <span key={sentence} className="block">
+                      {i > 0 ? " " : null}
+                      {sentence}
+                    </span>
+                  ))}
+                </h1>
+                <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-landing-body md:mt-6 md:text-lg xl:text-xl">
+                  {t.heroBody}
+                </p>
+                <ul className="mt-5 flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-[0.875rem] font-medium md:mt-6 md:gap-x-6 md:text-[0.9375rem]">
+                  {t.trust.map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-white">
+                        <Check size={12} strokeWidth={3} aria-hidden />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                {/* Browse first — most people arriving from search came to
+                    look. One row; on the narrowest phones Sell wraps under. */}
+                <div className="mt-6 flex flex-wrap items-center gap-3 md:mt-8 lg:mt-10">
+                  <TrackedHomepageLink
+                    href={`/${lang}/for-you`}
+                    buttonId="browse_for_you"
+                    placement="hero"
+                    // Hover: the button lifts with a brand glow, a light
+                    // sweeps across it and the arrow loops (out right, a
+                    // fresh one in from the left). Press: a small squeeze.
+                    // Movement is motion-safe only. The transition classes
+                    // carry ! because globals.css's unlayered `*` theme
+                    // transition would otherwise override them.
+                    className="group relative isolate inline-flex min-h-12 items-center justify-center gap-3 overflow-hidden rounded-full bg-primary py-2 pl-5 pr-2 text-[0.9375rem] font-semibold text-white no-underline shadow-[0_6px_18px_-8px_rgb(var(--brand-primary)/0.55)] transition-[translate,scale,box-shadow,background-color]! duration-300! ease-out! hover:bg-primary-strong hover:shadow-[0_14px_30px_-10px_rgb(var(--brand-primary)/0.75)] active:scale-[0.97] motion-safe:hover:-translate-y-0.5 md:pl-6"
+                  >
+                    {/* The sweep: a soft diagonal highlight parked just off
+                        the left edge. Hover slides it across and out the
+                        right; leaving has no transition, so it snaps back
+                        unseen instead of sweeping in reverse. */}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 -left-1/2 -z-10 w-1/3 -skew-x-20 bg-linear-to-r from-transparent via-white/40 to-transparent transition-none! motion-safe:group-hover:translate-x-[480%] motion-safe:group-hover:transition-[translate]! motion-safe:group-hover:duration-700! motion-safe:group-hover:ease-out!"
+                    />
+                    {t.heroBrowse}
+                    <span className="relative grid size-8 place-items-center overflow-hidden rounded-full bg-white text-primary transition-transform! duration-300! ease-out! motion-safe:group-hover:scale-110">
+                      <ArrowRight
+                        size={16}
+                        strokeWidth={2.5}
+                        aria-hidden
+                        className="transition-transform! duration-300! ease-in! motion-safe:group-hover:translate-x-[180%]"
+                      />
+                      <ArrowRight
+                        size={16}
+                        strokeWidth={2.5}
+                        aria-hidden
+                        className="absolute inset-0 m-auto -translate-x-[180%] transition-transform! duration-300! ease-out! motion-safe:group-hover:translate-x-0 motion-safe:group-hover:delay-150!"
+                      />
+                    </span>
+                  </TrackedHomepageLink>
+                  <TrackedHomepageLink
+                    href={`/${lang}/upload`}
+                    buttonId="sell_item"
+                    placement="hero"
+                    // Hover, matching Browse For You beside it: a lift, the
+                    // outline and text turn brand pink over a pink wash, and
+                    // the plus turns a quarter. `!` on the transition classes:
+                    // see Browse For You.
+                    className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-landing-card px-5 py-3 text-[0.9375rem] font-semibold text-landing-ink no-underline ring-1 ring-landing-line-strong transition-[translate,scale,box-shadow,background-color,color]! duration-300! ease-out! hover:bg-primary/[0.07] hover:text-primary hover:shadow-[0_14px_30px_-12px_rgb(var(--brand-primary)/0.45)] hover:ring-primary active:scale-[0.97] motion-safe:hover:-translate-y-0.5 md:px-6"
+                  >
+                    <Plus
+                      size={18}
+                      aria-hidden
+                      className="transition-transform! duration-300! ease-out! motion-safe:group-hover:rotate-90"
+                    />
+                    {t.heroSell}
+                  </TrackedHomepageLink>
+                </div>
               </div>
-              <p className="mt-3 text-balance text-[0.8125rem] text-white/80">
-                {t.trust.join(" · ")}
-              </p>
+
+              <div className="mt-10 md:mt-0">
+                <HeroListingsBoard copy={t.heroBoard} />
+              </div>
             </div>
           </div>
         </section>
 
         {/* ── Straight into the marketplace ────────────────────────── */}
-        <HomeCategories lang={lang} title={t.categoriesTitle} labels={t.categories} />
+        <HomeCategories
+          lang={lang}
+          title={t.categoriesTitle}
+          body={t.categoriesBody}
+          labels={t.categories}
+          searchLinks={t.categorySearches}
+        />
         <HomeListings lang={lang} listings={listings} t={t.listings} />
 
         {/* ── How it works: three steps, buyers and sellers alike ───── */}
         <section
           id="how-it-works"
           aria-labelledby="how-title"
-          className="px-4 py-10 md:px-8 md:py-16"
+          className="landing-band px-4 py-14 md:px-8 md:py-20"
         >
           <div className="mx-auto max-w-7xl">
+            <Reveal>
             <h2
               id="how-title"
               className="font-display text-[1.75rem] font-semibold leading-tight md:text-[2.75rem]"
             >
               {t.howTitle}
             </h2>
+            </Reveal>
             {/* #features: the footer's "Features" link lands here. */}
-            <ol
+            <RevealGroup
+              as="ol"
               id="features"
               className="mt-6 grid list-none gap-3 p-0 md:mt-8 md:grid-cols-3 md:gap-5"
             >
               {t.howSteps.map((step, i) => {
                 const Icon = HOW_ICONS[i];
                 return (
-                  <li
+                  <RevealItem
+                    as="li"
                     key={step.title}
-                    className="flex gap-4 rounded-2xl border border-landing-line bg-landing-surface p-4 md:flex-col md:p-6"
+                    className="flex gap-4 rounded-2xl border border-landing-line bg-landing-card p-4 shadow-sm md:flex-col md:p-6"
                   >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-landing-card text-primary">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <Icon className="size-5" aria-hidden />
                     </span>
                     <div>
@@ -659,11 +782,11 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                         {step.body}
                       </p>
                     </div>
-                  </li>
+                  </RevealItem>
                 );
               })}
-            </ol>
-            <p className="mt-5 flex items-start gap-2 text-sm leading-relaxed text-landing-body">
+            </RevealGroup>
+            <Reveal as="p" className="mt-5 flex items-start gap-2 text-sm leading-relaxed text-landing-body">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
               <span>
                 {t.howSafety}{" "}
@@ -674,7 +797,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   {t.howSafetyLink}
                 </Link>
               </span>
-            </p>
+            </Reveal>
           </div>
         </section>
 
@@ -686,10 +809,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="photo-search"
           aria-labelledby="photo-search-title"
-          className="border-t border-landing-line bg-landing-page px-5 py-16 md:px-8 md:py-24"
+          className="bg-landing-page px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-            <div className="max-w-lg md:order-2">
+            <Reveal className="max-w-lg md:order-2">
               <p className="mb-3 text-sm font-semibold text-primary">{t.photoEyebrow}</p>
               <h2
                 id="photo-search-title"
@@ -725,14 +848,14 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 </TrackedHomepageLink>
               </div>
               <p className="mt-4 text-sm text-landing-muted">{t.photoNote}</p>
-            </div>
-            <div className="md:order-1">
+            </Reveal>
+            <Reveal delay={0.1} scale className="md:order-1">
               <PhotoSearchIllustration
                 searchPlaceholder={t.photoSearchPlaceholder}
                 resultsTitle={t.photoResultsTitle}
                 resultsBody={t.photoResultsBody}
               />
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -742,10 +865,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="side-hustle"
           aria-labelledby="side-hustle-title"
-          className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-            <div className="max-w-lg">
+            <Reveal className="max-w-lg">
               <p className="mb-3 text-sm font-semibold text-primary">
                 {t.hookEyebrow}
               </p>
@@ -767,8 +890,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.hookLink}
                 <ArrowUpRight size={18} aria-hidden />
               </TrackedHomepageLink>
-            </div>
-            <div className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint">
+            </Reveal>
+            <Reveal delay={0.1} scale className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint">
               <Image
                 src="/assets/blog/budget-phone.jpg"
                 alt={t.hookImageAlt}
@@ -807,7 +930,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   </li>
                 </ol>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -818,11 +941,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <section
             id="sellers"
             aria-labelledby="sellers-title"
-            className="border-b border-landing-line px-5 py-16 md:px-8 md:py-24"
+            className="px-5 py-16 md:px-8 md:py-24"
           >
             <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-              <SellersIllustration className="order-2 md:order-1" />
-              <div className="order-1 max-w-lg md:order-2">
+              <Reveal className="order-2 md:order-1" delay={0.1} scale>
+                <SellersIllustration />
+              </Reveal>
+              <Reveal className="order-1 max-w-lg md:order-2">
                 <h2
                   id="sellers-title"
                   className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
@@ -863,7 +988,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                     {t.sellersLink}
                   </TrackedHomepageLink>
                 </div>
-              </div>
+              </Reveal>
             </div>
           </section>
         )}
@@ -873,26 +998,28 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="paths"
           aria-labelledby="paths-title"
-          className="px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto max-w-7xl">
+            <Reveal>
             <h2
               id="paths-title"
               className="font-display text-[2rem] font-semibold leading-tight md:text-center md:text-[3.25rem]"
             >
               {t.pathsTitle}
             </h2>
-            <ul className="mt-8 grid list-none gap-5 p-0 md:mt-12 md:grid-cols-3 md:items-center md:gap-6">
+            </Reveal>
+            <RevealGroup as="ul" stagger={0.12} className="mt-8 grid list-none gap-5 p-0 md:mt-12 md:grid-cols-3 md:items-center md:gap-6">
               {t.paths.map((path) => {
                 const featured = path.key === "resell";
                 const Icon = PATH_ICONS[path.key];
                 return (
-                  <li key={path.key} className={featured ? "max-md:order-first" : undefined}>
+                  <RevealItem as="li" key={path.key} className={featured ? "max-md:order-first" : undefined}>
                     <article
                       className={
                         featured
                           ? "relative rounded-md bg-[#18282a] p-6 text-white shadow-xl md:px-8 md:py-12"
-                          : "rounded-md border border-landing-line bg-landing-surface p-6 md:p-8"
+                          : "rounded-md border border-landing-line bg-landing-card p-6 shadow-sm md:p-8"
                       }
                     >
                       {featured && (
@@ -931,10 +1058,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                         <ArrowUpRight size={18} aria-hidden />
                       </TrackedHomepageLink>
                     </article>
-                  </li>
+                  </RevealItem>
                 );
               })}
-            </ul>
+            </RevealGroup>
           </div>
         </section>
 
@@ -943,7 +1070,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           aria-labelledby="sell-a-car-title"
           className="px-5 py-14 md:px-8 md:py-20"
         >
-          <div className="mx-auto max-w-7xl">
+          <Reveal className="mx-auto max-w-7xl">
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">
               {t.carsEyebrow}
             </p>
@@ -954,7 +1081,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               {t.carsSectionTitle}
             </h2>
             <div className="mt-7 grid gap-5">
-              <article className="rounded-md border border-landing-line bg-landing-surface p-6 md:p-8">
+              <article className="rounded-md border border-primary/15 bg-linear-to-br from-primary/[0.11] via-primary/[0.05] to-primary/[0.02] p-6 md:p-8">
                 <div className="flex items-center gap-3">
                   <span className="flex size-11 items-center justify-center rounded-xl bg-landing-card text-primary">
                     <Car className="size-6" aria-hidden />
@@ -992,16 +1119,16 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 </div>
               </article>
             </div>
-          </div>
+          </Reveal>
         </section>
 
         <section
           id="shopi-agent"
           aria-labelledby="shopi-agent-title"
-          className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-            <div className="max-w-lg md:order-1">
+            <Reveal className="max-w-lg md:order-1">
               <p className="mb-3 text-sm font-semibold text-primary">
                 Shopi Agent
               </p>
@@ -1023,8 +1150,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.agentLink}
                 <ArrowUpRight size={18} aria-hidden />
               </TrackedHomepageLink>
-            </div>
-            <div className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint md:order-2">
+            </Reveal>
+            <Reveal delay={0.1} scale className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint md:order-2">
               <Image
                 src="/assets/blog/iphone-13.jpg"
                 alt={t.agentImageAlt}
@@ -1032,7 +1159,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 sizes="(max-width: 768px) 100vw, 600px"
                 className="object-cover"
               />
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -1042,7 +1169,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           className="bg-landing-page px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-            <div className="relative order-2 aspect-4/3 overflow-hidden rounded-md bg-landing-surface p-5 sm:p-8 md:order-1">
+            <Reveal delay={0.1} scale className="relative order-2 aspect-4/3 overflow-hidden rounded-md bg-linear-to-br from-primary/[0.11] via-primary/[0.05] to-primary/[0.02] p-5 sm:p-8 md:order-1">
               <div className="flex h-full flex-col justify-center rounded-xl border border-landing-line bg-landing-card p-4 shadow-sm sm:p-6">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -1075,8 +1202,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 </p>
               </div>
               <span className="absolute right-3 top-3 rounded-full bg-landing-card px-3 py-1 text-[10px] font-bold text-primary-strong shadow-sm sm:right-5 sm:top-5">{t.bulkPreview}</span>
-            </div>
-            <div className="order-1 max-w-lg md:order-2">
+            </Reveal>
+            <Reveal className="order-1 max-w-lg md:order-2">
               <p className="mb-3 hidden text-sm font-semibold text-primary md:block">{t.bulkEyebrowDesktop}</p>
               <p className="mb-3 text-sm font-semibold text-primary md:hidden">{t.bulkEyebrowMobile}</p>
               <h2 id="bulk-upload-title" className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
@@ -1097,7 +1224,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.bulkCta}
                 <ArrowUpRight size={18} aria-hidden />
               </TrackedHomepageLink>
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -1108,10 +1235,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="verified-shops"
           aria-labelledby="verified-title"
-          className="bg-landing-surface px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-5 py-16 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
-            <div className="max-w-lg">
+            <Reveal className="max-w-lg">
               <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
                 <VerifiedTick size={18} label={null} />
                 {t.verifiedEyebrow}
@@ -1134,9 +1261,11 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 {t.verifiedCta}
                 <ArrowUpRight size={18} aria-hidden />
               </TrackedHomepageLink>
-            </div>
-            <div
-              className="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-landing-tint p-5 sm:p-8"
+            </Reveal>
+            <Reveal
+              delay={0.1}
+              scale
+              className="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-linear-to-br from-primary/[0.11] via-primary/[0.05] to-primary/[0.02] p-5 sm:p-8"
               aria-hidden
             >
               <div className="w-full max-w-sm rounded-xl border border-landing-line bg-landing-card p-5 shadow-sm sm:p-6">
@@ -1165,7 +1294,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   ))}
                 </ul>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
 
@@ -1174,40 +1303,44 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           aria-labelledby="faq-title"
           className="mx-auto max-w-4xl px-5 py-16 md:px-8 md:py-22"
         >
+          <Reveal>
           <h2
             id="faq-title"
             className="font-display text-[1.9rem] font-semibold md:text-[2.6rem]"
           >
             {t.faqTitle}
           </h2>
-          <div className="mt-6 border-t border-landing-line">
+          </Reveal>
+          <RevealGroup stagger={0.05} className="mt-6 border-t border-landing-line">
             {t.faq.map(({ q, a }) => (
-              <details key={q} className="group border-b border-landing-line py-5">
+              <RevealItem as="details" key={q} className="group border-b border-landing-line py-5">
                 <summary className="cursor-pointer pr-5 text-base font-semibold marker:text-primary md:text-lg">
                   {q}
                 </summary>
                 <p className="mt-3 max-w-2xl text-[0.9375rem] leading-relaxed text-landing-body md:text-base">
                   {a}
                 </p>
-              </details>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </section>
 
         <section
           aria-labelledby="closing-title"
-          className="bg-tertiary px-5 py-16 text-center dark:bg-landing-surface md:px-8 md:py-22"
+          className="bg-primary/[0.07] px-5 py-16 text-center md:px-8 md:py-22"
         >
+          <Reveal>
           <h2
             id="closing-title"
             className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]"
           >
             {t.closingTitle}
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-base text-landing-body md:text-lg">
+          </Reveal>
+          <Reveal as="p" delay={0.08} className="mx-auto mt-4 max-w-lg text-base text-landing-body md:text-lg">
             {t.closingBody}
-          </p>
-          <div className="mx-auto mt-7 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:justify-center">
+          </Reveal>
+          <Reveal delay={0.16} className="mx-auto mt-7 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:justify-center">
             <TrackedHomepageLink
               href={`/${lang}/for-you`}
               buttonId="browse_for_you"
@@ -1226,8 +1359,9 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <Plus size={19} aria-hidden />
               {t.heroSell}
             </TrackedHomepageLink>
-          </div>
+          </Reveal>
         </section>
+        </LandingMotion>
       </main>
       <LandingFooter lang={lang} homeOnly />
       <HomepageSupportChat lang={lang} />

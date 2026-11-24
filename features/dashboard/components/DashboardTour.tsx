@@ -51,7 +51,7 @@ const TOUR_STEPS: DashboardTourStep[] = [
     tab: "listings",
     target: "dashboard-tour-create-listing",
     title: "Add a listing",
-    description: "Use Post a listing for a single item or to open the bulk upload options.",
+    description: "Use Post an item for a single item or to open the bulk upload options.",
   },
   {
     id: "bulk-menu",

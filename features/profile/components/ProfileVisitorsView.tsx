@@ -271,7 +271,7 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
     >
       {/* Header */}
       <div
-        className={`sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3 ${embedded ? "md:px-8 md:py-5" : ""}`}
+        className={`sticky top-0 z-20 items-center gap-3 border-b px-4 py-3 ${embedded ? "hidden" : "flex"}`}
         style={{
           backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
@@ -311,7 +311,7 @@ export function ProfileVisitorsView({ lang, embedded = false }: Props) {
       </div>
 
       {embedded ? (
-        <main className="mx-auto grid w-full max-w-[1440px] gap-5 p-4 md:p-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <main className="grid w-full gap-5 px-8 py-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-elevated shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 md:px-6">
               <div>

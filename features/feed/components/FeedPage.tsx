@@ -392,7 +392,10 @@ export function FeedPage({
             reports intersection ratio 0, so its PostCard videos never win the
             active-video election. */}
           <div className="relative bg-surface">
-            <div className={tab === "for-you" ? undefined : "hidden"}>
+            {/* Tablets: the For You list as a centred column of cards (up to
+                768px, the page's width on a portrait tablet), not stretched
+                edge to edge across a landscape screen. */}
+            <div className={tab === "for-you" ? "md:mx-auto md:max-w-3xl md:px-4 md:pt-3" : "hidden"}>
               {initialItemsPromise ? (
                 <Suspense
                   fallback={

@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardEmpty, DashboardHeader } from "@/features/dashboard/components/DashboardSection";
 import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 
 import { useState } from "react";
@@ -73,9 +74,36 @@ export function NotificationList({
     onMarkAllRead();
   }
 
+  const markAllButton = unreadCount > 0 ? (
+    <button
+      type="button"
+      onClick={() => setConfirmOpen(true)}
+      disabled={markingAllRead}
+      className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
+      aria-label="Mark all notifications as read"
+      title="Mark all as read"
+    >
+      {markingAllRead ? (
+        <InterlockingBalls size={16} />
+      ) : (
+        <CheckCheck size={16} />
+      )}
+      <span className="hidden sm:inline">Mark all read</span>
+    </button>
+  ) : null;
+
   return (
     <section className={`flex flex-col md:mx-auto md:w-full md:max-w-[1600px] md:bg-app ${embedded ? "h-full min-h-0" : "min-h-[calc(100svh-48px)] md:h-full"}`}>
-      <div className={`flex items-center justify-between border-b border-border px-4 py-4 md:py-5 ${embedded ? "md:px-8" : "md:px-0"}`}>
+      {embedded ? (
+        <DashboardHeader
+          title="Notifications"
+          description={unreadCount > 0
+            ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}`
+            : "You're all caught up"}
+          actions={markAllButton}
+        />
+      ) : (
+      <div className="flex items-center justify-between border-b border-border px-4 py-4 md:px-0 md:py-5">
         <div>
           <h1 className="text-base font-black text-main md:text-lg">
             Notifications
@@ -87,24 +115,9 @@ export function NotificationList({
           </p>
         </div>
 
-        {unreadCount > 0 ? (
-          <button
-            type="button"
-            onClick={() => setConfirmOpen(true)}
-            disabled={markingAllRead}
-            className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
-            aria-label="Mark all notifications as read"
-            title="Mark all as read"
-          >
-            {markingAllRead ? (
-              <InterlockingBalls size={16} />
-            ) : (
-              <CheckCheck size={16} />
-            )}
-            <span className="hidden sm:inline">Mark all read</span>
-          </button>
-        ) : null}
+        {markAllButton}
       </div>
+      )}
 
       <div className="flex-1 overflow-y-auto pb-14 md:pb-6">
         {loading && notifications.length === 0 ? (
@@ -118,6 +131,14 @@ export function NotificationList({
                 </div>
               </div>
             ))}
+          </div>
+        ) : notifications.length === 0 && embedded ? (
+          <div className="px-8 py-6">
+            <DashboardEmpty
+              icon={Bell}
+              title="No notifications yet"
+              body="New followers, messages about your listings and account updates show up here."
+            />
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-6 text-center md:min-h-[42svh] md:px-10">

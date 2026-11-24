@@ -1,5 +1,6 @@
 "use client";
 
+import { DASHBOARD_PRIMARY_BUTTON, DashboardEmpty } from "@/features/dashboard/components/DashboardSection";
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -315,6 +316,28 @@ export function DraftsGrid({ lang, hideHeading = false }: Props) {
             </div>
           ))}
         </div>
+      </section>
+    );
+  }
+
+  if (!loading && drafts.length === 0 && hideHeading) {
+    // Inside the seller dashboard: its empty state, and New post stays in it.
+    return (
+      <section className="px-8 py-6">
+        <DashboardEmpty
+          icon={FileEdit}
+          title="No drafts"
+          body="Anything you save before posting waits here, so you can finish it later."
+          action={
+            <button
+              type="button"
+              onClick={() => router.push(`/${lang}/dashboard?tab=create`, { scroll: false })}
+              className={DASHBOARD_PRIMARY_BUTTON}
+            >
+              <Plus className="size-4" strokeWidth={2.5} /> New post
+            </button>
+          }
+        />
       </section>
     );
   }

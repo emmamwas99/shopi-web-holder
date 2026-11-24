@@ -230,7 +230,7 @@ function MediaTypePicker({
     },
     {
       label: "TikTok Import",
-      description: "Reuse a video you already posted.",
+      description: "Paste a TikTok link to reuse a video you already posted.",
       icon: Music2,
       onClick: () => setView("tiktok"),
       hidden: !SHOW_TIKTOK_CREATE_OPTIONS,
