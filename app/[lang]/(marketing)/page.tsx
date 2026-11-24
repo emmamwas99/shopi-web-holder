@@ -25,6 +25,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { HomeCategories } from "@/components/landing/HomeCategories";
+import { HomeVideoShowcase } from "@/components/landing/HomeVideoShowcase";
 import { HeroListingsBoard } from "@/components/landing/HeroListingsBoard";
 import { LandingMotion, Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal";
 import { HomeListings, type HomeListing } from "@/components/landing/HomeListings";
@@ -94,6 +95,34 @@ const COPY = {
       ],
       message: "Hi, is it still available?",
       messageTime: "now",
+    },
+    // The video section (HomeVideoShowcase). The phone plays one real
+    // listing; its seller, title and price below are that listing's.
+    video: {
+      eyebrow: "Video listings · TikTok import",
+      title: "Show it working. Reuse your TikToks.",
+      body: "Most listings are a few photos. On Shopi you can post a short video of your item, or paste a TikTok link and reuse a video you've already made. Buyers see it work before they message you.",
+      points: [
+        { title: "Post a video listing", body: "Film your item on your phone and post it. It plays in For You and on Watch." },
+        { title: "Reuse your TikToks", body: "Paste a TikTok link. Shopi brings the video in, you add a price and post." },
+        { title: "Free, like every listing", body: "No extra fee for video, and no commission when it sells." },
+      ],
+      cta: "Post a video",
+      tiktokCta: "Import from TikTok",
+      chip: "Plays in For You & Watch",
+      importLink: "tiktok.com/@yourshop/video/…",
+      imported: "Video imported",
+      importReady: "Add a price and post",
+      player: {
+        seller: "daytechaccessories",
+        title: "Marshall Willen II Portable Bluetooth Speaker",
+        price: "KES 24,999",
+        badge: "Video",
+        play: "Play the video",
+        mute: "Mute",
+        unmute: "Turn sound on",
+        watch: "Watch on Shopi",
+      },
     },
     categoriesTitle: "Browse by category",
     categoriesBody: "Phones, cars, sofas and more, from real sellers.",
@@ -285,6 +314,32 @@ const COPY = {
       ],
       message: "Habari, bado inapatikana?",
       messageTime: "sasa hivi",
+    },
+    video: {
+      eyebrow: "Matangazo ya video · Leta kutoka TikTok",
+      title: "Onyesha ikifanya kazi. Tumia tena video zako za TikTok.",
+      body: "Matangazo mengi ni picha chache tu. Kwenye Shopi unaweza kuweka video fupi ya bidhaa yako, au ubandike kiungo cha TikTok na utumie tena video uliyokwisha tengeneza. Wanunuzi wanaiona ikifanya kazi kabla ya kukutumia ujumbe.",
+      points: [
+        { title: "Weka tangazo la video", body: "Rekodi bidhaa yako kwa simu na uiweke. Inacheza kwenye For You na Watch." },
+        { title: "Tumia tena video za TikTok", body: "Bandika kiungo cha TikTok. Shopi inaleta video, wewe unaongeza bei na kuweka tangazo." },
+        { title: "Bure, kama kila tangazo", body: "Hakuna ada ya ziada kwa video, na hakuna kamisheni ikiuzwa." },
+      ],
+      cta: "Weka video",
+      tiktokCta: "Leta kutoka TikTok",
+      chip: "Inacheza kwenye For You na Watch",
+      importLink: "tiktok.com/@dukalako/video/…",
+      imported: "Video imeletwa",
+      importReady: "Ongeza bei kisha weka",
+      player: {
+        seller: "daytechaccessories",
+        title: "Marshall Willen II Portable Bluetooth Speaker",
+        price: "KES 24,999",
+        badge: "Video",
+        play: "Cheza video",
+        mute: "Zima sauti",
+        unmute: "Washa sauti",
+        watch: "Tazama kwenye Shopi",
+      },
     },
     categoriesTitle: "Vinjari kwa kategoria",
     categoriesBody: "Simu, magari, sofa na zaidi, kutoka kwa wauzaji halisi.",
@@ -731,6 +786,9 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             </div>
           </div>
         </section>
+
+        {/* ── Video listings + TikTok reuse: what most marketplaces don't do ── */}
+        <HomeVideoShowcase lang={lang} t={t.video} />
 
         {/* ── Straight into the marketplace ────────────────────────── */}
         <HomeCategories

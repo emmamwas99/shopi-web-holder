@@ -1,0 +1,171 @@
+import { preload } from "react-dom";
+import { ArrowRight, BadgeCheck, Check, Clapperboard, Link2, Plus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
+import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
+import { Reveal, RevealGroup, RevealItem } from "./Reveal";
+import { VideoShowcasePlayer, type VideoShowcaseCopy } from "./VideoShowcasePlayer";
+
+/**
+ * Homepage: Shopi takes video listings, and reuses a seller's TikToks from a
+ * pasted link. Most marketplaces stop at photos, so it sits right under the
+ * hero.
+ *
+ * The phone plays one real listing (picked by hand: a clean, 22-second
+ * product clip whose last frame meets its first, so the loop is seamless).
+ * If that listing is ever removed, swap SHOWCASE for another video listing:
+ * the playback ID is on its Mux media, the slug in its URL, and the copy's
+ * `player` block carries its seller, title and price.
+ */
+const SHOWCASE = {
+  playbackId: "PuLL9AMpi1c4QGpY2Ho4LuSOoAOQEdwYE8boOv39fVM",
+  slug: "marshall-willen-ii-portable-bluetooth-speaker-6",
+} as const;
+
+export type HomeVideoCopy = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  points: readonly { readonly title: string; readonly body: string }[];
+  cta: string;
+  tiktokCta: string;
+  chip: string;
+  importLink: string;
+  imported: string;
+  importReady: string;
+  player: VideoShowcaseCopy;
+};
+
+const POINT_ICONS: (LucideIcon | typeof TikTokIcon)[] = [Clapperboard, TikTokIcon, BadgeCheck];
+
+export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy }) {
+  // Warm the path to the first frame while the page is still parsing: the HLS
+  // manifest the player asks for first (which also opens the connection to
+  // Mux's stream host) and the still that stands in until it plays. Both are
+  // small; the video chunks load only once the section nears the screen.
+  preload(`https://stream.mux.com/${SHOWCASE.playbackId}.m3u8`, {
+    as: "fetch",
+    crossOrigin: "anonymous",
+    fetchPriority: "low",
+  });
+  preload(`https://image.mux.com/${SHOWCASE.playbackId}/thumbnail.webp?time=0&width=540`, {
+    as: "image",
+    fetchPriority: "low",
+  });
+
+  return (
+    <section
+      id="video-listings"
+      aria-labelledby="video-title"
+      className="relative overflow-hidden px-5 py-16 md:px-8 md:py-24"
+    >
+      {/* A soft brand wash behind the phone, so the section reads as its own. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_55%_at_75%_45%,rgb(var(--brand-primary)/0.12),transparent_70%)] max-md:bg-[radial-gradient(80%_40%_at_50%_75%,rgb(var(--brand-primary)/0.12),transparent_70%)]"
+      />
+
+      {/* Three blocks: pitch, phone, details. Phones stack them in that order,
+          so the video comes straight after the headline; from md the phone
+          takes the right column beside both. */}
+      <div className="relative mx-auto grid max-w-7xl gap-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-x-16 md:gap-y-8">
+        <Reveal className="max-w-xl md:self-end">
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary-strong">
+            <Clapperboard className="size-4" aria-hidden />
+            {t.eyebrow}
+          </p>
+          <h2
+            id="video-title"
+            className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+          >
+            {t.title}
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">{t.body}</p>
+        </Reveal>
+
+        <Reveal delay={0.1} scale className="relative mx-auto w-full max-w-md px-6 sm:px-10 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
+          <VideoShowcasePlayer
+            playbackId={SHOWCASE.playbackId}
+            href={`/${lang}/video/${SHOWCASE.slug}`}
+            copy={t.player}
+          />
+
+          {/* Where it shows up. */}
+          <span className="absolute right-0 top-[24%] z-10 hidden items-center gap-1.5 rounded-full bg-landing-card px-3.5 py-2 text-xs font-semibold text-landing-ink shadow-[0_12px_30px_-14px_rgb(0_0_0/0.35)] ring-1 ring-landing-line sm:inline-flex md:-right-4">
+            <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
+            {t.chip}
+          </span>
+
+          {/* The TikTok import, as the seller sees it: paste a link, done.
+              Illustrative and decorative; the copy beside says it in words. */}
+          <div
+            aria-hidden
+            className="absolute -left-1 top-[42%] z-10 w-[15.5rem] rounded-2xl bg-landing-card p-3 shadow-[0_18px_40px_-18px_rgb(0_0_0/0.4)] ring-1 ring-landing-line sm:-left-4 md:-left-10"
+          >
+            <div className="flex items-center gap-2 rounded-xl bg-landing-surface px-2.5 py-2 text-xs text-landing-body">
+              <Link2 className="size-3.5 shrink-0 text-landing-muted" />
+              <span className="truncate">{t.importLink}</span>
+            </div>
+            <div className="mt-2.5 flex items-center gap-2.5 px-1">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-neutral-950 text-white">
+                <TikTokIcon size={15} />
+              </span>
+              <div className="min-w-0">
+                <p className="flex items-center gap-1 text-sm font-semibold text-landing-ink">
+                  {t.imported}
+                  <Check className="size-3.5 text-emerald-600" strokeWidth={3} />
+                </p>
+                <p className="truncate text-xs text-landing-muted">{t.importReady}</p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        <div className="max-w-xl md:self-start">
+          <RevealGroup as="ul" className="grid list-none gap-4 p-0" stagger={0.08}>
+            {t.points.map((point, i) => {
+              const Icon = POINT_ICONS[i] ?? Check;
+              return (
+                <RevealItem as="li" key={point.title} className="flex gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-landing-card text-primary shadow-[0_1px_2px_rgb(0_0_0/0.06)] ring-1 ring-landing-line">
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-landing-ink">{point.title}</p>
+                    <p className="mt-0.5 text-sm leading-relaxed text-landing-body">{point.body}</p>
+                  </div>
+                </RevealItem>
+              );
+            })}
+          </RevealGroup>
+
+          <div className="mt-9 flex flex-wrap gap-3">
+            <TrackedHomepageLink
+              href={`/${lang}/upload`}
+              buttonId="post_video"
+              placement="video_section"
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-white no-underline shadow-[0_10px_24px_-12px_rgb(var(--brand-primary)/0.8)] transition-colors hover:bg-primary-strong"
+            >
+              <Plus className="size-4.5" strokeWidth={2.5} aria-hidden />
+              {t.cta}
+            </TrackedHomepageLink>
+            <TrackedHomepageLink
+              href={`/${lang}/upload/tiktok`}
+              buttonId="import_tiktok"
+              placement="video_section"
+              className="group inline-flex h-12 items-center gap-2 rounded-full bg-landing-card px-6 font-semibold text-landing-ink no-underline ring-1 ring-landing-line transition-colors hover:ring-primary/40"
+            >
+              <TikTokIcon size={18} aria-hidden />
+              {t.tiktokCta}
+              <ArrowRight
+                className="size-4 transition-transform! duration-200! group-hover:translate-x-0.5"
+                aria-hidden
+              />
+            </TrackedHomepageLink>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
