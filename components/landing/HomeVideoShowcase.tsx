@@ -78,9 +78,15 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
           </p>
           <h2
             id="video-title"
-            className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+            className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
           >
-            {t.title}
+            {/* A sentence per line, like the hero's headline. */}
+            {t.title.split(/(?<=\.)\s+/).map((sentence, i) => (
+              <span key={sentence} className="block">
+                {i > 0 ? " " : null}
+                {sentence}
+              </span>
+            ))}
           </h2>
           <p className="mt-5 text-base leading-relaxed text-landing-body md:text-lg">{t.body}</p>
         </Reveal>

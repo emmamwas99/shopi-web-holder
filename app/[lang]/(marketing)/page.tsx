@@ -721,7 +721,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <div>
                 <h1
                   id="home-title"
-                  className="max-w-3xl text-balance font-display text-[2rem] font-semibold leading-[1.08] tracking-[-0.015em] md:text-[clamp(2.5rem,5.4vw,3.5rem)] md:leading-[1.05] md:tracking-[-0.02em] xl:text-[clamp(2.75rem,3.6vw,3.25rem)]"
+                  className="max-w-3xl text-balance font-display text-[1.75rem] font-medium leading-[1.12] tracking-[-0.01em] md:text-[clamp(2.5rem,5.4vw,3.5rem)] md:font-semibold md:leading-[1.05] md:tracking-[-0.02em] xl:text-[clamp(2.75rem,3.6vw,3.25rem)]"
                 >
                   {/* Each sentence on its own line, like a stacked headline. */}
                   {t.heroTitle.split(/(?<=\.)\s+/).map((sentence, i) => (
@@ -839,7 +839,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <Reveal>
             <h2
               id="how-title"
-              className="font-display text-[1.75rem] font-semibold leading-tight md:text-[2.75rem]"
+              className="font-display text-[1.5rem] font-medium leading-[1.15] md:text-[2.75rem] md:font-semibold md:leading-tight"
             >
               {t.howTitle}
             </h2>
@@ -903,7 +903,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <p className="mb-3 text-sm font-semibold text-primary">{t.photoEyebrow}</p>
               <h2
                 id="photo-search-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.photoTitle}
               </h2>
@@ -961,7 +961,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <h2
                 id="side-hustle-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.hookTitle}
               </h2>
@@ -1037,7 +1037,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <Reveal className="order-1 max-w-lg md:order-2">
                 <h2
                   id="sellers-title"
-                  className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                  className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
                 >
                   {t.sellersTitle}
                 </h2>
@@ -1091,7 +1091,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <Reveal>
             <h2
               id="paths-title"
-              className="font-display text-[2rem] font-semibold leading-tight md:text-center md:text-[3.25rem]"
+              className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-center md:text-[3.25rem] md:font-semibold md:leading-tight"
             >
               {t.pathsTitle}
             </h2>
@@ -1221,7 +1221,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <h2
                 id="shopi-agent-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.agentTitle}
               </h2>
@@ -1293,7 +1293,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <Reveal className="order-1 max-w-lg md:order-2">
               <p className="mb-3 hidden text-sm font-semibold text-primary md:block">{t.bulkEyebrowDesktop}</p>
               <p className="mb-3 text-sm font-semibold text-primary md:hidden">{t.bulkEyebrowMobile}</p>
-              <h2 id="bulk-upload-title" className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
+              <h2 id="bulk-upload-title" className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight">
                 {t.bulkTitle}
               </h2>
               <p className="mt-5 hidden text-base leading-relaxed text-landing-body md:block md:text-lg">
@@ -1332,7 +1332,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <h2
                 id="verified-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.verifiedTitle}
               </h2>
@@ -1419,7 +1419,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <Reveal>
           <h2
             id="closing-title"
-            className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]"
+            className="font-display text-[1.625rem] font-medium leading-[1.15] text-landing-ink md:text-[3.25rem] md:font-semibold md:leading-tight"
           >
             {t.closingTitle}
           </h2>
