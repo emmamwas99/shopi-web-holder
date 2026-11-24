@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { BackLink } from "@/components/layout/BackLink";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardHeader } from "@/features/dashboard/components/DashboardSection";
 import { cn } from "@/lib/utils";
 import { profileReturnHref } from "@/features/profile/lib/settingsReturn";
 import { useMyShopVerification } from "../hooks/useShopVerification";
@@ -44,12 +45,10 @@ export function VerificationScreen({ lang, embedded = false }: { lang: string; e
   return (
     <div className={cn("bg-app", embedded ? "h-full min-h-0 overflow-y-auto" : "min-h-svh")}>
       {embedded ? (
-        <header className="border-b border-border px-5 pb-4 pt-5 md:px-8 md:pb-5 md:pt-6">
-          <h1 className="text-lg font-extrabold tracking-tight text-main">{title}</h1>
-          <p className="mt-1 text-xs text-muted">
-            Show buyers you&rsquo;re a real, registered business.
-          </p>
-        </header>
+        <DashboardHeader
+          title={title}
+          description={<>Show buyers you&rsquo;re a real, registered business.</>}
+        />
       ) : (
         <header className="sticky top-0 z-20 flex h-14 items-center gap-1 border-b border-border bg-app px-3">
           <BackLink

@@ -11,6 +11,7 @@ import { ProfileFollowersView } from "@/features/profile/components/ProfileFollo
 import { ProfileVisitorsView } from "@/features/profile/components/ProfileVisitorsView";
 import { useMyAnalytics, useMySavedContent } from "@/features/profile/hooks/useMyProfile";
 import { appendUnique } from "@/features/profile/lib/appendUnique";
+import { DashboardEmpty, DashboardHeader } from "./DashboardSection";
 
 export type DashboardProfileSection =
   | "drafts"
@@ -24,7 +25,7 @@ const sectionCopy: Record<DashboardProfileSection, { title: string; description:
   drafts: { title: "Drafts", description: "Continue editing, publish, or discard your saved drafts." },
   saved: { title: "Saved items", description: "Listings you have bookmarked for later." },
   analytics: { title: "Analytics", description: "See how people discover and engage with your posts." },
-  followers: { title: "Followers", description: "People who follow your Shopi profile." },
+  followers: { title: "Followers", description: "People who follow your shop." },
   visitors: { title: "Profile visitors", description: "People who have recently viewed your profile." },
   settings: { title: "Account settings", description: "Update your profile details and photo." },
 };
@@ -60,21 +61,26 @@ export function DashboardProfileTab({
     });
   }, [saved, savedResult]);
 
-  if (section === "followers") {
-    return <div className="h-full min-h-0 overflow-y-auto"><ProfileFollowersView lang={lang} embedded /></div>;
-  }
-  if (section === "visitors") {
-    return <div className="h-full min-h-0 overflow-y-auto"><ProfileVisitorsView lang={lang} embedded /></div>;
-  }
-
   const copy = sectionCopy[section];
+
+  if (section === "followers" || section === "visitors") {
+    return (
+      <section className="flex h-full min-h-0 flex-col">
+        <DashboardHeader title={copy.title} description={copy.description} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {section === "followers" ? (
+            <ProfileFollowersView lang={lang} embedded />
+          ) : (
+            <ProfileVisitorsView lang={lang} embedded />
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <header className="z-10 shrink-0 border-b border-border bg-app px-5 pb-4 pt-5 md:px-8 md:pb-5 md:pt-6">
-        <h1 className="text-lg font-extrabold tracking-tight text-main">{copy.title}</h1>
-        <p className="mt-1 text-xs text-muted">{copy.description}</p>
-      </header>
+      <DashboardHeader title={copy.title} description={copy.description} />
       <div
         className="min-h-0 flex-1 overflow-y-auto"
         data-dashboard-tour={section === "drafts" ? "dashboard-tour-drafts-page" : section === "analytics" ? "dashboard-tour-audience-page" : undefined}
@@ -93,7 +99,7 @@ export function DashboardProfileTab({
             hideHeading
           />
         ) : analytics.loading && !analytics.data ? (
-          <div className="grid grid-cols-2 gap-3 p-5 lg:grid-cols-4 md:p-8">
+          <div className="grid grid-cols-2 gap-4 px-8 py-6 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
               <Skeleton key={index} className="h-28 rounded-xl" />
             ))}
@@ -103,12 +109,12 @@ export function DashboardProfileTab({
         ) : analytics.data?.myAnalytics ? (
           <AnalyticsPanel data={analytics.data.myAnalytics} lang={lang} hideHeading />
         ) : (
-          <div className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
-            <ChartColumn className="h-7 w-7 text-primary" aria-hidden />
-            <h2 className="mt-3 text-sm font-bold text-main">No analytics yet</h2>
-            <p className="mt-1 max-w-sm text-xs leading-5 text-muted">
-              Your post views, saves, and follower growth will appear here as people engage with your content.
-            </p>
+          <div className="px-8 py-6">
+            <DashboardEmpty
+              icon={ChartColumn}
+              title="No analytics yet"
+              body="Your post views, saves and follower growth show up here as people engage with your listings."
+            />
           </div>
         )}
       </div>

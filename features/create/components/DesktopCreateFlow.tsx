@@ -5,7 +5,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
-import { ChevronLeft, Check, Home, Images, Clapperboard } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Home, Images, Clapperboard } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import {
@@ -165,25 +165,27 @@ export function DesktopCreateFlow({
     if (n === 1) useCreateStore.getState().reset();
   }
 
+  // The same three choices, in the same words, as the phone's media picker
+  // (UploadPickerPage's MediaTypePicker), so posting reads the same on both.
   const pickOptions = [
     {
       label: "Video",
-      description: "Share a short clip of what you're selling",
-      icon: <Clapperboard size={26} />,
+      description: "Start with one short product clip.",
+      icon: Clapperboard,
       onClick: () => handlePickType("video"),
     },
     {
       label: "Photos",
-      description: "Up to 10 images of your item",
-      icon: <Images size={26} />,
+      description: "Add up to 10 clear item photos.",
+      icon: Images,
       onClick: () => handlePickType("image"),
     },
     {
-      label: SHOW_TIKTOK_CREATE_OPTIONS ? "Import from TikTok" : "My TikTok videos",
+      label: SHOW_TIKTOK_CREATE_OPTIONS ? "TikTok Import" : "My TikTok videos",
       description: SHOW_TIKTOK_CREATE_OPTIONS
-        ? "Paste a TikTok link or reuse a saved video"
-        : "Connect your account and choose a video",
-      icon: <TikTokIcon size={26} className="" />,
+        ? "Paste a TikTok link to reuse a video you already posted."
+        : "Connect your account and choose a video.",
+      icon: TikTokIcon,
       // Inline in this dialog, like the other types — no route hop.
       onClick: () => setTiktokOpen(true),
       hidden: !SHOW_CONNECTED_TIKTOK_IMPORT && !SHOW_TIKTOK_CREATE_OPTIONS,
@@ -269,17 +271,23 @@ export function DesktopCreateFlow({
               })}
             </div>
 
-            <button
-              onClick={goHome}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface ${embeddedInDashboard ? "" : "mr-9"}`}
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text-muted))",
-              }}
-            >
-              {embeddedInDashboard ? <ChevronLeft size={16} /> : <Home size={16} />}
-              {embeddedInDashboard ? "Dashboard" : "Home"}
-            </button>
+            {embeddedInDashboard ? (
+              // The sidebar and the dialog's close button already lead out;
+              // this keeps the stepper centred and clear of that button.
+              <span aria-hidden className="w-14 shrink-0" />
+            ) : (
+              <button
+                onClick={goHome}
+                className="mr-9 flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface"
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
+                <Home size={16} />
+                Home
+              </button>
+            )}
           </div>
 
           {/* ── Body: step content + live preview ── */}
@@ -299,7 +307,7 @@ export function DesktopCreateFlow({
                         color: "rgb(var(--color-text))",
                       }}
                     >
-                      {SHOW_TIKTOK_CREATE_OPTIONS ? "Import from TikTok" : "My TikTok videos"}
+                      {SHOW_TIKTOK_CREATE_OPTIONS ? "Add from TikTok" : "My TikTok videos"}
                     </h2>
                     <p
                       className="mt-0.5"
@@ -309,7 +317,7 @@ export function DesktopCreateFlow({
                       }}
                     >
                       {SHOW_TIKTOK_CREATE_OPTIONS
-                        ? "Paste a TikTok link or reuse a video you already downloaded."
+                        ? "Paste the link to your TikTok video. We bring in the video for your listing."
                         : "Connect your TikTok account and choose one of your videos."}
                     </p>
                   </div>
@@ -332,83 +340,50 @@ export function DesktopCreateFlow({
                   )}
                 </div>
               ) : step === "pick" ? (
-                <div className="flex flex-1 flex-col justify-center gap-6 overflow-y-auto px-10 py-8">
-                  <div>
-                    <h2
-                      className="font-bold"
-                      style={{
-                        fontSize: "var(--text-xl)",
-                        color: "rgb(var(--color-text))",
-                      }}
-                    >
-                      What are you posting today?
+                <div className="flex flex-1 flex-col justify-center overflow-y-auto px-10 py-10">
+                  <div className="mx-auto w-full max-w-2xl">
+                    <h2 className="text-[1.625rem] font-black leading-tight tracking-tight text-main">
+                      Add photos or a video
                     </h2>
-                    <p
-                      className="mt-1"
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "rgb(var(--color-text-muted))",
-                      }}
-                    >
-                      Pick a format — our AI helps write the title, description
-                      and price from your media.
+                    <p className="mt-1.5 text-sm text-[rgb(var(--color-text-muted))]">
+                      Choose the media that best shows your item. You can review everything before posting.
                     </p>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    {pickOptions.map((opt) => (
-                      <button
-                        key={opt.label}
-                        onClick={opt.onClick}
-                        disabled={creating}
-                        className={`group ${opt.hidden ? "hidden" : "flex"} flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50`}
-                        style={{
-                          backgroundColor: "rgb(var(--color-bg-elevated))",
-                          border: "1px solid rgb(var(--color-border))",
-                        }}
-                      >
-                        <span
-                          className="flex h-14 w-14 items-center justify-center rounded-2xl transition-transform group-hover:scale-105"
-                          style={{
-                            backgroundColor: "rgb(var(--brand-primary) / 0.1)",
-                            color: "rgb(var(--brand-primary))",
-                          }}
+                    <div className="mt-7 grid gap-3">
+                      {pickOptions.map(({ label, description, icon: Icon, onClick, hidden }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={onClick}
+                          disabled={creating}
+                          className={`group ${hidden ? "hidden" : "flex"} w-full items-center gap-4 rounded-2xl border border-border bg-elevated p-4 text-left outline-none transition-[border-color,box-shadow,translate]! duration-200! hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_12px_28px_-16px_rgb(var(--brand-primary)/0.45)] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50`}
                         >
-                          {opt.icon}
-                        </span>
-                        <span
-                          className="font-semibold"
-                          style={{
-                            fontSize: "var(--text-base)",
-                            color: "rgb(var(--color-text))",
-                          }}
-                        >
-                          {opt.label}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "var(--text-sm)",
-                            color: "rgb(var(--color-text-muted))",
-                          }}
-                        >
-                          {opt.description}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                          <span className="grid size-13 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                            <Icon size={24} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-base font-bold text-main">{label}</span>
+                            <span className="mt-0.5 block text-sm text-[rgb(var(--color-text-muted))]">{description}</span>
+                          </span>
+                          <ChevronRight
+                            className="size-5 shrink-0 text-[rgb(var(--color-text-muted))] transition-[translate,color]! duration-200! group-hover:translate-x-0.5 group-hover:text-primary"
+                            aria-hidden
+                          />
+                        </button>
+                      ))}
+                    </div>
 
-                  {creating && (
-                    <p
-                      className="flex items-center gap-2"
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "rgb(var(--color-text-muted))",
-                      }}
-                    >
-                      <InterlockingBalls size={16} />
-                      Setting up your draft…
-                    </p>
-                  )}
+                    {creating ? (
+                      <p className="mt-5 flex items-center gap-2 text-sm text-[rgb(var(--color-text-muted))]">
+                        <InterlockingBalls size={16} />
+                        Setting up your draft…
+                      </p>
+                    ) : (
+                      <p className="mt-5 text-xs text-[rgb(var(--color-text-muted))]">
+                        Your listing only goes live after you confirm it.
+                      </p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <CreateFlow

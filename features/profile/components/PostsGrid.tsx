@@ -1,5 +1,6 @@
 "use client";
 
+import { DASHBOARD_PRIMARY_BUTTON, DashboardEmpty } from "@/features/dashboard/components/DashboardSection";
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -189,6 +190,24 @@ export function PostsGrid({
           </ul>
         ) : null}
         <DiscoverGridSkeleton className={mobileList ? "hidden md:grid" : undefined} />
+      </section>
+    );
+  }
+
+  if (posts.length === 0 && hideHeading) {
+    // Inside the seller dashboard: its empty state, with a way to go find some.
+    return (
+      <section className="px-8 py-6">
+        <DashboardEmpty
+          icon={Bookmark}
+          title="No saved items yet"
+          body="Tap the bookmark on any listing and it waits for you here."
+          action={
+            <Link href={`/${lang}/explore`} className={DASHBOARD_PRIMARY_BUTTON}>
+              Browse the market
+            </Link>
+          }
+        />
       </section>
     );
   }

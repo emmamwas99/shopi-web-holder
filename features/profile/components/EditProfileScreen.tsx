@@ -291,9 +291,9 @@ function EditProfileForm({
   }
 
   return (
-    <div className="min-h-svh bg-app">
+    <div className={embedded ? "bg-app" : "min-h-svh bg-app"}>
       <header
-        className="sticky top-0 z-20 flex h-14 items-center justify-between border-b px-3 md:h-16 md:px-5 lg:px-6"
+        className={`sticky top-0 z-20 h-14 items-center justify-between border-b px-3 md:h-16 md:px-5 lg:px-6 ${embedded ? "hidden" : "flex"}`}
         style={{
           backgroundColor: "rgb(var(--color-bg))",
           borderColor: "rgb(var(--color-border))",
@@ -338,7 +338,7 @@ function EditProfileForm({
       </header>
 
       <main
-        className="px-4 pt-5 md:px-6 md:pt-6 lg:px-8 lg:pt-8"
+        className={embedded ? "px-8 pt-6" : "px-4 pt-5 md:px-6 md:pt-6 lg:px-8 lg:pt-8"}
         style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
       >
         <input
@@ -350,10 +350,10 @@ function EditProfileForm({
         />
 
         <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] xl:gap-8">
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside className={`lg:sticky lg:self-start ${embedded ? "lg:top-0" : "lg:top-24"}`}>
             <div
               className="mb-6 flex items-center gap-4 md:mb-0 md:rounded-[28px] md:border md:bg-elevated md:p-5 lg:flex-col lg:items-start lg:rounded-[32px] lg:p-6"
-              style={{ borderColor: "rgb(229 231 235)" }}
+              style={{ borderColor: "rgb(var(--color-border))" }}
             >
               <button
                 type="button"
@@ -465,7 +465,7 @@ function EditProfileForm({
 
           <section
             className="md:rounded-[28px] md:border md:bg-elevated md:p-5 lg:rounded-[32px] lg:p-7"
-            style={{ borderColor: "rgb(229 231 235)" }}
+            style={{ borderColor: "rgb(var(--color-border))" }}
           >
             <div className="hidden md:block">
               <h2
@@ -653,7 +653,15 @@ function EditProfileForm({
         </div>
       </main>
 
-      <div className="pointer-events-none fixed bottom-6 right-6 z-30 hidden md:block lg:bottom-8 lg:right-8">
+      {/* In the dashboard the form scrolls inside the dialog, where a fixed
+          button floated over the fields: there it's a bar pinned under them. */}
+      <div
+        className={
+          embedded
+            ? "sticky bottom-0 z-30 hidden justify-end border-t border-border/70 bg-app/90 px-8 py-3 backdrop-blur md:flex"
+            : "pointer-events-none fixed bottom-6 right-6 z-30 hidden md:block lg:bottom-8 lg:right-8"
+        }
+      >
         <Button
           type="button"
           onClick={handleSave}
