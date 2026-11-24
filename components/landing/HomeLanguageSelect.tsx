@@ -5,9 +5,7 @@ import { locales, type Locale } from "@/i18n/config";
 
 /**
  * The current URL with only its locale prefix swapped, so changing language
- * keeps the visitor on the same page. On the homepage it adds `?view=home`:
- * signed-in visitors to a bare `/{lang}` are otherwise redirected into the app
- * (proxy.ts), which is what used to bounce this switch to Explore.
+ * keeps the visitor on the same page.
  */
 function localizedCurrentUrl(next: Locale) {
   const { pathname, search, hash } = window.location;
@@ -16,7 +14,8 @@ function localizedCurrentUrl(next: Locale) {
   );
   const rest = prefix ? pathname.slice(prefix.length + 1) : pathname;
   const params = new URLSearchParams(search);
-  if (!rest || rest === "/") params.set("view", "home");
+  // Drop the old homepage opt-out (see lib/home-url.ts); it no longer means anything.
+  params.delete("view");
   const query = params.toString();
   return `/${next}${rest === "/" ? "" : rest}${query ? `?${query}` : ""}${hash}`;
 }

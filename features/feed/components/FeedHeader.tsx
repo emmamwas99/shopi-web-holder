@@ -1,7 +1,9 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { m, useReducedMotion } from "framer-motion";
 import { useScrollChromeHidden } from "@/hooks/useScrollChromeHidden";
+import { AppMotion, CHROME_TRANSITION } from "@/lib/motion/AppMotion";
 
 type HomeTab = "for-you" | "following" | "nearby";
 
@@ -11,10 +13,12 @@ const tabs: { key: HomeTab; label: string }[] = [
   { key: "nearby", label: "Nearby" },
 ];
 
-const indicatorPosition: Record<HomeTab, string> = {
-  "for-you": "left-[16.6667%]",
-  following: "left-1/2",
-  nearby: "left-[83.3333%]",
+/** Each tab is a third of the row; the underline track is one third wide,
+ *  so moving it by its own width lands it under the next tab. */
+const indicatorX: Record<HomeTab, string> = {
+  "for-you": "0%",
+  following: "100%",
+  nearby: "200%",
 };
 
 export function FeedHeader({
@@ -28,11 +32,18 @@ export function FeedHeader({
 }) {
   const headerHidden = useScrollChromeHidden(activeTab);
   const selected = tabs.find((tab) => tab.key === activeTab)?.key;
+  const reduceMotion = useReducedMotion();
+  const transition = reduceMotion ? { duration: 0 } : CHROME_TRANSITION;
 
   return (
-    <>
+    <AppMotion>
       <div className="h-12 md:h-16" aria-hidden="true" />
-      <header
+      {/* Slides up out of the way on a deliberate scroll down, back on the
+          way up (useScrollChromeHidden decides; framer moves it). */}
+      <m.header
+        initial={false}
+        animate={{ y: headerHidden ? "-100%" : 0 }}
+        transition={transition}
         className="feed-scroll-header fixed inset-x-0 top-0 z-30 border-b border-border/70 bg-elevated"
         data-hidden={headerHidden}
       >
@@ -54,10 +65,17 @@ export function FeedHeader({
               </button>
             ))}
             {selected ? (
-              <span
+              // A transform slide, not a `left` transition: no layout work
+              // per frame, so it glides between tabs.
+              <m.span
                 aria-hidden="true"
-                className={`pointer-events-none absolute bottom-1 h-[3px] w-[22px] -translate-x-1/2 rounded-full bg-primary transition-[left] duration-200 ease-out motion-reduce:transition-none ${indicatorPosition[selected]}`}
-              />
+                initial={false}
+                animate={{ x: indicatorX[selected] }}
+                transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 42, mass: 0.8 }}
+                className="pointer-events-none absolute bottom-1 left-0 flex w-1/3 justify-center"
+              >
+                <span className="h-[3px] w-[22px] rounded-full bg-primary" />
+              </m.span>
             ) : null}
           </div>
           <button
@@ -69,7 +87,7 @@ export function FeedHeader({
             <Search size={24} strokeWidth={2.4} aria-hidden="true" />
           </button>
         </div>
-      </header>
-    </>
+      </m.header>
+    </AppMotion>
   );
 }

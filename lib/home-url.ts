@@ -1,14 +1,11 @@
 /**
  * Where the Shopi logo goes: the public homepage, for everyone.
  *
- * The proxy sends signed-in visitors on "/{lang}" to the feed, so a bare
- * "/{lang}" logo link lands them in the app instead of on the homepage.
- * `?view=home` opts out of that redirect. The homepage canonicalises to
- * "/{lang}", so the query never becomes a second indexed URL.
- *
- * For the logo and "Shopi homepage" links only. Breadcrumbs and structured
- * data keep the canonical "/{lang}".
+ * Signed-in visitors used to be redirected from "/{lang}" into the app, and
+ * logo links carried `?view=home` to get past that. The redirect is gone (the
+ * homepage now greets them with a way back in instead), so this is just the
+ * canonical homepage. Old `?view=home` links still work; the page ignores it.
  */
 export function homeHref(lang: string): string {
-  return `/${lang}?view=home`;
+  return `/${lang}`;
 }

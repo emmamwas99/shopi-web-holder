@@ -12,7 +12,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { motion } from "framer-motion";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import {
   ArrowUpDown,
   ChevronDown,
@@ -1789,9 +1789,10 @@ export function DiscoverPage({
   const [locationSearch, setLocationSearch] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [subcategoryHeaderMode, setSubcategoryHeaderMode] = useState<
-    "expanded" | "chips" | "search"
-  >("expanded");
+  // Phones, category pages: scrolling down tucks the filter chips up behind
+  // the search bar; scrolling up brings them back (see the header below).
+  const [chipsTucked, setChipsTucked] = useState(false);
+  const lastScrollY = useRef(0);
   const subcategoryChipsRef = useRef<HTMLDivElement>(null);
   const [subcategoryDrawerOpen, setSubcategoryDrawerOpen] = useState(false);
   const [drawerCategory, setDrawerCategory] = useState<CategoryFacet | null>(null);
@@ -1892,63 +1893,25 @@ export function DiscoverPage({
 
   const hasCategoryResults = Boolean(selectedCategory) || isSubcategoryRoute;
 
-  useEffect(() => {
-    if (!hasCategoryResults) {
-      setSubcategoryHeaderMode("expanded");
+  // The old header switched between three layouts (full, chips only, search
+  // only), changing its height and swapping rows as you scrolled, so the
+  // grid under it jumped a row at a time. Now one flag drives one animation
+  // and the header's footprint never changes.
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => {
+    const delta = y - lastScrollY.current;
+    lastScrollY.current = y;
+    if (!hasCategoryResults || window.innerWidth >= 1024) return;
+    if (y <= 72) {
+      setChipsTucked(false);
       return;
     }
-
-    let previousY = window.scrollY;
-    let mode: "expanded" | "chips" | "search" = "expanded";
-    let direction = 0;
-    let directionTravel = 0;
-    const topThreshold = 72;
-    const scrollDistanceToSearch = 36;
-    const scrollDistanceToChips = 20;
-
-    const handleScroll = () => {
-      if (window.innerWidth >= 1024) return;
-      const currentY = Math.max(0, window.scrollY);
-      const delta = currentY - previousY;
-
-      if (currentY <= topThreshold) {
-        mode = "expanded";
-        direction = 0;
-        directionTravel = 0;
-      } else if (Math.abs(delta) > 0.5) {
-        const nextDirection = delta > 0 ? 1 : -1;
-        if (nextDirection !== direction) {
-          direction = nextDirection;
-          directionTravel = 0;
-        }
-        directionTravel += Math.abs(delta);
-
-        if (direction > 0 && mode === "expanded") {
-          mode = "chips";
-          directionTravel = 0;
-        } else if (
-          direction > 0 &&
-          mode === "chips" &&
-          directionTravel >= scrollDistanceToSearch
-        ) {
-          mode = "search";
-          directionTravel = 0;
-        } else if (
-          direction < 0 &&
-          mode === "search" &&
-          directionTravel >= scrollDistanceToChips
-        ) {
-          mode = "chips";
-          directionTravel = 0;
-        }
-      }
-
-      setSubcategoryHeaderMode((current) => (current === mode ? current : mode));
-      previousY = currentY;
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    // Ignore jitter; react to a real move either way.
+    if (delta > 6) setChipsTucked(true);
+    else if (delta < -6) setChipsTucked(false);
+  });
+  useEffect(() => {
+    if (!hasCategoryResults) setChipsTucked(false);
   }, [hasCategoryResults]);
 
   useEffect(() => {
@@ -2970,11 +2933,8 @@ export function DiscoverPage({
   const showEmptyState =
     !isReloading && !loading && items.length === 0 && !error;
 
-  const showSubcategorySearch =
-    !hasCategoryResults || subcategoryHeaderMode !== "chips";
-  const showSubcategoryChips =
-    !hasCategoryResults || subcategoryHeaderMode !== "search";
   const showCategoryFilterChips = hasCategoryResults;
+  const chipsHidden = showCategoryFilterChips && chipsTucked;
   const backToCategories = useCallback(() => {
     setSelectedCategory(null);
     setSelectedSubcategory(null);
@@ -2987,32 +2947,21 @@ export function DiscoverPage({
     >
       <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
-          <div
-            className={cn(
-              "sticky top-0 z-30 grid border-b border-default bg-app [overflow-anchor:none] lg:hidden",
-              showCategoryFilterChips && subcategoryHeaderMode === "expanded"
-                ? "grid-rows-[56px_auto]"
-                : "grid-rows-[56px]",
-              hasCategoryResults && "md:max-lg:grid-rows-[56px]",
-            )}
-          >
-            <motion.div
-              initial={false}
-              animate={showSubcategorySearch ? "visible" : "hidden"}
-              variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: -8 },
-              }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              aria-hidden={!showSubcategorySearch}
-              style={{ gridArea: "1 / 1" }}
+          {/* Phones: the search bar on top, a category page's filter chips
+              under it. The container has no background of its own: when the
+              chips tuck up behind the bar, the space they leave shows the
+              page scrolling beneath, so nothing below ever moves. */}
+          <div className="sticky top-0 z-30 [overflow-anchor:none] lg:hidden">
+            <div
               className={cn(
-                "flex items-center overflow-hidden",
-                !showSubcategorySearch && "pointer-events-none",
+                "relative z-10 flex h-14 items-center border-b bg-app",
+                !showCategoryFilterChips || chipsHidden
+                  ? "border-default"
+                  : "border-transparent md:max-lg:border-default",
               )}
             >
               <div className="flex w-full min-w-0 items-center gap-2 px-4 lg:px-0">
-                {showCategoryFilterChips && subcategoryHeaderMode !== "chips" ? (
+                {showCategoryFilterChips ? (
                   <button
                     type="button"
                     // Opened straight from a link (Google, WhatsApp) there is
@@ -3097,56 +3046,27 @@ export function DiscoverPage({
                   </button>
                 ) : null}
               </div>
-            </motion.div>
+            </div>
 
             {showCategoryFilterChips ? (
-              <div
-                aria-hidden={!showSubcategoryChips}
-                style={{
-                  gridArea:
-                    subcategoryHeaderMode === "expanded"
-                      ? "2 / 1"
-                      : "1 / 1",
-                }}
+              <motion.div
+                aria-hidden={chipsHidden || undefined}
+                initial={false}
+                animate={chipsHidden ? { y: "-100%", opacity: 0 } : { y: 0, opacity: 1 }}
+                transition={{ type: "tween", duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  "flex min-w-0 overflow-hidden",
-                  subcategoryHeaderMode === "expanded"
-                    ? "items-start pb-2.5"
-                    : "h-full items-center",
-                  !showSubcategoryChips && "pointer-events-none",
-                  hasCategoryResults && "md:max-lg:hidden",
+                  "relative z-0 flex min-w-0 border-b border-default bg-app pb-2.5 md:max-lg:hidden",
+                  chipsHidden && "pointer-events-none",
                 )}
               >
                 <div className="flex min-w-0 flex-1 items-center">
-                  {subcategoryHeaderMode === "chips" ? (
-                    <button
-                      type="button"
-                      onClick={backToCategories}
-                      className="ml-2 grid h-10 w-9 shrink-0 place-items-center rounded-full text-main active:bg-subtle"
-                      aria-label="Back to categories"
-                    >
-                      <ChevronLeft size={22} strokeWidth={2.25} />
-                    </button>
-                  ) : null}
                   {/* Full-bleed: the chips scroll out to the screen edge
                       instead of being clipped 12px short of it. */}
                   <div
                     ref={subcategoryChipsRef}
-                    className={cn(
-                      "no-scroll-indicator min-w-0 flex-1 overflow-x-auto pr-4",
-                      subcategoryHeaderMode === "chips" ? "pl-1" : "pl-4",
-                    )}
+                    className="no-scroll-indicator min-w-0 flex-1 overflow-x-auto pl-4 pr-4"
                   >
-                    <motion.div
-                      initial={false}
-                      animate={showSubcategoryChips ? "visible" : "hidden"}
-                      variants={{
-                        visible: { opacity: 1, y: 0 },
-                        hidden: { opacity: 0, y: -8 },
-                      }}
-                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                      className="flex w-max gap-2"
-                    >
+                    <div className="flex w-max gap-2">
                     <button
                       type="button"
                       onClick={openFilterSheet}
@@ -3212,10 +3132,10 @@ export function DiscoverPage({
                         </button>
                       );
                     })}
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ) : null}
 
           </div>

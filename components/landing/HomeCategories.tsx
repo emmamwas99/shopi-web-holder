@@ -252,7 +252,7 @@ export async function HomeCategories({
           <div>
             <h2
               id="categories-title"
-              className="font-display text-[1.375rem] font-semibold leading-tight text-landing-ink md:text-[2rem]"
+              className="font-display text-[1.375rem] font-medium leading-tight text-landing-ink md:text-[2rem] md:font-semibold"
             >
               {title}
             </h2>

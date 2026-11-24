@@ -40,7 +40,7 @@ export function HomeListings({
         <Reveal className="flex items-baseline justify-between gap-4">
           <h2
             id="live-listings-title"
-            className="font-display text-[1.375rem] font-semibold leading-tight text-landing-ink md:text-[2rem]"
+            className="font-display text-[1.375rem] font-medium leading-tight text-landing-ink md:text-[2rem] md:font-semibold"
           >
             {t.title}
           </h2>

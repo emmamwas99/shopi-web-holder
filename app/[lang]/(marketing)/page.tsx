@@ -26,6 +26,8 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { HomeCategories } from "@/components/landing/HomeCategories";
 import { HomeVideoShowcase } from "@/components/landing/HomeVideoShowcase";
+import { SignedInLabel } from "@/components/landing/SignedInLabel";
+import { HeroMobileActions } from "@/components/landing/HeroMobileActions";
 import { HeroListingsBoard } from "@/components/landing/HeroListingsBoard";
 import { LandingMotion, Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal";
 import { HomeListings, type HomeListing } from "@/components/landing/HomeListings";
@@ -77,6 +79,17 @@ const COPY = {
     heroBody:
       "Find phones, cars, furniture and more from people near you, or sell yours free. No commission.",
     heroBrowse: "Browse For You",
+    // The same button for signed-in visitors (SignedInLabel).
+    heroBrowseSignedIn: "Back to For You",
+    // Phones: one short line in place of the body and the trust ticks, and
+    // two plain buttons (HeroMobileActions).
+    heroBodyMobile: "Phones, cars, furniture and more. Free to post, no commission.",
+    heroMobile: {
+      browse: "Browse items",
+      sell: "Sell an item",
+      continueAs: "Continue as {name}",
+      continue: "Continue to Shopi",
+    },
     heroSell: "Sell an item",
     trust: ["Free to post", "No commission", "Chat directly"],
     // Desktop hero picture (HeroListingsBoard). Illustrative, decorative.
@@ -109,6 +122,7 @@ const COPY = {
       ],
       cta: "Post a video",
       tiktokCta: "Import from TikTok",
+      tiktokCtaShort: "Import a TikTok",
       chip: "Plays in For You & Watch",
       importLink: "tiktok.com/@yourshop/video/…",
       imported: "Video imported",
@@ -297,6 +311,14 @@ const COPY = {
     heroBody:
       "Pata simu, magari, fanicha na zaidi kutoka kwa watu wa karibu nawe, au uza zako bure. Hakuna kamisheni.",
     heroBrowse: "Angalia For You",
+    heroBrowseSignedIn: "Rudi kwa For You",
+    heroBodyMobile: "Simu, magari, fanicha na zaidi. Bure kuweka, bila kamisheni.",
+    heroMobile: {
+      browse: "Vinjari bidhaa",
+      sell: "Uza bidhaa",
+      continueAs: "Endelea kama {name}",
+      continue: "Endelea kwenye Shopi",
+    },
     heroSell: "Uza bidhaa",
     trust: ["Kuweka tangazo ni bure", "Hakuna kamisheni", "Ongea moja kwa moja"],
     heroBoard: {
@@ -326,6 +348,7 @@ const COPY = {
       ],
       cta: "Weka video",
       tiktokCta: "Leta kutoka TikTok",
+      tiktokCtaShort: "Leta TikTok",
       chip: "Inacheza kwenye For You na Watch",
       importLink: "tiktok.com/@dukalako/video/…",
       imported: "Video imeletwa",
@@ -681,7 +704,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             LCP element (no banner image to wait for). Avoid the unlayered
             .text-default/.bg-elevated classes here — they would beat the md:
             overrides (globals.css). */}
-        <section id="hero" aria-labelledby="home-title" className="pb-4 md:-mt-22 md:pb-10">
+        <section id="hero" aria-labelledby="home-title" className="md:-mt-22 md:pb-10">
           {/* The tint runs full width and up behind the nav. md+: the panel
               slides under the bar (-mt-22 / pt-22 = the nav's height) and
               LandingNav overHero keeps the bar transparent until the page
@@ -698,7 +721,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <div>
                 <h1
                   id="home-title"
-                  className="max-w-3xl text-balance font-display text-[2rem] font-semibold leading-[1.08] tracking-[-0.015em] md:text-[clamp(2.5rem,5.4vw,3.5rem)] md:leading-[1.05] md:tracking-[-0.02em] xl:text-[clamp(2.75rem,3.6vw,3.25rem)]"
+                  className="max-w-3xl text-balance font-display text-[1.75rem] font-medium leading-[1.12] tracking-[-0.01em] md:text-[clamp(2.5rem,5.4vw,3.5rem)] md:font-semibold md:leading-[1.05] md:tracking-[-0.02em] xl:text-[clamp(2.75rem,3.6vw,3.25rem)]"
                 >
                   {/* Each sentence on its own line, like a stacked headline. */}
                   {t.heroTitle.split(/(?<=\.)\s+/).map((sentence, i) => (
@@ -708,10 +731,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                     </span>
                   ))}
                 </h1>
-                <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-landing-body md:mt-6 md:text-lg xl:text-xl">
+                <p className="mt-3 text-balance text-[0.9375rem] leading-relaxed text-landing-body md:hidden">
+                  {t.heroBodyMobile}
+                </p>
+                <p className="mt-6 hidden max-w-xl text-lg leading-relaxed text-landing-body md:block xl:text-xl">
                   {t.heroBody}
                 </p>
-                <ul className="mt-5 flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-[0.875rem] font-medium md:mt-6 md:gap-x-6 md:text-[0.9375rem]">
+                <ul className="mt-6 hidden list-none flex-wrap gap-x-4 gap-y-2 p-0 text-[0.9375rem] font-medium md:flex md:gap-x-6">
                   {t.trust.map((item) => (
                     <li key={item} className="flex items-center gap-2">
                       <span className="grid size-5 place-items-center rounded-full bg-primary text-white">
@@ -721,9 +747,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                     </li>
                   ))}
                 </ul>
-                {/* Browse first — most people arriving from search came to
-                    look. One row; on the narrowest phones Sell wraps under. */}
-                <div className="mt-6 flex flex-wrap items-center gap-3 md:mt-8 lg:mt-10">
+                <HeroMobileActions lang={lang} copy={t.heroMobile} />
+                {/* Tablet and desktop. Browse first — most people arriving
+                    from search came to look. */}
+                <div className="mt-8 hidden flex-wrap items-center gap-3 md:flex lg:mt-10">
                   <TrackedHomepageLink
                     href={`/${lang}/for-you`}
                     buttonId="browse_for_you"
@@ -744,7 +771,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                       aria-hidden
                       className="pointer-events-none absolute inset-y-0 -left-1/2 -z-10 w-1/3 -skew-x-20 bg-linear-to-r from-transparent via-white/40 to-transparent transition-none! motion-safe:group-hover:translate-x-[480%] motion-safe:group-hover:transition-[translate]! motion-safe:group-hover:duration-700! motion-safe:group-hover:ease-out!"
                     />
-                    {t.heroBrowse}
+                    <SignedInLabel signedOut={t.heroBrowse} signedIn={t.heroBrowseSignedIn} />
                     <span className="relative grid size-8 place-items-center overflow-hidden rounded-full bg-white text-primary transition-transform! duration-300! ease-out! motion-safe:group-hover:scale-110">
                       <ArrowRight
                         size={16}
@@ -780,7 +807,9 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 </div>
               </div>
 
-              <div className="mt-10 md:mt-0">
+              {/* Not on phones: the first screen there is the headline and
+                  the two buttons, nothing else. */}
+              <div className="hidden md:block">
                 <HeroListingsBoard copy={t.heroBoard} />
               </div>
             </div>
@@ -804,13 +833,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="how-it-works"
           aria-labelledby="how-title"
-          className="landing-band px-4 py-14 md:px-8 md:py-20"
+          className="landing-band px-4 py-10 md:px-8 md:py-20"
         >
           <div className="mx-auto max-w-7xl">
             <Reveal>
             <h2
               id="how-title"
-              className="font-display text-[1.75rem] font-semibold leading-tight md:text-[2.75rem]"
+              className="font-display text-[1.5rem] font-medium leading-[1.15] md:text-[2.75rem] md:font-semibold md:leading-tight"
             >
               {t.howTitle}
             </h2>
@@ -867,14 +896,14 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="photo-search"
           aria-labelledby="photo-search-title"
-          className="bg-landing-page px-5 py-16 md:px-8 md:py-24"
+          className="bg-landing-page px-4 py-10 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
             <Reveal className="max-w-lg md:order-2">
               <p className="mb-3 text-sm font-semibold text-primary">{t.photoEyebrow}</p>
               <h2
                 id="photo-search-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.photoTitle}
               </h2>
@@ -923,7 +952,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="side-hustle"
           aria-labelledby="side-hustle-title"
-          className="landing-band px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-4 py-10 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
             <Reveal className="max-w-lg">
@@ -932,7 +961,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <h2
                 id="side-hustle-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.hookTitle}
               </h2>
@@ -999,7 +1028,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <section
             id="sellers"
             aria-labelledby="sellers-title"
-            className="px-5 py-16 md:px-8 md:py-24"
+            className="px-4 py-10 md:px-8 md:py-24"
           >
             <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
               <Reveal className="order-2 md:order-1" delay={0.1} scale>
@@ -1008,7 +1037,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               <Reveal className="order-1 max-w-lg md:order-2">
                 <h2
                   id="sellers-title"
-                  className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                  className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
                 >
                   {t.sellersTitle}
                 </h2>
@@ -1056,13 +1085,13 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="paths"
           aria-labelledby="paths-title"
-          className="landing-band px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-4 py-10 md:px-8 md:py-24"
         >
           <div className="mx-auto max-w-7xl">
             <Reveal>
             <h2
               id="paths-title"
-              className="font-display text-[2rem] font-semibold leading-tight md:text-center md:text-[3.25rem]"
+              className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-center md:text-[3.25rem] md:font-semibold md:leading-tight"
             >
               {t.pathsTitle}
             </h2>
@@ -1126,7 +1155,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="sell-a-car"
           aria-labelledby="sell-a-car-title"
-          className="px-5 py-14 md:px-8 md:py-20"
+          className="px-4 py-10 md:px-8 md:py-20"
         >
           <Reveal className="mx-auto max-w-7xl">
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">
@@ -1183,7 +1212,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="shopi-agent"
           aria-labelledby="shopi-agent-title"
-          className="landing-band px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-4 py-10 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
             <Reveal className="max-w-lg md:order-1">
@@ -1192,7 +1221,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <h2
                 id="shopi-agent-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.agentTitle}
               </h2>
@@ -1224,7 +1253,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="bulk-upload"
           aria-labelledby="bulk-upload-title"
-          className="bg-landing-page px-5 py-16 md:px-8 md:py-24"
+          className="bg-landing-page px-4 py-10 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
             <Reveal delay={0.1} scale className="relative order-2 aspect-4/3 overflow-hidden rounded-md bg-linear-to-br from-primary/[0.11] via-primary/[0.05] to-primary/[0.02] p-5 sm:p-8 md:order-1">
@@ -1264,7 +1293,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
             <Reveal className="order-1 max-w-lg md:order-2">
               <p className="mb-3 hidden text-sm font-semibold text-primary md:block">{t.bulkEyebrowDesktop}</p>
               <p className="mb-3 text-sm font-semibold text-primary md:hidden">{t.bulkEyebrowMobile}</p>
-              <h2 id="bulk-upload-title" className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]">
+              <h2 id="bulk-upload-title" className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight">
                 {t.bulkTitle}
               </h2>
               <p className="mt-5 hidden text-base leading-relaxed text-landing-body md:block md:text-lg">
@@ -1293,7 +1322,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="verified-shops"
           aria-labelledby="verified-title"
-          className="landing-band px-5 py-16 md:px-8 md:py-24"
+          className="landing-band px-4 py-10 md:px-8 md:py-24"
         >
           <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-16">
             <Reveal className="max-w-lg">
@@ -1303,7 +1332,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <h2
                 id="verified-title"
-                className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
+                className="font-display text-[1.625rem] font-medium leading-[1.15] md:text-[3.25rem] md:font-semibold md:leading-tight"
               >
                 {t.verifiedTitle}
               </h2>
@@ -1359,7 +1388,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         <section
           id="faq"
           aria-labelledby="faq-title"
-          className="mx-auto max-w-4xl px-5 py-16 md:px-8 md:py-22"
+          className="mx-auto max-w-4xl px-4 py-10 md:px-8 md:py-22"
         >
           <Reveal>
           <h2
@@ -1385,12 +1414,12 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
 
         <section
           aria-labelledby="closing-title"
-          className="bg-primary/[0.07] px-5 py-16 text-center md:px-8 md:py-22"
+          className="bg-primary/[0.07] px-4 py-12 text-center md:px-8 md:py-22"
         >
           <Reveal>
           <h2
             id="closing-title"
-            className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]"
+            className="font-display text-[1.625rem] font-medium leading-[1.15] text-landing-ink md:text-[3.25rem] md:font-semibold md:leading-tight"
           >
             {t.closingTitle}
           </h2>
@@ -1406,7 +1435,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 py-3 text-base font-semibold text-white no-underline hover:opacity-90"
             >
               <Compass size={19} aria-hidden />
-              {t.heroBrowse}
+              <SignedInLabel signedOut={t.heroBrowse} signedIn={t.heroBrowseSignedIn} />
             </TrackedHomepageLink>
             <TrackedHomepageLink
               href={`/${lang}/upload`}

@@ -100,7 +100,7 @@ export async function SocialProofSection({
             <SellerSpotlight seller={sellers[0]} lang="en" locale={locale} t={t} />
           ) : (
             <div>
-              <h2 id="social-proof-heading" className="mb-7 font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]">{t.headline}</h2>
+              <h2 id="social-proof-heading" className="mb-7 font-display text-[1.625rem] font-medium leading-[1.15] text-landing-ink md:text-[3.25rem] md:font-semibold md:leading-tight">{t.headline}</h2>
               <ul className="grid list-none gap-5 p-0 md:grid-cols-2 xl:grid-cols-3">
                 {sellers.map((seller) => <li key={seller.id}><SellerCard seller={seller} lang="en" locale={locale} t={t} /></li>)}
               </ul>
@@ -154,7 +154,7 @@ function SellerSpotlight({
       </div>
 
       <div className="min-w-0 max-w-lg">
-        <h2 id="social-proof-heading" className="font-display text-[2rem] font-semibold leading-tight text-landing-ink md:text-[3.25rem]">{t.headline}</h2>
+        <h2 id="social-proof-heading" className="font-display text-[1.625rem] font-medium leading-[1.15] text-landing-ink md:text-[3.25rem] md:font-semibold md:leading-tight">{t.headline}</h2>
         <div className="mt-6 flex items-center gap-3">
           <SellerAvatar seller={seller} size={48} />
           <div className="min-w-0">
