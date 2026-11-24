@@ -1,4 +1,6 @@
 import {
+  ArrowRight,
+  ArrowUpRight,
   Car,
   Flower2,
   Laptop,
@@ -10,6 +12,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
+import {
+  fetchBrowseCards,
+  fetchTopCategoryIds,
+} from "@/features/discover/queries/browse.server";
+import { stableListingThumb } from "@/lib/listingImage";
+import { isPlaceholderListingTitle } from "@/lib/seo/where-to-sell";
 
 export type HomeCategoryKey =
   | "phones"
@@ -21,10 +29,28 @@ export type HomeCategoryKey =
   | "appliances"
   | "more";
 
+type Tile = {
+  key: HomeCategoryKey;
+  icon: LucideIcon;
+  href: string;
+  /** Tinted background for the icon fallback; reads on light and dark. */
+  bg: string;
+  /** The icon's colour. */
+  ink: string;
+  /**
+   * Where the cover photo comes from: listings in these top-level categories
+   * whose title says what the tile says. Category alone isn't enough — sellers
+   * misfile (a BMW under Fashion, a licence under Beauty), and a wrong photo on
+   * a category tile reads as a broken site.
+   */
+  cover?: { categories: string[]; title: RegExp };
+};
+
 /**
- * The homepage's way into the marketplace: an app-style category row, four a
- * row on phones and one row from md. A server component, so it adds no
- * JavaScript to the page.
+ * The homepage's way into the marketplace. Each tile wears a real photo from a
+ * live listing in that category, so the section shows what's actually for
+ * sale rather than eight generic icons. Phones: a compact four-up grid, like
+ * an app's category row. md and up: large photo cards, four to a row.
  *
  * Every tile opens a page with stock in it (inventory in the October 2026
  * audit, docs/seo-audit/keyword-map.md). Property and farm produce are left
@@ -33,62 +59,279 @@ export type HomeCategoryKey =
  * to the pages that rank for those searches (audit finding F17: the homepage
  * linked to no category at all). Fashion has no landing page yet, so it opens
  * Explore filtered to fashion.
+ *
+ * A server component rendered into the ISR page: the cover lookups run once
+ * per regeneration (daily), add no JavaScript, and are best-effort — a tile
+ * without a matching photo falls back to its tinted icon.
  */
-const TILES: { key: HomeCategoryKey; icon: LucideIcon; href: string }[] = [
-  { key: "phones", icon: Smartphone, href: "/for-sale/phones" },
-  { key: "electronics", icon: Laptop, href: "/phones-electronics-kenya" },
-  { key: "fashion", icon: Shirt, href: "/explore?category=fashion-apparel" },
-  { key: "furniture", icon: Sofa, href: "/for-sale/furniture" },
-  { key: "cars", icon: Car, href: "/for-sale/cars" },
-  { key: "beauty", icon: Flower2, href: "/beauty-cosmetics-kenya" },
+const TILES: Tile[] = [
+  {
+    key: "phones",
+    icon: Smartphone,
+    href: "/for-sale/phones",
+    bg: "bg-sky-500/12",
+    ink: "text-sky-600 dark:text-sky-400",
+    cover: {
+      categories: ["electronics-technology"],
+      title:
+        /\b(i ?phone|samsung|galaxy|tecno|infinix|itel|oppo|redmi|xiaomi|pixel|nokia|huawei|vivo|realme|oneplus|smartphone)\b/i,
+    },
+  },
+  {
+    key: "cars",
+    icon: Car,
+    href: "/for-sale/cars",
+    bg: "bg-slate-500/12",
+    ink: "text-slate-600 dark:text-slate-300",
+    cover: {
+      categories: ["automotive"],
+      title:
+        /\b(toyota|nissan|mazda|subaru|honda|mitsubishi|isuzu|bmw|mercedes|benz|audi|volkswagen|vw|land ?rover|range ?rover|lexus|suzuki|prado|probox|vitz|fielder|premio|harrier|axio|noah|voxy)\b/i,
+    },
+  },
+  {
+    key: "furniture",
+    icon: Sofa,
+    href: "/for-sale/furniture",
+    bg: "bg-amber-500/14",
+    ink: "text-amber-700 dark:text-amber-400",
+    cover: {
+      categories: ["home-living"],
+      title:
+        /\b(sofas?|couch|seater|chairs?|tables?|beds?|wardrobes?|desks?|cabinets?|shelf|shelves|dresser|ottoman|stools?|furniture)\b/i,
+    },
+  },
+  {
+    key: "fashion",
+    icon: Shirt,
+    href: "/explore?category=fashion-apparel",
+    bg: "bg-pink-500/12",
+    ink: "text-pink-600 dark:text-pink-400",
+    cover: {
+      categories: ["fashion-apparel"],
+      title:
+        /\b(dress(es)?|shirts?|t-shirts?|jeans|trousers?|sweatpants|pants|jackets?|vest|hoodies?|sweaters?|shoes|sneakers|boots|heels|sandals|handbags?|bags?|jewel(le)?ry|necklace|earrings|skirts?|suits?|blouses?|coats?)\b/i,
+    },
+  },
+  {
+    key: "electronics",
+    icon: Laptop,
+    href: "/phones-electronics-kenya",
+    bg: "bg-violet-500/12",
+    ink: "text-violet-600 dark:text-violet-400",
+    cover: {
+      categories: ["electronics-technology"],
+      title:
+        /\b(laptops?|macbook|tv|television|cameras?|lens|speakers?|headphones?|earbuds|airpods|monitor|tablet|ipad|playstation|ps[45]|xbox|console|printer|soundbar|smart ?watch)\b/i,
+    },
+  },
+  {
+    key: "beauty",
+    icon: Flower2,
+    href: "/beauty-cosmetics-kenya",
+    bg: "bg-rose-500/12",
+    ink: "text-rose-600 dark:text-rose-400",
+    cover: {
+      categories: ["health-beauty"],
+      title:
+        /\b(perfumes?|parfum|toilette|fragrances?|mist|lotion|cream|serum|lipstick|makeup|foundation|wigs?|skincare|cologne)\b/i,
+    },
+  },
   {
     key: "appliances",
     icon: Refrigerator,
     href: "/explore/electronics-technology/home-appliances",
+    bg: "bg-teal-500/12",
+    ink: "text-teal-700 dark:text-teal-400",
+    cover: {
+      categories: ["electronics-technology", "home-living"],
+      title:
+        /\b(fridge|refrigerator|freezer|washing machine|microwave|cooker|oven|blender|kettle|air fryer|dispenser|vacuum)\b/i,
+    },
   },
-  { key: "more", icon: LayoutGrid, href: "/explore" },
+  {
+    key: "more",
+    icon: LayoutGrid,
+    href: "/explore",
+    bg: "bg-primary",
+    ink: "text-white",
+  },
 ];
 
-export function HomeCategories({
+/** Test and QA posts that can sit in the live feed. */
+const JUNK_TITLE = /\b(e2e|test(ing)?|qa)\b/i;
+
+/** Listings read per category: enough to find a match for every tile in it. */
+const COVER_POOL = 24;
+
+/**
+ * One distinct photo per tile, with the same bar as the homepage listings row
+ * (a stable, non-expiring thumbnail and a real title) plus the tile's title
+ * match. Each category is fetched once however many tiles draw on it, and
+ * tiles are filled in order so phones claim theirs before electronics.
+ */
+async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, string>>> {
+  const ids = await fetchTopCategoryIds();
+  const slugs = [...new Set(TILES.flatMap((tile) => tile.cover?.categories ?? []))];
+  const pools = new Map(
+    await Promise.all(
+      slugs.map(async (slug) => {
+        const categoryId = ids[slug];
+        const posts = categoryId ? await fetchBrowseCards({ categoryId }, COVER_POOL) : [];
+        return [slug, posts] as const;
+      }),
+    ),
+  );
+
+  const used = new Set<string>();
+  const covers: Partial<Record<HomeCategoryKey, string>> = {};
+  for (const { key, cover } of TILES) {
+    if (!cover) continue;
+    const candidates = cover.categories.flatMap((slug) => pools.get(slug) ?? []);
+    for (const post of candidates) {
+      const title = post.title?.trim() ?? "";
+      if (
+        used.has(post.id) ||
+        !cover.title.test(title) ||
+        JUNK_TITLE.test(title) ||
+        isPlaceholderListingTitle(title) ||
+        title.split(/\s+/).length < 2
+      ) {
+        continue;
+      }
+      const thumb = stableListingThumb(post);
+      if (!thumb) continue;
+      used.add(post.id);
+      covers[key] = thumb;
+      break;
+    }
+  }
+  return covers;
+}
+
+export async function HomeCategories({
   lang,
   title,
+  body,
   labels,
 }: {
   lang: string;
   title: string;
+  body: string;
   labels: Record<HomeCategoryKey, string>;
 }) {
+  const covers = await fetchCovers();
+
   return (
     <section
       id="categories"
       aria-labelledby="categories-title"
-      className="px-4 pt-6 pb-4 md:px-8 md:pt-4 md:pb-10"
+      className="px-4 pt-7 pb-4 md:px-8 md:pt-6 md:pb-10"
     >
       <div className="mx-auto max-w-7xl">
-        <h2
-          id="categories-title"
-          className="font-display text-[1.375rem] font-semibold leading-tight text-landing-ink md:text-[2rem]"
-        >
-          {title}
-        </h2>
-        <ul className="mt-5 grid list-none grid-cols-4 gap-x-2 gap-y-5 p-0 md:mt-7 md:grid-cols-8 md:gap-4">
-          {TILES.map(({ key, icon: Icon, href }) => (
-            <li key={key}>
-              <TrackedHomepageLink
-                href={`/${lang}${href}`}
-                buttonId={`category_${key}`}
-                placement="categories"
-                className="group flex flex-col items-center gap-2 text-center no-underline active:opacity-70"
-              >
-                <span className="flex size-14 items-center justify-center rounded-2xl bg-landing-surface text-primary ring-1 ring-landing-line transition-transform group-hover:scale-105 md:size-16">
-                  <Icon className="size-6" strokeWidth={1.9} aria-hidden />
-                </span>
-                <span className="text-[0.8125rem] font-semibold leading-tight text-landing-ink">
-                  {labels[key]}
-                </span>
-              </TrackedHomepageLink>
-            </li>
-          ))}
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2
+              id="categories-title"
+              className="font-display text-[1.375rem] font-semibold leading-tight text-landing-ink md:text-[2rem]"
+            >
+              {title}
+            </h2>
+            <p className="mt-1 text-[0.875rem] leading-snug text-landing-muted md:mt-2 md:text-base">
+              {body}
+            </p>
+          </div>
+          {/* Desktop only: phones have the "See all" tile in reach already. */}
+          <TrackedHomepageLink
+            href={`/${lang}/explore`}
+            buttonId="category_more_header"
+            placement="categories"
+            className="hidden shrink-0 items-center gap-1.5 pb-1 text-sm font-semibold text-primary no-underline hover:gap-2.5 md:inline-flex md:transition-[gap]"
+          >
+            {labels.more}
+            <ArrowRight size={16} strokeWidth={2.5} aria-hidden />
+          </TrackedHomepageLink>
+        </div>
+
+        <ul className="mt-4 grid list-none grid-cols-4 gap-x-2.5 gap-y-4 p-0 md:mt-7 md:gap-5">
+          {TILES.map(({ key, icon: Icon, href, bg, ink }) => {
+            const cover = covers[key];
+            const isMore = key === "more";
+            return (
+              <li key={key}>
+                <TrackedHomepageLink
+                  href={`/${lang}${href}`}
+                  buttonId={`category_${key}`}
+                  placement="categories"
+                  className="group block text-landing-ink no-underline active:opacity-80"
+                >
+                  <span
+                    className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl ring-1 ring-black/5 md:aspect-4/3 md:rounded-3xl dark:ring-white/10 ${cover ? "bg-landing-tint" : `${bg} ${ink}`}`}
+                  >
+                    {cover ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={cover}
+                          alt=""
+                          width={480}
+                          height={480}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+                        />
+                        {/* Phones: a small icon badge says what the photo is. */}
+                        <span
+                          aria-hidden
+                          className={`absolute bottom-1.5 left-1.5 grid size-6 place-items-center rounded-full bg-landing-card shadow-sm md:hidden ${ink}`}
+                        >
+                          <Icon className="size-3.5" strokeWidth={2.2} />
+                        </span>
+                        {/* md+: scrim for the overlaid label. */}
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 hidden bg-linear-to-t from-black/75 via-black/15 to-transparent md:block"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Icon
+                          aria-hidden
+                          className="size-7 transition-transform duration-300 group-hover:scale-110 md:absolute md:right-6 md:top-6 md:size-14 md:opacity-90"
+                          strokeWidth={isMore ? 2 : 1.7}
+                        />
+                        {/* md+: a soft disc so icon cards aren't flat next to photos. */}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute -right-10 -top-10 hidden size-44 rounded-full bg-current opacity-[0.07] md:block"
+                        />
+                      </>
+                    )}
+
+                    {/* md+: label and arrow on the card. */}
+                    <span
+                      className={`absolute inset-x-0 bottom-0 hidden items-end justify-between gap-3 p-5 md:flex ${cover || isMore ? "text-white" : "text-landing-ink"}`}
+                    >
+                      <span className="font-display text-xl font-semibold leading-tight lg:text-2xl">
+                        {labels[key]}
+                      </span>
+                      <span
+                        aria-hidden
+                        className={`grid size-10 shrink-0 place-items-center rounded-full transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${cover || isMore ? "bg-white/95 text-landing-ink dark:text-[#172226]" : "bg-landing-card text-landing-ink ring-1 ring-landing-line"}`}
+                      >
+                        <ArrowUpRight size={18} strokeWidth={2.4} />
+                      </span>
+                    </span>
+                  </span>
+
+                  {/* Phones: label under the tile, like an app icon. */}
+                  <span className="mt-1.5 line-clamp-2 block text-center text-[0.8125rem] font-semibold leading-tight md:hidden">
+                    {labels[key]}
+                  </span>
+                </TrackedHomepageLink>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>

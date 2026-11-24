@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowRight,
   ArrowUpRight,
   BadgeCheck,
   Car,
@@ -24,6 +25,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { HomeCategories } from "@/components/landing/HomeCategories";
+import { HeroListingsBoard } from "@/components/landing/HeroListingsBoard";
 import { HomeListings, type HomeListing } from "@/components/landing/HomeListings";
 import { SellersIllustration } from "@/components/landing/SellersIllustration";
 import { PhotoSearchButton } from "@/components/landing/PhotoSearchButton";
@@ -75,7 +77,22 @@ const COPY = {
     heroBrowse: "Browse For You",
     heroSell: "Sell an item",
     trust: ["Free to post", "No commission", "Chat directly"],
+    // Desktop hero picture (HeroListingsBoard). Illustrative, decorative.
+    heroBoard: {
+      buyer: "Buyer",
+      listing: "Your listing",
+      status: "Status",
+      chip: "0% commission",
+      rows: [
+        { name: "Brian O.", place: "Westlands", title: "iPhone X, 64GB", price: "KES 28,000", status: "New chat" },
+        { name: "Wanjiku M.", place: "Rongai", title: "3-seater sofa", price: "KES 45,000", status: "Sold" },
+        { name: "Achieng K.", place: "Kilimani", title: "Cotton T-shirts", price: "KES 800 each", status: "Saved" },
+      ],
+      message: "Hi, is it still available?",
+      messageTime: "now",
+    },
     categoriesTitle: "Browse by category",
+    categoriesBody: "Phones, cars, sofas and more, from real sellers.",
     categories: {
       phones: "Phones",
       electronics: "Electronics",
@@ -238,7 +255,21 @@ const COPY = {
     heroBrowse: "Angalia For You",
     heroSell: "Uza bidhaa",
     trust: ["Kuweka tangazo ni bure", "Hakuna kamisheni", "Ongea moja kwa moja"],
+    heroBoard: {
+      buyer: "Mnunuzi",
+      listing: "Tangazo lako",
+      status: "Hali",
+      chip: "Kamisheni 0%",
+      rows: [
+        { name: "Brian O.", place: "Westlands", title: "iPhone X, 64GB", price: "KES 28,000", status: "Ujumbe mpya" },
+        { name: "Wanjiku M.", place: "Rongai", title: "Sofa ya viti 3", price: "KES 45,000", status: "Imeuzwa" },
+        { name: "Achieng K.", place: "Kilimani", title: "T-shati", price: "KES 800", status: "Imehifadhiwa" },
+      ],
+      message: "Habari, bado inapatikana?",
+      messageTime: "sasa hivi",
+    },
     categoriesTitle: "Vinjari kwa kategoria",
+    categoriesBody: "Simu, magari, sofa na zaidi, kutoka kwa wauzaji halisi.",
     categories: {
       phones: "Simu",
       electronics: "Elektroniki",
@@ -552,75 +583,118 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
       />
       <LandingNav lang={lang} />
       <main>
-        {/* ── Hero: both jobs, buy and sell, one tap each ───────────── */}
+        {/* ── Hero: both jobs, buy and sell, one tap each ─────────────
+            Phones: the illustration with white copy over it.
+            md and up: a quiet brand-tinted panel, copy on the left and a
+            drawn listings board (HeroListingsBoard) instead of a picture.
+            One H1 and one set of buttons serve both; only styling differs.
+            Avoid the unlayered .text-default/.bg-elevated classes here —
+            they would beat the md: overrides (globals.css). */}
         <section
           id="hero"
           aria-labelledby="home-title"
           className="px-4 pb-4 md:px-8 md:pb-10"
         >
-          <div className="relative mx-auto flex min-h-[min(640px,70vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:aspect-[2/1] md:min-h-0 md:items-center">
-            <picture className="absolute inset-0 block h-full w-full overflow-hidden">
+          <div className="relative mx-auto flex min-h-[min(640px,70vh)] max-w-[1500px] items-end overflow-hidden rounded-md bg-[#18282a] md:min-h-0 md:items-center md:rounded-[2rem] md:bg-primary/[0.07]">
+            {/* Phones only. Desktop matches no <source> and gets the 1×1
+                blank, so it never downloads a banner it doesn't show. No
+                preload: it would fire on every viewport. */}
+            <picture className="absolute inset-0 block h-full w-full overflow-hidden md:hidden">
               <source
                 media="(max-width: 767px)"
                 type="image/webp"
                 srcSet="/assets/hero/marketplace-banner-mobile.webp"
               />
-              <Image
-                src="/assets/hero/marketplace-banner.webp"
+              <img
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                 alt="An illustration of a local seller and buyer reviewing a listing together"
-                fill
-                sizes="(max-width: 768px) 100vw, 1500px"
-                priority
                 fetchPriority="high"
-                className="absolute h-full w-full object-cover object-[55%_center] md:object-contain"
+                className="absolute inset-0 h-full w-full object-cover object-[55%_center]"
               />
             </picture>
             {/* Darken the image beneath the text so white copy stays readable. */}
             <div
-              className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:bg-linear-to-r md:from-black/45 md:via-black/10 md:to-transparent"
+              className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10 md:hidden"
               aria-hidden
             />
-            <div className="relative z-10 w-full max-w-7xl px-5 py-8 text-center text-white md:mx-auto md:px-12 md:py-5 md:text-left lg:py-12">
-              <h1
-                id="home-title"
-                className="mx-auto max-w-3xl text-balance font-display text-[1.875rem] font-semibold leading-[1.12] md:mx-0 md:text-[clamp(2rem,4.5vw,4.25rem)]"
-              >
-                {t.heroTitle}
-              </h1>
-              <p className="mx-auto mt-3 max-w-xl text-balance text-[0.9375rem] leading-snug text-white/90 md:mx-0 md:mt-4 md:text-base lg:mt-5 lg:text-lg">
-                {t.heroBody}
-              </p>
-              {/* Phones: two full-width buttons, browse first — most people
-                  arriving from search came to look. From md: one row. */}
-              <div className="mx-auto mt-6 grid w-full max-w-sm gap-3 md:mx-0 md:mt-6 md:flex md:max-w-none md:flex-wrap lg:mt-8">
-                <TrackedHomepageLink
-                  href={`/${lang}/for-you`}
-                  buttonId="browse_for_you"
-                  placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[0.9375rem] font-semibold text-white no-underline hover:opacity-90"
+            {/* Desktop backdrop: two soft discs, nothing to read. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 hidden md:block">
+              <div className="absolute -left-[14%] top-[14%] aspect-square w-[70%] rounded-full bg-landing-page/50" />
+              <div className="absolute left-[36%] top-[42%] aspect-square w-[95%] rounded-full bg-primary/[0.05]" />
+            </div>
+
+            <div className="relative z-10 w-full max-w-7xl px-5 py-8 text-center text-white md:mx-auto md:grid md:items-center md:gap-14 md:px-12 md:pb-16 md:pt-16 md:text-left md:text-landing-ink lg:py-20 xl:grid-cols-[minmax(0,1fr)_minmax(0,32rem)] xl:gap-12 xl:py-24">
+              <div>
+                <h1
+                  id="home-title"
+                  className="mx-auto max-w-3xl text-balance font-display text-[1.875rem] font-semibold leading-[1.12] md:mx-0 md:text-[clamp(2.5rem,5.4vw,3.5rem)] md:leading-[1.05] md:tracking-[-0.02em] xl:text-[clamp(2.75rem,3.6vw,3.25rem)]"
                 >
-                  <Compass size={18} aria-hidden />
-                  {t.heroBrowse}
-                </TrackedHomepageLink>
-                <TrackedHomepageLink
-                  href={`/${lang}/upload`}
-                  buttonId="sell_item"
-                  placement="hero"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.9375rem] font-semibold text-[#18282a] no-underline hover:bg-white/90"
-                >
-                  <Plus size={18} aria-hidden />
-                  {t.heroSell}
-                </TrackedHomepageLink>
+                  {/* Each sentence on its own line from md, like a stacked
+                      headline; phones keep the natural wrap. */}
+                  {t.heroTitle.split(/(?<=\.)\s+/).map((sentence, i) => (
+                    <span key={sentence} className="md:block">
+                      {i > 0 ? " " : null}
+                      {sentence}
+                    </span>
+                  ))}
+                </h1>
+                <p className="mx-auto mt-3 max-w-xl text-balance text-[0.9375rem] leading-snug text-white/90 md:mx-0 md:mt-6 md:text-lg md:leading-relaxed md:text-landing-body xl:text-xl">
+                  {t.heroBody}
+                </p>
+                <ul className="mt-6 hidden list-none flex-wrap gap-x-6 gap-y-2 p-0 text-[0.9375rem] font-medium md:flex">
+                  {t.trust.map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-white">
+                        <Check size={12} strokeWidth={3} aria-hidden />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                {/* Phones: two full-width buttons, browse first — most people
+                    arriving from search came to look. From md: one row. */}
+                <div className="mx-auto mt-6 grid w-full max-w-sm gap-3 md:mx-0 md:mt-8 md:flex md:max-w-none md:flex-wrap md:items-center lg:mt-10">
+                  <TrackedHomepageLink
+                    href={`/${lang}/for-you`}
+                    buttonId="browse_for_you"
+                    placement="hero"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[0.9375rem] font-semibold text-white no-underline hover:opacity-90 md:gap-3 md:py-2 md:pr-2"
+                  >
+                    <Compass size={18} aria-hidden className="md:hidden" />
+                    {t.heroBrowse}
+                    <span className="hidden size-8 place-items-center rounded-full bg-white text-primary md:grid">
+                      <ArrowRight size={16} strokeWidth={2.5} aria-hidden />
+                    </span>
+                  </TrackedHomepageLink>
+                  <TrackedHomepageLink
+                    href={`/${lang}/upload`}
+                    buttonId="sell_item"
+                    placement="hero"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-[0.9375rem] font-semibold text-[#18282a] no-underline hover:bg-white/90 md:bg-landing-card md:text-landing-ink md:ring-1 md:ring-landing-line-strong md:hover:bg-landing-surface"
+                  >
+                    <Plus size={18} aria-hidden />
+                    {t.heroSell}
+                  </TrackedHomepageLink>
+                </div>
+                <p className="mt-3 text-balance text-[0.8125rem] text-white/80 md:hidden">
+                  {t.trust.join(" · ")}
+                </p>
               </div>
-              <p className="mt-3 text-balance text-[0.8125rem] text-white/80">
-                {t.trust.join(" · ")}
-              </p>
+
+              <div className="hidden md:block">
+                <HeroListingsBoard copy={t.heroBoard} />
+              </div>
             </div>
           </div>
         </section>
 
         {/* ── Straight into the marketplace ────────────────────────── */}
-        <HomeCategories lang={lang} title={t.categoriesTitle} labels={t.categories} />
+        <HomeCategories
+          lang={lang}
+          title={t.categoriesTitle}
+          body={t.categoriesBody}
+          labels={t.categories}
+        />
         <HomeListings lang={lang} listings={listings} t={t.listings} />
 
         {/* ── How it works: three steps, buyers and sellers alike ───── */}
