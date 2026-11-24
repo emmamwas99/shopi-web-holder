@@ -29,6 +29,8 @@ export type HomeVideoCopy = {
   points: readonly { readonly title: string; readonly body: string }[];
   cta: string;
   tiktokCta: string;
+  /** The phone button's label: half a row wide. */
+  tiktokCtaShort: string;
   chip: string;
   importLink: string;
   imported: string;
@@ -57,7 +59,7 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
     <section
       id="video-listings"
       aria-labelledby="video-title"
-      className="relative overflow-hidden px-5 py-16 md:px-8 md:py-24"
+      className="relative overflow-hidden px-4 pb-10 pt-8 max-md:bg-linear-to-b max-md:from-primary/[0.05] max-md:via-primary/[0.025] max-md:to-transparent md:px-8 md:py-24"
     >
       {/* A soft brand wash behind the phone, so the section reads as its own. */}
       <div
@@ -68,7 +70,7 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
       {/* Three blocks: pitch, phone, details. Phones stack them in that order,
           so the video comes straight after the headline; from md the phone
           takes the right column beside both. */}
-      <div className="relative mx-auto grid max-w-7xl gap-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-x-16 md:gap-y-8">
+      <div className="relative mx-auto grid max-w-7xl gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-x-16 md:gap-y-8">
         <Reveal className="max-w-xl md:self-end">
           <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary-strong">
             <Clapperboard className="size-4" aria-hidden />
@@ -139,26 +141,29 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
             })}
           </RevealGroup>
 
-          <div className="mt-9 flex flex-wrap gap-3">
+          {/* Phones: two equal, plain buttons side by side, like the hero's.
+              From md: the pill pair with icons. */}
+          <div className="mt-8 grid grid-cols-2 gap-2.5 md:mt-9 md:flex md:flex-wrap md:gap-3">
             <TrackedHomepageLink
               href={`/${lang}/upload`}
               buttonId="post_video"
               placement="video_section"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-white no-underline shadow-[0_10px_24px_-12px_rgb(var(--brand-primary)/0.8)] transition-colors hover:bg-primary-strong"
+              className="flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-[0.9375rem] font-semibold text-white no-underline active:bg-primary-strong md:rounded-full md:px-6 md:text-base md:shadow-[0_10px_24px_-12px_rgb(var(--brand-primary)/0.8)] md:transition-colors md:hover:bg-primary-strong"
             >
-              <Plus className="size-4.5" strokeWidth={2.5} aria-hidden />
-              {t.cta}
+              <Plus className="hidden size-4.5 md:block" strokeWidth={2.5} aria-hidden />
+              <span className="truncate">{t.cta}</span>
             </TrackedHomepageLink>
             <TrackedHomepageLink
               href={`/${lang}/upload/tiktok`}
               buttonId="import_tiktok"
               placement="video_section"
-              className="group inline-flex h-12 items-center gap-2 rounded-full bg-landing-card px-6 font-semibold text-landing-ink no-underline ring-1 ring-landing-line transition-colors hover:ring-primary/40"
+              className="group flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl bg-landing-card px-3 text-[0.9375rem] font-semibold text-landing-ink no-underline ring-1 ring-landing-line-strong active:bg-primary/[0.07] md:rounded-full md:px-6 md:text-base md:ring-landing-line md:transition-colors md:hover:ring-primary/40"
             >
-              <TikTokIcon size={18} aria-hidden />
-              {t.tiktokCta}
+              <TikTokIcon size={18} aria-hidden className="hidden md:block" />
+              <span className="truncate md:hidden">{t.tiktokCtaShort}</span>
+              <span className="hidden md:inline">{t.tiktokCta}</span>
               <ArrowRight
-                className="size-4 transition-transform! duration-200! group-hover:translate-x-0.5"
+                className="hidden size-4 transition-transform! duration-200! group-hover:translate-x-0.5 md:block"
                 aria-hidden
               />
             </TrackedHomepageLink>

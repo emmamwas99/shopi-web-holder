@@ -89,19 +89,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
-  // Signed-in users enter the app by default. The logo can explicitly open
-  // the public homepage without changing that default.
-  if (
-    hasSession &&
-    barePath === "/" &&
-    request.nextUrl.searchParams.get("view") !== "home"
-  ) {
-    const locale = pathnameLocale ?? defaultLocale;
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = `/${locale}/for-you`;
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
-  }
+  // The homepage is for everyone, signed in or not: it used to send signed-in
+  // visitors straight to For You. Its buttons now change instead, offering a
+  // way back into the app (LandingNav, SignedInLabel).
 
   // ── Auth guard ────────────────────────────────────────────────────────────
   if (isProtected(pathname) && !hasSession) {
@@ -115,7 +105,7 @@ export function proxy(request: NextRequest) {
   }
 
   // ── Logged-in guard ───────────────────────────────────────────────────────
-  // A signed-in user shouldn't land on the marketing page or the auth flows.
+  // A signed-in user shouldn't land on the auth flows.
   // Send them back to wherever they came from — the auth route itself may
   // carry a "from" param (e.g. an old login link), otherwise fall back to the
   // same-origin Referer, otherwise For You.
@@ -181,11 +171,7 @@ export const config = {
     "/((?!(?:en|sw)(?:/|$)|_next|api|og/|favicon.ico|manifest.json|og-default.png|robots.txt|sitemap.xml|.*\\..*).*)",
     // Old /feed URLs → /for-you.
     "/:lang(en|sw)/feed/:path*",
-    // Signed in: the homepage and the auth flows send you into the app.
-    {
-      source: "/:lang(en|sw)",
-      has: [{ type: "cookie", key: "shopi-auth-hint" }],
-    },
+    // Signed in: the auth flows send you into the app.
     {
       source: "/:lang(en|sw)/auth/:path*",
       has: [{ type: "cookie", key: "shopi-auth-hint" }],

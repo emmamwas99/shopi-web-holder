@@ -433,9 +433,7 @@ export function ProfileMenu({
           label="Rate us"
           href={settingsSubPageHref(lang, "/profile/rate")}
         />
-        {/* Signed-in visitors to "/" are sent to the feed; ?view=home opts out,
-          the same link the desktop SideNav logo uses. On a phone this is the
-          only way back to the public homepage. */}
+        {/* On a phone this is the only way back to the public homepage. */}
 
         <MenuRow
           icon={Globe}

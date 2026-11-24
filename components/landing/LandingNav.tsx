@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
-import { Menu, X, ArrowUpRight, Search } from "lucide-react";
+import { Menu, X, ArrowRight, ArrowUpRight, Plus, Search } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ import { ThemeSelect } from "@/components/ui/ThemeSelect";
 import { homeHref } from "@/lib/home-url";
 import { browseSearchHref, openListingAfterBrowse } from "@/lib/searchHandoff";
 import { ImageSearchButton } from "@/components/search/ImageSearchButton";
+import { useLandingViewer, type LandingViewer } from "./useLandingViewer";
 
 // The homepage ships without Apollo (see RouteProviders), so the suggestions
 // and the client they query load on demand — warmed when the search box is
@@ -96,6 +97,17 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
     router.push(browseSearchHref(lang, query.trim()));
   };
   const forYouLabel = sw ? "Kwa ajili yako" : "For you";
+  // Signed in: the homepage is still the homepage, but the bar's first job
+  // becomes getting them back into the app, by name.
+  const viewer = useLandingViewer();
+  const appHref = `/${lang}/for-you`;
+  const continueLabel = viewer?.firstName
+    ? sw ? `Endelea kama ${viewer.firstName}` : `Continue as ${viewer.firstName}`
+    : sw ? "Endelea kwenye Shopi" : "Continue to Shopi";
+  const trackContinue = () => {
+    if (onHome) trackHomepageButtonClick("continue_to_app", "navigation", appHref);
+  };
+  const sellLabel = sw ? "Uza bidhaa" : "Sell an item";
   const links = [
     { href: "#how-it-works", label: sw ? "Jinsi inavyofanya kazi" : "How it works" },
     { href: "/en/shopi-agent", label: "Shopi Agent" },
@@ -201,8 +213,24 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
         </div>
         <div className="hidden shrink-0 items-center gap-2 lg:flex xl:gap-3">
           <ThemeSelect lang={lang} />
-          <Link href={`/${lang}/for-you`} className="whitespace-nowrap rounded-full border border-landing-ink px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
-          <Link href="/en/upload" onClick={trackSellClick} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sw ? "Uza bidhaa" : "Sell an item"}<ArrowUpRight size={17} aria-hidden /></Link>
+          {viewer ? (
+            <>
+              <Link href={`/${lang}/upload`} onClick={trackSellClick} className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-landing-line-strong px-4 py-2.5 text-sm font-semibold text-landing-ink no-underline transition-colors hover:border-landing-ink">
+                <Plus size={16} strokeWidth={2.5} aria-hidden />
+                {sellLabel}
+              </Link>
+              <Link href={appHref} onClick={trackContinue} className="group inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full bg-primary py-1.5 pl-1.5 pr-4 text-sm font-semibold text-white no-underline shadow-[0_8px_20px_-10px_rgb(var(--brand-primary)/0.8)] transition-colors hover:bg-primary-strong">
+                <ViewerAvatar viewer={viewer} className="size-8 bg-white/20 text-white ring-2 ring-white/40" />
+                {continueLabel}
+                <ArrowRight size={16} strokeWidth={2.4} aria-hidden className="transition-transform! duration-200! group-hover:translate-x-0.5" />
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href={`/${lang}/for-you`} className="whitespace-nowrap rounded-full border border-landing-ink px-5 py-2.5 text-sm font-semibold text-landing-ink no-underline">{forYouLabel}</Link>
+              <Link href="/en/upload" onClick={trackSellClick} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sellLabel}<ArrowUpRight size={17} aria-hidden /></Link>
+            </>
+          )}
         </div>
         <button type="button" className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-landing-line xl:hidden" aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? <X size={21} /> : <Menu size={21} />}
@@ -216,9 +244,37 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
           <ThemeSelect lang={lang} className="min-w-36" />
         </div>
         <div className="mt-5 lg:hidden">
-          <Link href="/en/upload" onClick={trackSellClick} className="block rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Uza bidhaa" : "Sell an item"}</Link>
+          {viewer ? (
+            <div className="grid gap-2.5">
+              <Link href={appHref} onClick={() => { trackContinue(); setOpen(false); }} className="flex items-center justify-center gap-2.5 rounded-full bg-primary py-2 pl-2 pr-4 text-sm font-semibold text-white no-underline">
+                <ViewerAvatar viewer={viewer} className="size-8 bg-white/20 text-white" />
+                <span className="flex-1 text-center">{continueLabel}</span>
+                <ArrowRight size={16} strokeWidth={2.4} aria-hidden />
+              </Link>
+              <Link href={`/${lang}/upload`} onClick={trackSellClick} className="flex items-center justify-center gap-1.5 rounded-full border border-landing-line-strong px-4 py-3 text-sm font-semibold text-landing-ink no-underline">
+                <Plus size={16} strokeWidth={2.5} aria-hidden />
+                {sellLabel}
+              </Link>
+            </div>
+          ) : (
+            <Link href="/en/upload" onClick={trackSellClick} className="block rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sellLabel}</Link>
+          )}
         </div>
       </div>}
     </header>
+  );
+}
+
+/** The signed-in visitor's photo, or their initial, in a circle. */
+function ViewerAvatar({ viewer, className }: { viewer: LandingViewer; className: string }) {
+  return (
+    <span className={`grid shrink-0 place-items-center overflow-hidden rounded-full text-sm font-bold ${className}`}>
+      {viewer.avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element -- avatars come from several hosts
+        <img src={viewer.avatar} alt="" className="size-full object-cover" />
+      ) : (
+        (viewer.firstName?.[0] ?? "S").toUpperCase()
+      )}
+    </span>
   );
 }
