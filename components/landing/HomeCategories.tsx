@@ -50,15 +50,15 @@ type Tile = {
  * The homepage's way into the marketplace. Each tile wears a real photo from a
  * live listing in that category, so the section shows what's actually for
  * sale rather than eight generic icons. Phones: a compact four-up grid, like
- * an app's category row. md and up: large photo cards, four to a row.
+ * an app's category row. md: four photo cards to a row; lg: all eight in one
+ * row, so the section stays short.
  *
- * Every tile opens a page with stock in it (inventory in the October 2026
- * audit, docs/seo-audit/keyword-map.md). Property and farm produce are left
- * off on purpose: a buyer tapping them found next to nothing. Tiles point at
- * the indexable landing pages where one exists, so the homepage's weight goes
- * to the pages that rank for those searches (audit finding F17: the homepage
- * linked to no category at all). Fashion has no landing page yet, so it opens
- * Explore filtered to fashion.
+ * Every tile opens that category in Explore, the same listings the photo came
+ * from: the server-rendered /explore/{category}/{subcategory} page where the
+ * tile is one subcategory (phones, cars, appliances), otherwise Explore
+ * filtered with ?category=. Property and farm produce are left off on purpose:
+ * a buyer tapping them found next to nothing (October 2026 audit,
+ * docs/seo-audit/keyword-map.md).
  *
  * A server component rendered into the ISR page: the cover lookups run once
  * per regeneration (daily), add no JavaScript, and are best-effort — a tile
@@ -68,7 +68,7 @@ const TILES: Tile[] = [
   {
     key: "phones",
     icon: Smartphone,
-    href: "/for-sale/phones",
+    href: "/explore/electronics-technology/phones",
     bg: "bg-sky-500/12",
     ink: "text-sky-600 dark:text-sky-400",
     cover: {
@@ -80,7 +80,7 @@ const TILES: Tile[] = [
   {
     key: "cars",
     icon: Car,
-    href: "/for-sale/cars",
+    href: "/explore/automotive/cars",
     bg: "bg-slate-500/12",
     ink: "text-slate-600 dark:text-slate-300",
     cover: {
@@ -92,7 +92,7 @@ const TILES: Tile[] = [
   {
     key: "furniture",
     icon: Sofa,
-    href: "/for-sale/furniture",
+    href: "/explore?category=home-living",
     bg: "bg-amber-500/14",
     ink: "text-amber-700 dark:text-amber-400",
     cover: {
@@ -116,7 +116,7 @@ const TILES: Tile[] = [
   {
     key: "electronics",
     icon: Laptop,
-    href: "/phones-electronics-kenya",
+    href: "/explore?category=electronics-technology",
     bg: "bg-violet-500/12",
     ink: "text-violet-600 dark:text-violet-400",
     cover: {
@@ -128,7 +128,7 @@ const TILES: Tile[] = [
   {
     key: "beauty",
     icon: Flower2,
-    href: "/beauty-cosmetics-kenya",
+    href: "/explore?category=health-beauty",
     bg: "bg-rose-500/12",
     ink: "text-rose-600 dark:text-rose-400",
     cover: {
@@ -209,16 +209,35 @@ async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, string>>> 
   return covers;
 }
 
+/** The search landing pages behind the tiles' categories. */
+export type HomeSearchLinkKey = "phones" | "cars" | "furniture" | "electronics" | "beauty";
+
+/**
+ * The tiles open Explore; these plain links keep the homepage pointing at the
+ * indexable landing pages that rank for those searches, with their search
+ * words as anchor text (audit finding F17: the homepage linked to no category
+ * page at all, docs/seo-audit/keyword-map.md).
+ */
+const SEARCH_LINKS: { key: HomeSearchLinkKey; href: string }[] = [
+  { key: "phones", href: "/for-sale/phones" },
+  { key: "cars", href: "/for-sale/cars" },
+  { key: "furniture", href: "/for-sale/furniture" },
+  { key: "electronics", href: "/phones-electronics-kenya" },
+  { key: "beauty", href: "/beauty-cosmetics-kenya" },
+];
+
 export async function HomeCategories({
   lang,
   title,
   body,
   labels,
+  searchLinks,
 }: {
   lang: string;
   title: string;
   body: string;
   labels: Record<HomeCategoryKey, string>;
+  searchLinks: { title: string; labels: Record<HomeSearchLinkKey, string> };
 }) {
   const covers = await fetchCovers();
 
@@ -246,14 +265,14 @@ export async function HomeCategories({
             href={`/${lang}/explore`}
             buttonId="category_more_header"
             placement="categories"
-            className="hidden shrink-0 items-center gap-1.5 pb-1 text-sm font-semibold text-primary no-underline hover:gap-2.5 md:inline-flex md:transition-[gap]"
+            className="hidden shrink-0 items-center gap-1.5 pb-1 text-sm font-semibold text-primary no-underline hover:gap-2.5 md:inline-flex md:transition-[gap]! md:duration-200!"
           >
             {labels.more}
             <ArrowRight size={16} strokeWidth={2.5} aria-hidden />
           </TrackedHomepageLink>
         </div>
 
-        <ul className="mt-4 grid list-none grid-cols-4 gap-x-2.5 gap-y-4 p-0 md:mt-7 md:gap-5">
+        <ul className="mt-4 grid list-none grid-cols-4 gap-x-2.5 gap-y-4 p-0 md:mt-5 md:gap-4 lg:grid-cols-8 lg:gap-3">
           {TILES.map(({ key, icon: Icon, href, bg, ink }) => {
             const cover = covers[key];
             const isMore = key === "more";
@@ -266,7 +285,7 @@ export async function HomeCategories({
                   className="group block text-landing-ink no-underline active:opacity-80"
                 >
                   <span
-                    className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl ring-1 ring-black/5 md:aspect-4/3 md:rounded-3xl dark:ring-white/10 ${cover ? "bg-landing-tint" : `${bg} ${ink}`}`}
+                    className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl ring-1 ring-black/5 md:aspect-3/2 md:rounded-2xl lg:aspect-4/5 dark:ring-white/10 ${cover ? "bg-landing-tint" : `${bg} ${ink}`}`}
                   >
                     {cover ? (
                       <>
@@ -278,7 +297,7 @@ export async function HomeCategories({
                           height={480}
                           loading="lazy"
                           decoding="async"
-                          className="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+                          className="absolute inset-0 size-full object-cover transition-transform! duration-500! ease-out! group-hover:scale-[1.06]"
                         />
                         {/* Phones: a small icon badge says what the photo is. */}
                         <span
@@ -290,36 +309,36 @@ export async function HomeCategories({
                         {/* md+: scrim for the overlaid label. */}
                         <span
                           aria-hidden
-                          className="absolute inset-0 hidden bg-linear-to-t from-black/75 via-black/15 to-transparent md:block"
+                          className="absolute inset-0 hidden bg-linear-to-t from-black/80 via-black/20 to-transparent md:block"
                         />
                       </>
                     ) : (
                       <>
                         <Icon
                           aria-hidden
-                          className="size-7 transition-transform duration-300 group-hover:scale-110 md:absolute md:right-6 md:top-6 md:size-14 md:opacity-90"
+                          className="size-7 transition-transform! duration-300! group-hover:scale-110 md:absolute md:right-4 md:top-4 md:size-10 md:opacity-90 lg:size-8"
                           strokeWidth={isMore ? 2 : 1.7}
                         />
                         {/* md+: a soft disc so icon cards aren't flat next to photos. */}
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute -right-10 -top-10 hidden size-44 rounded-full bg-current opacity-[0.07] md:block"
+                          className="pointer-events-none absolute -right-8 -top-8 hidden size-32 rounded-full bg-current opacity-[0.07] md:block"
                         />
                       </>
                     )}
 
                     {/* md+: label and arrow on the card. */}
                     <span
-                      className={`absolute inset-x-0 bottom-0 hidden items-end justify-between gap-3 p-5 md:flex ${cover || isMore ? "text-white" : "text-landing-ink"}`}
+                      className={`absolute inset-x-0 bottom-0 hidden items-end justify-between gap-2 p-3.5 md:flex lg:p-3 ${cover || isMore ? "text-white" : "text-landing-ink"}`}
                     >
-                      <span className="font-display text-xl font-semibold leading-tight lg:text-2xl">
+                      <span className="font-display text-base font-semibold leading-tight lg:text-[0.9375rem]">
                         {labels[key]}
                       </span>
                       <span
                         aria-hidden
-                        className={`grid size-10 shrink-0 place-items-center rounded-full transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${cover || isMore ? "bg-white/95 text-landing-ink dark:text-[#172226]" : "bg-landing-card text-landing-ink ring-1 ring-landing-line"}`}
+                        className={`grid size-8 shrink-0 place-items-center lg:hidden rounded-full transition-transform! duration-300! group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${cover || isMore ? "bg-white/95 text-landing-ink dark:text-[#172226]" : "bg-landing-card text-landing-ink ring-1 ring-landing-line"}`}
                       >
-                        <ArrowUpRight size={18} strokeWidth={2.4} />
+                        <ArrowUpRight size={16} strokeWidth={2.4} />
                       </span>
                     </span>
                   </span>
@@ -333,6 +352,30 @@ export async function HomeCategories({
             );
           })}
         </ul>
+
+        <nav
+          aria-label={searchLinks.title}
+          className="mt-5 flex flex-wrap items-baseline gap-x-1 gap-y-1.5 text-[0.8125rem] leading-snug md:mt-6 md:text-sm"
+        >
+          <span className="mr-1 font-semibold text-landing-muted">{searchLinks.title}:</span>
+          {SEARCH_LINKS.map(({ key, href }, i) => (
+            <span key={key} className="inline-flex items-baseline">
+              <TrackedHomepageLink
+                href={`/${lang}${href}`}
+                buttonId={`category_search_${key}`}
+                placement="categories"
+                className="text-landing-body underline decoration-landing-line-strong underline-offset-3 hover:text-primary hover:decoration-primary"
+              >
+                {searchLinks.labels[key]}
+              </TrackedHomepageLink>
+              {i < SEARCH_LINKS.length - 1 ? (
+                <span aria-hidden className="ml-1 text-landing-line-strong">
+                  ·
+                </span>
+              ) : null}
+            </span>
+          ))}
+        </nav>
       </div>
     </section>
   );

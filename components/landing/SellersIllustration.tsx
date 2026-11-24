@@ -58,7 +58,7 @@ export function SellersIllustration({ className = "" }: { className?: string }) 
   return (
     <div
       aria-hidden
-      className={`relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint ${className}`}
+      className={`relative aspect-4/3 overflow-hidden rounded-md bg-linear-to-br from-primary/[0.11] via-primary/[0.05] to-primary/[0.02] ${className}`}
     >
       {[46, 82].map((diameter) => (
         <span

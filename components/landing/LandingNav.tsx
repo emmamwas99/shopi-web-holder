@@ -25,8 +25,17 @@ const loadSearchDropdown = () =>
 const ApolloWrapper = dynamic(loadApolloWrapper, { ssr: false });
 const NavSearchDropdown = dynamic(loadSearchDropdown, { ssr: false });
 
-export function LandingNav({ lang }: { lang: Locale }) {
+/**
+ * `overHero`: the page opens on the homepage hero's brand tint, and the bar
+ * blends into it until the page scrolls, then turns solid with a hairline.
+ * md+: the hero slides up under the bar, so the bar is simply transparent.
+ * Phones: the two-row bar has no fixed height for the hero to slide under,
+ * so the bar paints the same tint itself (bg-primary/[0.07] over the page
+ * colour, exactly what the hero shows).
+ */
+export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLFormElement>(null);
@@ -41,6 +50,16 @@ export function LandingNav({ lang }: { lang: Locale }) {
       trackHomepageButtonClick("sell_item", "navigation", "/en/upload");
     }
   };
+
+  useEffect(() => {
+    if (!overHero) return;
+    const update = () => setScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [overHero]);
+  // The menu panel needs a solid bar above it too.
+  const transparent = overHero && !scrolled && !open;
 
   // A tap anywhere outside the search box closes the suggestions. mousedown,
   // not click, so it fires before a suggestion's own click is raced by the
@@ -89,7 +108,9 @@ export function LandingNav({ lang }: { lang: Locale }) {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-landing-page text-landing-ink">
+    <header
+      className={`sticky top-0 z-50 bg-landing-page text-landing-ink ${overHero ? "transition-[background-color,box-shadow]! duration-200!" : ""} ${transparent ? "max-md:bg-linear-to-b max-md:from-primary/[0.07] max-md:to-primary/[0.07] md:bg-transparent" : overHero ? "shadow-[0_1px_0_var(--landing-line)]" : ""}`}
+    >
       {/* Phones: logo and menu on the first row, search full width on the
           second, like a native app's header. From md the search sits inline
           and the nav is one row; the text links wait for xl so the search

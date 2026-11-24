@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
+  LayoutDashboard,
   LayoutGrid,
   LogOut,
   MapPin,
@@ -111,73 +112,56 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
   return (
     <>
-      <header className="tablet-top-navigation fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border bg-elevated md:block">
-        <div className="desktop-app-frame flex h-full items-center gap-2 px-3 md:px-4 lg:gap-4 lg:px-8 xl:gap-0">
-          {/* Align the logo with the PDP and the sidebar's inner edge. */}
+      {/* Desktop app bar (≥1280px with a fine pointer; tablets and touch use
+          the bottom bar — see .tablet-top-navigation in globals.css). One
+          row, left to right: brand, where you are, what you're looking for,
+          what you can do. Every control is a 40px pill so the row reads as
+          one calm strip; only Sell is filled, because posting is the one
+          action the app exists for. */}
+      <header className="tablet-top-navigation fixed inset-x-0 top-0 z-50 hidden h-(--desktop-top-nav-height,68px) border-b border-border/70 bg-elevated/90 backdrop-blur-xl backdrop-saturate-150 md:block">
+        <div className="desktop-app-frame flex h-full items-center gap-4 px-8">
+          {/* The badge alone: the wordmark repeated what the tab already
+              says and took 170px of the bar. */}
           <Link
             href={homeHref(lang)}
-            className="desktop-navbar-brand flex h-full shrink-0 items-center"
+            className="flex shrink-0 items-center rounded-xl outline-none transition-transform hover:scale-[1.04] focus-visible:ring-2 focus-visible:ring-primary/60"
             aria-label="Shopi home"
           >
-            {/* Keep the artwork at its established size inside the compact
-                desktop brand slot. */}
-            <Logo variant="lockup" size={60} className="hidden lg:inline-block" />
-            <Logo variant="icon" size={52} className="hidden md:inline-block lg:hidden" />
+            <Logo variant="icon" size={56} />
           </Link>
 
-          <div className="desktop-navbar-content flex h-full min-w-0 flex-1 items-center gap-2">
-            <nav className="desktop-navbar-tabs flex shrink-0 items-center gap-1 text-[13px] font-bold" aria-label="Primary">
-              <TopNavLink
-                href={forYouHref}
-                navTab="feed"
-                active={forYouActive}
-              >
-                For You
-              </TopNavLink>
-              <TopNavLink
-                href={browseHref}
-                navTab="explore"
-                active={browseActive}
-              >
-                Market
-              </TopNavLink>
-              <TopNavLink
-                href={watchHref}
-                navTab="feed"
-                active={watchActive}
-              >
-                Watch
-              </TopNavLink>
-              {/* Desktop header link. Phones keep their five-item bar; the
-                  tablet bar includes Stores and Watch for one-tap access. */}
-              <TopNavLink
-                href={storesHref}
-                navTab="stores"
-                active={storesActive}
-              >
-                Stores
-              </TopNavLink>
-            </nav>
+          <nav
+            className="flex shrink-0 items-center gap-0.5 rounded-full bg-subtle p-1"
+            aria-label="Primary"
+          >
+            <TopNavLink href={forYouHref} navTab="feed" active={forYouActive}>
+              For You
+            </TopNavLink>
+            <TopNavLink href={browseHref} navTab="explore" active={browseActive}>
+              Market
+            </TopNavLink>
+            <TopNavLink href={watchHref} navTab="feed" active={watchActive}>
+              Watch
+            </TopNavLink>
+            <TopNavLink href={storesHref} navTab="stores" active={storesActive}>
+              Stores
+            </TopNavLink>
+          </nav>
 
-            <div className="desktop-navbar-category">
-              {isDesktop ? (
-                <AllCategoriesPicker lang={lang} watchMode={watchActive} />
-              ) : (
-                <span className="desktop-navbar-category-placeholder" aria-hidden />
-              )}
-            </div>
+          {/* Category and search sit together in the middle: "what" first,
+              then narrow it. The search keeps a sensible max width so it
+              doesn't stretch into a bar across a 1440px frame. */}
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+            {/* Not on For You: its left rail already lists the categories. */}
+            {forYouActive ? null : isDesktop ? (
+              <AllCategoriesPicker lang={lang} watchMode={watchActive} />
+            ) : (
+              <span className="block h-10 w-44 shrink-0" aria-hidden />
+            )}
+            <NavSearch lang={lang} className="flex w-full max-w-xl" />
+          </div>
 
-            {/* The wrapper keeps the flex-1 slot at every width even though the
-              field itself only appears at lg. Below lg DiscoverPage renders its
-              own sticky search bar, so showing this one too would put two
-              search boxes on /explore and /search — the thing it replaced. The
-              slot still has to grow, or the whole right-hand cluster collapses
-                  back against the Browse link. */}
-            <div className="desktop-navbar-search flex min-w-0 flex-1 items-center">
-              <NavSearch lang={lang} className="hidden w-full lg:flex" />
-            </div>
-
-            <div className="desktop-navbar-actions flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {/* Present on every desktop route, the feed included. Posting is
                 the one action the whole app exists for, and hiding it on the
                 busiest page meant the nav changed shape as you moved around. */}
@@ -185,15 +169,16 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="desktop-navbar-sell inline-flex shrink-0 items-center justify-center px-4 text-[13px] font-bold transition-colors"
+                  className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary pl-3.5 pr-4 text-sm font-semibold text-white shadow-[0_6px_16px_-8px_rgb(var(--brand-primary)/0.6)] outline-none transition-colors hover:bg-primary-strong focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
                 >
-                  Sell item
+                  <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                  Sell
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-52 rounded-xl border-border bg-elevated p-1.5 text-main shadow-lg">
+              <PopoverContent align="end" className="w-56 rounded-2xl border-border bg-elevated p-1.5 text-main shadow-xl">
                 <Link
                   href={`/${lang}/dashboard?tab=create`}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-subtle"
                 >
                   <Plus className="h-4 w-4 text-primary" aria-hidden />
                   Single upload
@@ -201,7 +186,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                 <button
                   type="button"
                   onClick={() => router.push(`/${lang}/dashboard?tab=listings&bulk=1`)}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-surface"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-main transition-colors hover:bg-subtle"
                 >
                   <Upload className="h-4 w-4" aria-hidden />
                   Bulk upload from Excel
@@ -214,13 +199,14 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               scroll={false}
               aria-current={pathname.startsWith(`/${lang}/dashboard`) ? "page" : undefined}
               aria-label={`Dashboard${inboxUnreadCount > 0 ? `, ${inboxUnreadCount} unread messages and notifications` : ""}`}
-              className="desktop-navbar-dashboard relative inline-flex h-9 shrink-0 items-center justify-center px-4 text-[13px] font-bold text-main transition-colors"
+              className="relative inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-main outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-primary/50 aria-[current=page]:bg-subtle"
             >
+              <LayoutDashboard className="h-4 w-4" strokeWidth={2.2} aria-hidden />
               Dashboard
               {inboxUnreadCount > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white shadow-sm"
+                  className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold leading-none text-white"
                 >
                   {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
                 </span>
@@ -233,14 +219,14 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                   <button
                     type="button"
                     aria-label="Open account menu"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10 text-xs font-bold text-primary transition-shadow hover:ring-2 hover:ring-primary/20"
+                    className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary outline-none ring-1 ring-border transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary/60"
                   >
                     {user.profile?.avatar ? (
                       <Image
                         src={user.profile.avatar}
                         alt=""
-                        width={36}
-                        height={36}
+                        width={40}
+                        height={40}
                         unoptimized={shouldUnoptimize(user.profile.avatar)}
                         className="h-full w-full object-cover"
                       />
@@ -249,15 +235,15 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                     )}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-60 rounded-xl border-border bg-elevated p-2 text-main shadow-lg">
-                  <div className="border-b border-border px-2 py-2">
+                <PopoverContent align="end" className="w-64 rounded-2xl border-border bg-elevated p-2 text-main shadow-xl">
+                  <div className="border-b border-border px-2.5 py-2">
                     <p className="truncate text-sm font-bold text-main">{displayName}</p>
                     {user.email ? <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p> : null}
                   </div>
                   <Link
                     href={`/${lang}/dashboard`}
                     scroll={false}
-                    className="mt-1 flex h-9 items-center rounded-lg px-2 text-xs font-medium text-main transition-colors hover:bg-surface"
+                    className="mt-1 flex h-9 items-center rounded-xl px-2.5 text-sm font-medium text-main transition-colors hover:bg-subtle"
                   >
                     My profile
                   </Link>
@@ -265,7 +251,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                     type="button"
                     onClick={() => void logout()}
                     disabled={loggingOut}
-                    className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                    className="flex h-9 w-full items-center gap-2 rounded-xl px-2.5 text-left text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-500/10"
                   >
                     <LogOut className="h-3.5 w-3.5" aria-hidden />
                     {loggingOut ? "Signing out…" : "Sign out"}
@@ -275,12 +261,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             ) : (
               <Link
                 href={`/${lang}/auth/login`}
-                className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-bold text-white transition-colors hover:opacity-90"
+                className="ml-1 inline-flex h-10 shrink-0 items-center justify-center rounded-full px-4 text-sm font-semibold text-main ring-1 ring-[rgb(var(--color-border-strong))] outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-primary/60"
               >
                 Log in
               </Link>
             )}
-            </div>
           </div>
         </div>
       </header>
@@ -384,10 +369,9 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
       onSubmit={submit}
       className={[
         "relative",
-        // Hairline border over the nav's own surface rather than a grey fill,
-        // so it reads as an outline rather than a well. No inset shadow, for
-        // the same reason. Height is a touch over the reference's ~34px.
-        "h-9.5 min-w-0 items-center gap-2.5 rounded-full border border-border bg-transparent px-4 transition-colors focus-within:border-border-strong hover:border-border-strong",
+        // A soft filled pill at rest, matching the category picker beside it;
+        // while typing it turns into a white field with a brand ring.
+        "h-10 min-w-0 items-center gap-2.5 rounded-full border border-transparent bg-subtle pl-4 pr-1.5 transition-[border-color,background-color,box-shadow] hover:border-[rgb(var(--color-border-strong))] focus-within:border-primary focus-within:bg-[rgb(var(--color-bg-elevated))] focus-within:shadow-[0_0_0_3px_rgb(var(--brand-primary)/0.15)]",
         className ?? "flex",
       ].join(" ")}
     >
@@ -397,11 +381,11 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         onFocus={() => setFocused(true)}
-        placeholder="Search anything on Shopi"
+        placeholder="Search phones, cars, sofas…"
         aria-label="Search Shopi"
         // Safari paints its own clear affordance on type=search, which would
         // sit next to ours.
-        className="min-w-0 flex-1 bg-transparent placeholder:text-xs text-sm font-medium text-default outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:appearance-none"
+        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-main outline-none placeholder:text-[13px] placeholder:font-normal placeholder:text-[rgb(var(--color-text-muted))] [&::-webkit-search-cancel-button]:appearance-none"
       />
       <ImageSearchButton
         surface={isDiscoverRoute ? "MARKET" : "HOME"}
@@ -451,10 +435,10 @@ function TopNavLink({
       scroll={false}
       data-nav-tab={navTab}
       className={[
-        "inline-flex h-full min-w-20 items-center justify-center border-b-2 px-4 text-[13px] font-bold transition-colors md:max-lg:px-2",
+        "inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50",
         active
-          ? "border-primary text-main"
-          : "border-transparent text-muted hover:text-main",
+          ? "bg-main text-[rgb(var(--color-bg))] shadow-[0_2px_6px_-1px_rgb(0_0_0/0.25)]"
+          : "text-[rgb(var(--color-text-muted))] hover:text-main",
       ].join(" ")}
       aria-current={active ? "page" : undefined}
     >
@@ -588,10 +572,11 @@ function AllCategoriesPicker({
           }}
           onBlur={closeIfFocusLeaves}
           title={selectedCategoryName}
-          className="inline-flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-[13px] font-bold text-main outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/60 md:max-lg:max-w-40 md:max-lg:gap-1 md:max-lg:px-2"
+          className="inline-flex h-10 w-44 shrink-0 items-center gap-2 rounded-full bg-subtle pl-3.5 pr-3 text-[13px] font-semibold text-main outline-none ring-1 ring-transparent transition-colors hover:ring-[rgb(var(--color-border-strong))] focus-visible:ring-2 focus-visible:ring-primary/60 data-[state=open]:ring-[rgb(var(--color-border-strong))]"
         >
-          <span className="min-w-0 flex-1 truncate text-left">{selectedCategoryName}</span>
-          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          <LayoutGrid className="h-4 w-4 shrink-0 text-[rgb(var(--color-text-muted))]" strokeWidth={2} aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-left capitalize">{selectedCategoryName}</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 in-data-[state=open]:rotate-180" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -612,7 +597,7 @@ function AllCategoriesPicker({
           scheduleClose(true);
         }}
         onBlur={closeIfFocusLeaves}
-        className="w-[min(92vw,400px)] max-w-none rounded-xl border-border bg-app p-1.5 text-main shadow-xl"
+        className="w-[min(92vw,400px)] max-w-none rounded-2xl border-border bg-app p-1.5 text-main shadow-xl"
       >
         <div className="px-3 pb-2 pt-2">
           <h2 className="text-sm font-black">

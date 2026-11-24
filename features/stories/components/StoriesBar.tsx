@@ -274,13 +274,13 @@ export function StoriesBar({ lang, variant = "mobile" }: Props) {
   return (
     <>
       {variant === "mobile" ? (
-        <section aria-label="Stories" className="border-b border-default bg-elevated px-3 pb-2.5 pt-3">
+        <section aria-label="Stories" className="border-b border-default bg-elevated px-3 pb-2.5 pt-3 md:rounded-2xl md:border md:px-4">
           {list}
         </section>
       ) : (
         <section
           aria-label="Stories"
-          className="group/stories relative mb-4 rounded-xl border border-border bg-elevated px-4 py-4 shadow-sm shadow-black/3"
+          className="group/stories relative mb-4 rounded-2xl border border-border bg-elevated px-4 py-4 shadow-sm shadow-black/3"
         >
           {list}
           {canScroll.left && (

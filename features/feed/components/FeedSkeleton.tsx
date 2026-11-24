@@ -75,7 +75,7 @@ export function FeedCardsSkeleton() {
  */
 function StoriesTraySkeleton() {
   return (
-    <section className="border-b border-default bg-elevated px-3 pb-2.5 pt-3" aria-hidden>
+    <section className="border-b border-default bg-elevated px-3 pb-2.5 pt-3 md:rounded-2xl md:border md:px-4" aria-hidden>
       <div className="flex gap-2.5 overflow-hidden">
         {[...Array(7)].map((_, i) => (
           <div key={i} className="flex w-18 shrink-0 flex-col items-center gap-1.5">

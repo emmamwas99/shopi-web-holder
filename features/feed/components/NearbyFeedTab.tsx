@@ -96,7 +96,7 @@ export function NearbyFeedTab({ lang, active = true }: { lang: string; active?: 
 
   return (
     <div className="min-h-svh pb-6">
-      <section className="mb-2 border-b border-border/60 bg-elevated py-3">
+      <section className="mb-2 border-b border-border/60 bg-elevated py-3 md:mb-4 md:rounded-2xl md:border">
         <div className="flex items-center gap-2 px-4">
           <MapPin size={17} className="shrink-0 text-primary" aria-hidden />
           <p className="min-w-0 flex-1 truncate text-sm text-muted">
@@ -138,8 +138,13 @@ export function NearbyFeedTab({ lang, active = true }: { lang: string; active?: 
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-2">
-            {feed.items.map((post, index) => <PostCard key={post.id} post={post} lang={lang} priority={index === 0} />)}
+          {/* From tablet up each post is its own card, as in the For You feed. */}
+          <div className="flex flex-col gap-2 md:gap-4">
+            {feed.items.map((post, index) => (
+              <div key={post.id} className="md:overflow-hidden md:rounded-2xl md:border md:border-border md:shadow-[0_1px_3px_rgb(0_0_0/0.04)]">
+                <PostCard post={post} lang={lang} priority={index === 0} />
+              </div>
+            ))}
           </div>
           <div ref={sentinelRef} className="h-1" />
           {feed.loadingMore && <FeedPaginationSkeleton />}

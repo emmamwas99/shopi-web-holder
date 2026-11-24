@@ -233,7 +233,8 @@ export const resolveBrowseRoute = cache(
  */
 export async function fetchBrowseCards(
   filters: { categoryId?: string; subcategory?: string } = {},
-  limit = 20,
+  // DiscoverPage's PAGE_SIZE: the server's first page is the client's.
+  limit = 24,
 ): Promise<ContentCardFieldsFragment[]> {
   try {
     const result = await query({

@@ -40,8 +40,13 @@ import { listingPlace } from "@/lib/listingPlace";
  *      size it made the grid read as a list of people rather than of things.
  *      It is still one tap to the shop.
  *
- * Cover ratio is a uniform 3:4 at every width, so rows align and infinite
- * scroll never reflows under the thumb.
+ * Phones: edge-to-edge 3:4 photos, two up. From md the tile becomes a
+ * product card — a white panel with a little padding around a square photo,
+ * about 210–260px wide (Alibaba's grid was the size reference) — because a
+ * desktop grid of six bare photos per row reads as a contact sheet, and the
+ * panel gives each listing's price and title an edge to sit in. Within a
+ * width every cover has the same ratio, so rows align and infinite scroll
+ * never reflows.
  */
 
 /**
@@ -52,12 +57,14 @@ import { listingPlace } from "@/lib/listingPlace";
  * one system, and the string was previously pasted into each of them with a
  * comment in each asking the next person to keep them in sync by hand.
  *
- * Gaps widen with the viewport rather than staying at a phone's 12/20: on a
- * desktop grid five columns at a tight gap read as a contact sheet. 24 across
- * and 40 down at xl is the reference spacing.
+ * Phones: two columns. From md the columns fill the space available with
+ * cards at least 13rem wide — 3 at 768px, 4 at 1024px, 5 at 1280px, 6 in the
+ * 1440px frame — so the grid also adapts on its own when Explore's filter
+ * rail takes a column of the page. The cards carry their own panel, so the
+ * gap between them stays tight (12px), like a product catalogue.
  */
 export const DISCOVER_GRID =
-  "grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 md:gap-x-5 md:gap-y-8 md:max-lg:grid-cols-2 md:max-lg:gap-x-3 md:max-lg:gap-y-6 xl:grid-cols-4 xl:gap-x-6 xl:gap-y-10 min-[90rem]:grid-cols-5";
+  "grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] md:gap-3";
 
 /** "KES 12,500" — grouped thousands, no decimals. */
 function formatPrice(amount: number, currency: string) {
@@ -192,7 +199,10 @@ function DiscoverGridCardImpl({
     // the shop and the rest to the post, and an <a> inside an <a> is invalid
     // and un-clickable.
     // data-scroll-anchor: what a return to this grid lines back up with.
-    <div data-scroll-anchor={post.id} className="flex min-w-0 flex-col">
+    <div
+      data-scroll-anchor={post.id}
+      className="group/card flex min-w-0 flex-col md:rounded-2xl md:bg-[rgb(var(--color-bg-elevated))] md:p-2.5 md:ring-1 md:ring-border md:transition-[box-shadow,translate]! md:duration-200! md:hover:-translate-y-0.5 md:hover:shadow-[0_14px_32px_-16px_rgb(0_0_0/0.3)]"
+    >
       <Link
         href={contentPath(lang, post)}
         scroll={false}
@@ -202,7 +212,7 @@ function DiscoverGridCardImpl({
       >
         {/* ---- What ------------------------------------------------------ */}
         <div
-          className="group/cover relative aspect-3/4 w-full overflow-hidden rounded-xl transition-transform duration-200 active:scale-[0.98] group-focus-visible/post:ring-2 group-focus-visible/post:ring-primary group-focus-visible/post:ring-offset-2"
+          className="group/cover relative aspect-3/4 w-full overflow-hidden rounded-xl transition-transform duration-200 active:scale-[0.98] md:aspect-square md:rounded-xl md:active:scale-100 group-focus-visible/post:ring-2 group-focus-visible/post:ring-primary group-focus-visible/post:ring-offset-2"
           style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
         >
           {thumb && !imageFailed ? (
@@ -215,9 +225,9 @@ function DiscoverGridCardImpl({
               }
               alt=""
               fill
-              className="object-cover transition-transform duration-300 group-hover/cover:scale-[1.04]"
-              // Matches DISCOVER_GRID's columns: 2 → 3 at md → 4 at xl → 5.
-              sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, (max-width: 1439px) 25vw, 20vw"
+              className="object-cover transition-transform! duration-300! group-hover/cover:scale-[1.04]"
+              // DISCOVER_GRID: half the phone, then ~210–260px cards from md.
+              sizes="(max-width: 767px) 50vw, 280px"
               priority={priority}
               loading={priority ? "eager" : "lazy"}
               placeholder="blur"
@@ -298,13 +308,13 @@ function DiscoverGridCardImpl({
         </div>
 
         {/* ---- How much, which one, where ---------------------------------- */}
-        <div className="pt-2">
+        <div className="pt-2 md:px-1 md:pt-2.5">
           {!isOfficialPost && (
             <p
               className={cn(
                 "truncate leading-5 tabular-nums md:leading-6",
                 hasPrice
-                  ? "text-[15px] font-bold tracking-[-0.01em] text-main md:text-base"
+                  ? "text-[15px] font-bold tracking-[-0.01em] text-main md:text-lg md:leading-6"
                   : "text-[13px] font-medium text-muted md:text-[14px]",
               )}
             >
@@ -313,7 +323,7 @@ function DiscoverGridCardImpl({
           )}
 
           {post.title ? (
-            <p className="mt-0.5 line-clamp-2 text-[13px] leading-[18px] text-main md:text-[14px] md:leading-5 md:group-hover/post:underline">
+            <p className="mt-0.5 line-clamp-2 text-[13px] leading-[18px] text-main md:mt-1 md:min-h-10 md:text-[14px] md:leading-5 md:group-hover/post:underline">
               {post.title}
             </p>
           ) : null}
@@ -332,7 +342,7 @@ function DiscoverGridCardImpl({
         <Link
           href={profileHref(lang, creator)}
           scroll={false}
-          className="mt-1 flex min-w-0 max-w-full items-center gap-1.5 self-start py-1 outline-none hover:underline focus-visible:underline"
+          className="mt-1 flex min-w-0 max-w-full items-center gap-1.5 self-start py-1 outline-none hover:underline focus-visible:underline md:mt-auto md:px-1 md:pt-1.5"
         >
           {creator.profile?.avatar && !avatarFailed ? (
             <Image
@@ -367,8 +377,9 @@ function DiscoverGridCardImpl({
 export const DiscoverGridCard = memo(DiscoverGridCardImpl);
 
 /**
- * Loading stand-in with the tile's exact anatomy — 3:4 cover, price, two-line
- * title, place, seller — so nothing shifts when real tiles land.
+ * Loading stand-in with the tile's exact anatomy — cover (3:4 on phones, a
+ * square in a card from md), price, two-line title, place, seller — so
+ * nothing shifts when real tiles land.
  */
 export function DiscoverGridCardSkeleton({
   showSeller = true,
@@ -378,18 +389,24 @@ export function DiscoverGridCardSkeleton({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col", className)} aria-hidden>
-      <Skeleton className="aspect-3/4 w-full rounded-xl" />
-      <div className="pt-2">
+    <div
+      className={cn(
+        "flex flex-col md:rounded-2xl md:bg-[rgb(var(--color-bg-elevated))] md:p-2.5 md:ring-1 md:ring-border",
+        className,
+      )}
+      aria-hidden
+    >
+      <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-square" />
+      <div className="pt-2 md:px-1 md:pt-2.5">
         <div className="flex h-5 items-center md:h-6">
-          <Skeleton className="h-3.5 w-20 md:h-4" />
+          <Skeleton className="h-3.5 w-20 md:h-4.5 md:w-24" />
         </div>
         <Skeleton className="mt-1.5 h-3 w-11/12" />
         <Skeleton className="mt-1.5 h-3 w-2/3" />
         <Skeleton className="mt-2.5 h-2.5 w-1/2" />
       </div>
       {showSeller ? (
-        <div className="mt-1 flex items-center gap-1.5 py-1">
+        <div className="mt-1 flex items-center gap-1.5 py-1 md:px-1">
           <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
           <Skeleton className="h-2.5 w-16" />
         </div>
@@ -399,20 +416,17 @@ export function DiscoverGridCardSkeleton({
 }
 
 /**
- * Tiles shown per breakpoint: always `rows` complete rows of DISCOVER_GRID's
- * column count (2 → 3 → 4 → 5), so a loading grid never ends in a ragged row.
+ * Phones show `rows` rows of two; from md the grid fills its own columns, and
+ * `rows * 6` tiles fill whole rows at 3, 6 and (mostly) the other counts.
  */
 function fullRowsClass(index: number, rows: number) {
-  if (index >= rows * 4) return "hidden min-[90rem]:flex";
-  if (index >= rows * 3) return "hidden xl:flex";
-  if (index >= rows * 2) return "hidden md:flex";
-  return undefined;
+  return index >= rows * 2 ? "hidden md:flex" : undefined;
 }
 
 /** A whole DISCOVER_GRID of skeleton tiles that fills its rows at every width. */
 export function DiscoverGridSkeleton({
   rows = 4,
-  count = rows * 5,
+  count = rows * 6,
   showSeller = true,
   className,
 }: {

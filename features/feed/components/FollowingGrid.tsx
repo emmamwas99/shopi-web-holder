@@ -105,9 +105,12 @@ export function FollowingGrid({ lang, active = true }: Props) {
 
   return (
     <div className="pb-safe-area-inset-bottom pb-6">
-      <div className="flex flex-col">
+      {/* From tablet up each post is its own card, as in the For You feed. */}
+      <div className="flex flex-col md:gap-4">
         {items.map((post, i) => (
-          <PostCard key={post.id} post={post} lang={lang} priority={i === 0} />
+          <div key={post.id} className="md:overflow-hidden md:rounded-2xl md:border md:border-border md:shadow-[0_1px_3px_rgb(0_0_0/0.04)]">
+            <PostCard post={post} lang={lang} priority={i === 0} />
+          </div>
         ))}
       </div>
 

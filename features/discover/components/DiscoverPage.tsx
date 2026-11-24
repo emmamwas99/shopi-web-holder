@@ -167,10 +167,10 @@ type DiscoveryResultCountData = {
   discoveryResultCount: number;
 };
 
-// The grid tops out at 5 columns (min-[90rem] in DISCOVER_GRID), so pages are
-// a multiple of 5 — a page always fills whole rows instead of leaving a
-// ragged last row while the next page loads.
-const PAGE_SIZE = 20;
+// DISCOVER_GRID shows 2 columns on phones and 3–6 from md, so pages are 24
+// — whole rows at 2, 3, 4 and 6 columns instead of a ragged last row while
+// the next page loads.
+const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 280;
 const SEARCH_ANALYTICS_DEBOUNCE_MS = 500;
 

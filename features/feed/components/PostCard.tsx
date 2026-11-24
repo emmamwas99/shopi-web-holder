@@ -856,10 +856,24 @@ function ImageMedia({
         }}
         onClick={nav}
       >
+        {/* Tablet and desktop: when the photo doesn't fill the box (a tall
+            photo in a wide card, or the 40svh floor under a wide one), the
+            space shows a soft blurred copy of the same photo rather than flat
+            grey bars. Same URL as the photo, so no extra download; hidden on
+            phones, where the box is the screen's width anyway. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={firstSrc}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          className="pointer-events-none absolute inset-0 hidden size-full scale-110 object-cover opacity-55 blur-2xl md:block"
+        />
         <FeedImage
           src={firstSrc}
           alt={post.title}
-          sizes="100vw"
+          sizes="(max-width: 767px) 100vw, 640px"
           className="object-contain h-auto"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
