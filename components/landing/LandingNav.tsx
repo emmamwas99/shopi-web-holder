@@ -3,6 +3,14 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import {
+  LazyMotion,
+  domAnimation,
+  m,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+} from "framer-motion";
 import { Menu, X, ArrowRight, ArrowUpRight, Plus, Search } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
@@ -62,6 +70,57 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
   // The menu panel needs a solid bar above it too.
   const transparent = overHero && !scrolled && !open;
 
+  // Phones: scrolling down tucks the logo row away and leaves just the search
+  // box pinned at the top; any scroll back up brings the row back, like a
+  // native app's header. The whole bar slides (a transform, so nothing
+  // reflows and the page never jumps) by the distance from its top to the
+  // search box, less a small margin so the box doesn't touch the screen edge.
+  const headerRef = useRef<HTMLElement>(null);
+  const [tuckOffset, setTuckOffset] = useState(0);
+  const [tucked, setTucked] = useState(false);
+  const lastScrollY = useRef(0);
+  const reduceMotion = useReducedMotion();
+  const { scrollY } = useScroll();
+
+  useEffect(() => {
+    const phone = window.matchMedia("(max-width: 767.98px)");
+    const measure = () => {
+      const header = headerRef.current;
+      const form = searchRef.current;
+      if (!phone.matches || !header || !form) {
+        setTuckOffset(0);
+        return;
+      }
+      const gap = form.getBoundingClientRect().top - header.getBoundingClientRect().top;
+      setTuckOffset(Math.max(0, Math.round(gap - 8)));
+    };
+    measure();
+    phone.addEventListener("change", measure);
+    window.addEventListener("resize", measure);
+    return () => {
+      phone.removeEventListener("change", measure);
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  useMotionValueEvent(scrollY, "change", (y) => {
+    const delta = y - lastScrollY.current;
+    lastScrollY.current = y;
+    if (!tuckOffset) return;
+    // Near the top the full bar always shows.
+    if (y < 80) {
+      setTucked(false);
+      return;
+    }
+    // Typing in the search box (the keyboard scrolls the page): leave it be.
+    if (document.activeElement === inputRef.current) return;
+    // Ignore jitter; react to a real move either way.
+    if (delta > 6) setTucked(true);
+    else if (delta < -6) setTucked(false);
+  });
+  // An open menu hangs under the full bar.
+  const tuck = tucked && !open && tuckOffset > 0;
+
   // A tap anywhere outside the search box closes the suggestions. mousedown,
   // not click, so it fires before a suggestion's own click is raced by the
   // dropdown re-rendering away (the same as the app's nav search).
@@ -120,7 +179,12 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
   );
 
   return (
-    <header
+    <LazyMotion features={domAnimation}>
+    <m.header
+      ref={headerRef}
+      initial={false}
+      animate={{ y: tuck ? -tuckOffset : 0 }}
+      transition={reduceMotion ? { duration: 0 } : { type: "tween", duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       className={`sticky top-0 z-50 bg-landing-page text-landing-ink ${overHero ? "transition-[background-color,box-shadow]! duration-200!" : ""} ${transparent ? "max-md:bg-linear-to-b max-md:from-primary/[0.07] max-md:to-primary/[0.07] md:bg-transparent" : overHero ? "shadow-[0_1px_0_var(--landing-line)]" : ""}`}
     >
       {/* Phones: logo and menu on the first row, search full width on the
@@ -128,7 +192,7 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
           and the nav is one row; the text links wait for xl so the search
           keeps room for its placeholder. */}
       <nav aria-label={sw ? "Menyu kuu" : "Main navigation"} className="mx-auto flex w-[calc(100%-2rem)] max-w-[1500px] flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5 md:h-22 md:w-[calc(100%-4rem)] md:flex-nowrap md:py-0">
-        <Link href={homeHref(lang)} aria-label="Shopi home" className="flex shrink-0 items-center gap-2 no-underline">
+        <Link href={homeHref(lang)} aria-label="Shopi home" aria-hidden={tuck || undefined} tabIndex={tuck ? -1 : undefined} className={`flex shrink-0 items-center gap-2 no-underline transition-opacity! duration-300! ${tuck ? "opacity-0" : "opacity-100"}`}>
           <ShopiLogo className="h-9 w-9" />
           <span className="text-xl font-bold text-landing-ink">Shopi</span>
         </Link>
@@ -232,7 +296,7 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
             </>
           )}
         </div>
-        <button type="button" className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-landing-line xl:hidden" aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button type="button" aria-hidden={tuck || undefined} tabIndex={tuck ? -1 : undefined} className={`inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-landing-line transition-opacity! duration-300! xl:hidden ${tuck ? "opacity-0" : "opacity-100"}`} aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? <X size={21} /> : <Menu size={21} />}
         </button>
       </nav>
@@ -261,7 +325,8 @@ export function LandingNav({ lang, overHero = false }: { lang: Locale; overHero?
           )}
         </div>
       </div>}
-    </header>
+    </m.header>
+    </LazyMotion>
   );
 }
 

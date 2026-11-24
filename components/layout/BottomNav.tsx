@@ -18,6 +18,8 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useUiStore } from "@/stores/ui";
 import { useNavTabHref } from "@/lib/navTabMemory";
 import { useScrollChromeHidden } from "@/hooks/useScrollChromeHidden";
+import { m, useReducedMotion } from "framer-motion";
+import { AppMotion, CHROME_TRANSITION } from "@/lib/motion/AppMotion";
 import {
   isListingPath,
   originForPath,
@@ -123,6 +125,7 @@ export function BottomNav({
     ? `${pathname}:${activeFeedTab ?? "for-you"}`
     : pathname;
   const scrollHidden = useScrollChromeHidden(scrollKey);
+  const reduceMotion = useReducedMotion();
   // Explore and Inbox return to their last screen. Home always opens For You.
   // RouteScrollRestoration restores each tab's scroll position.
   const tabHrefs: Record<string, string> = {
@@ -143,7 +146,13 @@ export function BottomNav({
   if (shouldHideBottomNav(pathname)) return null;
 
   return (
-    <nav
+    <AppMotion>
+    {/* Slides down out of the way on a deliberate scroll down, back on the
+        way up (useScrollChromeHidden decides; framer moves it). */}
+    <m.nav
+      initial={false}
+      animate={{ y: scrollHidden ? "100%" : 0 }}
+      transition={reduceMotion ? { duration: 0 } : CHROME_TRANSITION}
       data-scroll-hidden={scrollHidden}
       aria-hidden={scrollHidden || undefined}
       inert={scrollHidden}
@@ -274,7 +283,8 @@ export function BottomNav({
           );
         })}
       </div>
-    </nav>
+    </m.nav>
+    </AppMotion>
   );
 }
 
