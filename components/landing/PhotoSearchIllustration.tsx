@@ -2,6 +2,13 @@ import Image from "next/image";
 import { Camera, Search } from "lucide-react";
 
 /**
+ * The blog's sofa photo cut down for tiles of 56–96px: 352×198 WebP (~7 KB)
+ * in place of the 1200px JPEG (~96 KB). It stays 16:9 because each result
+ * tile shows a different part of it (object-position).
+ */
+const SOFA = "/assets/landing/photo-search-sofa.webp";
+
+/**
  * Photo search as it looks in the app: the camera in the search bar, the
  * photo being read, then similar listings. Decorative — the section's text
  * says the same thing — and it shows no prices, because they would be made up.
@@ -32,7 +39,7 @@ export function PhotoSearchIllustration({
 
         <div className="mt-4 flex items-center gap-3">
           <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-landing-line">
-            <Image src="/assets/blog/sofa.jpg" alt="" fill sizes="56px" className="object-cover" />
+            <Image src={SOFA} alt="" fill sizes="56px" className="object-cover" />
             <span className="shopi-image-scan" />
           </div>
           <div className="min-w-0">
@@ -45,7 +52,7 @@ export function PhotoSearchIllustration({
           {["object-[20%_50%]", "object-[60%_40%]", "object-[85%_60%]"].map((position) => (
             <div key={position}>
               <div className="relative aspect-square overflow-hidden rounded-md bg-landing-surface">
-                <Image src="/assets/blog/sofa.jpg" alt="" fill sizes="96px" className={`object-cover ${position}`} />
+                <Image src={SOFA} alt="" fill sizes="96px" className={`object-cover ${position}`} />
               </div>
               <span className="mt-1.5 block h-2 w-4/5 rounded-full bg-landing-line" />
               <span className="mt-1 block h-2 w-1/2 rounded-full bg-landing-line" />

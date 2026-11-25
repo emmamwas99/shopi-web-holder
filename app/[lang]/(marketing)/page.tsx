@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -43,7 +42,7 @@ import {
 import { VerifiedTick } from "@/components/verification/VerifiedTick";
 import { VerifiedIdBadge } from "@/components/verification/VerifiedIdBadge";
 import { contentPath } from "@/lib/content-url";
-import { stableListingThumb } from "@/lib/listingImage";
+import { stableListingImage } from "@/lib/listingImage";
 import { CAR_PRICE_FLOOR } from "@/lib/seo/search-intent-pages";
 import { isPlaceholderListingTitle } from "@/lib/seo/where-to-sell";
 import {
@@ -604,18 +603,44 @@ function pickHomeListings(
   const usable = posts.flatMap((post) => {
     const title = post.title?.trim() ?? "";
     const amount = post.price?.amount ?? 0;
-    const thumb = stableListingThumb(post);
+    const image = stableListingImage(post);
     const implausibleCar = CAR_TITLE.test(title) && amount > 0 && amount < CAR_PRICE_FLOOR;
-    return thumb &&
+    return image &&
       !isPlaceholderListingTitle(title) &&
       title.split(/\s+/).length >= 2 &&
       !implausibleCar
-      ? [{ post, thumb }]
+      ? [{ post, image }]
       : [];
   });
   const priced = usable.filter(({ post }) => (post.price?.amount ?? 0) > 0);
   const unpriced = usable.filter(({ post }) => !((post.price?.amount ?? 0) > 0));
   return [...priced, ...unpriced].slice(0, LISTINGS_SHOWN);
+}
+
+/**
+ * A 4:3 section photo: full width on phones, a ~600px column from md. The
+ * files in public/assets/landing are the blog photos centre-cropped to 4:3
+ * (what object-cover showed anyway) as 600px and 960px WebP, so a phone
+ * takes the 960 copy and a desktop column the 600 one. next/image can't
+ * write this srcset: image optimisation is off site-wide (next.config.ts),
+ * and that drops srcset and sizes from every <Image>.
+ */
+function FeaturePhoto({ name, alt }: { name: string; alt: string }) {
+  const src = (width: number) => `/assets/landing/${name}-${width}.webp`;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src(960)}
+      srcSet={`${src(600)} 600w, ${src(960)} 960w`}
+      sizes="(max-width: 768px) 100vw, 600px"
+      alt={alt}
+      width={960}
+      height={720}
+      loading="lazy"
+      decoding="async"
+      className="absolute inset-0 size-full object-cover"
+    />
+  );
 }
 
 export default async function HomePage({ params }: PageProps<"/[lang]">) {
@@ -979,13 +1004,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </TrackedHomepageLink>
             </Reveal>
             <Reveal delay={0.1} scale className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint">
-              <Image
-                src="/assets/blog/budget-phone.jpg"
-                alt={t.hookImageAlt}
-                fill
-                sizes="(max-width: 768px) 100vw, 600px"
-                className="object-cover"
-              />
+              <FeaturePhoto name="side-hustle-phone" alt={t.hookImageAlt} />
               <div className="absolute inset-x-4 bottom-4 rounded-xl border border-landing-line bg-landing-card p-4 shadow-lg sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-72">
                 <p className="text-xs font-bold uppercase tracking-wide text-landing-muted">
                   {t.hookCard}
@@ -1239,13 +1258,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </TrackedHomepageLink>
             </Reveal>
             <Reveal delay={0.1} scale className="relative aspect-4/3 overflow-hidden rounded-md bg-landing-tint md:order-2">
-              <Image
-                src="/assets/blog/iphone-13.jpg"
-                alt={t.agentImageAlt}
-                fill
-                sizes="(max-width: 768px) 100vw, 600px"
-                className="object-cover"
-              />
+              <FeaturePhoto name="shopi-agent-phone" alt={t.agentImageAlt} />
             </Reveal>
           </div>
         </section>

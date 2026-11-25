@@ -16,7 +16,7 @@ import {
   fetchBrowseCards,
   fetchTopCategoryIds,
 } from "@/features/discover/queries/browse.server";
-import { stableListingThumb } from "@/lib/listingImage";
+import { stableListingImage, type ListingImage } from "@/lib/listingImage";
 import { isPlaceholderListingTitle } from "@/lib/seo/where-to-sell";
 
 export type HomeCategoryKey =
@@ -170,7 +170,7 @@ const COVER_POOL = 24;
  * match. Each category is fetched once however many tiles draw on it, and
  * tiles are filled in order so phones claim theirs before electronics.
  */
-async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, string>>> {
+async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, ListingImage>>> {
   const ids = await fetchTopCategoryIds();
   const slugs = [...new Set(TILES.flatMap((tile) => tile.cover?.categories ?? []))];
   const pools = new Map(
@@ -184,7 +184,7 @@ async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, string>>> 
   );
 
   const used = new Set<string>();
-  const covers: Partial<Record<HomeCategoryKey, string>> = {};
+  const covers: Partial<Record<HomeCategoryKey, ListingImage>> = {};
   for (const { key, cover } of TILES) {
     if (!cover) continue;
     const candidates = cover.categories.flatMap((slug) => pools.get(slug) ?? []);
@@ -199,15 +199,23 @@ async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, string>>> 
       ) {
         continue;
       }
-      const thumb = stableListingThumb(post);
-      if (!thumb) continue;
+      const image = stableListingImage(post);
+      if (!image) continue;
       used.add(post.id);
-      covers[key] = thumb;
+      covers[key] = image;
       break;
     }
   }
   return covers;
 }
+
+/**
+ * A tile's width at each breakpoint, for the srcset: four columns on phones
+ * (gap-x-2.5, px-4) and from md (gap-4, px-8), eight from lg (gap-3), and the
+ * max-w-7xl container stops growing at 1344px.
+ */
+const TILE_SIZES =
+  "(min-width: 1344px) 150px, (min-width: 1024px) calc((100vw - 148px) / 8), (min-width: 768px) calc((100vw - 112px) / 4), calc((100vw - 62px) / 4)";
 
 /** The search landing pages behind the tiles' categories. */
 export type HomeSearchLinkKey = "phones" | "cars" | "furniture" | "electronics" | "beauty";
@@ -291,7 +299,9 @@ export async function HomeCategories({
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={cover}
+                          src={cover.src}
+                          srcSet={cover.srcSet}
+                          sizes={cover.srcSet ? TILE_SIZES : undefined}
                           alt=""
                           width={480}
                           height={480}

@@ -3,10 +3,19 @@ import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink"
 import { Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal";
 import { contentPath } from "@/lib/content-url";
 import { listingPriceText } from "@/lib/format";
+import type { ListingImage } from "@/lib/listingImage";
 import { listingPlace } from "@/lib/listingPlace";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
-export type HomeListing = { post: ContentCardFieldsFragment; thumb: string };
+export type HomeListing = { post: ContentCardFieldsFragment; image: ListingImage };
+
+/**
+ * The card's width at each breakpoint, for the srcset: 42% of the row on
+ * phones, 28% from sm, then five columns (gap-5) in the max-w-7xl container,
+ * which stops growing at 1344px (1280 + the px-8 gutters).
+ */
+const CARD_SIZES =
+  "(min-width: 1344px) 240px, (min-width: 768px) calc((100vw - 144px) / 5), (min-width: 640px) 28vw, 42vw";
 
 /**
  * Real listings on the homepage: the fastest way to show a first-time visitor
@@ -60,7 +69,7 @@ export function HomeListings({
             the padding, so without it the browser scrolls the first card
             flush against the screen edge, out of line with the heading. */}
         <RevealGroup as="ul" stagger={0.06} className="-mx-4 mt-4 flex list-none snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:mt-6 md:grid md:scroll-px-0 md:grid-cols-5 md:gap-5 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
-          {listings.map(({ post, thumb }) => {
+          {listings.map(({ post, image }) => {
             const price = listingPriceText(post.price);
             const place = listingPlace(post.location);
             return (
@@ -74,7 +83,9 @@ export function HomeListings({
                   <span className="block aspect-3/4 overflow-hidden rounded-xl bg-landing-tint">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={thumb}
+                      src={image.src}
+                      srcSet={image.srcSet}
+                      sizes={image.srcSet ? CARD_SIZES : undefined}
                       alt={post.title ?? ""}
                       width={480}
                       height={640}
