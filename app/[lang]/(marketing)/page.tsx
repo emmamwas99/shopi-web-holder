@@ -22,7 +22,6 @@ import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { siteConfig } from "@/config/site";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
-import { HomepageSupportChat } from "@/components/landing/HomepageSupportChat";
 import { HomeCategories } from "@/components/landing/HomeCategories";
 import { HomeVideoShowcase } from "@/components/landing/HomeVideoShowcase";
 import { SignedInLabel } from "@/components/landing/SignedInLabel";
@@ -1464,7 +1463,6 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </LandingMotion>
       </main>
       <LandingFooter lang={lang} homeOnly />
-      <HomepageSupportChat lang={lang} />
     </div>
   );
 }
