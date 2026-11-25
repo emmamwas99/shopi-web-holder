@@ -35,8 +35,13 @@ export type HeroBoardCopy = {
   messageTime: string;
 };
 
-const photo = (id: string) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=160&h=160&q=70`;
+/**
+ * Unsplash stock photos, kept in public/assets/landing as 96px WebP (the tiles
+ * are 48px, so 2x screens stay sharp). Hosting them here saves a connection
+ * to a third origin, and Unsplash's own copies were JPEG for any client that
+ * didn't ask for WebP, with an ICC profile making up ~40% of the bytes.
+ */
+const photo = (name: string) => `/assets/landing/${name}.webp`;
 
 /** Per-row visuals, in the same order as `copy.rows`. */
 const ROWS: {
@@ -48,21 +53,21 @@ const ROWS: {
   pill: string;
 }[] = [
   {
-    photo: photo("photo-1511707171634-5f897ff02aa9"),
+    photo: photo("board-phone"),
     initials: "BO",
     avatar: "bg-sky-100 text-sky-800 dark:bg-sky-400/20 dark:text-sky-200",
     icon: MessageCircle,
     pill: "bg-primary text-white",
   },
   {
-    photo: photo("photo-1555041469-a586c61ea9bc"),
+    photo: photo("board-sofa"),
     initials: "WM",
     avatar: "bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-200",
     icon: Check,
     pill: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300",
   },
   {
-    photo: photo("photo-1523381210434-271e8be1f52b"),
+    photo: photo("board-tshirts"),
     initials: "AK",
     avatar: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-200",
     icon: Bookmark,
@@ -138,7 +143,6 @@ export function HeroListingsBoard({ copy }: { copy: HeroBoardCopy }) {
                       alt=""
                       fill
                       sizes="48px"
-                      quality={60}
                       className="object-cover"
                     />
                   </span>

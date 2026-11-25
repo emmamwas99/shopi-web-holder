@@ -3,7 +3,11 @@ import { ArrowRight, BadgeCheck, Check, Clapperboard, Link2, Plus } from "lucide
 import type { LucideIcon } from "lucide-react";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { TrackedHomepageLink } from "@/components/analytics/TrackedHomepageLink";
-import { VideoShowcasePlayer, type VideoShowcaseCopy } from "./VideoShowcasePlayer";
+import {
+  VideoShowcasePlayer,
+  type VideoShowcaseCopy,
+  type VideoShowcasePoster,
+} from "./VideoShowcasePlayer";
 
 /**
  * Homepage: Shopi takes video listings, and reuses a seller's TikToks from a
@@ -21,6 +25,21 @@ const SHOWCASE = {
   playbackId: "PuLL9AMpi1c4QGpY2Ho4LuSOoAOQEdwYE8boOv39fVM",
   slug: "marshall-willen-ii-portable-bluetooth-speaker-6",
 } as const;
+
+const still = (width: number) =>
+  `https://image.mux.com/${SHOWCASE.playbackId}/thumbnail.webp?time=0&width=${width}`;
+
+/**
+ * The still that stands in until the video plays. The phone frame is 272px
+ * wide (296px from sm) inside its bezel. 540 stays the largest, so phones
+ * fetch what they always did; a desktop screen takes the 320 copy instead of
+ * nearly three times the pixels it shows.
+ */
+const POSTER: VideoShowcasePoster = {
+  src: still(540),
+  srcSet: `${still(320)} 320w, ${still(540)} 540w`,
+  sizes: "(min-width: 640px) 296px, 272px",
+};
 
 export type HomeVideoCopy = {
   eyebrow: string;
@@ -50,8 +69,12 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
     crossOrigin: "anonymous",
     fetchPriority: "low",
   });
-  preload(`https://image.mux.com/${SHOWCASE.playbackId}/thumbnail.webp?time=0&width=540`, {
+  // Same srcset and sizes as the <img>, so the browser preloads the copy the
+  // img will pick rather than fetching a second one.
+  preload(POSTER.src, {
     as: "image",
+    imageSrcSet: POSTER.srcSet,
+    imageSizes: POSTER.sizes,
     fetchPriority: "low",
   });
 
@@ -94,6 +117,7 @@ export function HomeVideoShowcase({ lang, t }: { lang: string; t: HomeVideoCopy 
         <div className="relative mx-auto w-full max-w-md px-6 sm:px-10 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
           <VideoShowcasePlayer
             playbackId={SHOWCASE.playbackId}
+            poster={POSTER}
             href={`/${lang}/video/${SHOWCASE.slug}`}
             copy={t.player}
           />

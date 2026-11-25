@@ -32,12 +32,17 @@ export type VideoShowcaseCopy = {
   watch: string;
 };
 
+/** The Mux still shown until the video plays (built in HomeVideoShowcase). */
+export type VideoShowcasePoster = { src: string; srcSet: string; sizes: string };
+
 export function VideoShowcasePlayer({
   playbackId,
+  poster,
   href,
   copy,
 }: {
   playbackId: string;
+  poster: VideoShowcasePoster;
   href: string;
   copy: VideoShowcaseCopy;
 }) {
@@ -82,8 +87,6 @@ export function VideoShowcasePlayer({
     setMuted,
   );
 
-  const poster = `https://image.mux.com/${playbackId}/thumbnail.webp?time=0&width=540`;
-
   function toggleSound() {
     const video = videoRef.current;
     if (!video) return;
@@ -100,7 +103,9 @@ export function VideoShowcasePlayer({
       <div className="relative size-full overflow-hidden rounded-[1.95rem] bg-neutral-900">
         {/* eslint-disable-next-line @next/next/no-img-element -- a Mux still; next/image would re-encode an already-sized image */}
         <img
-          src={poster}
+          src={poster.src}
+          srcSet={poster.srcSet}
+          sizes={poster.sizes}
           alt=""
           width={540}
           height={960}
