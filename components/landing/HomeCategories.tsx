@@ -170,7 +170,10 @@ const COVER_POOL = 24;
  * match. Each category is fetched once however many tiles draw on it, and
  * tiles are filled in order so phones claim theirs before electronics.
  */
-async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, ListingImage>>> {
+/** A tile's photo: a real listing's image, described by that listing's title. */
+type TileCover = ListingImage & { alt: string };
+
+async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, TileCover>>> {
   const ids = await fetchTopCategoryIds();
   const slugs = [...new Set(TILES.flatMap((tile) => tile.cover?.categories ?? []))];
   const pools = new Map(
@@ -184,7 +187,7 @@ async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, ListingIma
   );
 
   const used = new Set<string>();
-  const covers: Partial<Record<HomeCategoryKey, ListingImage>> = {};
+  const covers: Partial<Record<HomeCategoryKey, TileCover>> = {};
   for (const { key, cover } of TILES) {
     if (!cover) continue;
     const candidates = cover.categories.flatMap((slug) => pools.get(slug) ?? []);
@@ -202,7 +205,7 @@ async function fetchCovers(): Promise<Partial<Record<HomeCategoryKey, ListingIma
       const image = stableListingImage(post);
       if (!image) continue;
       used.add(post.id);
-      covers[key] = image;
+      covers[key] = { ...image, alt: title };
       break;
     }
   }
@@ -302,7 +305,10 @@ export async function HomeCategories({
                           src={cover.src}
                           srcSet={cover.srcSet}
                           sizes={cover.srcSet ? TILE_SIZES : undefined}
-                          alt=""
+                          // The tile's label already names the link; the
+                          // photo's alt (its listing's title) is for search.
+                          alt={cover.alt}
+                          aria-hidden
                           width={480}
                           height={480}
                           loading="lazy"

@@ -218,6 +218,22 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Share-preview images: the og:image cards for listings (/og/listing/…)
+      // and the file-convention opengraph-image routes (homepage, profiles,
+      // blog posts, tools; Next appends a 6-character hash). Google crawls
+      // them as URLs, and ~960 of the 1,000 "Crawled - currently not indexed"
+      // URLs in Search Console (25 Nov 2026) were these. noindex says they
+      // are not pages. Link scrapers (WhatsApp, Facebook, X) ignore it, so
+      // previews are unaffected; listing photos stay indexable for Google
+      // Images on their own host.
+      {
+        source: "/og/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
+      {
+        source: "/:path*/opengraph-image:suffix(-[a-z0-9]{6})?",
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
       {
         source: "/(.*)",
         headers: securityHeaders,

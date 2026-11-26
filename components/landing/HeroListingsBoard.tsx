@@ -140,7 +140,7 @@ export function HeroListingsBoard({ copy }: { copy: HeroBoardCopy }) {
                   <span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-landing-tint">
                     <Image
                       src={src}
-                      alt=""
+                      alt={row.title}
                       fill
                       sizes="48px"
                       className="object-cover"

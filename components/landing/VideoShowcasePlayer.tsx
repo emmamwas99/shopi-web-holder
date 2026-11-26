@@ -106,7 +106,10 @@ export function VideoShowcasePlayer({
           src={poster.src}
           srcSet={poster.srcSet}
           sizes={poster.sizes}
-          alt=""
+          // The <video> over it carries the same title as its label, so the
+          // still stays out of the accessibility tree; the alt is for search.
+          alt={copy.title}
+          aria-hidden
           width={540}
           height={960}
           decoding="async"
