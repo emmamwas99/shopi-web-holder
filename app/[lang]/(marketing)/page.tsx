@@ -198,6 +198,11 @@ const COPY = {
     photoSearchPlaceholder: "Search Shopi",
     photoResultsTitle: "Results for your photo",
     photoResultsBody: "Similar items for sale",
+    // Alt text for the illustration's photos. The illustration is hidden
+    // from screen readers (its text says the same), so these are for search
+    // engines and image search.
+    photoSearchAlt: "A green sofa photographed to search Shopi",
+    photoResultAlt: "A similar green sofa for sale on Shopi",
     hookEyebrow: "Free guide · 3-minute read",
     hookTitle: "How Kenyans earn online in 2026, with zero stock.",
     hookBody: "No shop. No capital. Just your phone and one simple method.",
@@ -422,6 +427,8 @@ const COPY = {
     photoSearchPlaceholder: "Tafuta kwenye Shopi",
     photoResultsTitle: "Matokeo ya picha yako",
     photoResultsBody: "Bidhaa zinazofanana zinazouzwa",
+    photoSearchAlt: "Picha ya sofa ya kijani ikitafutwa kwenye Shopi",
+    photoResultAlt: "Sofa ya kijani inayofanana inayouzwa kwenye Shopi",
     hookEyebrow: "Mwongozo wa bure · dakika 3",
     hookTitle: "Jinsi Wakenya wanavyopata pesa mtandaoni 2026, bila stoki.",
     hookBody: "Bila duka. Bila mtaji. Simu yako na mbinu moja rahisi tu.",
@@ -965,6 +972,8 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                 searchPlaceholder={t.photoSearchPlaceholder}
                 resultsTitle={t.photoResultsTitle}
                 resultsBody={t.photoResultsBody}
+                photoAlt={t.photoSearchAlt}
+                resultAlt={t.photoResultAlt}
               />
             </Reveal>
           </div>

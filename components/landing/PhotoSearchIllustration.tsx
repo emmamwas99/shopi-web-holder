@@ -17,10 +17,14 @@ export function PhotoSearchIllustration({
   searchPlaceholder,
   resultsTitle,
   resultsBody,
+  photoAlt,
+  resultAlt,
 }: {
   searchPlaceholder: string;
   resultsTitle: string;
   resultsBody: string;
+  photoAlt: string;
+  resultAlt: string;
 }) {
   return (
     <div
@@ -39,7 +43,7 @@ export function PhotoSearchIllustration({
 
         <div className="mt-4 flex items-center gap-3">
           <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-landing-line">
-            <Image src={SOFA} alt="" fill sizes="56px" className="object-cover" />
+            <Image src={SOFA} alt={photoAlt} fill sizes="56px" className="object-cover" />
             <span className="shopi-image-scan" />
           </div>
           <div className="min-w-0">
@@ -52,7 +56,7 @@ export function PhotoSearchIllustration({
           {["object-[20%_50%]", "object-[60%_40%]", "object-[85%_60%]"].map((position) => (
             <div key={position}>
               <div className="relative aspect-square overflow-hidden rounded-md bg-landing-surface">
-                <Image src={SOFA} alt="" fill sizes="96px" className={`object-cover ${position}`} />
+                <Image src={SOFA} alt={resultAlt} fill sizes="96px" className={`object-cover ${position}`} />
               </div>
               <span className="mt-1.5 block h-2 w-4/5 rounded-full bg-landing-line" />
               <span className="mt-1 block h-2 w-1/2 rounded-full bg-landing-line" />

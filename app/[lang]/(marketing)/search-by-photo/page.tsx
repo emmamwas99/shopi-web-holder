@@ -184,6 +184,8 @@ export default async function SearchByPhotoPage({ params }: Props) {
               searchPlaceholder="Search Shopi"
               resultsTitle="Results for your photo"
               resultsBody="Similar items for sale"
+              photoAlt="A green sofa photographed to search Shopi"
+              resultAlt="A similar green sofa for sale on Shopi"
             />
           </div>
 
