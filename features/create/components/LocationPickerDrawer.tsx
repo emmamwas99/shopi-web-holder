@@ -5,7 +5,7 @@ import { InterlockingBalls } from "@/components/ui/drawer-loading-indicator";
 /**
  * LocationPickerDrawer — RedNote-style location picker
  *
- * Nearby  → GPS → nearbyPage(pageToken) — 20 per page, infinite scroll via nextPageToken
+ * Nearby  → GPS → nearbyPage(radiusIndex = page number) — up to 20 per page, infinite scroll while hasMore
  * All     → wardsPaged cursor scroll; first page sorted by $geoNear if GPS available
  *           typing = hybrid DB text-search + Google autocomplete
  */
@@ -305,31 +305,43 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     if (!gps || nearbyLoadingRef.current) return;
     nearbyLoadingRef.current = true;
     try {
-      const { data } = await fetchNearbyPage({
-        variables: { lat: gps.lat, lng: gps.lng, radiusIndex: idx },
-      });
-      const page = data?.nearbyPage;
-      if (!page) { setNearbyStatus("error"); return; }
+      // A page can add nothing new (all duplicates, or an empty patch of map). The list
+      // then doesn't grow, so no further scroll event comes: go straight to the next page.
+      for (let index = idx; ; index++) {
+        const { data } = await fetchNearbyPage({
+          variables: { lat: gps.lat, lng: gps.lng, radiusIndex: index },
+        });
+        const page = data?.nearbyPage;
+        if (!page) throw new Error("No nearby page");
 
-      const existing = nearbyItemsRef.current;
-      const seen = new Set(existing.map((p) => p.placeId));
-      const fresh = page.places.filter((p) => !seen.has(p.placeId));
-      const merged = [...existing, ...fresh].sort((a, b) => {
-        const da = a.lat != null && a.lng != null ? haversine(gps.lat, gps.lng, a.lat, a.lng) : Infinity;
-        const db = b.lat != null && b.lng != null ? haversine(gps.lat, gps.lng, b.lat, b.lng) : Infinity;
-        return da - db;
-      });
+        const existing = nearbyItemsRef.current;
+        const seen = new Set(existing.map((p) => p.placeId));
+        const fresh = page.places.filter((p) => !seen.has(p.placeId));
+        const merged = [...existing, ...fresh].sort((a, b) => {
+          const da = a.lat != null && a.lng != null ? haversine(gps.lat, gps.lng, a.lat, a.lng) : Infinity;
+          const db = b.lat != null && b.lng != null ? haversine(gps.lat, gps.lng, b.lat, b.lng) : Infinity;
+          return da - db;
+        });
 
-      nearbyItemsRef.current = merged;
-      radiusIndexRef.current = idx;
-      nearbyHasMoreRef.current = page.hasMore;
-      setNearbyItems(merged);
-      setNearbyRadiusMeters(page.radiusMeters);
-      setNearbyHasMore(page.hasMore);
+        nearbyItemsRef.current = merged;
+        radiusIndexRef.current = index;
+        nearbyHasMoreRef.current = page.hasMore;
+        setNearbyItems(merged);
+        setNearbyRadiusMeters(page.radiusMeters);
+        setNearbyHasMore(page.hasMore);
+        if (fresh.length > 0 || !page.hasMore) break;
+      }
       setNearbyStatus("done");
       nearbyLoadedRef.current = true;
     } catch {
-      setNearbyStatus("error");
+      if (nearbyItemsRef.current.length > 0) {
+        // A failed "load more" keeps the list the seller is scrolling and stops there.
+        nearbyHasMoreRef.current = false;
+        setNearbyHasMore(false);
+        setNearbyStatus("done");
+      } else {
+        setNearbyStatus("error");
+      }
     } finally {
       nearbyLoadingRef.current = false;
     }
