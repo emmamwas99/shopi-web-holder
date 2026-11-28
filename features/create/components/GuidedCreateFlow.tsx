@@ -23,10 +23,12 @@ import {
   Images,
   LockKeyhole,
   MapPin,
+  Pencil,
   Send,
   Upload,
   Users,
   WandSparkles,
+  X,
 } from "lucide-react";
 import {
   AdvanceDraftStepDocument,
@@ -41,6 +43,8 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import {
   useCreateStore,
+  type AgentMessage,
+  type CreateFlowState,
   type DraftLocation,
   type GuidedStage,
 } from "@/stores/create";
@@ -142,6 +146,17 @@ function messageId(): string {
   messageSeq += 1;
   return `m${Date.now().toString(36)}-${messageSeq}`;
 }
+
+/** Answers that can be changed from the chat. A category answer is changed
+ *  on the details card instead. */
+const EDITABLE_TARGETS = new Set<AgentFieldTarget>([
+  "TITLE",
+  "DESCRIPTION",
+  "SPEC",
+  "PRICE",
+  "LOCATION",
+  "CONTACT_PHONE",
+]);
 
 const QUICK_INTENTS = [
   "A phone I want to sell",
@@ -253,6 +268,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     setGuidedIntent,
     setGuidedInsights,
     addAgentMessage,
+    setAgentMessages,
     setAgentAsk,
     setAgentReady,
     setDraftId,
@@ -287,6 +303,19 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [publishedContentId, setPublishedContentId] = useState<string | null>(
     null,
   );
+  // Editing what the seller already gave: the confirmed details card, or one
+  // answer in the chat. Each keeps a snapshot so Cancel puts things back.
+  const [detailsEditing, setDetailsEditing] = useState(false);
+  const [detailsSaving, setDetailsSaving] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const detailsSnapshotRef = useRef<Partial<CreateFlowState> | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(
+    null,
+  );
+  const [answerEditError, setAnswerEditError] = useState<string | null>(null);
+  const answerSnapshotRef = useRef<Partial<CreateFlowState> | null>(null);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [clearingMedia, setClearingMedia] = useState(false);
 
   const [createDraft] = useMutation(CreateDraftDocument);
   const draftKeys = useDraftRequestKeys();
@@ -1051,26 +1080,30 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     }
     setFormError(null);
     try {
-      await saveDraft(draftId, {
-        title: title.trim(),
-        caption,
-        categoryId,
-        specs: specs
-          .map((spec) => ({
-            key: spec.key.trim(),
-            value: spec.value.trim(),
-          }))
-          .filter((spec) => spec.key && spec.value),
-        aiClassification: {
-          level1: categoryName ?? undefined,
-          level2: subcategoryName || guidedInsights?.subcategory || undefined,
-          confidence: guidedInsights?.classificationConfidence ?? undefined,
-        },
-      });
+      await saveDraft(draftId, detailsInput());
       await startConversation();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  /** The details card's fields, as the draft autosave input. */
+  function detailsInput(): GuidedAutosaveInput {
+    const s = useCreateStore.getState();
+    return {
+      title: s.title.trim(),
+      caption: s.caption,
+      categoryId: s.categoryId ?? undefined,
+      specs: s.specs
+        .map((spec) => ({ key: spec.key.trim(), value: spec.value.trim() }))
+        .filter((spec) => spec.key && spec.value),
+      aiClassification: {
+        level1: s.categoryName ?? undefined,
+        level2:
+          s.subcategoryName || s.guidedInsights?.subcategory || undefined,
+        confidence: s.guidedInsights?.classificationConfidence ?? undefined,
+      },
+    };
   }
 
   // ── Shopi Agent conversation ────────────────────────────────────────────────
@@ -1328,6 +1361,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       id: messageId(),
       role: "user",
       text: value || "Skipped",
+      ask,
     });
     setAgentAsk(null);
     await runAgentTurn({
@@ -1337,7 +1371,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     });
   }
 
-  async function answerPrice(amount: number, isNegotiable: boolean) {
+  async function answerPrice(
+    ask: AgentAsk,
+    amount: number,
+    isNegotiable: boolean,
+  ) {
     const id = useCreateStore.getState().draftId;
     if (!id) return;
     setPrice(amount, amount === 0);
@@ -1355,15 +1393,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     addAgentMessage({
       id: messageId(),
       role: "user",
-      text: `${currency} ${amount.toLocaleString()}${
-        isNegotiable ? " · negotiable" : ""
-      }`,
+      text: priceAnswerText(amount, isNegotiable),
+      ask,
     });
     setAgentAsk(null);
     await runAgentTurn({ answeredTarget: "PRICE" });
   }
 
-  async function answerLocation() {
+  async function answerLocation(ask: AgentAsk) {
     const id = useCreateStore.getState().draftId;
     const loc = useCreateStore.getState().location;
     if (!id || !loc) {
@@ -1376,12 +1413,12 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       setFormError(error instanceof Error ? error.message : String(error));
       return;
     }
-    addAgentMessage({ id: messageId(), role: "user", text: loc.placeName });
+    addAgentMessage({ id: messageId(), role: "user", text: loc.placeName, ask });
     setAgentAsk(null);
     await runAgentTurn({ answeredTarget: "LOCATION" });
   }
 
-  async function answerPhone() {
+  async function answerPhone(ask: AgentAsk) {
     const id = useCreateStore.getState().draftId;
     const phone = useCreateStore.getState().contactPhone;
     if (!id || !phone) {
@@ -1396,9 +1433,252 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       setFormError(error instanceof Error ? error.message : String(error));
       return;
     }
-    addAgentMessage({ id: messageId(), role: "user", text: phone });
+    addAgentMessage({ id: messageId(), role: "user", text: phone, ask });
     setAgentAsk(null);
     await runAgentTurn({ answeredTarget: "CONTACT_PHONE" });
+  }
+
+  function priceAnswerText(amount: number, isNegotiable: boolean): string {
+    return `${currency} ${amount.toLocaleString()}${
+      isNegotiable ? " · negotiable" : ""
+    }`;
+  }
+
+  // ── Editing what the seller already gave ────────────────────────────────────
+  //
+  // Confirmed details and chat answers stay editable until the listing is
+  // posted. An edit saves straight to the draft and never re-runs the
+  // interview: the agent already has what it asked for, only the value changed.
+
+  function startDetailsEdit() {
+    const s = useCreateStore.getState();
+    detailsSnapshotRef.current = {
+      title: s.title,
+      caption: s.caption,
+      specs: s.specs,
+      categoryId: s.categoryId,
+      categoryName: s.categoryName,
+      categorySource: s.categorySource,
+      subcategoryId: s.subcategoryId,
+      subcategoryName: s.subcategoryName,
+    };
+    setDetailsError(null);
+    setFormError(null);
+    setDetailsEditing(true);
+  }
+
+  function cancelDetailsEdit() {
+    if (detailsSnapshotRef.current) {
+      useCreateStore.setState(detailsSnapshotRef.current);
+    }
+    detailsSnapshotRef.current = null;
+    setDetailsError(null);
+    setDetailsEditing(false);
+  }
+
+  async function saveDetailsEdit() {
+    const s = useCreateStore.getState();
+    if (!s.draftId || detailsSaving) return;
+    // A description the agent hasn't collected yet may stay short (it will ask
+    // for it); one that was already good can't be edited into a bad one.
+    const descriptionWasValid = !listingDescriptionProblem(
+      detailsSnapshotRef.current?.caption ?? "",
+    );
+    const problem =
+      listingTitleProblem(s.title) ??
+      (!s.categoryId ? "Choose a category." : null) ??
+      (descriptionWasValid ? listingDescriptionProblem(s.caption) : null);
+    if (problem) {
+      setDetailsError(problem);
+      return;
+    }
+    setDetailsSaving(true);
+    setDetailsError(null);
+    try {
+      await saveDraft(s.draftId, detailsInput());
+      detailsSnapshotRef.current = null;
+      setDetailsEditing(false);
+    } catch (error) {
+      setDetailsError(createErrorMessage(error));
+    } finally {
+      setDetailsSaving(false);
+    }
+  }
+
+  /** The answer's current value, so its editor opens on what's in the listing now. */
+  function currentAnswerValue(ask: AgentAsk): string | null {
+    const s = useCreateStore.getState();
+    if (ask.target === "TITLE") return s.title;
+    if (ask.target === "DESCRIPTION") return s.caption;
+    if (ask.target === "SPEC" && ask.specKey) {
+      const key = ask.specKey.toLowerCase();
+      return s.specs.find((spec) => spec.key.toLowerCase() === key)?.value ?? "";
+    }
+    if (ask.target === "PRICE") return s.price != null ? String(s.price) : null;
+    return null;
+  }
+
+  function startAnswerEdit(message: AgentMessage) {
+    const s = useCreateStore.getState();
+    answerSnapshotRef.current = {
+      price: s.price,
+      isFree: s.isFree,
+      negotiable: s.negotiable,
+      location: s.location,
+      contactPhone: s.contactPhone,
+    };
+    setAnswerEditError(null);
+    setFormError(null);
+    setEditingMessageId(message.id);
+  }
+
+  function closeAnswerEdit() {
+    answerSnapshotRef.current = null;
+    setAnswerEditError(null);
+    setEditingMessageId(null);
+  }
+
+  function cancelAnswerEdit() {
+    const snapshot = answerSnapshotRef.current;
+    if (snapshot) {
+      // The price, location and phone controls write to the listing as the
+      // seller types or picks; Cancel puts back what was there.
+      useCreateStore.setState(snapshot);
+      setPriceInput(snapshot.price != null ? String(snapshot.price) : "");
+    }
+    closeAnswerEdit();
+  }
+
+  async function saveAnswerEdit(
+    message: AgentMessage,
+    save: () => Promise<string>,
+  ) {
+    try {
+      const text = await save();
+      setAgentMessages(
+        useCreateStore
+          .getState()
+          .agentMessages.map((item) =>
+            item.id === message.id ? { ...item, text } : item,
+          ),
+      );
+      closeAnswerEdit();
+    } catch (error) {
+      setAnswerEditError(createErrorMessage(error));
+    }
+  }
+
+  function editScalarAnswer(message: AgentMessage, ask: AgentAsk, raw: string) {
+    void saveAnswerEdit(message, async () => {
+      const value = raw.trim();
+      if (ask.target === "TITLE") setTitle(value);
+      else if (ask.target === "DESCRIPTION") setCaption(value);
+      else if (ask.target === "SPEC" && ask.specKey) {
+        const key = ask.specKey;
+        const next = useCreateStore
+          .getState()
+          .specs.filter((s) => s.key.toLowerCase() !== key.toLowerCase());
+        if (value) next.push({ key, value });
+        setSpecs(next);
+      }
+      await persistScalarAnswer({
+        answeredTarget: ask.target,
+        answeredSpecKey: ask.specKey ?? undefined,
+      });
+      return value || "Skipped";
+    });
+  }
+
+  function editPriceAnswer(
+    message: AgentMessage,
+    amount: number,
+    isNegotiable: boolean,
+  ) {
+    void saveAnswerEdit(message, async () => {
+      const id = useCreateStore.getState().draftId;
+      if (!id) throw new Error("Your draft is still being set up.");
+      setPrice(amount, amount === 0);
+      setNegotiable(isNegotiable);
+      setPriceInput(String(amount));
+      await saveDraft(id, {
+        price: { amount, currency, negotiable: isNegotiable },
+      });
+      return priceAnswerText(amount, isNegotiable);
+    });
+  }
+
+  function editLocationAnswer(message: AgentMessage) {
+    void saveAnswerEdit(message, async () => {
+      const { draftId: id, location: loc } = useCreateStore.getState();
+      if (!id || !loc) {
+        throw new Error(
+          "Choose a location so nearby buyers can find your listing.",
+        );
+      }
+      await saveDraft(id, { location: locationInput(loc) });
+      return loc.placeName;
+    });
+  }
+
+  function editPhoneAnswer(message: AgentMessage) {
+    void saveAnswerEdit(message, async () => {
+      const { draftId: id, contactPhone: phone } = useCreateStore.getState();
+      if (!id || !phone) {
+        throw new Error("Add a valid phone number so interested buyers can call.");
+      }
+      await saveDraft(id, { contactPhone: phone });
+      return phone;
+    });
+  }
+
+  /**
+   * The X on the media: the draft goes, and with it everything read from or
+   * answered about that media. Only "what are you selling" is kept, and the
+   * seller is back at the upload step. Location and phone refill from the
+   * seller's saved defaults, as they do on a new listing.
+   */
+  async function clearMedia() {
+    const previous = useCreateStore.getState();
+    if (clearingMedia) return;
+    setClearingMedia(true);
+    setFormError(null);
+    try {
+      if (previous.draftId) {
+        const response = await discardDraft({
+          variables: { id: previous.draftId },
+        });
+        if (response.error || !response.data?.discardDraft) {
+          throw new Error(
+            response.error?.message ?? "Could not remove the current media",
+          );
+        }
+      }
+      previous.mediaItems.forEach((item) => {
+        if (item.localUri?.startsWith("blob:")) {
+          URL.revokeObjectURL(item.localUri);
+        }
+      });
+      reset();
+      locationAutofilledRef.current = false;
+      phoneAutofilledRef.current = false;
+      bulkDraftResumeRef.current = false;
+      setCreationMode("ai");
+      setGuidedIntent(previous.guidedIntent);
+      setIntentInput(previous.guidedIntent);
+      setGuidedStage(previous.guidedIntent ? "media" : "intro");
+      setPriceInput("");
+      setAnalysisError(null);
+      setAiDegraded(false);
+      detailsSnapshotRef.current = null;
+      setDetailsEditing(false);
+      setDetailsError(null);
+      closeAnswerEdit();
+    } catch (error) {
+      setFormError(createErrorMessage(error));
+    } finally {
+      setClearingMedia(false);
+      setConfirmClearOpen(false);
+    }
   }
 
   async function waitForMediaAttachment(): Promise<void> {
@@ -1423,6 +1703,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   async function handlePublish() {
     if (savingDraft) return;
+    if (detailsEditing || editingMessageId) {
+      setFormError("Save or cancel your edit before posting.");
+      return;
+    }
     if (!draftId) {
       setFormError(
         "Your draft is still being set up. Wait a moment and try again.",
@@ -1540,6 +1824,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   async function handleSaveDraft() {
     if (!draftId || savingDraft || guidedStage === "publishing") return;
+    if (detailsEditing || editingMessageId) {
+      setFormError("Save or cancel your edit before saving the draft.");
+      return;
+    }
 
     const parsedPrice = priceInput.trim() ? Number(priceInput) : (price ?? 0);
     setSavingDraft(true);
@@ -1635,6 +1923,20 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     );
   }
 
+  // Nothing is edited or removed while the agent or a publish is mid-request.
+  const editLocked =
+    agentThinking ||
+    clearingMedia ||
+    guidedStage === "analyzing" ||
+    guidedStage === "publishing";
+  const editingSomething = detailsEditing || editingMessageId !== null;
+  const detailsEditable = guidedStage === "insights" || detailsEditing;
+  const requestClearMedia = () => {
+    // Before the analysis there is nothing else to lose, so no need to ask.
+    if (stageReached(guidedStage, "insights")) setConfirmClearOpen(true);
+    else void clearMedia();
+  };
+
   const flow = (
     <div
       className={`flex flex-col overflow-hidden bg-background ${
@@ -1705,7 +2007,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           ) : null}
 
           {mediaItems.length > 0 ? (
-            <UserBubble>
+            <UserBubble
+              onRemove={editLocked ? undefined : requestClearMedia}
+              removeLabel="Remove media"
+            >
               <MediaStrip />
             </UserBubble>
           ) : null}
@@ -1740,66 +2045,97 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                 <div className="flex items-center gap-2">
                   <WandSparkles size={18} className="text-primary" />
                   <h2 className="font-black text-foreground">Item details</h2>
+                  {!detailsEditable && !editLocked && !editingSomething ? (
+                    <EditButton
+                      onClick={startDetailsEdit}
+                      label="Edit item details"
+                    />
+                  ) : null}
                 </div>
 
-                <Field label="Listing title" hint={LISTING_TITLE_HINT}>
-                  <input
-                    value={title}
-                    maxLength={120}
-                    onChange={(event) => setTitle(event.target.value)}
-                    placeholder="What are you selling?"
-                    className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-base text-foreground outline-none focus:border-primary"
-                  />
-                </Field>
+                {detailsEditable ? (
+                  <>
+                    <Field label="Listing title" hint={LISTING_TITLE_HINT}>
+                      <input
+                        value={title}
+                        maxLength={120}
+                        onChange={(event) => setTitle(event.target.value)}
+                        placeholder="What are you selling?"
+                        className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-base text-foreground outline-none focus:border-primary"
+                      />
+                    </Field>
 
-                <Field label="Description">
-                  <AutoGrowTextarea
-                    value={caption}
-                    maxLength={2000}
-                    rows={3}
-                    onChange={(event) => setCaption(event.target.value)}
-                    placeholder="Condition, size and what comes with it."
-                    className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
-                  />
-                  {descriptionProgressHint(caption) ? (
-                    <p className="mt-1.5 text-xs text-muted">
-                      {descriptionProgressHint(caption)}
-                    </p>
-                  ) : null}
-                </Field>
+                    <Field label="Description">
+                      <AutoGrowTextarea
+                        value={caption}
+                        maxLength={2000}
+                        rows={3}
+                        onChange={(event) => setCaption(event.target.value)}
+                        placeholder="Condition, size and what comes with it."
+                        className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
+                      />
+                      {descriptionProgressHint(caption) ? (
+                        <p className="mt-1.5 text-xs text-muted">
+                          {descriptionProgressHint(caption)}
+                        </p>
+                      ) : null}
+                    </Field>
 
-                <Field label="Category">
-                  <CategoryPickerDrawer
-                    value={categoryId}
-                    fallbackLabel={categoryName}
-                    onChange={(id, name) => setCategory(id, name, "manual")}
-                  />
-                </Field>
+                    <Field label="Category">
+                      <CategoryPickerDrawer
+                        value={categoryId}
+                        fallbackLabel={categoryName}
+                        onChange={(id, name) => setCategory(id, name, "manual")}
+                      />
+                    </Field>
 
-                <Field
-                  label="Subcategory"
-                  hint="Pinpoints what buyers see this as, once you've picked a category"
-                >
-                  <CategoryPickerDrawer
-                    value={subcategoryId}
-                    fallbackLabel={
-                      subcategoryName ?? guidedInsights?.subcategory
-                    }
-                    parentId={categoryId}
-                    title="Subcategory"
-                    placeholderLabel="Choose subcategory"
-                    emptyLabel="No subcategories yet for this category."
-                    onChange={(id, name) => setSubcategory(id, name)}
-                  />
-                </Field>
+                    <Field
+                      label="Subcategory"
+                      hint="Pinpoints what buyers see this as, once you've picked a category"
+                    >
+                      <CategoryPickerDrawer
+                        value={subcategoryId}
+                        fallbackLabel={
+                          subcategoryName ?? guidedInsights?.subcategory
+                        }
+                        parentId={categoryId}
+                        title="Subcategory"
+                        placeholderLabel="Choose subcategory"
+                        emptyLabel="No subcategories yet for this category."
+                        onChange={(id, name) => setSubcategory(id, name)}
+                      />
+                    </Field>
 
-                <SpecsEditor specs={specs} onChange={setSpecs} />
+                    <SpecsEditor specs={specs} onChange={setSpecs} />
+                  </>
+                ) : (
+                  <DetailsSummary
+                    title={title}
+                    description={caption}
+                    category={[
+                      categoryName,
+                      subcategoryName || guidedInsights?.subcategory,
+                    ]
+                      .filter(Boolean)
+                      .join(" › ")}
+                    specs={specs}
+                  />
+                )}
 
                 {guidedStage === "insights" ? (
                   <CardActions
                     primaryLabel="Looks good"
                     onPrimary={confirmInsights}
                   />
+                ) : detailsEditing ? (
+                  <>
+                    {detailsError ? <AskError>{detailsError}</AskError> : null}
+                    <EditActions
+                      saving={detailsSaving}
+                      onSave={() => void saveDetailsEdit()}
+                      onCancel={cancelDetailsEdit}
+                    />
+                  </>
                 ) : (
                   <ConfirmedLabel />
                 )}
@@ -1809,15 +2145,55 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
           {stageReached(guidedStage, "conversation") ? (
             <>
-              {agentMessages.map((message) =>
-                message.role === "agent" ? (
-                  <AgentBubble key={message.id}>
-                    <p className="whitespace-pre-wrap">{message.text}</p>
-                  </AgentBubble>
-                ) : (
-                  <UserBubble key={message.id}>{message.text}</UserBubble>
-                ),
-              )}
+              {agentMessages.map((message) => {
+                if (message.role === "agent") {
+                  return (
+                    <AgentBubble key={message.id}>
+                      <p className="whitespace-pre-wrap">{message.text}</p>
+                    </AgentBubble>
+                  );
+                }
+                const answered = message.ask;
+                if (answered && editingMessageId === message.id) {
+                  return (
+                    <AgentAskControl
+                      key={message.id}
+                      ask={{
+                        ...answered,
+                        prefill:
+                          currentAnswerValue(answered) ?? answered.prefill,
+                      }}
+                      editing={{
+                        onCancel: cancelAnswerEdit,
+                        error: answerEditError,
+                      }}
+                      onScalar={(value) =>
+                        editScalarAnswer(message, answered, value)
+                      }
+                      onPrice={(amount, isNegotiable) =>
+                        editPriceAnswer(message, amount, isNegotiable)
+                      }
+                      onLocation={() => editLocationAnswer(message)}
+                      onPhone={() => editPhoneAnswer(message)}
+                    />
+                  );
+                }
+                return (
+                  <UserBubble
+                    key={message.id}
+                    onEdit={
+                      answered &&
+                      EDITABLE_TARGETS.has(answered.target) &&
+                      !editLocked &&
+                      !editingSomething
+                        ? () => startAnswerEdit(message)
+                        : undefined
+                    }
+                  >
+                    {message.text}
+                  </UserBubble>
+                );
+              })}
 
               {agentThinking ? (
                 <AgentBubble>
@@ -1832,7 +2208,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                 </AgentBubble>
               ) : null}
 
-              {guidedStage === "conversation" && agentAsk && !agentThinking ? (
+              {guidedStage === "conversation" &&
+              agentAsk &&
+              !agentThinking &&
+              !editingSomething ? (
                 <>
                   {aiDegraded ? (
                     <p className="px-1 text-xs text-muted">
@@ -1845,10 +2224,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                     ask={agentAsk}
                     onScalar={(value) => void answerScalar(agentAsk, value)}
                     onPrice={(amount, isNegotiable) =>
-                      void answerPrice(amount, isNegotiable)
+                      void answerPrice(agentAsk, amount, isNegotiable)
                     }
-                    onLocation={() => void answerLocation()}
-                    onPhone={() => void answerPhone()}
+                    onLocation={() => void answerLocation(agentAsk)}
+                    onPhone={() => void answerPhone(agentAsk)}
                   />
                 </>
               ) : null}
@@ -2014,6 +2393,44 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         </div>
       </main>
 
+      <Dialog
+        open={confirmClearOpen}
+        onOpenChange={(open) => {
+          if (!clearingMedia) setConfirmClearOpen(open);
+        }}
+      >
+        <DialogContent className="w-[min(92vw,400px)] rounded-3xl p-5">
+          <DialogTitle>Remove this media?</DialogTitle>
+          <DialogDescription>
+            Everything Shopi Agent filled in from it goes too: the title,
+            description, details and your answers. You can then add new photos
+            or a video.
+          </DialogDescription>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmClearOpen(false)}
+              disabled={clearingMedia}
+              className="flex h-11 flex-1 items-center justify-center rounded-full border border-border text-sm font-semibold text-foreground hover:bg-surface disabled:opacity-50"
+            >
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={() => void clearMedia()}
+              aria-busy={clearingMedia}
+              className="flex h-11 flex-1 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white transition-transform active:scale-[0.98]"
+            >
+              {clearingMedia ? (
+                <DrawerLoadingIndicator className="min-h-0 w-9 shrink-0" />
+              ) : (
+                "Remove"
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {SHOW_TIKTOK_CREATE_OPTIONS ? (
         <TikTokImportDrawer
           open={tiktokOpen}
@@ -2132,10 +2549,144 @@ function AgentBubble({ children }: { children: ReactNode }) {
   );
 }
 
-function UserBubble({ children }: { children: ReactNode }) {
+/** The seller's bubble. `onEdit` adds a pencil beside it; `onRemove` an X on
+ *  its corner (the media bubble). */
+function UserBubble({
+  children,
+  onEdit,
+  onRemove,
+  removeLabel = "Remove",
+}: {
+  children: ReactNode;
+  onEdit?: () => void;
+  onRemove?: () => void;
+  removeLabel?: string;
+}) {
   return (
-    <div className="max-w-[88%] self-end rounded-2xl rounded-tr-md bg-primary px-4 py-3 text-sm leading-relaxed text-white sm:max-w-[76%]">
-      {children}
+    <div className="flex max-w-[88%] items-center gap-1.5 self-end sm:max-w-[76%]">
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label="Edit answer"
+          title="Edit answer"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+        >
+          <Pencil size={14} />
+        </button>
+      ) : null}
+      <div className="relative min-w-0 rounded-2xl rounded-tr-md bg-primary px-4 py-3 text-sm leading-relaxed text-white">
+        <div className="whitespace-pre-wrap break-words">{children}</div>
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={removeLabel}
+            title={removeLabel}
+            className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-elevated text-foreground shadow-md transition-colors hover:bg-surface"
+          >
+            <X size={15} />
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function EditButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-surface"
+    >
+      <Pencil size={13} />
+      Edit
+    </button>
+  );
+}
+
+function EditActions({
+  saving,
+  onSave,
+  onCancel,
+}: {
+  saving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="flex gap-2 pt-1 sm:justify-end">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className="flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-border px-4 text-sm font-semibold text-muted hover:bg-surface disabled:opacity-50 sm:flex-none"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        aria-busy={saving}
+        className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-white transition-transform active:scale-[0.98] sm:flex-none"
+      >
+        {saving ? (
+          <DrawerLoadingIndicator className="min-h-0 w-9 shrink-0" />
+        ) : (
+          <>
+            <Check size={16} />
+            Save changes
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+/** The confirmed details card, read-only until the seller taps Edit. */
+function DetailsSummary({
+  title,
+  description,
+  category,
+  specs,
+}: {
+  title: string;
+  description: string;
+  category: string;
+  specs: { key: string; value: string }[];
+}) {
+  const filled = specs.filter((spec) => spec.key.trim() && spec.value.trim());
+  return (
+    <dl className="flex flex-col gap-3 text-sm">
+      <SummaryRow label="Listing title">
+        <span className="font-semibold">{title.trim() || "—"}</span>
+      </SummaryRow>
+      <SummaryRow label="Description">
+        <span className="whitespace-pre-wrap">{description.trim() || "—"}</span>
+      </SummaryRow>
+      <SummaryRow label="Category">{category || "—"}</SummaryRow>
+      {filled.length > 0 ? (
+        <SummaryRow label="Details">
+          <ul className="flex flex-col gap-1">
+            {filled.map((spec) => (
+              <li key={spec.key}>
+                <span className="text-muted">{spec.key}:</span> {spec.value}
+              </li>
+            ))}
+          </ul>
+        </SummaryRow>
+      ) : null}
+    </dl>
+  );
+}
+
+function SummaryRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold text-muted">{label}</dt>
+      <dd className="mt-0.5 leading-relaxed text-foreground">{children}</dd>
     </div>
   );
 }
@@ -2365,12 +2916,16 @@ function AgentAskControl({
   onPrice,
   onLocation,
   onPhone,
+  editing,
 }: {
   ask: AgentAsk;
   onScalar: (value: string) => void;
   onPrice: (amount: number, negotiable: boolean) => void;
   onLocation: () => void;
   onPhone: () => void;
+  /** Changing an earlier answer: buttons say Save, Skip becomes Clear, and
+   *  there's a Cancel. */
+  editing?: { onCancel: () => void; error?: string | null };
 }) {
   const {
     currency,
@@ -2422,6 +2977,32 @@ function AgentAskControl({
     if (answerProblem) return;
     onScalar(text);
   }
+  // Editing an earlier answer: Cancel, and Clear for an optional one, take the
+  // place of Skip.
+  const showSkip = !ask.required && !editing;
+  const editFooter = editing ? (
+    <>
+      {editing.error ? <AskError>{editing.error}</AskError> : null}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={editing.onCancel}
+          className="text-sm font-semibold text-muted hover:text-foreground"
+        >
+          Cancel
+        </button>
+        {!ask.required ? (
+          <button
+            type="button"
+            onClick={() => onScalar("")}
+            className="text-sm font-semibold text-muted hover:text-foreground"
+          >
+            Clear answer
+          </button>
+        ) : null}
+      </div>
+    </>
+  ) : null;
   const textFeedback =
     tried && answerProblem ? (
       <AskError>{answerProblem}</AskError>
@@ -2444,7 +3025,7 @@ function AgentAskControl({
               {option}
             </button>
           ))}
-          {!ask.required ? (
+          {showSkip ? (
             <button
               type="button"
               onClick={() => onScalar("")}
@@ -2454,6 +3035,7 @@ function AgentAskControl({
             </button>
           ) : null}
         </div>
+        {editFooter}
       </AssistantCard>
     );
   }
@@ -2522,13 +3104,14 @@ function AgentAskControl({
           <AskError>Enter a price of 0 or more.</AskError>
         ) : null}
         <AskPrimaryButton
-          label="Confirm price"
+          label={editing ? "Save" : "Confirm price"}
           onClick={() => {
             setTried(true);
             if (!priceOk) return;
             onPrice(parsedPrice, negotiable);
           }}
         />
+        {editFooter}
       </AssistantCard>
     );
   }
@@ -2551,12 +3134,13 @@ function AgentAskControl({
           </AskError>
         ) : null}
         <AskPrimaryButton
-          label="Continue"
+          label={editing ? "Save" : "Continue"}
           onClick={() => {
             setTried(true);
             if (location) onLocation();
           }}
         />
+        {editFooter}
       </AssistantCard>
     );
   }
@@ -2575,12 +3159,13 @@ function AgentAskControl({
           }
         />
         <AskPrimaryButton
-          label="Continue"
+          label={editing ? "Save" : "Continue"}
           onClick={() => {
             setTried(true);
             if (contactPhone) onPhone();
           }}
         />
+        {editFooter}
       </AssistantCard>
     );
   }
@@ -2600,7 +3185,7 @@ function AgentAskControl({
         />
         {textFeedback}
         <div className="flex items-center justify-between gap-2">
-          {!ask.required ? (
+          {showSkip ? (
             <button
               type="button"
               onClick={() => onScalar("")}
@@ -2611,8 +3196,13 @@ function AgentAskControl({
           ) : (
             <span />
           )}
-          <AskPrimaryButton label="Send" inline onClick={submitText} />
+          <AskPrimaryButton
+            label={editing ? "Save" : "Send"}
+            inline
+            onClick={submitText}
+          />
         </div>
+        {editFooter}
       </AssistantCard>
     );
   }
@@ -2666,13 +3256,13 @@ function AgentAskControl({
         <button
           type="submit"
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition-transform active:scale-95"
-          aria-label="Send"
+          aria-label={editing ? "Save" : "Send"}
         >
-          <Send size={18} />
+          {editing ? <Check size={18} /> : <Send size={18} />}
         </button>
       </form>
       {textFeedback}
-      {!ask.required ? (
+      {showSkip ? (
         <button
           type="button"
           onClick={() => onScalar("")}
@@ -2681,6 +3271,7 @@ function AgentAskControl({
           Skip
         </button>
       ) : null}
+      {editFooter}
     </AssistantCard>
   );
 }

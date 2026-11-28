@@ -272,7 +272,7 @@ export function TiktokImportPanel({
           aria-label="Loading TikTok videos"
         >
           {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="flex min-h-[76px] items-center gap-3 py-2.5">
+            <li key={i} className="flex min-h-19 items-center gap-3 py-2.5">
               <Skeleton className="size-12 shrink-0 rounded-lg" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-3.5 w-3/4 rounded" />
@@ -355,7 +355,7 @@ export function TiktokImportPanel({
           aria-label="Loading TikTok videos"
         >
           {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="flex min-h-[76px] items-center gap-3 py-2.5">
+            <li key={i} className="flex min-h-19 items-center gap-3 py-2.5">
               <Skeleton className="size-12 shrink-0 rounded-lg" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-3.5 w-3/4 rounded" />
@@ -398,7 +398,7 @@ export function TiktokImportPanel({
           {allVideos.map((video) => (
             <div
               key={video.id}
-              className="flex min-h-[76px] items-center gap-3 py-2.5"
+              className="flex min-h-19 items-center gap-3 py-2.5"
             >
               <RadioGroupItem
                 value={video.id}
@@ -452,7 +452,7 @@ export function TiktokImportPanel({
               <button
                 type="button"
                 onClick={() => setPreviewVideo(video)}
-                className="flex min-h-[76px] w-full items-center gap-3 py-2.5 text-left active:bg-surface"
+                className="flex min-h-19 w-full items-center gap-3 py-2.5 text-left active:bg-surface"
                 aria-label={`Preview ${video.title || "TikTok video"}`}
               >
                 <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-surface">
@@ -519,7 +519,7 @@ export function TiktokImportPanel({
         }}
       >
         <DialogContent
-          className="z-[95] max-w-md overflow-hidden p-0"
+          className="z-95 max-w-md overflow-hidden p-0"
           overlayClassName="z-[90]"
         >
           <DialogTitle className="sr-only">
@@ -531,7 +531,7 @@ export function TiktokImportPanel({
             </p>
           </div>
           {previewVideo && (
-            <div className="mx-auto aspect-[9/16] w-full max-w-[360px] bg-black">
+            <div className="mx-auto aspect-9/16 w-full max-w-90 bg-black">
               <iframe
                 key={previewVideo.id}
                 src={`https://www.tiktok.com/player/v1/${previewVideo.id}?autoplay=1`}

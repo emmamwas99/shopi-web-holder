@@ -22,6 +22,8 @@ export type AgentMessage = {
   id: string;
   role: "agent" | "user";
   text: string;
+  /** On a seller's answer: the question it answered, so the answer can be edited later. */
+  ask?: AgentAsk | null;
 };
 
 export type GuidedInsights = {
